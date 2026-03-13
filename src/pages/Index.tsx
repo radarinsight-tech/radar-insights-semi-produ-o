@@ -99,6 +99,10 @@ const Index = () => {
         return;
       }
 
+      const fullReport = {
+        ...data,
+      };
+
       const analysisResult: AnalysisData = {
         protocolo: data.protocolo || "Não identificado",
         atendente: data.atendente || "Não identificado",
