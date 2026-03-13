@@ -147,6 +147,7 @@ const Index = () => {
 
   const filtered = useMemo(() => {
     return history.filter((e) => {
+      if (protocolSearch && !e.protocolo.toLowerCase().includes(protocolSearch.toLowerCase())) return false;
       if (filters.atendente !== "todos" && e.atendente !== filters.atendente) return false;
       if (filters.tipo !== "todos" && e.tipo !== filters.tipo) return false;
       if (filters.periodo) {
@@ -156,7 +157,7 @@ const Index = () => {
       }
       return true;
     });
-  }, [filters, history]);
+  }, [filters, history, protocolSearch]);
 
   return (
     <div className="min-h-screen bg-background">
