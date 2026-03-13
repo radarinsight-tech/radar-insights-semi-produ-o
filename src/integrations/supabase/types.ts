@@ -43,6 +43,7 @@ export type Database = {
           data: string
           id: string
           nota: number
+          pdf_url: string | null
           pontos_melhoria: string[] | null
           protocolo: string
           tipo: string
@@ -58,6 +59,7 @@ export type Database = {
           data: string
           id?: string
           nota: number
+          pdf_url?: string | null
           pontos_melhoria?: string[] | null
           protocolo: string
           tipo: string
@@ -73,6 +75,7 @@ export type Database = {
           data?: string
           id?: string
           nota?: number
+          pdf_url?: string | null
           pontos_melhoria?: string[] | null
           protocolo?: string
           tipo?: string

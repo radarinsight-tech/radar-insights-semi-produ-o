@@ -7,8 +7,9 @@ import StatsWidgets from "@/components/StatsWidgets";
 import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { supabase } from "@/integrations/supabase/client";
-import { Radar, LogOut, Users } from "lucide-react";
+import { Radar, LogOut, Users, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import type { HistoryEntry } from "@/lib/mockData";
@@ -19,6 +20,7 @@ const Index = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [filters, setFilters] = useState({ atendente: "todos", periodo: "", tipo: "todos" });
+  const [protocolSearch, setProtocolSearch] = useState("");
 
   const loadHistory = useCallback(async () => {
     const { data, error } = await supabase
@@ -40,6 +42,7 @@ const Index = () => {
         classificacao: row.classificacao,
         bonus: row.bonus,
         tipo: row.tipo,
+        pdf_url: row.pdf_url || undefined,
       }))
     );
   }, []);
@@ -61,6 +64,21 @@ const Index = () => {
         toast.error("Não foi possível extrair texto do PDF.");
         setIsAnalyzing(false);
         return;
+      }
+
+      // Upload PDF to storage
+      const fileName = `${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("pdfs")
+        .upload(fileName, file, { contentType: "application/pdf" });
+
+      let pdfUrl: string | null = null;
+      if (uploadError) {
+        console.error("PDF upload error:", uploadError);
+        toast.warning("Erro ao armazenar o PDF, mas a análise continuará.");
+      } else {
+        const { data: urlData } = supabase.storage.from("pdfs").getPublicUrl(fileName);
+        pdfUrl = urlData.publicUrl;
       }
 
       const { data, error } = await supabase.functions.invoke("analyze-attendance", {
@@ -93,10 +111,8 @@ const Index = () => {
 
       setAnalysis(analysisResult);
 
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Save to database
       const { error: insertError } = await supabase.from("evaluations").insert({
         data: data.data || new Date().toLocaleDateString("pt-BR"),
         protocolo: analysisResult.protocolo,
@@ -108,6 +124,7 @@ const Index = () => {
         bonus: analysisResult.bonus,
         pontos_melhoria: analysisResult.pontosMelhoria,
         user_id: user?.id,
+        pdf_url: pdfUrl,
       });
 
       if (insertError) {
@@ -130,6 +147,7 @@ const Index = () => {
 
   const filtered = useMemo(() => {
     return history.filter((e) => {
+      if (protocolSearch && !e.protocolo.toLowerCase().includes(protocolSearch.toLowerCase())) return false;
       if (filters.atendente !== "todos" && e.atendente !== filters.atendente) return false;
       if (filters.tipo !== "todos" && e.tipo !== filters.tipo) return false;
       if (filters.periodo) {
@@ -139,7 +157,7 @@ const Index = () => {
       }
       return true;
     });
-  }, [filters, history]);
+  }, [filters, history, protocolSearch]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -172,12 +190,23 @@ const Index = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
           <div className="space-y-4">
-            <Filters
-              atendentes={atendentes}
-              tipos={tipos}
-              filters={filters}
-              onChange={setFilters}
-            />
+            <div className="flex flex-wrap gap-3 items-end">
+              <Filters
+                atendentes={atendentes}
+                tipos={tipos}
+                filters={filters}
+                onChange={setFilters}
+              />
+              <div className="relative w-[220px]">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar protocolo..."
+                  value={protocolSearch}
+                  onChange={(e) => setProtocolSearch(e.target.value)}
+                  className="pl-8 bg-card"
+                />
+              </div>
+            </div>
             <HistoryTable entries={filtered} />
           </div>
           <StatsWidgets entries={filtered} />

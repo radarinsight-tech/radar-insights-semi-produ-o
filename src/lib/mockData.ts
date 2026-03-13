@@ -6,6 +6,7 @@ export interface HistoryEntry {
   classificacao: string;
   bonus: boolean;
   tipo: string;
+  pdf_url?: string;
 }
 
 const atendentes = ["Ana Silva", "Carlos Lima", "Maria Souza", "João Santos", "Bruna Costa"];
