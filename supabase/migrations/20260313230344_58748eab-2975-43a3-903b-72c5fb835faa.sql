@@ -1,0 +1,1 @@
+ALTER TABLE public.evaluations ADD COLUMN full_report jsonb DEFAULT NULL;

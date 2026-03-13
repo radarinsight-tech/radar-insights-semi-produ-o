@@ -43,6 +43,7 @@ const Index = () => {
         bonus: row.bonus,
         tipo: row.tipo,
         pdf_url: row.pdf_url || undefined,
+        full_report: row.full_report || null,
       }))
     );
   }, []);
@@ -98,6 +99,10 @@ const Index = () => {
         return;
       }
 
+      const fullReport = {
+        ...data,
+      };
+
       const analysisResult: AnalysisData = {
         protocolo: data.protocolo || "Não identificado",
         atendente: data.atendente || "Não identificado",
@@ -125,7 +130,8 @@ const Index = () => {
         pontos_melhoria: analysisResult.pontosMelhoria,
         user_id: user?.id,
         pdf_url: pdfUrl,
-      });
+        full_report: fullReport,
+      } as any);
 
       if (insertError) {
         console.error("Error saving evaluation:", insertError);

@@ -7,6 +7,7 @@ export interface HistoryEntry {
   bonus: boolean;
   tipo: string;
   pdf_url?: string;
+  full_report?: Record<string, unknown> | null;
 }
 
 const atendentes = ["Ana Silva", "Carlos Lima", "Maria Souza", "João Santos", "Bruna Costa"];

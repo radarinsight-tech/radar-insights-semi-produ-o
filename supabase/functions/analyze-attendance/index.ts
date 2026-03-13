@@ -7,7 +7,7 @@ const corsHeaders = {
 
 const SYSTEM_PROMPT = `Você é o Radar Insight FALE 4.3, um sistema especialista em análise de qualidade de atendimentos.
 
-Analise o texto do atendimento fornecido e retorne EXATAMENTE os campos abaixo em formato estruturado.
+Analise o texto do atendimento fornecido e retorne o resultado completo da avaliação.
 
 Regras de avaliação:
 - Nota de 0 a 10, com uma casa decimal
@@ -17,15 +17,29 @@ Regras de avaliação:
 - Se algum campo não puder ser identificado, use "Não identificado"
 - Liste de 2 a 5 pontos de melhoria concretos e acionáveis para o atendente
 
-Critérios de avaliação:
-1. Saudação e identificação adequada
-2. Empatia e cordialidade
-3. Resolução do problema
-4. Procedimentos corretos
-5. Encerramento adequado
-6. Tempo de resposta
-7. Clareza na comunicação
-8. Registro correto das informações`;
+Critérios de avaliação (19 critérios):
+1. Saudação inicial adequada
+2. Identificação do atendente
+3. Empatia e cordialidade
+4. Escuta ativa
+5. Compreensão do problema
+6. Clareza na comunicação
+7. Linguagem adequada (sem gírias/informalidades excessivas)
+8. Procedimentos corretos seguidos
+9. Conhecimento técnico demonstrado
+10. Proatividade na resolução
+11. Oferecimento de alternativas
+12. Tempo de resposta entre mensagens
+13. Atualização cadastral verificada
+14. Confirmação de dados do cliente
+15. Registro correto das informações
+16. Resolução efetiva do problema
+17. Encerramento adequado
+18. Pesquisa de satisfação oferecida
+19. Despedida cordial
+
+Para cada critério, avalie se estava no escopo do atendimento, se foi atendido ou não, e forneça uma explicação breve.
+Forneça também uma orientação final consolidada para o atendente.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -66,7 +80,7 @@ serve(async (req) => {
             type: "function",
             function: {
               name: "retornar_analise",
-              description: "Retorna o resultado estruturado da análise do atendimento",
+              description: "Retorna o resultado completo da análise do atendimento incluindo todos os 19 critérios",
               parameters: {
                 type: "object",
                 properties: {
@@ -81,10 +95,27 @@ serve(async (req) => {
                   pontosMelhoria: {
                     type: "array",
                     items: { type: "string" },
-                    description: "Lista de 2 a 5 pontos de melhoria concretos e acionáveis para o atendente",
+                    description: "Lista de 2 a 5 pontos de melhoria concretos e acionáveis",
                   },
+                  criterios: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        numero: { type: "number", description: "Número do critério (1-19)" },
+                        nome: { type: "string", description: "Nome do critério" },
+                        noEscopo: { type: "boolean", description: "Se o critério estava no escopo do atendimento" },
+                        atendido: { type: "boolean", description: "Se o critério foi atendido" },
+                        explicacao: { type: "string", description: "Explicação breve sobre a avaliação deste critério" },
+                      },
+                      required: ["numero", "nome", "noEscopo", "atendido", "explicacao"],
+                      additionalProperties: false,
+                    },
+                    description: "Avaliação detalhada dos 19 critérios",
+                  },
+                  orientacaoFinal: { type: "string", description: "Orientação final consolidada para o atendente com recomendações de melhoria" },
                 },
-                required: ["data", "protocolo", "tipo", "atendente", "atualizacaoCadastral", "nota", "classificacao", "bonus", "pontosMelhoria"],
+                required: ["data", "protocolo", "tipo", "atendente", "atualizacaoCadastral", "nota", "classificacao", "bonus", "pontosMelhoria", "criterios", "orientacaoFinal"],
                 additionalProperties: false,
               },
             },
