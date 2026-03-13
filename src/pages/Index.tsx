@@ -4,6 +4,7 @@ import AnalysisResult, { type AnalysisData } from "@/components/AnalysisResult";
 import HistoryTable from "@/components/HistoryTable";
 import Filters from "@/components/Filters";
 import StatsWidgets from "@/components/StatsWidgets";
+import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { supabase } from "@/integrations/supabase/client";
 import { Radar } from "lucide-react";
@@ -144,6 +145,8 @@ const Index = () => {
           <UploadSection onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} />
           <AnalysisResult data={analysis} />
         </div>
+
+        <ScoreEvolutionChart entries={filtered} />
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
           <div className="space-y-4">
