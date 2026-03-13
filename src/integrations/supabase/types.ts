@@ -14,12 +14,31 @@ export type Database = {
   }
   public: {
     Tables: {
+      companies: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       evaluations: {
         Row: {
           atendente: string
           atualizacao_cadastral: string
           bonus: boolean
           classificacao: string
+          company_id: string | null
           created_at: string
           data: string
           id: string
@@ -27,12 +46,14 @@ export type Database = {
           pontos_melhoria: string[] | null
           protocolo: string
           tipo: string
+          user_id: string | null
         }
         Insert: {
           atendente: string
           atualizacao_cadastral?: string
           bonus?: boolean
           classificacao: string
+          company_id?: string | null
           created_at?: string
           data: string
           id?: string
@@ -40,12 +61,14 @@ export type Database = {
           pontos_melhoria?: string[] | null
           protocolo: string
           tipo: string
+          user_id?: string | null
         }
         Update: {
           atendente?: string
           atualizacao_cadastral?: string
           bonus?: boolean
           classificacao?: string
+          company_id?: string | null
           created_at?: string
           data?: string
           id?: string
@@ -53,15 +76,53 @@ export type Database = {
           pontos_melhoria?: string[] | null
           protocolo?: string
           tipo?: string
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "evaluations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_my_company_id: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
