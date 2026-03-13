@@ -20,6 +20,7 @@ const Index = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [filters, setFilters] = useState({ atendente: "todos", periodo: "", tipo: "todos" });
+  const [protocolSearch, setProtocolSearch] = useState("");
 
   const loadHistory = useCallback(async () => {
     const { data, error } = await supabase
