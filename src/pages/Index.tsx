@@ -130,7 +130,8 @@ const Index = () => {
         pontos_melhoria: analysisResult.pontosMelhoria,
         user_id: user?.id,
         pdf_url: pdfUrl,
-      });
+        full_report: fullReport,
+      } as any);
 
       if (insertError) {
         console.error("Error saving evaluation:", insertError);
