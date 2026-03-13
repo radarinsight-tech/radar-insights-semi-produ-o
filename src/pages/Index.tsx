@@ -19,22 +19,6 @@ const Index = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [filters, setFilters] = useState({ atendente: "todos", periodo: "", tipo: "todos" });
-  const [companyId, setCompanyId] = useState<string | null>(null);
-
-  // Load profile to get company_id
-  useEffect(() => {
-    const loadProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase
-        .from("profiles")
-        .select("company_id")
-        .eq("id", user.id)
-        .single();
-      if (data?.company_id) setCompanyId(data.company_id);
-    };
-    loadProfile();
-  }, []);
 
   const loadHistory = useCallback(async () => {
     const { data, error } = await supabase
@@ -124,7 +108,6 @@ const Index = () => {
         bonus: analysisResult.bonus,
         pontos_melhoria: analysisResult.pontosMelhoria,
         user_id: user?.id,
-        company_id: companyId,
       });
 
       if (insertError) {
