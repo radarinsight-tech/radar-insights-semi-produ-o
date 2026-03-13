@@ -1,4 +1,5 @@
 export interface HistoryEntry {
+  id: string;
   data: string;
   protocolo: string;
   atendente: string;
@@ -30,6 +31,7 @@ export function generateMockHistory(count = 20): HistoryEntry[] {
   return Array.from({ length: count }, (_, i) => {
     const nota = +(6.5 + Math.random() * 3.5).toFixed(1);
     return {
+      id: crypto.randomUUID(),
       data: randomDate(3),
       protocolo: `ATD-${(1000 + i).toString()}`,
       atendente: atendentes[Math.floor(Math.random() * atendentes.length)],

@@ -35,6 +35,7 @@ const Index = () => {
 
     setHistory(
       (data || []).map((row: any) => ({
+        id: row.id,
         data: row.data,
         protocolo: row.protocolo,
         atendente: row.atendente,
@@ -213,7 +214,7 @@ const Index = () => {
                 />
               </div>
             </div>
-            <HistoryTable entries={filtered} />
+            <HistoryTable entries={filtered} onRefresh={loadHistory} />
           </div>
           <StatsWidgets entries={filtered} />
         </div>
