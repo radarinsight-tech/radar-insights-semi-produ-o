@@ -7,15 +7,34 @@ import StatsWidgets from "@/components/StatsWidgets";
 import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { supabase } from "@/integrations/supabase/client";
-import { Radar } from "lucide-react";
+import { Radar, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import type { HistoryEntry } from "@/lib/mockData";
 
 const Index = () => {
+  const navigate = useNavigate();
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [filters, setFilters] = useState({ atendente: "todos", periodo: "", tipo: "todos" });
+  const [companyId, setCompanyId] = useState<string | null>(null);
+
+  // Load profile to get company_id
+  useEffect(() => {
+    const loadProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("company_id")
+        .eq("id", user.id)
+        .single();
+      if (data?.company_id) setCompanyId(data.company_id);
+    };
+    loadProfile();
+  }, []);
 
   const loadHistory = useCallback(async () => {
     const { data, error } = await supabase
@@ -44,6 +63,11 @@ const Index = () => {
   useEffect(() => {
     loadHistory();
   }, [loadHistory]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
 
   const handleAnalyze = async (file: File) => {
     setIsAnalyzing(true);
@@ -85,6 +109,9 @@ const Index = () => {
 
       setAnalysis(analysisResult);
 
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+
       // Save to database
       const { error: insertError } = await supabase.from("evaluations").insert({
         data: data.data || new Date().toLocaleDateString("pt-BR"),
@@ -96,6 +123,8 @@ const Index = () => {
         classificacao: analysisResult.classificacao,
         bonus: analysisResult.bonus,
         pontos_melhoria: analysisResult.pontosMelhoria,
+        user_id: user?.id,
+        company_id: companyId,
       });
 
       if (insertError) {
@@ -137,6 +166,12 @@ const Index = () => {
             <Radar className="h-5 w-5 text-primary" />
           </div>
           <h1 className="text-xl font-bold">Radar Insight</h1>
+          <div className="ml-auto">
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="h-4 w-4" />
+              Sair
+            </Button>
+          </div>
         </div>
       </header>
 
