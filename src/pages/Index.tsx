@@ -43,6 +43,7 @@ const Index = () => {
         bonus: row.bonus,
         tipo: row.tipo,
         pdf_url: row.pdf_url || undefined,
+        full_report: row.full_report || null,
       }))
     );
   }, []);
