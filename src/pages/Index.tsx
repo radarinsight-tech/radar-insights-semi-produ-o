@@ -119,6 +119,12 @@ const Index = () => {
 
       const { data: { user } } = await supabase.auth.getUser();
 
+      if (!user?.id) {
+        toast.error("Usuário não autenticado. Faça login novamente.");
+        setIsAnalyzing(false);
+        return;
+      }
+
       const { error: insertError } = await supabase.from("evaluations").insert({
         data: data.data || new Date().toLocaleDateString("pt-BR"),
         protocolo: analysisResult.protocolo,
@@ -129,14 +135,14 @@ const Index = () => {
         classificacao: analysisResult.classificacao,
         bonus: analysisResult.bonus,
         pontos_melhoria: analysisResult.pontosMelhoria,
-        user_id: user?.id,
+        user_id: user.id,
         pdf_url: pdfUrl,
-        full_report: fullReport,
-      } as any);
+        full_report: fullReport as unknown as import("@/integrations/supabase/types").Json,
+      });
 
       if (insertError) {
         console.error("Error saving evaluation:", insertError);
-        toast.warning("Análise concluída, mas houve erro ao salvar no histórico.");
+        toast.error("Erro ao salvar avaliação no histórico: " + insertError.message);
       } else {
         toast.success("Análise concluída e salva!");
         await loadHistory();
