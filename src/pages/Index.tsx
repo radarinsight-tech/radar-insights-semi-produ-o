@@ -5,7 +5,10 @@ import HistoryTable from "@/components/HistoryTable";
 import Filters from "@/components/Filters";
 import StatsWidgets from "@/components/StatsWidgets";
 import { generateMockHistory, mockAtendentes, mockTipos } from "@/lib/mockData";
+import { extractTextFromPdf } from "@/lib/pdfExtractor";
+import { supabase } from "@/integrations/supabase/client";
 import { Radar } from "lucide-react";
+import { toast } from "sonner";
 
 const history = generateMockHistory(20);
 
@@ -14,22 +17,52 @@ const Index = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [filters, setFilters] = useState({ atendente: "todos", periodo: "", tipo: "todos" });
 
-  const handleAnalyze = (_file: File) => {
+  const handleAnalyze = async (file: File) => {
     setIsAnalyzing(true);
-    setTimeout(() => {
-      const nota = +(7 + Math.random() * 3).toFixed(1);
-      const classificacao = nota >= 9 ? "Excelente" : nota >= 8 ? "Ótimo" : nota >= 7 ? "Bom" : "Regular";
-      setAnalysis({
-        protocolo: `ATD-${Math.floor(1000 + Math.random() * 9000)}`,
-        atendente: mockAtendentes[Math.floor(Math.random() * mockAtendentes.length)],
-        tipo: mockTipos[Math.floor(Math.random() * mockTipos.length)],
-        atualizacaoCadastral: Math.random() > 0.5 ? "Sim" : "Não",
-        notaFinal: nota,
-        classificacao,
-        bonus: nota >= 9,
+    try {
+      // 1. Extract text from PDF
+      const text = await extractTextFromPdf(file);
+      if (!text.trim()) {
+        toast.error("Não foi possível extrair texto do PDF.");
+        setIsAnalyzing(false);
+        return;
+      }
+
+      // 2. Call edge function
+      const { data, error } = await supabase.functions.invoke("analyze-attendance", {
+        body: { text },
       });
+
+      if (error) {
+        console.error("Edge function error:", error);
+        toast.error("Erro ao analisar atendimento. Tente novamente.");
+        setIsAnalyzing(false);
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
+        setIsAnalyzing(false);
+        return;
+      }
+
+      // 3. Map response to AnalysisData
+      setAnalysis({
+        protocolo: data.protocolo || "Não identificado",
+        atendente: data.atendente || "Não identificado",
+        tipo: data.tipo || "Não identificado",
+        atualizacaoCadastral: data.atualizacaoCadastral || "Não",
+        notaFinal: typeof data.nota === "number" ? data.nota : 0,
+        classificacao: data.classificacao || "Regular",
+        bonus: data.bonus === true,
+      });
+      toast.success("Análise concluída!");
+    } catch (err) {
+      console.error("Analysis error:", err);
+      toast.error("Erro inesperado ao processar o PDF.");
+    } finally {
       setIsAnalyzing(false);
-    }, 1500);
+    }
   };
 
   const filtered = useMemo(() => {
@@ -57,13 +90,11 @@ const Index = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-        {/* Upload + Result */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <UploadSection onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} />
           <AnalysisResult data={analysis} />
         </div>
 
-        {/* History + Stats */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
           <div className="space-y-4">
             <Filters
