@@ -42,6 +42,7 @@ const Index = () => {
         classificacao: row.classificacao,
         bonus: row.bonus,
         tipo: row.tipo,
+        pdf_url: row.pdf_url || undefined,
       }))
     );
   }, []);
