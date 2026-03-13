@@ -66,6 +66,21 @@ const Index = () => {
         return;
       }
 
+      // Upload PDF to storage
+      const fileName = `${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("pdfs")
+        .upload(fileName, file, { contentType: "application/pdf" });
+
+      let pdfUrl: string | null = null;
+      if (uploadError) {
+        console.error("PDF upload error:", uploadError);
+        toast.warning("Erro ao armazenar o PDF, mas a análise continuará.");
+      } else {
+        const { data: urlData } = supabase.storage.from("pdfs").getPublicUrl(fileName);
+        pdfUrl = urlData.publicUrl;
+      }
+
       const { data, error } = await supabase.functions.invoke("analyze-attendance", {
         body: { text },
       });
@@ -96,10 +111,8 @@ const Index = () => {
 
       setAnalysis(analysisResult);
 
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Save to database
       const { error: insertError } = await supabase.from("evaluations").insert({
         data: data.data || new Date().toLocaleDateString("pt-BR"),
         protocolo: analysisResult.protocolo,
@@ -111,6 +124,7 @@ const Index = () => {
         bonus: analysisResult.bonus,
         pontos_melhoria: analysisResult.pontosMelhoria,
         user_id: user?.id,
+        pdf_url: pdfUrl,
       });
 
       if (insertError) {
