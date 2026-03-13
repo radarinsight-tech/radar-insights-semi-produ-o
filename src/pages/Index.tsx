@@ -190,12 +190,23 @@ const Index = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
           <div className="space-y-4">
-            <Filters
-              atendentes={atendentes}
-              tipos={tipos}
-              filters={filters}
-              onChange={setFilters}
-            />
+            <div className="flex flex-wrap gap-3 items-end">
+              <Filters
+                atendentes={atendentes}
+                tipos={tipos}
+                filters={filters}
+                onChange={setFilters}
+              />
+              <div className="relative w-[220px]">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar protocolo..."
+                  value={protocolSearch}
+                  onChange={(e) => setProtocolSearch(e.target.value)}
+                  className="pl-8 bg-card"
+                />
+              </div>
+            </div>
             <HistoryTable entries={filtered} />
           </div>
           <StatsWidgets entries={filtered} />

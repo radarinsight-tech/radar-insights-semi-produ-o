@@ -1,6 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { FileText } from "lucide-react";
 import type { HistoryEntry } from "@/lib/mockData";
 
 interface Props {
@@ -26,12 +27,13 @@ const HistoryTable = ({ entries }: Props) => (
             <TableHead className="text-right">Nota</TableHead>
             <TableHead>Classificação</TableHead>
             <TableHead>Bônus</TableHead>
+            <TableHead className="text-center">PDF</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {entries.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                 Nenhum registro encontrado
               </TableCell>
             </TableRow>
@@ -49,6 +51,21 @@ const HistoryTable = ({ entries }: Props) => (
                   <Badge className={e.bonus ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"}>
                     {e.bonus ? "Sim" : "Não"}
                   </Badge>
+                </TableCell>
+                <TableCell className="text-center">
+                  {e.pdf_url ? (
+                    <a
+                      href={e.pdf_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center text-primary hover:text-primary/80 transition-colors"
+                      title="Abrir PDF original"
+                    >
+                      <FileText className="h-4 w-4" />
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">—</span>
+                  )}
                 </TableCell>
               </TableRow>
             ))
