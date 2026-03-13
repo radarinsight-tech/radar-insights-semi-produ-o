@@ -214,7 +214,7 @@ const Index = () => {
                 />
               </div>
             </div>
-            <HistoryTable entries={filtered} />
+            <HistoryTable entries={filtered} onRefresh={loadHistory} />
           </div>
           <StatsWidgets entries={filtered} />
         </div>

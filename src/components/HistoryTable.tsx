@@ -1,16 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Download, ExternalLink, FileSearch } from "lucide-react";
+import { Download, ExternalLink, FileSearch, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { HistoryEntry } from "@/lib/mockData";
 import FullReportDialog, { type FullReport } from "@/components/FullReportDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Props {
   entries: HistoryEntry[];
+  onRefresh?: () => void;
 }
 
 const classColor = (c: string) => {
@@ -57,10 +68,28 @@ const handleOpen = async (pdfUrl: string) => {
   window.open(data.signedUrl, "_blank");
 };
 
-const HistoryTable = ({ entries }: Props) => {
+const HistoryTable = ({ entries, onRefresh }: Props) => {
   const [selectedReport, setSelectedReport] = useState<FullReport | null>(null);
   const [selectedProtocolo, setSelectedProtocolo] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<HistoryEntry | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      setIsAdmin(!!data);
+    };
+    checkAdmin();
+  }, []);
 
   const openReport = (entry: HistoryEntry) => {
     if (!entry.full_report) {
@@ -70,6 +99,27 @@ const HistoryTable = ({ entries }: Props) => {
     setSelectedReport(entry.full_report as unknown as FullReport);
     setSelectedProtocolo(entry.protocolo);
     setDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("delete-evaluation", {
+        body: { evaluationId: deleteTarget.id },
+      });
+      if (error || data?.error) {
+        toast.error(data?.error || "Erro ao excluir avaliação.");
+      } else {
+        toast.success("Avaliação excluída com sucesso.");
+        onRefresh?.();
+      }
+    } catch {
+      toast.error("Erro ao excluir avaliação.");
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+    }
   };
 
   return (
@@ -98,7 +148,7 @@ const HistoryTable = ({ entries }: Props) => {
                 </TableRow>
               ) : (
                 entries.map((e) => (
-                  <TableRow key={e.protocolo}>
+                  <TableRow key={e.id}>
                     <TableCell className="text-sm">{e.data}</TableCell>
                     <TableCell className="text-sm font-medium">{e.protocolo}</TableCell>
                     <TableCell className="text-sm">{e.atendente}</TableCell>
@@ -144,6 +194,17 @@ const HistoryTable = ({ entries }: Props) => {
                             </Button>
                           </>
                         )}
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            title="Excluir avaliação"
+                            onClick={() => setDeleteTarget(e)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -160,6 +221,29 @@ const HistoryTable = ({ entries }: Props) => {
         report={selectedReport}
         protocolo={selectedProtocolo}
       />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir avaliação</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a avaliação do protocolo{" "}
+              <strong>{deleteTarget?.protocolo}</strong>? Esta ação não pode ser desfeita.
+              {deleteTarget?.pdf_url && " O PDF associado também será removido."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
