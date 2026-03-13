@@ -7,7 +7,7 @@ import StatsWidgets from "@/components/StatsWidgets";
 import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { supabase } from "@/integrations/supabase/client";
-import { Radar, LogOut } from "lucide-react";
+import { Radar, LogOut, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
