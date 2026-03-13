@@ -1,7 +1,10 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { FileText } from "lucide-react";
+import { Download, ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import type { HistoryEntry } from "@/lib/mockData";
 
 interface Props {
@@ -12,6 +15,44 @@ const classColor = (c: string) => {
   if (c === "Excelente" || c === "Ótimo") return "bg-accent text-accent-foreground";
   if (c === "Bom") return "bg-primary text-primary-foreground";
   return "bg-warning text-warning-foreground";
+};
+
+const extractStoragePath = (url: string): string | null => {
+  const match = url.match(/\/object\/public\/pdfs\/(.+)$/);
+  return match ? match[1] : null;
+};
+
+const handleDownload = async (pdfUrl: string, protocolo: string) => {
+  const path = extractStoragePath(pdfUrl);
+  if (!path) {
+    toast.error("Caminho do PDF inválido.");
+    return;
+  }
+  const { data, error } = await supabase.storage.from("pdfs").download(path);
+  if (error || !data) {
+    toast.error("Erro ao baixar o PDF.");
+    return;
+  }
+  const url = URL.createObjectURL(data);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${protocolo}.pdf`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+const handleOpen = async (pdfUrl: string) => {
+  const path = extractStoragePath(pdfUrl);
+  if (!path) {
+    toast.error("Caminho do PDF inválido.");
+    return;
+  }
+  const { data, error } = await supabase.storage.from("pdfs").createSignedUrl(path, 300);
+  if (error || !data?.signedUrl) {
+    toast.error("Erro ao gerar link do PDF.");
+    return;
+  }
+  window.open(data.signedUrl, "_blank");
 };
 
 const HistoryTable = ({ entries }: Props) => (
@@ -54,15 +95,26 @@ const HistoryTable = ({ entries }: Props) => (
                 </TableCell>
                 <TableCell className="text-center">
                   {e.pdf_url ? (
-                    <a
-                      href={e.pdf_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center text-primary hover:text-primary/80 transition-colors"
-                      title="Abrir PDF original"
-                    >
-                      <FileText className="h-4 w-4" />
-                    </a>
+                    <div className="inline-flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        title="Baixar PDF"
+                        onClick={() => handleDownload(e.pdf_url!, e.protocolo)}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        title="Abrir PDF"
+                        onClick={() => handleOpen(e.pdf_url!)}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    </div>
                   ) : (
                     <span className="text-muted-foreground text-xs">—</span>
                   )}
