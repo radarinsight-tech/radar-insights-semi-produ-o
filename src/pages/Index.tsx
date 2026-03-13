@@ -35,6 +35,7 @@ const Index = () => {
 
     setHistory(
       (data || []).map((row: any) => ({
+        id: row.id,
         data: row.data,
         protocolo: row.protocolo,
         atendente: row.atendente,
