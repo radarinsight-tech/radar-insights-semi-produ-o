@@ -15,6 +15,7 @@ Regras de avaliação:
 - Bônus: true se nota >= 9
 - Identifique o protocolo, atendente, tipo de atendimento e se houve atualização cadastral a partir do texto
 - Se algum campo não puder ser identificado, use "Não identificado"
+- Liste de 2 a 5 pontos de melhoria concretos e acionáveis para o atendente
 
 Critérios de avaliação:
 1. Saudação e identificação adequada
@@ -77,8 +78,13 @@ serve(async (req) => {
                   nota: { type: "number", description: "Nota de 0 a 10 com uma casa decimal" },
                   classificacao: { type: "string", enum: ["Excelente", "Ótimo", "Bom", "Regular"], description: "Classificação baseada na nota" },
                   bonus: { type: "boolean", description: "true se nota >= 9" },
+                  pontosMelhoria: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Lista de 2 a 5 pontos de melhoria concretos e acionáveis para o atendente",
+                  },
                 },
-                required: ["data", "protocolo", "tipo", "atendente", "atualizacaoCadastral", "nota", "classificacao", "bonus"],
+                required: ["data", "protocolo", "tipo", "atendente", "atualizacaoCadastral", "nota", "classificacao", "bonus", "pontosMelhoria"],
                 additionalProperties: false,
               },
             },

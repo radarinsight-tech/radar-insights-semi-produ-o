@@ -14,7 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      evaluations: {
+        Row: {
+          atendente: string
+          atualizacao_cadastral: string
+          bonus: boolean
+          classificacao: string
+          created_at: string
+          data: string
+          id: string
+          nota: number
+          pontos_melhoria: string[] | null
+          protocolo: string
+          tipo: string
+        }
+        Insert: {
+          atendente: string
+          atualizacao_cadastral?: string
+          bonus?: boolean
+          classificacao: string
+          created_at?: string
+          data: string
+          id?: string
+          nota: number
+          pontos_melhoria?: string[] | null
+          protocolo: string
+          tipo: string
+        }
+        Update: {
+          atendente?: string
+          atualizacao_cadastral?: string
+          bonus?: boolean
+          classificacao?: string
+          created_at?: string
+          data?: string
+          id?: string
+          nota?: number
+          pontos_melhoria?: string[] | null
+          protocolo?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

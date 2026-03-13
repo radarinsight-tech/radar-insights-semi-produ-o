@@ -1,26 +1,52 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import UploadSection from "@/components/UploadSection";
 import AnalysisResult, { type AnalysisData } from "@/components/AnalysisResult";
 import HistoryTable from "@/components/HistoryTable";
 import Filters from "@/components/Filters";
 import StatsWidgets from "@/components/StatsWidgets";
-import { generateMockHistory, mockAtendentes, mockTipos } from "@/lib/mockData";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { supabase } from "@/integrations/supabase/client";
 import { Radar } from "lucide-react";
 import { toast } from "sonner";
-
-const history = generateMockHistory(20);
+import type { HistoryEntry } from "@/lib/mockData";
 
 const Index = () => {
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [filters, setFilters] = useState({ atendente: "todos", periodo: "", tipo: "todos" });
+
+  const loadHistory = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("evaluations")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error loading history:", error);
+      return;
+    }
+
+    setHistory(
+      (data || []).map((row: any) => ({
+        data: row.data,
+        protocolo: row.protocolo,
+        atendente: row.atendente,
+        nota: Number(row.nota),
+        classificacao: row.classificacao,
+        bonus: row.bonus,
+        tipo: row.tipo,
+      }))
+    );
+  }, []);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
 
   const handleAnalyze = async (file: File) => {
     setIsAnalyzing(true);
     try {
-      // 1. Extract text from PDF
       const text = await extractTextFromPdf(file);
       if (!text.trim()) {
         toast.error("Não foi possível extrair texto do PDF.");
@@ -28,7 +54,6 @@ const Index = () => {
         return;
       }
 
-      // 2. Call edge function
       const { data, error } = await supabase.functions.invoke("analyze-attendance", {
         body: { text },
       });
@@ -46,8 +71,7 @@ const Index = () => {
         return;
       }
 
-      // 3. Map response to AnalysisData
-      setAnalysis({
+      const analysisResult: AnalysisData = {
         protocolo: data.protocolo || "Não identificado",
         atendente: data.atendente || "Não identificado",
         tipo: data.tipo || "Não identificado",
@@ -55,8 +79,31 @@ const Index = () => {
         notaFinal: typeof data.nota === "number" ? data.nota : 0,
         classificacao: data.classificacao || "Regular",
         bonus: data.bonus === true,
+        pontosMelhoria: Array.isArray(data.pontosMelhoria) ? data.pontosMelhoria : [],
+      };
+
+      setAnalysis(analysisResult);
+
+      // Save to database
+      const { error: insertError } = await supabase.from("evaluations").insert({
+        data: data.data || new Date().toLocaleDateString("pt-BR"),
+        protocolo: analysisResult.protocolo,
+        atendente: analysisResult.atendente,
+        tipo: analysisResult.tipo,
+        atualizacao_cadastral: analysisResult.atualizacaoCadastral,
+        nota: analysisResult.notaFinal,
+        classificacao: analysisResult.classificacao,
+        bonus: analysisResult.bonus,
+        pontos_melhoria: analysisResult.pontosMelhoria,
       });
-      toast.success("Análise concluída!");
+
+      if (insertError) {
+        console.error("Error saving evaluation:", insertError);
+        toast.warning("Análise concluída, mas houve erro ao salvar no histórico.");
+      } else {
+        toast.success("Análise concluída e salva!");
+        await loadHistory();
+      }
     } catch (err) {
       console.error("Analysis error:", err);
       toast.error("Erro inesperado ao processar o PDF.");
@@ -64,6 +111,9 @@ const Index = () => {
       setIsAnalyzing(false);
     }
   };
+
+  const atendentes = useMemo(() => [...new Set(history.map((e) => e.atendente))].sort(), [history]);
+  const tipos = useMemo(() => [...new Set(history.map((e) => e.tipo))].sort(), [history]);
 
   const filtered = useMemo(() => {
     return history.filter((e) => {
@@ -76,7 +126,7 @@ const Index = () => {
       }
       return true;
     });
-  }, [filters]);
+  }, [filters, history]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -98,8 +148,8 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
           <div className="space-y-4">
             <Filters
-              atendentes={mockAtendentes}
-              tipos={mockTipos}
+              atendentes={atendentes}
+              tipos={tipos}
               filters={filters}
               onChange={setFilters}
             />

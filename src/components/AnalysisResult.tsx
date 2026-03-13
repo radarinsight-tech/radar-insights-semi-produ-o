@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AlertTriangle } from "lucide-react";
 
 export interface AnalysisData {
   protocolo: string;
@@ -9,6 +10,7 @@ export interface AnalysisData {
   notaFinal: number;
   classificacao: string;
   bonus: boolean;
+  pontosMelhoria: string[];
 }
 
 interface Props {
@@ -56,6 +58,23 @@ const AnalysisResult = ({ data }: Props) => {
           </Badge>
         </div>
       </div>
+
+      {data.pontosMelhoria && data.pontosMelhoria.length > 0 && (
+        <div className="mt-5 border-t border-border pt-4">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="h-4 w-4 text-warning" />
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pontos de Melhoria</p>
+          </div>
+          <ul className="space-y-1.5">
+            {data.pontosMelhoria.map((ponto, i) => (
+              <li key={i} className="text-sm text-foreground flex gap-2">
+                <span className="text-muted-foreground shrink-0">{i + 1}.</span>
+                {ponto}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </Card>
   );
 };
