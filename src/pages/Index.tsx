@@ -146,6 +146,8 @@ const Index = () => {
           <AnalysisResult data={analysis} />
         </div>
 
+        <ScoreEvolutionChart entries={filtered} />
+
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
           <div className="space-y-4">
             <Filters
