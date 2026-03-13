@@ -1,4 +1,5 @@
 export interface HistoryEntry {
+  id: string;
   data: string;
   protocolo: string;
   atendente: string;
