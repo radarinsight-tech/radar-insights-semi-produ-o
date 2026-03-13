@@ -108,7 +108,6 @@ const Index = () => {
         bonus: analysisResult.bonus,
         pontos_melhoria: analysisResult.pontosMelhoria,
         user_id: user?.id,
-        company_id: companyId,
       });
 
       if (insertError) {
