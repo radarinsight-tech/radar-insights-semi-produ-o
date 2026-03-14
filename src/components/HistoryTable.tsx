@@ -172,15 +172,9 @@ const HistoryTable = ({ entries, onRefresh }: Props) => {
                         />
                         <ActionButton
                           icon={Download}
-                          tooltip="Baixar PDF"
+                          tooltip="Baixar PDF do atendimento"
                           disabled={!e.pdf_url}
                           onClick={() => e.pdf_url && handleDownload(e.pdf_url, e.protocolo)}
-                        />
-                        <ActionButton
-                          icon={ExternalLink}
-                          tooltip="Abrir PDF"
-                          disabled={!e.pdf_url}
-                          onClick={() => e.pdf_url && handleOpen(e.pdf_url)}
                         />
                         {isAdmin && (
                           <ActionButton
