@@ -174,28 +174,26 @@ const HistoryTable = ({ entries, onRefresh }: Props) => {
                         >
                           <FileSearch className="h-4 w-4" />
                         </Button>
-                        {e.pdf_url && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              title="Baixar PDF"
-                              onClick={() => handleDownload(e.pdf_url!, e.protocolo)}
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              title="Abrir PDF"
-                              onClick={() => handleOpen(e.pdf_url!)}
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          title="Baixar PDF"
+                          disabled={!e.pdf_url}
+                          onClick={() => e.pdf_url && handleDownload(e.pdf_url, e.protocolo)}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          title="Abrir PDF"
+                          disabled={!e.pdf_url}
+                          onClick={() => e.pdf_url && handleOpen(e.pdf_url)}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
                         {isAdmin && (
                           <Button
                             variant="ghost"
