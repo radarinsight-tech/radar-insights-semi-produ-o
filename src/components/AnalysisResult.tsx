@@ -24,7 +24,26 @@ const classColor = (c: string) => {
 };
 
 const AnalysisResult = ({ data }: Props) => {
-  if (!data) return null;
+  if (!data) {
+    return (
+      <Card className="p-6 flex flex-col items-center justify-center text-center min-h-[260px]">
+        <h2 className="text-lg font-bold text-primary mb-5">Resultado da Análise</h2>
+        <div className="p-3 rounded-full bg-primary/10 mb-4">
+          <FileSearch className="h-8 w-8 text-primary/60" />
+        </div>
+        <p className="text-sm font-semibold text-foreground mb-3">Radar Insight</p>
+        <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
+          Após inserir o atendimento em PDF e clicar em <span className="font-medium text-foreground">"Analisar atendimento"</span>, o sistema exibirá aqui:
+        </p>
+        <ul className="mt-3 text-xs text-muted-foreground space-y-1">
+          <li>• Protocolo do atendimento</li>
+          <li>• Atendente e tipo de atendimento</li>
+          <li>• Nota final e classificação</li>
+          <li>• Bônus e pontos de melhoria</li>
+        </ul>
+      </Card>
+    );
+  }
 
   const rows = [
     { label: "Protocolo", value: data.protocolo },
