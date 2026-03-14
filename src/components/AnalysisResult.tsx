@@ -35,7 +35,7 @@ const AnalysisResult = ({ data }: Props) => {
 
   return (
     <Card className="p-6 animate-in fade-in duration-300">
-      <h2 className="text-lg font-semibold mb-4">Resultado da Análise</h2>
+      <h2 className="text-lg font-bold text-primary mb-4">Resultado da Análise</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {rows.map((r) => (
           <div key={r.label}>

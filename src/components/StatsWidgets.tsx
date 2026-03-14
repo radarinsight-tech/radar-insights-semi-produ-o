@@ -29,7 +29,7 @@ const StatsWidgets = ({ entries }: Props) => {
           <div className="p-2 rounded-lg bg-primary/10">
             <BarChart3 className="h-4 w-4 text-primary" />
           </div>
-          <p className="text-sm font-medium text-muted-foreground">Média da Equipe</p>
+          <p className="text-sm font-semibold text-primary/80">Média da Equipe</p>
         </div>
         <p className="text-3xl font-bold">{media.toFixed(1)}</p>
       </Card>
@@ -39,7 +39,7 @@ const StatsWidgets = ({ entries }: Props) => {
           <div className="p-2 rounded-lg bg-primary/10">
             <Users className="h-4 w-4 text-primary" />
           </div>
-          <p className="text-sm font-medium text-muted-foreground">Total Avaliados</p>
+          <p className="text-sm font-semibold text-primary/80">Total Avaliados</p>
         </div>
         <p className="text-3xl font-bold">{total}</p>
       </Card>
@@ -49,7 +49,7 @@ const StatsWidgets = ({ entries }: Props) => {
           <div className="p-2 rounded-lg bg-accent/10">
             <Trophy className="h-4 w-4 text-accent" />
           </div>
-          <p className="text-sm font-medium text-muted-foreground">Ranking de Atendentes</p>
+          <p className="text-sm font-semibold text-primary/80">Ranking de Atendentes</p>
         </div>
         <div className="space-y-2 mt-3">
           {ranking.map((r, i) => (
