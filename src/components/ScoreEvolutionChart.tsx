@@ -76,7 +76,7 @@ const ScoreEvolutionChart = ({ entries }: Props) => {
           <div className="p-2 rounded-lg bg-primary/10">
             <TrendingUp className="h-4 w-4 text-primary" />
           </div>
-          <p className="text-sm font-medium text-muted-foreground">Evolução da Nota Média</p>
+          <p className="text-sm font-semibold text-primary/80">Evolução da Nota Média</p>
         </div>
         <ChartContainer config={chartConfig} className="h-[250px] w-full">
           <LineChart data={monthlyData}>
