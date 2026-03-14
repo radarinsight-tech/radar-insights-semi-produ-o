@@ -277,6 +277,10 @@ const Index = () => {
           </div>
           <h1 className="text-xl font-bold text-primary">Radar Insight</h1>
           <div className="ml-auto flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/credit")}>
+              <CreditCard className="h-4 w-4" />
+              Análise de Crédito
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate("/users")}>
               <Users className="h-4 w-4" />
               Usuários
