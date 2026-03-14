@@ -41,6 +41,7 @@ export type Database = {
           company_id: string | null
           created_at: string
           data: string
+          data_avaliacao: string
           full_report: Json | null
           id: string
           nota: number
@@ -58,6 +59,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           data: string
+          data_avaliacao?: string
           full_report?: Json | null
           id?: string
           nota: number
@@ -75,6 +77,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           data?: string
+          data_avaliacao?: string
           full_report?: Json | null
           id?: string
           nota?: number

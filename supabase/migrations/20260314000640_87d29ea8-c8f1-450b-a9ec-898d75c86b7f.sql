@@ -1,0 +1,1 @@
+ALTER TABLE public.evaluations ADD COLUMN data_avaliacao timestamp with time zone NOT NULL DEFAULT now();
