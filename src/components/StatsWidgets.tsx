@@ -39,7 +39,7 @@ const StatsWidgets = ({ entries }: Props) => {
           <div className="p-2 rounded-lg bg-primary/10">
             <Users className="h-4 w-4 text-primary" />
           </div>
-          <p className="text-sm font-medium text-muted-foreground">Total Avaliados</p>
+          <p className="text-sm font-semibold text-primary/80">Total Avaliados</p>
         </div>
         <p className="text-3xl font-bold">{total}</p>
       </Card>
