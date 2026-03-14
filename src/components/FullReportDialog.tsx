@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Download, CheckCircle2, XCircle, MinusCircle } from "lucide-react";
+import jsPDF from "jspdf";
 
 export interface CriterioAvaliacao {
   numero: number;
@@ -40,57 +41,67 @@ const classColor = (c: string) => {
   return "bg-warning text-warning-foreground";
 };
 
-const exportReport = (report: FullReport, protocolo: string) => {
-  const lines: string[] = [];
-  lines.push("═══════════════════════════════════════════════");
-  lines.push("         RADAR INSIGHT — RELATÓRIO COMPLETO");
-  lines.push("═══════════════════════════════════════════════");
-  lines.push("");
-  lines.push(`Protocolo: ${report.protocolo || protocolo}`);
-  lines.push(`Data: ${report.data || "—"}`);
-  lines.push(`Atendente: ${report.atendente || "—"}`);
-  lines.push(`Tipo: ${report.tipo || "—"}`);
-  lines.push(`Atualização Cadastral: ${report.atualizacaoCadastral || "—"}`);
-  lines.push(`Nota Final: ${report.nota?.toFixed(1) || "—"}`);
-  lines.push(`Classificação: ${report.classificacao || "—"}`);
-  lines.push(`Bônus: ${report.bonus ? "Sim" : "Não"}`);
-  lines.push("");
-  lines.push("───────────────────────────────────────────────");
-  lines.push("  CRITÉRIOS DE AVALIAÇÃO");
-  lines.push("───────────────────────────────────────────────");
+const exportReportPdf = (report: FullReport, protocolo: string) => {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const margin = 15;
+  const maxW = pageW - margin * 2;
+  let y = 20;
+
+  const addText = (text: string, size: number, bold = false) => {
+    doc.setFontSize(size);
+    doc.setFont("helvetica", bold ? "bold" : "normal");
+    const lines = doc.splitTextToSize(text, maxW);
+    for (const line of lines) {
+      if (y > 275) { doc.addPage(); y = 20; }
+      doc.text(line, margin, y);
+      y += size * 0.45;
+    }
+  };
+
+  const addGap = (gap = 4) => { y += gap; };
+
+  // Title
+  addText("RADAR INSIGHT — RELATÓRIO COMPLETO", 14, true);
+  addGap(6);
+
+  // Summary
+  addText(`Protocolo: ${report.protocolo || protocolo}`, 10);
+  addText(`Data: ${report.data || "—"}`, 10);
+  addText(`Atendente: ${report.atendente || "—"}`, 10);
+  addText(`Tipo: ${report.tipo || "—"}`, 10);
+  addText(`Atualização Cadastral: ${report.atualizacaoCadastral || "—"}`, 10);
+  addText(`Nota Final: ${report.nota?.toFixed(1) || "—"}`, 10);
+  addText(`Classificação: ${report.classificacao || "—"}`, 10);
+  addText(`Bônus: ${report.bonus ? "Sim" : "Não"}`, 10);
+  addGap(6);
+
+  // Criteria
+  addText("CRITÉRIOS DE AVALIAÇÃO", 12, true);
+  addGap(3);
 
   if (report.criterios) {
     for (const c of report.criterios) {
       const status = !c.noEscopo ? "FORA DO ESCOPO" : c.atendido ? "✓ ATENDIDO" : "✗ NÃO ATENDIDO";
-      lines.push("");
-      lines.push(`${c.numero}. ${c.nome} — ${status}`);
-      lines.push(`   ${c.explicacao}`);
+      addText(`${c.numero}. ${c.nome} — ${status}`, 10, true);
+      addText(c.explicacao, 9);
+      addGap(2);
     }
   }
 
-  lines.push("");
-  lines.push("───────────────────────────────────────────────");
-  lines.push("  PONTOS DE MELHORIA");
-  lines.push("───────────────────────────────────────────────");
+  addGap(4);
+  addText("PONTOS DE MELHORIA", 12, true);
+  addGap(3);
   if (report.pontosMelhoria) {
-    report.pontosMelhoria.forEach((p, i) => lines.push(`${i + 1}. ${p}`));
+    report.pontosMelhoria.forEach((p, i) => addText(`${i + 1}. ${p}`, 9));
   }
 
-  lines.push("");
-  lines.push("───────────────────────────────────────────────");
-  lines.push("  ORIENTAÇÃO FINAL");
-  lines.push("───────────────────────────────────────────────");
-  lines.push(report.orientacaoFinal || "—");
-  lines.push("");
-  lines.push("═══════════════════════════════════════════════");
+  addGap(4);
+  addText("ORIENTAÇÃO FINAL", 12, true);
+  addGap(3);
+  addText(report.orientacaoFinal || "—", 9);
 
-  const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `relatorio_${protocolo}.txt`;
-  a.click();
-  URL.revokeObjectURL(url);
+  doc.save(`relatorio_${protocolo}.pdf`);
 };
 
 const FullReportDialog = ({ open, onOpenChange, report, protocolo }: Props) => {
@@ -110,18 +121,17 @@ const FullReportDialog = ({ open, onOpenChange, report, protocolo }: Props) => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => exportReport(report, protocolo)}
+              onClick={() => exportReportPdf(report, protocolo)}
               className="gap-1.5"
             >
               <Download className="h-4 w-4" />
-              Baixar relatório
+              Baixar avaliação em PDF
             </Button>
           </DialogTitle>
         </DialogHeader>
 
         <ScrollArea className="max-h-[calc(90vh-80px)]">
           <div className="p-6 pt-4 space-y-5">
-            {/* Summary header */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
                 <p className="text-xs text-muted-foreground uppercase">Atendente</p>
@@ -150,7 +160,6 @@ const FullReportDialog = ({ open, onOpenChange, report, protocolo }: Props) => {
 
             <Separator />
 
-            {/* Criteria */}
             <div>
               <h3 className="text-sm font-semibold mb-3">Critérios de Avaliação</h3>
               <div className="space-y-2">
@@ -181,7 +190,6 @@ const FullReportDialog = ({ open, onOpenChange, report, protocolo }: Props) => {
 
             <Separator />
 
-            {/* Pontos de melhoria */}
             {report.pontosMelhoria && report.pontosMelhoria.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold mb-2">Pontos de Melhoria</h3>
@@ -196,7 +204,6 @@ const FullReportDialog = ({ open, onOpenChange, report, protocolo }: Props) => {
               </div>
             )}
 
-            {/* Orientação final */}
             {report.orientacaoFinal && (
               <>
                 <Separator />

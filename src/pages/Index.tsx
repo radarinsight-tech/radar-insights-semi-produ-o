@@ -19,7 +19,7 @@ const Index = () => {
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [filters, setFilters] = useState({ atendente: "todos", periodo: "", tipo: "todos" });
+  const [filters, setFilters] = useState<{ atendente: string; periodo: string; tipo: string; diaExato?: string }>({ atendente: "todos", periodo: "", tipo: "todos" });
   const [protocolSearch, setProtocolSearch] = useState("");
 
   const loadHistory = useCallback(async () => {
@@ -166,7 +166,9 @@ const Index = () => {
       if (protocolSearch && !e.protocolo.toLowerCase().includes(protocolSearch.toLowerCase())) return false;
       if (filters.atendente !== "todos" && e.atendente !== filters.atendente) return false;
       if (filters.tipo !== "todos" && e.tipo !== filters.tipo) return false;
-      if (filters.periodo) {
+      if (filters.diaExato) {
+        if (e.data !== filters.diaExato) return false;
+      } else if (filters.periodo) {
         const [year, month] = filters.periodo.split("-");
         const parts = e.data.split("/");
         if (parts[1] !== month || parts[2] !== year) return false;
