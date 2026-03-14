@@ -143,7 +143,7 @@ const HistoryTable = ({ entries, onRefresh }: Props) => {
             <TableBody>
               {entries.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     Nenhum registro encontrado
                   </TableCell>
                 </TableRow>
@@ -151,6 +151,7 @@ const HistoryTable = ({ entries, onRefresh }: Props) => {
                 entries.map((e) => (
                   <TableRow key={e.id}>
                     <TableCell className="text-sm">{e.data}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{e.data_avaliacao}</TableCell>
                     <TableCell className="text-sm font-medium">{e.protocolo}</TableCell>
                     <TableCell className="text-sm">{e.atendente}</TableCell>
                     <TableCell className="text-sm text-right font-semibold">{e.nota.toFixed(1)}</TableCell>
