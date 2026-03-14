@@ -161,7 +161,7 @@ const FullReportDialog = ({ open, onOpenChange, report, protocolo }: Props) => {
             <Separator />
 
             <div>
-              <h3 className="text-sm font-semibold mb-3">Critérios de Avaliação</h3>
+              <h3 className="text-sm font-bold text-primary/90 mb-3">Critérios de Avaliação</h3>
               <div className="space-y-2">
                 {report.criterios?.map((c) => (
                   <div key={c.numero} className="flex gap-2.5 p-2.5 rounded-lg bg-muted/50">
