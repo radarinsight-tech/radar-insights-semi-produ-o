@@ -37,12 +37,17 @@ const Index = () => {
       (data || []).map((row: any) => ({
         id: row.id,
         data: row.data,
+        data_avaliacao: row.data_avaliacao
+          ? new Date(row.data_avaliacao).toLocaleString("pt-BR")
+          : "",
         protocolo: row.protocolo,
         atendente: row.atendente,
         nota: Number(row.nota),
         classificacao: row.classificacao,
         bonus: row.bonus,
         tipo: row.tipo,
+        atualizacao_cadastral: row.atualizacao_cadastral || "Não",
+        pontos_melhoria: row.pontos_melhoria || [],
         pdf_url: row.pdf_url || undefined,
         full_report: row.full_report || null,
       }))
