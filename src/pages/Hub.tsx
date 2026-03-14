@@ -50,12 +50,12 @@ const Hub = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
             {/* Sucesso do Cliente */}
             <Card
-              className="group relative p-8 cursor-pointer border-2 border-border hover:border-primary/50 transition-all hover:shadow-lg"
+              className="group relative p-8 cursor-pointer border-2 border-border hover:border-blue-400/50 transition-all hover:shadow-lg"
               onClick={() => navigate("/attendance")}
             >
               <div className="flex flex-col items-center gap-4">
-                <div className="p-4 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                  <HeadsetIcon className="h-10 w-10 text-primary" />
+                <div className="p-4 rounded-xl bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
+                  <HeadsetIcon className="h-10 w-10 text-blue-500" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-foreground mb-1">Sucesso do Cliente</h3>
