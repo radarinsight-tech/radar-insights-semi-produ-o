@@ -7,6 +7,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
 import Users from "./pages/Users.tsx";
+import CreditAnalysis from "./pages/CreditAnalysis.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
