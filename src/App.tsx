@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import Hub from "./pages/Hub.tsx";
 import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
 import Users from "./pages/Users.tsx";
@@ -24,15 +25,15 @@ const App = () => (
             path="/"
             element={
               <ProtectedRoute>
-                <Index />
+                <Hub />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/users"
+            path="/attendance"
             element={
               <ProtectedRoute>
-                <Users />
+                <Index />
               </ProtectedRoute>
             }
           />
@@ -41,6 +42,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <CreditAnalysis />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute>
+                <Users />
               </ProtectedRoute>
             }
           />
