@@ -7,7 +7,7 @@ import StatsWidgets from "@/components/StatsWidgets";
 import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { supabase } from "@/integrations/supabase/client";
-import { Radar, LogOut, Users, Search } from "lucide-react";
+import { Radar, LogOut, Users, Search, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -277,6 +277,10 @@ const Index = () => {
           </div>
           <h1 className="text-xl font-bold text-primary">Radar Insight</h1>
           <div className="ml-auto flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/credit")}>
+              <CreditCard className="h-4 w-4" />
+              Análise de Crédito
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate("/users")}>
               <Users className="h-4 w-4" />
               Usuários
