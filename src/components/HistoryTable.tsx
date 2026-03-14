@@ -130,7 +130,8 @@ const HistoryTable = ({ entries, onRefresh }: Props) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Data</TableHead>
+                <TableHead>Data Atendimento</TableHead>
+                <TableHead>Data Avaliação</TableHead>
                 <TableHead>Protocolo</TableHead>
                 <TableHead>Atendente</TableHead>
                 <TableHead className="text-right">Nota</TableHead>
