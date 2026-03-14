@@ -36,12 +36,15 @@ export function generateMockHistory(count = 20): HistoryEntry[] {
     return {
       id: crypto.randomUUID(),
       data: randomDate(3),
+      data_avaliacao: new Date().toLocaleString("pt-BR"),
       protocolo: `ATD-${(1000 + i).toString()}`,
       atendente: atendentes[Math.floor(Math.random() * atendentes.length)],
       nota,
       classificacao: classify(nota),
       bonus: nota >= 9,
       tipo: tipos[Math.floor(Math.random() * tipos.length)],
+      atualizacao_cadastral: "Não",
+      pontos_melhoria: [],
     };
   });
 }
