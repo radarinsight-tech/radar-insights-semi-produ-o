@@ -269,7 +269,7 @@ const Index = () => {
   }, [filters, history, protocolSearch]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" data-module="attendance">
       <header className="border-b border-border bg-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/10">
