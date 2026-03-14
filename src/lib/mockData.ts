@@ -1,12 +1,15 @@
 export interface HistoryEntry {
   id: string;
   data: string;
+  data_avaliacao: string;
   protocolo: string;
   atendente: string;
   nota: number;
   classificacao: string;
   bonus: boolean;
   tipo: string;
+  atualizacao_cadastral: string;
+  pontos_melhoria: string[];
   pdf_url?: string;
   full_report?: Record<string, unknown> | null;
 }

@@ -109,19 +109,6 @@ const Index = () => {
         ...data,
       };
 
-      const analysisResult: AnalysisData = {
-        protocolo: data.protocolo || "Não identificado",
-        atendente: data.atendente || "Não identificado",
-        tipo: data.tipo || "Não identificado",
-        atualizacaoCadastral: data.atualizacaoCadastral || "Não",
-        notaFinal: typeof data.nota === "number" ? data.nota : 0,
-        classificacao: data.classificacao || "Regular",
-        bonus: data.bonus === true,
-        pontosMelhoria: Array.isArray(data.pontosMelhoria) ? data.pontosMelhoria : [],
-      };
-
-      setAnalysis(analysisResult);
-
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user?.id) {
@@ -130,25 +117,36 @@ const Index = () => {
         return;
       }
 
-      const { error: insertError } = await supabase.from("evaluations").insert({
+      const { data: savedRow, error: insertError } = await supabase.from("evaluations").insert({
         data: data.data || new Date().toLocaleDateString("pt-BR"),
-        protocolo: analysisResult.protocolo,
-        atendente: analysisResult.atendente,
-        tipo: analysisResult.tipo,
-        atualizacao_cadastral: analysisResult.atualizacaoCadastral,
-        nota: analysisResult.notaFinal,
-        classificacao: analysisResult.classificacao,
-        bonus: analysisResult.bonus,
-        pontos_melhoria: analysisResult.pontosMelhoria,
+        protocolo: data.protocolo || "Não identificado",
+        atendente: data.atendente || "Não identificado",
+        tipo: data.tipo || "Não identificado",
+        atualizacao_cadastral: data.atualizacaoCadastral || "Não",
+        nota: typeof data.nota === "number" ? data.nota : 0,
+        classificacao: data.classificacao || "Regular",
+        bonus: data.bonus === true,
+        pontos_melhoria: Array.isArray(data.pontosMelhoria) ? data.pontosMelhoria : [],
         user_id: user.id,
         pdf_url: pdfUrl,
         full_report: fullReport as unknown as import("@/integrations/supabase/types").Json,
-      });
+      }).select().single();
 
-      if (insertError) {
+      if (insertError || !savedRow) {
         console.error("Error saving evaluation:", insertError);
-        toast.error("Erro ao salvar avaliação no histórico: " + insertError.message);
+        toast.error("Erro ao salvar avaliação no histórico: " + (insertError?.message || "Erro desconhecido"));
       } else {
+        // Use the saved DB record for the analysis card to ensure consistency
+        setAnalysis({
+          protocolo: savedRow.protocolo,
+          atendente: savedRow.atendente,
+          tipo: savedRow.tipo,
+          atualizacaoCadastral: savedRow.atualizacao_cadastral,
+          notaFinal: Number(savedRow.nota),
+          classificacao: savedRow.classificacao,
+          bonus: savedRow.bonus,
+          pontosMelhoria: savedRow.pontos_melhoria || [],
+        });
         toast.success("Análise concluída e salva!");
         await loadHistory();
       }
