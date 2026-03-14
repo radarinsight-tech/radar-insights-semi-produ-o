@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Download, ExternalLink, FileSearch, Trash2 } from "lucide-react";
+import { Download, FileSearch, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { HistoryEntry } from "@/lib/mockData";
@@ -54,19 +54,6 @@ const handleDownload = async (pdfUrl: string, protocolo: string) => {
   URL.revokeObjectURL(url);
 };
 
-const handleOpen = async (pdfUrl: string) => {
-  const path = extractStoragePath(pdfUrl);
-  if (!path) {
-    toast.error("Caminho do PDF inválido.");
-    return;
-  }
-  const { data, error } = await supabase.storage.from("pdfs").createSignedUrl(path, 300);
-  if (error || !data?.signedUrl) {
-    toast.error("Erro ao gerar link do PDF.");
-    return;
-  }
-  window.open(data.signedUrl, "_blank", "noopener,noreferrer");
-};
 
 const HistoryTable = ({ entries, onRefresh }: Props) => {
   const [selectedReport, setSelectedReport] = useState<FullReport | null>(null);
@@ -172,15 +159,9 @@ const HistoryTable = ({ entries, onRefresh }: Props) => {
                         />
                         <ActionButton
                           icon={Download}
-                          tooltip="Baixar PDF"
+                          tooltip="Baixar PDF do atendimento"
                           disabled={!e.pdf_url}
                           onClick={() => e.pdf_url && handleDownload(e.pdf_url, e.protocolo)}
-                        />
-                        <ActionButton
-                          icon={ExternalLink}
-                          tooltip="Abrir PDF"
-                          disabled={!e.pdf_url}
-                          onClick={() => e.pdf_url && handleOpen(e.pdf_url)}
                         />
                         {isAdmin && (
                           <ActionButton
