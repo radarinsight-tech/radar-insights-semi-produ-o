@@ -49,7 +49,7 @@ const StatsWidgets = ({ entries }: Props) => {
           <div className="p-2 rounded-lg bg-accent/10">
             <Trophy className="h-4 w-4 text-accent" />
           </div>
-          <p className="text-sm font-medium text-muted-foreground">Ranking de Atendentes</p>
+          <p className="text-sm font-semibold text-primary/80">Ranking de Atendentes</p>
         </div>
         <div className="space-y-2 mt-3">
           {ranking.map((r, i) => (

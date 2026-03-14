@@ -208,7 +208,7 @@ const FullReportDialog = ({ open, onOpenChange, report, protocolo }: Props) => {
               <>
                 <Separator />
                 <div>
-                  <h3 className="text-sm font-semibold mb-2">Orientação Final</h3>
+                  <h3 className="text-sm font-bold text-primary/90 mb-2">Orientação Final</h3>
                   <p className="text-sm text-muted-foreground whitespace-pre-line">{report.orientacaoFinal}</p>
                 </div>
               </>

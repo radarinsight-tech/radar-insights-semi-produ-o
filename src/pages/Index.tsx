@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import UploadSection from "@/components/UploadSection";
 import AnalysisResult, { type AnalysisData } from "@/components/AnalysisResult";
 import HistoryTable from "@/components/HistoryTable";
-import Filters from "@/components/Filters";
+import Filters, { type FilterValues } from "@/components/Filters";
 import StatsWidgets from "@/components/StatsWidgets";
 import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
@@ -13,14 +13,40 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import type { HistoryEntry } from "@/lib/mockData";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+/** Parse dd/MM/yyyy to a Date object */
+const parseDateBR = (str: string): Date | null => {
+  const parts = str.split("/");
+  if (parts.length !== 3) return null;
+  const [dd, mm, yyyy] = parts;
+  return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+};
 
 const Index = () => {
   const navigate = useNavigate();
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [filters, setFilters] = useState<{ atendente: string; periodo: string; tipo: string; diaExato?: string }>({ atendente: "todos", periodo: "", tipo: "todos" });
+  const [filters, setFilters] = useState<FilterValues>({
+    atendente: "todos",
+    periodo: "",
+    tipo: "todos",
+  });
   const [protocolSearch, setProtocolSearch] = useState("");
+
+  // Re-evaluation confirmation state
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [duplicateProtocol, setDuplicateProtocol] = useState<string | null>(null);
 
   const loadHistory = useCallback(async () => {
     const { data, error } = await supabase
@@ -63,7 +89,7 @@ const Index = () => {
     navigate("/auth");
   };
 
-  const handleAnalyze = async (file: File) => {
+  const runAnalysis = async (file: File) => {
     setIsAnalyzing(true);
     try {
       const text = await extractTextFromPdf(file);
@@ -71,6 +97,46 @@ const Index = () => {
         toast.error("Não foi possível extrair texto do PDF.");
         setIsAnalyzing(false);
         return;
+      }
+
+      // Check for duplicate protocol before running analysis
+      const protocolMatch = text.match(/(?:protocolo|prot\.?)\s*[:\-]?\s*([A-Za-z0-9]+)/i);
+      const extractedProtocol = protocolMatch?.[1];
+
+      if (extractedProtocol) {
+        const { data: existing } = await supabase
+          .from("evaluations")
+          .select("id")
+          .eq("protocolo", extractedProtocol)
+          .limit(1);
+
+        if (existing && existing.length > 0) {
+          // Show confirmation dialog
+          setPendingFile(file);
+          setDuplicateProtocol(extractedProtocol);
+          setIsAnalyzing(false);
+          return;
+        }
+      }
+
+      await executeAnalysis(file, text);
+    } catch (err) {
+      console.error("Analysis error:", err);
+      toast.error("Erro inesperado ao processar o PDF.");
+      setIsAnalyzing(false);
+    }
+  };
+
+  const executeAnalysis = async (file: File, text?: string) => {
+    setIsAnalyzing(true);
+    try {
+      if (!text) {
+        text = await extractTextFromPdf(file);
+        if (!text.trim()) {
+          toast.error("Não foi possível extrair texto do PDF.");
+          setIsAnalyzing(false);
+          return;
+        }
       }
 
       // Upload PDF to storage
@@ -105,9 +171,7 @@ const Index = () => {
         return;
       }
 
-      const fullReport = {
-        ...data,
-      };
+      const fullReport = { ...data };
 
       const { data: { user } } = await supabase.auth.getUser();
 
@@ -136,7 +200,6 @@ const Index = () => {
         console.error("Error saving evaluation:", insertError);
         toast.error("Erro ao salvar avaliação no histórico: " + (insertError?.message || "Erro desconhecido"));
       } else {
-        // Use the saved DB record for the analysis card to ensure consistency
         setAnalysis({
           protocolo: savedRow.protocolo,
           atendente: savedRow.atendente,
@@ -147,7 +210,9 @@ const Index = () => {
           bonus: savedRow.bonus,
           pontosMelhoria: savedRow.pontos_melhoria || [],
         });
-        toast.success("Análise concluída e salva!");
+        toast.success(duplicateProtocol ? "Reavaliação concluída e salva!" : "Análise concluída e salva!");
+        setDuplicateProtocol(null);
+        setPendingFile(null);
         await loadHistory();
       }
     } catch (err) {
@@ -158,6 +223,18 @@ const Index = () => {
     }
   };
 
+  const handleConfirmReeval = () => {
+    if (pendingFile) {
+      executeAnalysis(pendingFile);
+    }
+  };
+
+  const handleCancelReeval = () => {
+    setPendingFile(null);
+    setDuplicateProtocol(null);
+    toast.info("Análise cancelada.");
+  };
+
   const atendentes = useMemo(() => [...new Set(history.map((e) => e.atendente))].sort(), [history]);
   const tipos = useMemo(() => [...new Set(history.map((e) => e.tipo))].sort(), [history]);
 
@@ -166,13 +243,27 @@ const Index = () => {
       if (protocolSearch && !e.protocolo.toLowerCase().includes(protocolSearch.toLowerCase())) return false;
       if (filters.atendente !== "todos" && e.atendente !== filters.atendente) return false;
       if (filters.tipo !== "todos" && e.tipo !== filters.tipo) return false;
-      if (filters.diaExato) {
-        if (e.data !== filters.diaExato) return false;
+
+      // Date range filter
+      if (filters.periodoInicio && filters.periodoFim) {
+        const entryDate = parseDateBR(e.data);
+        const startDate = parseDateBR(filters.periodoInicio);
+        const endDate = parseDateBR(filters.periodoFim);
+        if (entryDate && startDate && endDate) {
+          if (entryDate < startDate || entryDate > endDate) return false;
+        }
+      } else if (filters.periodoInicio && !filters.periodoFim) {
+        // Only start date selected — show from that date onwards
+        const entryDate = parseDateBR(e.data);
+        const startDate = parseDateBR(filters.periodoInicio);
+        if (entryDate && startDate && entryDate < startDate) return false;
       } else if (filters.periodo) {
+        // Month filter
         const [year, month] = filters.periodo.split("-");
         const parts = e.data.split("/");
-        if (parts[1] !== month || parts[2] !== year) return false;
+        if (parts.length >= 3 && (parts[1] !== month || parts[2] !== year)) return false;
       }
+
       return true;
     });
   }, [filters, history, protocolSearch]);
@@ -184,7 +275,7 @@ const Index = () => {
           <div className="p-2 rounded-lg bg-primary/10">
             <Radar className="h-5 w-5 text-primary" />
           </div>
-          <h1 className="text-xl font-bold">Radar Insight</h1>
+          <h1 className="text-xl font-bold text-primary">Radar Insight</h1>
           <div className="ml-auto flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={() => navigate("/users")}>
               <Users className="h-4 w-4" />
@@ -200,7 +291,7 @@ const Index = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <UploadSection onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} />
+          <UploadSection onAnalyze={runAnalysis} isAnalyzing={isAnalyzing} />
           <AnalysisResult data={analysis} />
         </div>
 
@@ -230,6 +321,26 @@ const Index = () => {
           <StatsWidgets entries={filtered} />
         </div>
       </main>
+
+      {/* Re-evaluation confirmation dialog */}
+      <AlertDialog open={!!duplicateProtocol} onOpenChange={(open) => { if (!open) handleCancelReeval(); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Atendimento já avaliado</AlertDialogTitle>
+            <AlertDialogDescription>
+              Este atendimento (protocolo <strong>{duplicateProtocol}</strong>) já foi avaliado anteriormente. Deseja reavaliar?
+              <br />
+              <span className="text-xs text-muted-foreground mt-1 block">
+                Uma nova avaliação será criada, preservando o histórico anterior.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelReeval}>Não</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmReeval}>Sim, reavaliar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -25,7 +25,7 @@ const UploadSection = ({ onAnalyze, isAnalyzing }: UploadSectionProps) => {
 
   return (
     <Card className="p-6">
-      <h2 className="text-lg font-semibold mb-4">Upload de Atendimento</h2>
+      <h2 className="text-lg font-bold text-primary mb-4">Upload de Atendimento</h2>
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
