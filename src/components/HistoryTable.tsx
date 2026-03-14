@@ -3,11 +3,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Download, ExternalLink, FileSearch, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { HistoryEntry } from "@/lib/mockData";
 import FullReportDialog, { type FullReport } from "@/components/FullReportDialog";
+import ActionButton from "@/components/ActionButton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,7 +65,7 @@ const handleOpen = async (pdfUrl: string) => {
     toast.error("Erro ao gerar link do PDF.");
     return;
   }
-  window.open(data.signedUrl, "_blank");
+  window.open(data.signedUrl, "_blank", "noopener,noreferrer");
 };
 
 const HistoryTable = ({ entries, onRefresh }: Props) => {
@@ -165,45 +165,30 @@ const HistoryTable = ({ entries, onRefresh }: Props) => {
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="inline-flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          title="Ver avaliação completa"
+                        <ActionButton
+                          icon={FileSearch}
+                          tooltip="Ver avaliação completa"
                           onClick={() => openReport(e)}
-                        >
-                          <FileSearch className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          title="Baixar PDF"
+                        />
+                        <ActionButton
+                          icon={Download}
+                          tooltip="Baixar PDF"
                           disabled={!e.pdf_url}
                           onClick={() => e.pdf_url && handleDownload(e.pdf_url, e.protocolo)}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          title="Abrir PDF"
+                        />
+                        <ActionButton
+                          icon={ExternalLink}
+                          tooltip="Abrir PDF"
                           disabled={!e.pdf_url}
                           onClick={() => e.pdf_url && handleOpen(e.pdf_url)}
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
+                        />
                         {isAdmin && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive hover:text-destructive"
-                            title="Excluir avaliação"
+                          <ActionButton
+                            icon={Trash2}
+                            tooltip="Excluir avaliação"
+                            destructive
                             onClick={() => setDeleteTarget(e)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          />
                         )}
                       </div>
                     </TableCell>

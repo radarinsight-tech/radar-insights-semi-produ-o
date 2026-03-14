@@ -19,7 +19,7 @@ const Index = () => {
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [filters, setFilters] = useState({ atendente: "todos", periodo: "", tipo: "todos" });
+  const [filters, setFilters] = useState({ atendente: "todos", periodo: "", tipo: "todos", diaExato: undefined as string | undefined });
   const [protocolSearch, setProtocolSearch] = useState("");
 
   const loadHistory = useCallback(async () => {
