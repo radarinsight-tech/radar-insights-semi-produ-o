@@ -29,7 +29,7 @@ const StatsWidgets = ({ entries }: Props) => {
           <div className="p-2 rounded-lg bg-primary/10">
             <BarChart3 className="h-4 w-4 text-primary" />
           </div>
-          <p className="text-sm font-medium text-muted-foreground">Média da Equipe</p>
+          <p className="text-sm font-semibold text-primary/80">Média da Equipe</p>
         </div>
         <p className="text-3xl font-bold">{media.toFixed(1)}</p>
       </Card>
