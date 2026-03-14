@@ -7,7 +7,7 @@ import StatsWidgets from "@/components/StatsWidgets";
 import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { supabase } from "@/integrations/supabase/client";
-import { Radar, LogOut, Users, Search, CreditCard } from "lucide-react";
+import { Radar, LogOut, Users, Search, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
