@@ -54,19 +54,6 @@ const handleDownload = async (pdfUrl: string, protocolo: string) => {
   URL.revokeObjectURL(url);
 };
 
-const handleOpen = async (pdfUrl: string) => {
-  const path = extractStoragePath(pdfUrl);
-  if (!path) {
-    toast.error("Caminho do PDF inválido.");
-    return;
-  }
-  const { data, error } = await supabase.storage.from("pdfs").createSignedUrl(path, 300);
-  if (error || !data?.signedUrl) {
-    toast.error("Erro ao gerar link do PDF.");
-    return;
-  }
-  window.open(data.signedUrl, "_blank", "noopener,noreferrer");
-};
 
 const HistoryTable = ({ entries, onRefresh }: Props) => {
   const [selectedReport, setSelectedReport] = useState<FullReport | null>(null);
