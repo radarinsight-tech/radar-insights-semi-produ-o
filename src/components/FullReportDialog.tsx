@@ -192,7 +192,7 @@ const FullReportDialog = ({ open, onOpenChange, report, protocolo }: Props) => {
 
             {report.pontosMelhoria && report.pontosMelhoria.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold mb-2">Pontos de Melhoria</h3>
+                <h3 className="text-sm font-bold text-primary/90 mb-2">Pontos de Melhoria</h3>
                 <ul className="space-y-1.5">
                   {report.pontosMelhoria.map((p, i) => (
                     <li key={i} className="text-sm flex gap-2">
