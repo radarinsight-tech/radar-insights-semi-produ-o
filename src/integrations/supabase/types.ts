@@ -38,30 +38,45 @@ export type Database = {
           cpf_cnpj: string
           created_at: string
           decisao_final: string | null
+          doc_type: string
           id: string
           nome: string | null
+          observacoes: string | null
+          regra_aplicada: string | null
           resultado: Json | null
+          status: string
           user_id: string
+          user_name: string | null
         }
         Insert: {
           company_id?: string | null
           cpf_cnpj: string
           created_at?: string
           decisao_final?: string | null
+          doc_type?: string
           id?: string
           nome?: string | null
+          observacoes?: string | null
+          regra_aplicada?: string | null
           resultado?: Json | null
+          status?: string
           user_id: string
+          user_name?: string | null
         }
         Update: {
           company_id?: string | null
           cpf_cnpj?: string
           created_at?: string
           decisao_final?: string | null
+          doc_type?: string
           id?: string
           nome?: string | null
+          observacoes?: string | null
+          regra_aplicada?: string | null
           resultado?: Json | null
+          status?: string
           user_id?: string
+          user_name?: string | null
         }
         Relationships: [
           {

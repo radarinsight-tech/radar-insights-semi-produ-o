@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import CreditUploadSection from "@/components/credit/CreditUploadSection";
 import CreditAnalysisResult, { type CreditAnalysisData } from "@/components/credit/CreditAnalysisResult";
+import CreditHistoryTable from "@/components/credit/CreditHistoryTable";
 import { extractCpfCnpj } from "@/lib/cpfCnpjExtractor";
 import {
   AlertDialog,
@@ -22,9 +23,11 @@ const CreditAnalysis = () => {
   const navigate = useNavigate();
   const [analysis, setAnalysis] = useState<CreditAnalysisData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   // Duplicate check state
   const [pendingText, setPendingText] = useState<string | null>(null);
+  const [isDuplicate, setIsDuplicate] = useState(false);
   const [duplicateInfo, setDuplicateInfo] = useState<{
     cpfCnpj: string;
     type: string;
@@ -38,7 +41,7 @@ const CreditAnalysis = () => {
     navigate("/auth");
   };
 
-  const runAnalysis = async (text: string) => {
+  const runAnalysis = async (text: string, isReanalysis: boolean) => {
     setIsAnalyzing(true);
     try {
       const { data, error } = await supabase.functions.invoke("analyze-credit", {
@@ -60,17 +63,31 @@ const CreditAnalysis = () => {
       setAnalysis(result);
       toast.success("Análise de crédito concluída!");
 
-      // Save to history
+      // Save to history with enriched data
       const cpfCnpjInfo = extractCpfCnpj(text);
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // Get user name from profiles
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .maybeSingle();
+
         await supabase.from("credit_analyses" as any).insert({
           user_id: user.id,
           cpf_cnpj: cpfCnpjInfo?.value || result.cpf?.replace(/\D/g, "") || "unknown",
+          doc_type: cpfCnpjInfo?.type || "CPF",
           nome: result.nome || null,
+          user_name: profile?.full_name || user.email || null,
           decisao_final: result.decisaoFinal || null,
+          regra_aplicada: result.regraAplicada || null,
+          observacoes: result.observacoes || null,
+          status: isReanalysis ? "reanalise" : "nova_consulta",
           resultado: result as any,
         } as any);
+
+        setHistoryRefresh((prev) => prev + 1);
       }
     } catch (err) {
       console.error("Analysis error:", err);
@@ -81,12 +98,10 @@ const CreditAnalysis = () => {
   };
 
   const handleAnalyze = async (text: string) => {
-    // Extract CPF/CNPJ from text
     const cpfCnpjInfo = extractCpfCnpj(text);
 
     if (!cpfCnpjInfo) {
-      // No CPF/CNPJ found, proceed directly
-      await runAnalysis(text);
+      await runAnalysis(text, false);
       return;
     }
 
@@ -107,23 +122,26 @@ const CreditAnalysis = () => {
         lastDate,
         lastNome: existing[0].nome,
       });
+      setIsDuplicate(true);
       setPendingText(text);
       return;
     }
 
-    await runAnalysis(text);
+    await runAnalysis(text, false);
   };
 
   const handleConfirmDuplicate = async () => {
     setDuplicateInfo(null);
+    setIsDuplicate(false);
     if (pendingText) {
-      await runAnalysis(pendingText);
+      await runAnalysis(pendingText, true);
       setPendingText(null);
     }
   };
 
   const handleCancelDuplicate = () => {
     setDuplicateInfo(null);
+    setIsDuplicate(false);
     setPendingText(null);
   };
 
@@ -157,11 +175,14 @@ const CreditAnalysis = () => {
       </header>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto p-6">
+      <main className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <CreditUploadSection onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} />
           <CreditAnalysisResult data={analysis} />
         </div>
+
+        {/* History */}
+        <CreditHistoryTable refreshTrigger={historyRefresh} />
       </main>
 
       {/* Duplicate confirmation dialog */}
