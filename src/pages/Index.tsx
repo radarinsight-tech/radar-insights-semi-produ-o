@@ -273,9 +273,7 @@ const Index = () => {
     <div className="min-h-screen bg-background" data-module="attendance">
       <header className="border-b border-border bg-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <Radar className="h-5 w-5 text-primary" />
-          </div>
+          <img src={logoSymbol} alt="Radar Insight" className="h-8 w-8 rounded-lg object-contain" />
           <h1 className="text-xl font-bold text-foreground">
             Radar Insight — <span className="text-primary">Sucesso do Cliente</span>
           </h1>

@@ -33,11 +33,8 @@ const Hub = () => {
       {/* Main */}
       <main className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="max-w-3xl w-full text-center">
-          {/* Logo placeholder */}
           <div className="mb-6 flex justify-center">
-            <div className="p-4 rounded-2xl bg-primary/10">
-              <Radar className="h-12 w-12 text-primary" />
-            </div>
+            <img src={logoFull} alt="Radar Insight" className="h-28 object-contain" />
           </div>
 
           <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
