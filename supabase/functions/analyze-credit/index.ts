@@ -5,38 +5,38 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `Você é o Radar Insight — Análise de Crédito, um sistema especialista em análise de risco de crédito para pessoas físicas com base em consultas SPC/Serasa.
+const SYSTEM_PROMPT = `Você é o Radar Insight — Análise de Crédito, um sistema especialista em análise de risco de crédito para pessoas físicas e jurídicas com base em consultas SPC/Serasa.
 
-Você receberá o texto extraído de uma consulta de CPF (PDF ou imagem digitalizada). Analise todas as informações disponíveis e retorne um parecer técnico completo.
+Você receberá o texto extraído de uma consulta de CPF ou CNPJ (PDF ou imagem digitalizada). Analise todas as informações disponíveis e retorne um parecer técnico completo.
 
 Regras de análise:
 
-1. Identifique o nome completo, CPF e idade/data de nascimento do consultado.
+1. Identifique o nome completo, CPF ou CNPJ, e idade/data de nascimento do consultado.
 
-2. Conte a quantidade total de registros negativos (dívidas, protestos, cheques devolvidos, etc.).
+2. Conte a quantidade total de registros negativos (dívidas, protestos, cheques devolvidos, pendências financeiras, ações judiciais, etc.).
 
 3. Liste todos os credores identificados no documento.
 
 4. Classifique os credores por tipo:
-   - Financeiro (bancos, financeiras, cartões)
-   - Comércio (lojas, varejo)
-   - Serviços (telecomunicações, energia, água)
-   - Outros
+   - Financeiro (bancos, financeiras, cartões de crédito)
+   - Comércio (lojas, varejo, e-commerce)
+   - Serviços (telecomunicações, energia, água, gás, internet)
+   - Outros (qualquer credor que não se encaixe nas categorias acima)
 
-5. Aplique a seguinte regra de decisão:
-   - Se não há registros negativos: APROVADO
-   - Se há apenas 1 registro negativo de valor baixo (até R$ 500): APROVADO COM RESSALVA
-   - Se há 2 ou mais registros negativos OU valor total acima de R$ 1.000: REPROVADO
-   - Se há protestos ou cheques devolvidos: REPROVADO
-   - Adapte conforme o contexto do documento
+5. Aplique a seguinte regra de decisão (Decisão Radar Insight):
+   - ISENTAR: se não há nenhum registro negativo ativo, sem protestos, sem pendências. CPF/CNPJ limpo.
+   - COBRAR: se há registros negativos de baixo risco ou valor controlado. O cliente pode prosseguir, mas deve pagar uma taxa de risco. Informe o valor sugerido da taxa quando aplicável.
+   - REPROVAR: se há múltiplos registros negativos, valor alto de dívidas, protestos ativos, cheques devolvidos ou perfil de alto risco.
+   - ANALISAR MANUALMENTE: se o documento apresenta informações ambíguas, incompletas, contraditórias ou que exigem avaliação humana para decisão segura.
 
-6. Forneça uma orientação operacional clara sobre como proceder.
+6. Forneça uma orientação operacional clara sobre como o operador deve proceder com base na decisão.
 
-7. Adicione observações relevantes sobre o perfil de crédito.
+7. Adicione observações relevantes sobre o perfil de crédito que possam ajudar na tomada de decisão.
 
-8. Gere um resultado rápido em uma frase curta e direta.
+8. Gere um resultado rápido em uma frase curta e direta que resuma a decisão.
 
-Se alguma informação não puder ser identificada no documento, use "Não identificado".`;
+Se alguma informação não puder ser identificada no documento, use exatamente: "Não identificado no documento".
+Nunca invente dados. Use apenas o que está presente no documento.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -70,22 +70,22 @@ serve(async (req) => {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Analise a seguinte consulta de CPF:\n\n${text}` },
+          { role: "user", content: `Analise a seguinte consulta de CPF/CNPJ:\n\n${text}` },
         ],
         tools: [
           {
             type: "function",
             function: {
               name: "retornar_analise_credito",
-              description: "Retorna o resultado completo da análise de crédito do CPF consultado",
+              description: "Retorna o resultado completo da análise de crédito do CPF/CNPJ consultado",
               parameters: {
                 type: "object",
                 properties: {
-                  nome: { type: "string", description: "Nome completo do consultado" },
-                  cpf: { type: "string", description: "CPF do consultado" },
-                  idade: { type: "string", description: "Idade ou data de nascimento" },
-                  quantidadeRegistrosNegativos: { type: "number", description: "Quantidade total de registros negativos" },
-                  valorTotalDividas: { type: "string", description: "Valor total das dívidas encontradas" },
+                  nome: { type: "string", description: "Nome completo do consultado. Se não identificado, usar 'Não identificado no documento'" },
+                  cpf: { type: "string", description: "CPF ou CNPJ do consultado. Se não identificado, usar 'Não identificado no documento'" },
+                  idade: { type: "string", description: "Idade ou data de nascimento. Se não identificado, usar 'Não identificado no documento'" },
+                  quantidadeRegistrosNegativos: { type: "number", description: "Quantidade total de registros negativos encontrados" },
+                  valorTotalDividas: { type: "string", description: "Valor total das dívidas encontradas em formato monetário (ex: R$ 1.500,00). Se não identificado, usar 'Não identificado no documento'" },
                   credores: {
                     type: "array",
                     items: {
@@ -98,11 +98,16 @@ serve(async (req) => {
                       required: ["nome", "tipo", "valor"],
                       additionalProperties: false,
                     },
-                    description: "Lista de credores identificados",
+                    description: "Lista de credores identificados no documento",
                   },
-                  regraAplicada: { type: "string", description: "Regra de decisão aplicada com explicação" },
-                  decisaoFinal: { type: "string", enum: ["APROVADO", "APROVADO COM RESSALVA", "REPROVADO"], description: "Decisão final da análise" },
-                  orientacaoOperacional: { type: "string", description: "Orientação operacional sobre como proceder" },
+                  regraAplicada: { type: "string", description: "Explicação detalhada da regra de decisão que foi aplicada" },
+                  decisaoFinal: {
+                    type: "string",
+                    enum: ["ISENTAR", "COBRAR", "REPROVAR", "ANALISAR MANUALMENTE"],
+                    description: "Decisão Radar Insight: ISENTAR (sem restrições), COBRAR (com taxa de risco), REPROVAR (alto risco), ANALISAR MANUALMENTE (requer avaliação humana)",
+                  },
+                  valorTaxa: { type: "string", description: "Valor sugerido da taxa de risco quando a decisão for COBRAR. Deixar vazio para outras decisões." },
+                  orientacaoOperacional: { type: "string", description: "Orientação clara sobre como o operador deve proceder" },
                   observacoes: { type: "string", description: "Observações relevantes sobre o perfil de crédito" },
                   resultadoRapido: { type: "string", description: "Resultado rápido em uma frase curta e direta" },
                 },
@@ -141,7 +146,7 @@ serve(async (req) => {
     const data = await response.json();
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
-      return new Response(JSON.stringify({ error: "Resposta inválida da IA" }), {
+      return new Response(JSON.stringify({ error: "Resposta inválida da IA. Não foi possível concluir a análise." }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

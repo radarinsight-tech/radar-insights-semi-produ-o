@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileSearch, ShieldCheck, ShieldAlert, ShieldX, AlertTriangle, User, CreditCard, Building2, MessageSquare, Lightbulb } from "lucide-react";
+import { FileSearch, ShieldCheck, ShieldAlert, ShieldX, AlertTriangle, User, CreditCard, Building2, MessageSquare, Lightbulb, CircleDollarSign, Search } from "lucide-react";
 
 export interface CreditCredor {
   nome: string;
@@ -16,7 +16,8 @@ export interface CreditAnalysisData {
   valorTotalDividas: string;
   credores: CreditCredor[];
   regraAplicada: string;
-  decisaoFinal: "APROVADO" | "APROVADO COM RESSALVA" | "REPROVADO";
+  decisaoFinal: "ISENTAR" | "COBRAR" | "REPROVAR" | "ANALISAR MANUALMENTE";
+  valorTaxa?: string;
   orientacaoOperacional: string;
   observacoes: string;
   resultadoRapido: string;
@@ -26,27 +27,45 @@ interface Props {
   data: CreditAnalysisData | null;
 }
 
-const decisionConfig = {
-  "APROVADO": {
+const decisionConfig: Record<string, {
+  icon: typeof ShieldCheck;
+  bg: string;
+  border: string;
+  text: string;
+  badge: string;
+  label: string;
+}> = {
+  "ISENTAR": {
     icon: ShieldCheck,
     bg: "bg-accent/10",
     border: "border-accent",
     text: "text-accent",
     badge: "bg-accent text-accent-foreground",
+    label: "ISENTAR",
   },
-  "APROVADO COM RESSALVA": {
-    icon: ShieldAlert,
+  "COBRAR": {
+    icon: CircleDollarSign,
     bg: "bg-warning/10",
     border: "border-warning",
     text: "text-warning",
     badge: "bg-warning text-warning-foreground",
+    label: "COBRAR",
   },
-  "REPROVADO": {
+  "REPROVAR": {
     icon: ShieldX,
     bg: "bg-destructive/10",
     border: "border-destructive",
     text: "text-destructive",
     badge: "bg-destructive text-destructive-foreground",
+    label: "REPROVAR",
+  },
+  "ANALISAR MANUALMENTE": {
+    icon: Search,
+    bg: "bg-primary/10",
+    border: "border-primary",
+    text: "text-primary",
+    badge: "bg-primary text-primary-foreground",
+    label: "ANALISAR MANUALMENTE",
   },
 };
 
@@ -78,7 +97,7 @@ const CreditAnalysisResult = ({ data }: Props) => {
     );
   }
 
-  const config = decisionConfig[data.decisaoFinal] || decisionConfig["REPROVADO"];
+  const config = decisionConfig[data.decisaoFinal] || decisionConfig["REPROVAR"];
   const DecisionIcon = config.icon;
 
   return (
@@ -90,8 +109,13 @@ const CreditAnalysisResult = ({ data }: Props) => {
         <div className="flex items-center gap-3 mb-2">
           <DecisionIcon className={`h-7 w-7 ${config.text}`} />
           <Badge className={`text-sm px-3 py-1 ${config.badge}`}>
-            {data.decisaoFinal}
+            {config.label}
           </Badge>
+          {data.decisaoFinal === "COBRAR" && data.valorTaxa && (
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              Taxa: {data.valorTaxa}
+            </Badge>
+          )}
         </div>
         <p className={`text-sm font-semibold ${config.text}`}>{data.resultadoRapido}</p>
       </div>
@@ -108,7 +132,7 @@ const CreditAnalysisResult = ({ data }: Props) => {
         <div className="flex items-start gap-2">
           <CreditCard className="h-4 w-4 text-primary mt-0.5 shrink-0" />
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">CPF</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">CPF/CNPJ</p>
             <p className="text-sm font-medium mt-0.5">{data.cpf}</p>
           </div>
         </div>
