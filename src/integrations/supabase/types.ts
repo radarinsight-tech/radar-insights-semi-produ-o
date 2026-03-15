@@ -106,6 +106,115 @@ export type Database = {
           },
         ]
       }
+      document_analyses: {
+        Row: {
+          cpf_cnpj: string
+          created_at: string
+          credit_analysis_id: string | null
+          decisao_documental: string
+          id: string
+          motivo: string | null
+          nome: string | null
+          observacao: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          cpf_cnpj: string
+          created_at?: string
+          credit_analysis_id?: string | null
+          decisao_documental?: string
+          id?: string
+          motivo?: string | null
+          nome?: string | null
+          observacao?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          cpf_cnpj?: string
+          created_at?: string
+          credit_analysis_id?: string | null
+          decisao_documental?: string
+          id?: string
+          motivo?: string | null
+          nome?: string | null
+          observacao?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_analyses_credit_analysis_id_fkey"
+            columns: ["credit_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "credit_analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_items: {
+        Row: {
+          cpf_confere: boolean
+          created_at: string
+          document_analysis_id: string
+          documento_recebido: boolean
+          endereco_confere: boolean
+          file_name: string | null
+          file_url: string | null
+          id: string
+          legivel: boolean
+          nome_confere: boolean
+          observacao: string | null
+          tipo: string
+          valido: boolean
+        }
+        Insert: {
+          cpf_confere?: boolean
+          created_at?: string
+          document_analysis_id: string
+          documento_recebido?: boolean
+          endereco_confere?: boolean
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          legivel?: boolean
+          nome_confere?: boolean
+          observacao?: string | null
+          tipo: string
+          valido?: boolean
+        }
+        Update: {
+          cpf_confere?: boolean
+          created_at?: string
+          document_analysis_id?: string
+          documento_recebido?: boolean
+          endereco_confere?: boolean
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          legivel?: boolean
+          nome_confere?: boolean
+          observacao?: string | null
+          tipo?: string
+          valido?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_items_document_analysis_id_fkey"
+            columns: ["document_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "document_analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evaluations: {
         Row: {
           atendente: string
