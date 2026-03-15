@@ -182,16 +182,21 @@ const Index = () => {
         return;
       }
 
+      // Map new audit fields to DB columns
+      const atualizacaoCadastral = data.bonusOperacional?.atualizacaoCadastral || "NÃO";
+      const notaFinal = typeof data.notaFinal === "number" ? data.notaFinal : 0;
+      const bonusQualidade = typeof data.bonusQualidade === "number" ? data.bonusQualidade : 0;
+
       const { data: savedRow, error: insertError } = await supabase.from("evaluations").insert({
         data: data.data || new Date().toLocaleDateString("pt-BR"),
         protocolo: data.protocolo || "Não identificado",
         atendente: data.atendente || "Não identificado",
         tipo: data.tipo || "Não identificado",
-        atualizacao_cadastral: data.atualizacaoCadastral || "Não",
-        nota: typeof data.nota === "number" ? data.nota : 0,
-        classificacao: data.classificacao || "Regular",
-        bonus: data.bonus === true,
-        pontos_melhoria: Array.isArray(data.pontosMelhoria) ? data.pontosMelhoria : [],
+        atualizacao_cadastral: atualizacaoCadastral,
+        nota: notaFinal,
+        classificacao: data.classificacao || "Abaixo do esperado",
+        bonus: bonusQualidade >= 70,
+        pontos_melhoria: Array.isArray(data.mentoria) ? data.mentoria : [],
         user_id: user.id,
         pdf_url: pdfUrl,
         full_report: fullReport as unknown as import("@/integrations/supabase/types").Json,
@@ -209,7 +214,12 @@ const Index = () => {
           notaFinal: Number(savedRow.nota),
           classificacao: savedRow.classificacao,
           bonus: savedRow.bonus,
+          bonusQualidade: bonusQualidade,
           pontosMelhoria: savedRow.pontos_melhoria || [],
+          impeditivo: data.impeditivo === true,
+          motivoImpeditivo: data.motivoImpeditivo,
+          pontosObtidos: data.pontosObtidos,
+          pontosPossiveis: data.pontosPossiveis,
         });
         toast.success(duplicateProtocol ? "Reavaliação concluída e salva!" : "Análise concluída e salva!");
         setDuplicateProtocol(null);
