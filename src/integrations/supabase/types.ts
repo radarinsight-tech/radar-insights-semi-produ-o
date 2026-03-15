@@ -32,6 +32,47 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_analyses: {
+        Row: {
+          company_id: string | null
+          cpf_cnpj: string
+          created_at: string
+          decisao_final: string | null
+          id: string
+          nome: string | null
+          resultado: Json | null
+          user_id: string
+        }
+        Insert: {
+          company_id?: string | null
+          cpf_cnpj: string
+          created_at?: string
+          decisao_final?: string | null
+          id?: string
+          nome?: string | null
+          resultado?: Json | null
+          user_id: string
+        }
+        Update: {
+          company_id?: string | null
+          cpf_cnpj?: string
+          created_at?: string
+          decisao_final?: string | null
+          id?: string
+          nome?: string | null
+          resultado?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_analyses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evaluations: {
         Row: {
           atendente: string
