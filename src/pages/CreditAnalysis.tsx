@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Radar, LogOut, ArrowLeft } from "lucide-react";
+import { LogOut, ArrowLeft } from "lucide-react";
+import logoSymbol from "@/assets/logo-symbol.png";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -151,9 +152,7 @@ const CreditAnalysis = () => {
       <header className="border-b border-border bg-card px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Radar className="h-6 w-6 text-primary" />
-            </div>
+            <img src={logoSymbol} alt="Radar Insight" className="h-8 w-8 rounded-lg object-contain" />
             <div>
               <h1 className="text-xl font-bold text-foreground">
                 Radar Insight — <span className="text-primary">Análise de Crédito</span>
