@@ -1,8 +1,10 @@
 import { useNavigate } from "react-router-dom";
-import { Radar, LogOut, HeadsetIcon, CreditCard } from "lucide-react";
+import { LogOut, HeadsetIcon, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import logoSymbol from "@/assets/logo-symbol.png";
+import logoFull from "@/assets/logo-full.png";
 
 const Hub = () => {
   const navigate = useNavigate();
