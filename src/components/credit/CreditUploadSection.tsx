@@ -2,8 +2,9 @@ import { useState, useRef } from "react";
 import { Upload, FileText, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { extractTextFromPdf } from "@/lib/pdfExtractor";
+import { extractTextFromPdf, renderPdfPagesToImages } from "@/lib/pdfExtractor";
 import { extractTextFromImage } from "@/lib/imageExtractor";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface CreditUploadSectionProps {
@@ -44,19 +45,51 @@ const CreditUploadSection = ({ onAnalyze, isAnalyzing }: CreditUploadSectionProp
     }
   };
 
+  const ocrFromDataUrl = async (dataUrl: string): Promise<string> => {
+    const { data, error } = await supabase.functions.invoke("ocr-image", {
+      body: { imageDataUrl: dataUrl },
+    });
+    if (error) {
+      console.error("OCR error:", error);
+      throw new Error("Erro ao extrair texto via OCR");
+    }
+    return data?.text || "";
+  };
+
   const handleAnalyze = async () => {
     if (!file) return;
 
     try {
-      let text: string;
+      let text = "";
+
       if (file.type === "application/pdf") {
+        // Step 1: Try native text extraction
         text = await extractTextFromPdf(file);
+
+        // Step 2: If no meaningful text found, fallback to OCR via page rendering
+        if (!text.trim() || text.trim().length < 30) {
+          console.log("PDF has no selectable text, falling back to OCR...");
+          toast.info("PDF escaneado detectado. Aplicando OCR...");
+          
+          const pageImages = await renderPdfPagesToImages(file);
+          const ocrResults: string[] = [];
+          
+          for (const dataUrl of pageImages) {
+            const pageText = await ocrFromDataUrl(dataUrl);
+            if (pageText.trim()) {
+              ocrResults.push(pageText);
+            }
+          }
+          
+          text = ocrResults.join("\n\n");
+        }
       } else {
+        // Image file — always use OCR
         text = await extractTextFromImage(file);
       }
 
       if (!text.trim()) {
-        toast.error("Não foi possível extrair texto do arquivo.");
+        toast.error("Não foi possível extrair texto do arquivo. Verifique se o documento é legível.");
         return;
       }
 
