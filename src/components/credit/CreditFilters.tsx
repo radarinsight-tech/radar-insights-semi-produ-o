@@ -102,9 +102,10 @@ const CreditFilters = ({ usuarios, filters, onChange }: Props) => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todas</SelectItem>
-            <SelectItem value="APROVADO">Aprovado</SelectItem>
-            <SelectItem value="APROVADO COM RESSALVA">Aprovado com Ressalva</SelectItem>
-            <SelectItem value="REPROVADO">Reprovado</SelectItem>
+            <SelectItem value="ISENTAR">Isentar</SelectItem>
+            <SelectItem value="COBRAR">Cobrar</SelectItem>
+            <SelectItem value="REPROVAR">Reprovar</SelectItem>
+            <SelectItem value="ANALISAR MANUALMENTE">Análise Manual</SelectItem>
           </SelectContent>
         </Select>
       </div>
