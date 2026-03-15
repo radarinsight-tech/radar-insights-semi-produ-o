@@ -36,22 +36,35 @@ interface CreditHistoryEntry {
   resultado: CreditAnalysisData | null;
 }
 
+const normalizeFaixa = (d: string | null): string => {
+  if (!d) return "";
+  const upper = d.toUpperCase().trim();
+  if (upper === "ISENTAR" || upper === "ISENTA") return "ISENTAR";
+  if (upper === "TAXA_R$100" || upper === "IMPOSTO_R$100") return "TAXA_R$100";
+  if (upper === "TAXA_R$200" || upper === "IMPOSTO_R$200") return "TAXA_R$200";
+  if (upper === "TAXA_R$300" || upper === "IMPOSTO_R$300") return "TAXA_R$300";
+  if (upper === "TAXA_R$400" || upper === "IMPOSTO_R$400") return "TAXA_R$400";
+  if (upper === "TAXA_R$1000" || upper === "IMPOSTO_R$1000") return "TAXA_R$1000";
+  return "";
+};
+
 const faixaBadge = (d: string | null) => {
-  switch (d) {
+  const faixa = normalizeFaixa(d);
+  switch (faixa) {
     case "ISENTAR":
       return <Badge className="bg-accent text-accent-foreground">Isenção</Badge>;
     case "TAXA_R$100":
-      return <Badge className="bg-warning/80 text-warning-foreground">R$ 100</Badge>;
+      return <Badge className="bg-warning/80 text-warning-foreground">R$ 100,00</Badge>;
     case "TAXA_R$200":
-      return <Badge className="bg-warning text-warning-foreground">R$ 200</Badge>;
+      return <Badge className="bg-warning text-warning-foreground">R$ 200,00</Badge>;
     case "TAXA_R$300":
-      return <Badge className="bg-destructive/80 text-destructive-foreground">R$ 300</Badge>;
+      return <Badge className="bg-destructive/80 text-destructive-foreground">R$ 300,00</Badge>;
     case "TAXA_R$400":
-      return <Badge className="bg-destructive text-destructive-foreground">R$ 400</Badge>;
+      return <Badge className="bg-destructive text-destructive-foreground">R$ 400,00</Badge>;
     case "TAXA_R$1000":
-      return <Badge className="bg-destructive text-destructive-foreground">R$ 1.000</Badge>;
+      return <Badge className="bg-destructive text-destructive-foreground">R$ 1.000,00</Badge>;
     default:
-      return <Badge variant="outline">—</Badge>;
+      return <Badge variant="outline">Sem faixa definida</Badge>;
   }
 };
 
