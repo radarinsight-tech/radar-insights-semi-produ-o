@@ -38,12 +38,14 @@ interface CreditHistoryEntry {
 
 const decisionBadge = (d: string | null) => {
   switch (d) {
-    case "APROVADO":
-      return <Badge className="bg-accent text-accent-foreground">Aprovado</Badge>;
-    case "APROVADO COM RESSALVA":
-      return <Badge className="bg-warning text-warning-foreground">Com Ressalva</Badge>;
-    case "REPROVADO":
-      return <Badge className="bg-destructive text-destructive-foreground">Reprovado</Badge>;
+    case "ISENTAR":
+      return <Badge className="bg-accent text-accent-foreground">Isentar</Badge>;
+    case "COBRAR":
+      return <Badge className="bg-warning text-warning-foreground">Cobrar</Badge>;
+    case "REPROVAR":
+      return <Badge className="bg-destructive text-destructive-foreground">Reprovar</Badge>;
+    case "ANALISAR MANUALMENTE":
+      return <Badge className="bg-primary text-primary-foreground">Análise Manual</Badge>;
     default:
       return <Badge variant="outline">—</Badge>;
   }
