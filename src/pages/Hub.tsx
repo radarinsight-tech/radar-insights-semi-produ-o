@@ -20,9 +20,7 @@ const Hub = () => {
       <header className="border-b border-border bg-card px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Radar className="h-6 w-6 text-primary" />
-            </div>
+            <img src={logoSymbol} alt="Radar Insight" className="h-8 w-8 rounded-lg object-contain" />
             <h1 className="text-xl font-bold text-primary">Radar Insight</h1>
           </div>
           <Button variant="ghost" size="sm" onClick={handleLogout}>
