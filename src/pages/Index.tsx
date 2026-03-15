@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import UploadSection from "@/components/UploadSection";
+import UploadSection, { type UploadState } from "@/components/UploadSection";
 import AnalysisResult, { type AnalysisData } from "@/components/AnalysisResult";
 import HistoryTable from "@/components/HistoryTable";
 import Filters, { type FilterValues } from "@/components/Filters";
@@ -33,10 +33,38 @@ const parseDateBR = (str: string): Date | null => {
   return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
 };
 
+/** Simple heuristic: check if there's at least one client message in the text */
+const hasClientInteraction = (text: string): boolean => {
+  // Look for patterns indicating client messages (common in chat transcripts)
+  const lines = text.split("\n").filter((l) => l.trim());
+  // If very short text with no real dialogue, likely no interaction
+  if (lines.length < 5) return false;
+  
+  // Check for patterns like "Cliente:" or messages not from the agent/URA
+  const uraPatterns = /\b(MARTE|URA|Sistema|Bot)\b/i;
+  const agentPattern = /\b(Atendente|Agente|Operador|especialista)\b/i;
+  
+  let hasNonAgentMessage = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.length > 10 && !uraPatterns.test(trimmed) && !agentPattern.test(trimmed)) {
+      // Check if it looks like a client response (not a system/header line)
+      if (!/^(protocolo|data|hora|tipo|setor|fila|transfer)/i.test(trimmed)) {
+        hasNonAgentMessage = true;
+        break;
+      }
+    }
+  }
+  
+  return hasNonAgentMessage;
+};
+
 const Index = () => {
   const navigate = useNavigate();
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [uploadState, setUploadState] = useState<UploadState>("empty");
+  const [analyzedFileName, setAnalyzedFileName] = useState<string>("");
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [filters, setFilters] = useState<FilterValues>({
     atendente: "todos",
@@ -90,13 +118,40 @@ const Index = () => {
     navigate("/auth");
   };
 
+  const handleNewAnalysis = () => {
+    setAnalysis(null);
+    setUploadState("empty");
+    setAnalyzedFileName("");
+  };
+
   const runAnalysis = async (file: File) => {
     setIsAnalyzing(true);
+    setAnalyzedFileName(file.name);
     try {
       const text = await extractTextFromPdf(file);
       if (!text.trim()) {
         toast.error("Não foi possível extrair texto do PDF.");
         setIsAnalyzing(false);
+        setUploadState("empty");
+        return;
+      }
+
+      // Check for client interaction before proceeding
+      if (!hasClientInteraction(text)) {
+        setIsAnalyzing(false);
+        setUploadState("no-interaction");
+        setAnalysis({
+          protocolo: "Não identificado",
+          atendente: "Não identificado",
+          tipo: "Indeterminado",
+          atualizacaoCadastral: "NÃO",
+          notaFinal: 0,
+          classificacao: "Fora de Avaliação",
+          bonus: false,
+          bonusQualidade: 0,
+          pontosMelhoria: [],
+          noInteraction: true,
+        });
         return;
       }
 
@@ -112,7 +167,6 @@ const Index = () => {
           .limit(1);
 
         if (existing && existing.length > 0) {
-          // Show confirmation dialog
           setPendingFile(file);
           setDuplicateProtocol(extractedProtocol);
           setIsAnalyzing(false);
@@ -125,17 +179,20 @@ const Index = () => {
       console.error("Analysis error:", err);
       toast.error("Erro inesperado ao processar o PDF.");
       setIsAnalyzing(false);
+      setUploadState("empty");
     }
   };
 
   const executeAnalysis = async (file: File, text?: string) => {
     setIsAnalyzing(true);
+    setAnalyzedFileName(file.name);
     try {
       if (!text) {
         text = await extractTextFromPdf(file);
         if (!text.trim()) {
           toast.error("Não foi possível extrair texto do PDF.");
           setIsAnalyzing(false);
+          setUploadState("empty");
           return;
         }
       }
@@ -163,12 +220,14 @@ const Index = () => {
         console.error("Edge function error:", error);
         toast.error("Erro ao analisar atendimento. Tente novamente.");
         setIsAnalyzing(false);
+        setUploadState("empty");
         return;
       }
 
       if (data?.error) {
         toast.error(data.error);
         setIsAnalyzing(false);
+        setUploadState("empty");
         return;
       }
 
@@ -179,6 +238,7 @@ const Index = () => {
       if (!user?.id) {
         toast.error("Usuário não autenticado. Faça login novamente.");
         setIsAnalyzing(false);
+        setUploadState("empty");
         return;
       }
 
@@ -205,6 +265,7 @@ const Index = () => {
       if (insertError || !savedRow) {
         console.error("Error saving evaluation:", insertError);
         toast.error("Erro ao salvar avaliação no histórico: " + (insertError?.message || "Erro desconhecido"));
+        setUploadState("empty");
       } else {
         setAnalysis({
           protocolo: savedRow.protocolo,
@@ -221,6 +282,7 @@ const Index = () => {
           pontosObtidos: data.pontosObtidos,
           pontosPossiveis: data.pontosPossiveis,
         });
+        setUploadState("completed");
         toast.success(duplicateProtocol ? "Reavaliação concluída e salva!" : "Análise concluída e salva!");
         setDuplicateProtocol(null);
         setPendingFile(null);
@@ -229,6 +291,7 @@ const Index = () => {
     } catch (err) {
       console.error("Analysis error:", err);
       toast.error("Erro inesperado ao processar o PDF.");
+      setUploadState("empty");
     } finally {
       setIsAnalyzing(false);
     }
@@ -243,6 +306,7 @@ const Index = () => {
   const handleCancelReeval = () => {
     setPendingFile(null);
     setDuplicateProtocol(null);
+    setUploadState("empty");
     toast.info("Análise cancelada.");
   };
 
@@ -255,7 +319,6 @@ const Index = () => {
       if (filters.atendente !== "todos" && e.atendente !== filters.atendente) return false;
       if (filters.tipo !== "todos" && e.tipo !== filters.tipo) return false;
 
-      // Date range filter
       if (filters.periodoInicio && filters.periodoFim) {
         const entryDate = parseDateBR(e.data);
         const startDate = parseDateBR(filters.periodoInicio);
@@ -264,12 +327,10 @@ const Index = () => {
           if (entryDate < startDate || entryDate > endDate) return false;
         }
       } else if (filters.periodoInicio && !filters.periodoFim) {
-        // Only start date selected — show from that date onwards
         const entryDate = parseDateBR(e.data);
         const startDate = parseDateBR(filters.periodoInicio);
         if (entryDate && startDate && entryDate < startDate) return false;
       } else if (filters.periodo) {
-        // Month filter
         const [year, month] = filters.periodo.split("-");
         const parts = e.data.split("/");
         if (parts.length >= 3 && (parts[1] !== month || parts[2] !== year)) return false;
@@ -306,7 +367,13 @@ const Index = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <UploadSection onAnalyze={runAnalysis} isAnalyzing={isAnalyzing} />
+          <UploadSection
+            onAnalyze={runAnalysis}
+            isAnalyzing={isAnalyzing}
+            analysisState={uploadState}
+            analyzedFileName={analyzedFileName}
+            onNewAnalysis={handleNewAnalysis}
+          />
           <AnalysisResult data={analysis} />
         </div>
 
@@ -337,7 +404,6 @@ const Index = () => {
         </div>
       </main>
 
-      {/* Re-evaluation confirmation dialog */}
       <AlertDialog open={!!duplicateProtocol} onOpenChange={(open) => { if (!open) handleCancelReeval(); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
