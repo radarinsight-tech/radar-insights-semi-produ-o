@@ -34,49 +34,67 @@ export type Database = {
       }
       credit_analyses: {
         Row: {
+          ajuste_manual: boolean
           company_id: string | null
           cpf_cnpj: string
           created_at: string
+          data_ajuste: string | null
           decisao_final: string | null
           doc_type: string
+          faixa_original: string | null
           id: string
+          motivo_ajuste: string | null
           nome: string | null
+          observacao_ajuste: string | null
           observacoes: string | null
           regra_aplicada: string | null
           resultado: Json | null
           status: string
           user_id: string
           user_name: string | null
+          usuario_ajuste: string | null
         }
         Insert: {
+          ajuste_manual?: boolean
           company_id?: string | null
           cpf_cnpj: string
           created_at?: string
+          data_ajuste?: string | null
           decisao_final?: string | null
           doc_type?: string
+          faixa_original?: string | null
           id?: string
+          motivo_ajuste?: string | null
           nome?: string | null
+          observacao_ajuste?: string | null
           observacoes?: string | null
           regra_aplicada?: string | null
           resultado?: Json | null
           status?: string
           user_id: string
           user_name?: string | null
+          usuario_ajuste?: string | null
         }
         Update: {
+          ajuste_manual?: boolean
           company_id?: string | null
           cpf_cnpj?: string
           created_at?: string
+          data_ajuste?: string | null
           decisao_final?: string | null
           doc_type?: string
+          faixa_original?: string | null
           id?: string
+          motivo_ajuste?: string | null
           nome?: string | null
+          observacao_ajuste?: string | null
           observacoes?: string | null
           regra_aplicada?: string | null
           resultado?: Json | null
           status?: string
           user_id?: string
           user_name?: string | null
+          usuario_ajuste?: string | null
         }
         Relationships: [
           {
