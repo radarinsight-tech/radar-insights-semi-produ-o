@@ -8,16 +8,11 @@ import { useNavigate } from "react-router-dom";
 import CreditUploadSection, { type CreditUploadState } from "@/components/credit/CreditUploadSection";
 import CreditAnalysisResult, { type CreditAnalysisData } from "@/components/credit/CreditAnalysisResult";
 import CreditHistoryTable from "@/components/credit/CreditHistoryTable";
+import CreditDailySummary from "@/components/credit/CreditDailySummary";
 import { extractCpfCnpj } from "@/lib/cpfCnpjExtractor";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
 const CreditAnalysis = () => {
@@ -30,11 +25,7 @@ const CreditAnalysis = () => {
 
   const [pendingText, setPendingText] = useState<string | null>(null);
   const [duplicateInfo, setDuplicateInfo] = useState<{
-    cpfCnpj: string;
-    type: string;
-    formatted: string;
-    lastDate: string;
-    lastNome: string | null;
+    cpfCnpj: string; type: string; formatted: string; lastDate: string; lastNome: string | null;
   } | null>(null);
 
   const handleLogout = async () => {
@@ -51,6 +42,8 @@ const CreditAnalysis = () => {
   const runAnalysis = async (text: string, isReanalysis: boolean) => {
     setIsAnalyzing(true);
     setUploadState("processing");
+    console.log("[CreditAnalysis] Início do processamento");
+
     try {
       const { data, error } = await supabase.functions.invoke("analyze-credit", {
         body: { text },
@@ -58,7 +51,7 @@ const CreditAnalysis = () => {
 
       if (error) {
         toast.error("Erro ao processar a análise. Tente novamente.");
-        console.error("Edge function error:", error);
+        console.error("[CreditAnalysis] Edge function error:", error);
         setUploadState("error");
         return;
       }
@@ -71,6 +64,7 @@ const CreditAnalysis = () => {
 
       const result = data as CreditAnalysisData;
       setAnalysis(result);
+      console.log("[CreditAnalysis] Análise concluída", result.regra_aplicada);
 
       // Save to history
       const cpfCnpjInfo = extractCpfCnpj(text);
@@ -103,13 +97,14 @@ const CreditAnalysis = () => {
           resultado: result as any,
         } as any);
 
+        console.log("[CreditAnalysis] Salvo no histórico");
         setHistoryRefresh((prev) => prev + 1);
       }
 
       setUploadState("completed");
       toast.success("Análise concluída");
     } catch (err) {
-      console.error("Analysis error:", err);
+      console.error("[CreditAnalysis] Erro:", err);
       toast.error("Erro ao processar a análise. Tente novamente.");
       setUploadState("error");
     } finally {
@@ -135,11 +130,8 @@ const CreditAnalysis = () => {
     if (existing && existing.length > 0) {
       const lastDate = new Date(existing[0].created_at).toLocaleDateString("pt-BR");
       setDuplicateInfo({
-        cpfCnpj: cpfCnpjInfo.value,
-        type: cpfCnpjInfo.type,
-        formatted: cpfCnpjInfo.formatted,
-        lastDate,
-        lastNome: existing[0].nome,
+        cpfCnpj: cpfCnpjInfo.value, type: cpfCnpjInfo.type, formatted: cpfCnpjInfo.formatted,
+        lastDate, lastNome: existing[0].nome,
       });
       setPendingText(text);
       return;
@@ -188,6 +180,10 @@ const CreditAnalysis = () => {
       </header>
 
       <main className="max-w-7xl mx-auto p-6 space-y-6">
+        {/* Daily summary */}
+        <CreditDailySummary refreshTrigger={historyRefresh} />
+
+        {/* Upload + Result */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <CreditUploadSection
             onAnalyze={handleAnalyze}
@@ -199,6 +195,8 @@ const CreditAnalysis = () => {
           />
           <CreditAnalysisResult data={analysis} />
         </div>
+
+        {/* History */}
         <CreditHistoryTable refreshTrigger={historyRefresh} />
       </main>
 

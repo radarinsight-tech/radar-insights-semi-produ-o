@@ -95,17 +95,18 @@ const CreditFilters = ({ usuarios, filters, onChange }: Props) => {
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs font-semibold text-primary/80">Decisão final</Label>
+        <Label className="text-xs font-semibold text-primary/80">Faixa final</Label>
         <Select value={filters.decisao} onValueChange={(v) => onChange({ ...filters, decisao: v })}>
           <SelectTrigger className="w-[180px] bg-card">
             <SelectValue placeholder="Todas" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todas</SelectItem>
-            <SelectItem value="ISENTAR">Isentar</SelectItem>
-            <SelectItem value="COBRAR">Cobrar</SelectItem>
-            <SelectItem value="REPROVAR">Reprovar</SelectItem>
-            <SelectItem value="ANALISAR MANUALMENTE">Análise Manual</SelectItem>
+            <SelectItem value="ISENTAR">Isenção</SelectItem>
+            <SelectItem value="TAXA_R$100">R$ 100</SelectItem>
+            <SelectItem value="TAXA_R$200">R$ 200</SelectItem>
+            <SelectItem value="TAXA_R$300">R$ 300</SelectItem>
+            <SelectItem value="TAXA_R$1000">R$ 1.000</SelectItem>
           </SelectContent>
         </Select>
       </div>
