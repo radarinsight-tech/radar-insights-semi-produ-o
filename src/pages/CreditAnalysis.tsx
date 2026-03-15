@@ -226,9 +226,16 @@ const CreditAnalysis = () => {
 };
 
 function mapRegraToDecisao(regra: string, classificacao: string): string {
-  if (regra === "regra_especial_debito_provedor") return "COBRAR";
   if (regra === "regra_01_isencao" && classificacao === "isento") return "ISENTAR";
-  return "COBRAR";
+  if (regra === "regra_01_isencao") return "TAXA_R$100";
+  if (regra === "regra_02_taxa_100" && classificacao === "taxa_200_composta") return "TAXA_R$200";
+  if (regra === "regra_02_taxa_100") return "TAXA_R$100";
+  if (regra === "regra_03_taxa_200" && classificacao === "taxa_300_composta") return "TAXA_R$300";
+  if (regra === "regra_03_taxa_200") return "TAXA_R$200";
+  if (regra === "regra_04_taxa_300" && classificacao === "taxa_400_composta") return "TAXA_R$400";
+  if (regra === "regra_04_taxa_300") return "TAXA_R$300";
+  if (regra === "regra_especial_debito_provedor") return "TAXA_R$1000";
+  return "TAXA_R$300";
 }
 
 function mapRegraLabel(regra: string): string {

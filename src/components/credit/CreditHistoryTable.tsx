@@ -298,7 +298,7 @@ const CreditHistoryTable = ({ refreshTrigger }: Props) => {
                       {formatCpfCnpj(e.cpf_cnpj, e.doc_type)}
                     </TableCell>
                     <TableCell className="text-sm">{e.user_name || "—"}</TableCell>
-                    <TableCell>{decisionBadge(e.decisao_final)}</TableCell>
+                    <TableCell>{faixaBadge(e.decisao_final)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground max-w-[180px] truncate">
                       {e.regra_aplicada || "—"}
                     </TableCell>
