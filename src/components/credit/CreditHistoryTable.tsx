@@ -36,16 +36,20 @@ interface CreditHistoryEntry {
   resultado: CreditAnalysisData | null;
 }
 
-const decisionBadge = (d: string | null) => {
+const faixaBadge = (d: string | null) => {
   switch (d) {
     case "ISENTAR":
-      return <Badge className="bg-accent text-accent-foreground">Isentar</Badge>;
-    case "COBRAR":
-      return <Badge className="bg-warning text-warning-foreground">Cobrar</Badge>;
-    case "REPROVAR":
-      return <Badge className="bg-destructive text-destructive-foreground">Reprovar</Badge>;
-    case "ANALISAR MANUALMENTE":
-      return <Badge className="bg-primary text-primary-foreground">Análise Manual</Badge>;
+      return <Badge className="bg-accent text-accent-foreground">Isenção</Badge>;
+    case "TAXA_R$100":
+      return <Badge className="bg-warning/80 text-warning-foreground">R$ 100</Badge>;
+    case "TAXA_R$200":
+      return <Badge className="bg-warning text-warning-foreground">R$ 200</Badge>;
+    case "TAXA_R$300":
+      return <Badge className="bg-destructive/80 text-destructive-foreground">R$ 300</Badge>;
+    case "TAXA_R$400":
+      return <Badge className="bg-destructive text-destructive-foreground">R$ 400</Badge>;
+    case "TAXA_R$1000":
+      return <Badge className="bg-destructive text-destructive-foreground">R$ 1.000</Badge>;
     default:
       return <Badge variant="outline">—</Badge>;
   }
