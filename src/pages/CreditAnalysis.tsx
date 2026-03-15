@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LogOut, ArrowLeft } from "lucide-react";
+import { LogOut, ArrowLeft, LayoutDashboard } from "lucide-react";
 import logoSymbol from "@/assets/logo-symbol.png";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
