@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Radar, LogOut, ArrowLeft } from "lucide-react";
+import { LogOut, ArrowLeft } from "lucide-react";
+import logoSymbol from "@/assets/logo-symbol.png";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
