@@ -267,7 +267,7 @@ const CreditHistoryTable = ({ refreshTrigger }: Props) => {
                 <TableHead>Nome</TableHead>
                 <TableHead>CPF/CNPJ</TableHead>
                 <TableHead>Usuário</TableHead>
-                <TableHead>Decisão</TableHead>
+                <TableHead>Faixa Final</TableHead>
                 <TableHead>Regra</TableHead>
                 <TableHead>Taxa Total</TableHead>
                 <TableHead>Status</TableHead>
