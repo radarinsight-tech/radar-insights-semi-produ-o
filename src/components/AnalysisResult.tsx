@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, FileSearch, ShieldAlert } from "lucide-react";
+import QualityGauge from "@/components/QualityGauge";
 
 export interface AnalysisData {
   protocolo: string;
@@ -16,6 +17,7 @@ export interface AnalysisData {
   motivoImpeditivo?: string;
   pontosObtidos?: number;
   pontosPossiveis?: number;
+  noInteraction?: boolean;
 }
 
 interface Props {
@@ -50,6 +52,37 @@ const AnalysisResult = ({ data }: Props) => {
     );
   }
 
+  // No interaction state
+  if (data.noInteraction) {
+    return (
+      <Card className="p-6 animate-in fade-in duration-300">
+        <h2 className="text-lg font-bold text-primary mb-4">Resultado da Auditoria</h2>
+        <div className="flex flex-col items-center justify-center text-center py-6">
+          <div className="p-3 rounded-full bg-warning/10 mb-4">
+            <ShieldAlert className="h-8 w-8 text-warning" />
+          </div>
+          <Badge className="bg-warning text-warning-foreground mb-3">Fora de Avaliação</Badge>
+          <p className="text-sm font-bold text-foreground mb-2">Sem interação do cliente</p>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            O atendimento foi iniciado, porém não houve resposta do cliente durante o período registrado.
+          </p>
+          {data.protocolo && (
+            <div className="mt-4 grid grid-cols-2 gap-4 text-left w-full max-w-sm">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase">Protocolo</p>
+                <p className="text-sm font-medium">{data.protocolo}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase">Atendente</p>
+                <p className="text-sm font-medium">{data.atendente}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
+    );
+  }
+
   if (data.impeditivo) {
     return (
       <Card className="p-6 animate-in fade-in duration-300">
@@ -75,27 +108,32 @@ const AnalysisResult = ({ data }: Props) => {
     );
   }
 
-  const rows = [
-    { label: "Protocolo", value: data.protocolo },
-    { label: "Atendente", value: data.atendente },
-    { label: "Tipo de atendimento", value: data.tipo },
-  ];
-
   return (
     <Card className="p-6 animate-in fade-in duration-300">
       <h2 className="text-lg font-bold text-primary mb-4">Resultado da Auditoria</h2>
+      
+      {/* Quality Gauge */}
+      <div className="mb-5">
+        <QualityGauge score={data.notaFinal} classification={data.classificacao} />
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {rows.map((r) => (
-          <div key={r.label}>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{r.label}</p>
-            <p className="text-sm font-medium mt-0.5">{r.value}</p>
-          </div>
-        ))}
         <div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Nota Final</p>
-          <p className="text-2xl font-bold mt-0.5">{data.notaFinal.toFixed(1)}</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Protocolo</p>
+          <p className="text-sm font-medium mt-0.5">{data.protocolo}</p>
+        </div>
+        <div>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Atendente</p>
+          <p className="text-sm font-medium mt-0.5">{data.atendente}</p>
+        </div>
+        <div className="sm:col-span-2">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Tipo de Atendimento Detectado</p>
+          <Badge variant="outline" className="mt-1">{data.tipo}</Badge>
+        </div>
+        <div>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pontuação</p>
           {data.pontosObtidos != null && data.pontosPossiveis != null && (
-            <p className="text-xs text-muted-foreground">{data.pontosObtidos}/{data.pontosPossiveis} pontos</p>
+            <p className="text-sm font-medium mt-0.5">{data.pontosObtidos}/{data.pontosPossiveis} pontos</p>
           )}
         </div>
         <div>
