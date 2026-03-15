@@ -6,18 +6,39 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import CreditUploadSection from "@/components/credit/CreditUploadSection";
 import CreditAnalysisResult, { type CreditAnalysisData } from "@/components/credit/CreditAnalysisResult";
+import { extractCpfCnpj } from "@/lib/cpfCnpjExtractor";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const CreditAnalysis = () => {
   const navigate = useNavigate();
   const [analysis, setAnalysis] = useState<CreditAnalysisData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
+  // Duplicate check state
+  const [pendingText, setPendingText] = useState<string | null>(null);
+  const [duplicateInfo, setDuplicateInfo] = useState<{
+    cpfCnpj: string;
+    type: string;
+    formatted: string;
+    lastDate: string;
+    lastNome: string | null;
+  } | null>(null);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
 
-  const handleAnalyze = async (text: string) => {
+  const runAnalysis = async (text: string) => {
     setIsAnalyzing(true);
     try {
       const { data, error } = await supabase.functions.invoke("analyze-credit", {
@@ -35,14 +56,75 @@ const CreditAnalysis = () => {
         return;
       }
 
-      setAnalysis(data as CreditAnalysisData);
+      const result = data as CreditAnalysisData;
+      setAnalysis(result);
       toast.success("Análise de crédito concluída!");
+
+      // Save to history
+      const cpfCnpjInfo = extractCpfCnpj(text);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("credit_analyses" as any).insert({
+          user_id: user.id,
+          cpf_cnpj: cpfCnpjInfo?.value || result.cpf?.replace(/\D/g, "") || "unknown",
+          nome: result.nome || null,
+          decisao_final: result.decisaoFinal || null,
+          resultado: result as any,
+        } as any);
+      }
     } catch (err) {
       console.error("Analysis error:", err);
       toast.error("Erro inesperado ao processar análise.");
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const handleAnalyze = async (text: string) => {
+    // Extract CPF/CNPJ from text
+    const cpfCnpjInfo = extractCpfCnpj(text);
+
+    if (!cpfCnpjInfo) {
+      // No CPF/CNPJ found, proceed directly
+      await runAnalysis(text);
+      return;
+    }
+
+    // Check for existing analysis
+    const { data: existing } = await supabase
+      .from("credit_analyses" as any)
+      .select("created_at, nome")
+      .eq("cpf_cnpj", cpfCnpjInfo.value)
+      .order("created_at", { ascending: false })
+      .limit(1) as any;
+
+    if (existing && existing.length > 0) {
+      const lastDate = new Date(existing[0].created_at).toLocaleDateString("pt-BR");
+      setDuplicateInfo({
+        cpfCnpj: cpfCnpjInfo.value,
+        type: cpfCnpjInfo.type,
+        formatted: cpfCnpjInfo.formatted,
+        lastDate,
+        lastNome: existing[0].nome,
+      });
+      setPendingText(text);
+      return;
+    }
+
+    await runAnalysis(text);
+  };
+
+  const handleConfirmDuplicate = async () => {
+    setDuplicateInfo(null);
+    if (pendingText) {
+      await runAnalysis(pendingText);
+      setPendingText(null);
+    }
+  };
+
+  const handleCancelDuplicate = () => {
+    setDuplicateInfo(null);
+    setPendingText(null);
   };
 
   return (
@@ -81,6 +163,29 @@ const CreditAnalysis = () => {
           <CreditAnalysisResult data={analysis} />
         </div>
       </main>
+
+      {/* Duplicate confirmation dialog */}
+      <AlertDialog open={!!duplicateInfo} onOpenChange={(open) => !open && handleCancelDuplicate()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Consulta já realizada</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">
+                Este {duplicateInfo?.type} <strong>{duplicateInfo?.formatted}</strong>
+                {duplicateInfo?.lastNome && (
+                  <> ({duplicateInfo.lastNome})</>
+                )}{" "}
+                já foi consultado em <strong>{duplicateInfo?.lastDate}</strong>.
+              </span>
+              <span className="block">Deseja realizar uma nova análise?</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelDuplicate}>Não</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDuplicate}>Sim</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
