@@ -10,6 +10,7 @@ import Auth from "./pages/Auth.tsx";
 import Users from "./pages/Users.tsx";
 import CreditAnalysis from "./pages/CreditAnalysis.tsx";
 import CreditDashboard from "./pages/CreditDashboard.tsx";
+import DocumentAnalysis from "./pages/DocumentAnalysis.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <CreditDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/credit-docs"
+            element={
+              <ProtectedRoute>
+                <DocumentAnalysis />
               </ProtectedRoute>
             }
           />
