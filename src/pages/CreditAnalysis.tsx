@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import CreditUploadSection from "@/components/credit/CreditUploadSection";
+import CreditUploadSection, { type CreditUploadState } from "@/components/credit/CreditUploadSection";
 import CreditAnalysisResult, { type CreditAnalysisData } from "@/components/credit/CreditAnalysisResult";
 import CreditHistoryTable from "@/components/credit/CreditHistoryTable";
 import { extractCpfCnpj } from "@/lib/cpfCnpjExtractor";
@@ -24,11 +24,11 @@ const CreditAnalysis = () => {
   const navigate = useNavigate();
   const [analysis, setAnalysis] = useState<CreditAnalysisData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [uploadState, setUploadState] = useState<CreditUploadState>("empty");
+  const [analyzedFileName, setAnalyzedFileName] = useState("");
   const [historyRefresh, setHistoryRefresh] = useState(0);
 
-  // Duplicate check state
   const [pendingText, setPendingText] = useState<string | null>(null);
-  const [isDuplicate, setIsDuplicate] = useState(false);
   const [duplicateInfo, setDuplicateInfo] = useState<{
     cpfCnpj: string;
     type: string;
@@ -42,29 +42,37 @@ const CreditAnalysis = () => {
     navigate("/auth");
   };
 
+  const handleNewAnalysis = () => {
+    setAnalysis(null);
+    setUploadState("empty");
+    setAnalyzedFileName("");
+  };
+
   const runAnalysis = async (text: string, isReanalysis: boolean) => {
     setIsAnalyzing(true);
+    setUploadState("processing");
     try {
       const { data, error } = await supabase.functions.invoke("analyze-credit", {
         body: { text },
       });
 
       if (error) {
-        toast.error("Erro ao analisar consulta de crédito.");
+        toast.error("Erro ao processar a análise. Tente novamente.");
         console.error("Edge function error:", error);
+        setUploadState("error");
         return;
       }
 
       if (data?.error) {
         toast.error(data.error);
+        setUploadState("error");
         return;
       }
 
       const result = data as CreditAnalysisData;
       setAnalysis(result);
-      toast.success("Análise de crédito concluída!");
 
-      // Save to history with enriched data
+      // Save to history
       const cpfCnpjInfo = extractCpfCnpj(text);
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -74,7 +82,6 @@ const CreditAnalysis = () => {
           .eq("id", user.id)
           .maybeSingle();
 
-        // Map new fields to DB columns
         const decisaoFinal = result.regra_aplicada
           ? mapRegraToDecisao(result.regra_aplicada, result.classificacao_final)
           : result.decisaoFinal || null;
@@ -98,9 +105,13 @@ const CreditAnalysis = () => {
 
         setHistoryRefresh((prev) => prev + 1);
       }
+
+      setUploadState("completed");
+      toast.success("Análise concluída");
     } catch (err) {
       console.error("Analysis error:", err);
-      toast.error("Erro inesperado ao processar análise.");
+      toast.error("Erro ao processar a análise. Tente novamente.");
+      setUploadState("error");
     } finally {
       setIsAnalyzing(false);
     }
@@ -114,7 +125,6 @@ const CreditAnalysis = () => {
       return;
     }
 
-    // Check for existing analysis
     const { data: existing } = await supabase
       .from("credit_analyses" as any)
       .select("created_at, nome")
@@ -131,7 +141,6 @@ const CreditAnalysis = () => {
         lastDate,
         lastNome: existing[0].nome,
       });
-      setIsDuplicate(true);
       setPendingText(text);
       return;
     }
@@ -141,7 +150,6 @@ const CreditAnalysis = () => {
 
   const handleConfirmDuplicate = async () => {
     setDuplicateInfo(null);
-    setIsDuplicate(false);
     if (pendingText) {
       await runAnalysis(pendingText, true);
       setPendingText(null);
@@ -150,7 +158,6 @@ const CreditAnalysis = () => {
 
   const handleCancelDuplicate = () => {
     setDuplicateInfo(null);
-    setIsDuplicate(false);
     setPendingText(null);
   };
 
@@ -182,7 +189,14 @@ const CreditAnalysis = () => {
 
       <main className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <CreditUploadSection onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} />
+          <CreditUploadSection
+            onAnalyze={handleAnalyze}
+            isAnalyzing={isAnalyzing}
+            uploadState={uploadState}
+            onStateChange={setUploadState}
+            analyzedFileName={analyzedFileName}
+            onNewAnalysis={handleNewAnalysis}
+          />
           <CreditAnalysisResult data={analysis} />
         </div>
         <CreditHistoryTable refreshTrigger={historyRefresh} />
