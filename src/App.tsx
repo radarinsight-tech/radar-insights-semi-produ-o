@@ -56,6 +56,14 @@ const App = () => (
             }
           />
           <Route
+            path="/credit-docs"
+            element={
+              <ProtectedRoute>
+                <DocumentAnalysis />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/users"
             element={
               <ProtectedRoute>

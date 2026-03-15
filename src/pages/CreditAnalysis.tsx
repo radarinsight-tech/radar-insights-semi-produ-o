@@ -167,6 +167,10 @@ const CreditAnalysis = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate("/credit-docs")}>
+              <FileCheck className="h-4 w-4 mr-1" />
+              Documentação
+            </Button>
             <Button variant="outline" size="sm" onClick={() => navigate("/credit-dashboard")}>
               <LayoutDashboard className="h-4 w-4 mr-1" />
               Painel
