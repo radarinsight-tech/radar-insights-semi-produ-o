@@ -66,6 +66,9 @@ const formatCpfCnpj = (value: string, type: string) => {
   return value;
 };
 
+const formatCurrency = (value: number) =>
+  value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
 const exportSinglePdf = (data: CreditAnalysisData, cpfCnpj: string) => {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const margin = 15;
@@ -85,20 +88,37 @@ const exportSinglePdf = (data: CreditAnalysisData, cpfCnpj: string) => {
 
   addText("RADAR INSIGHT — ANÁLISE DE CRÉDITO", 14, true); gap(6);
   addText(`Nome: ${data.nome}`, 10);
-  addText(`CPF/CNPJ: ${data.cpf}`, 10);
-  addText(`Idade: ${data.idade}`, 10);
-  addText(`Registros Negativos: ${data.quantidadeRegistrosNegativos}`, 10);
-  addText(`Valor Total: ${data.valorTotalDividas}`, 10);
-  addText(`Decisão: ${data.decisaoFinal}`, 10, true); gap(6);
+  addText(`CPF/CNPJ: ${data.cpf_cnpj || data.cpf || cpfCnpj}`, 10);
+  if (data.tipo_pessoa) addText(`Tipo: ${data.tipo_pessoa}`, 10);
+  if (data.score) addText(`Score: ${data.score}`, 10);
+  addText(`Registros Negativos: ${data.quantidade_registros_negativos ?? data.quantidadeRegistrosNegativos ?? 0}`, 10);
+  addText(`Valor Total: ${data.valor_total_negativado || data.valorTotalDividas || "—"}`, 10);
+  gap(4);
+
+  if (data.regra_aplicada) {
+    addText(`Regra Aplicada: ${data.regra_aplicada}`, 10, true);
+    addText(`Classificação: ${data.classificacao_final}`, 10);
+    addText(`Protesto: ${data.possui_protesto ? "SIM" : "NÃO"}`, 10);
+    addText(`Débito Provedor: ${data.possui_debito_provedor ? "SIM" : "NÃO"}`, 10);
+    addText(`Documento: ${data.documento_em_nome_do_contratante ? "Válido" : "Não apresentado"}`, 10);
+    gap(4);
+    addText("COMPOSIÇÃO DE TAXAS", 12, true); gap(3);
+    addText(`Taxa de Instalação: ${formatCurrency(data.taxa_instalacao)}`, 10);
+    addText(`Taxa de Análise: ${formatCurrency(data.taxa_analise_credito)}`, 10);
+    addText(`Taxa Total: ${formatCurrency(data.taxa_total)}`, 10, true);
+    gap(6);
+  }
+
   addText("CREDORES", 12, true); gap(3);
   if (data.credores?.length) {
-    data.credores.forEach(c => addText(`• ${c.nome} (${c.tipo}) — ${c.valor}`, 9));
+    data.credores.forEach(c => {
+      const cat = (c as any).categoria || (c as any).tipo || "";
+      addText(`• ${c.nome} (${cat}) — ${c.valor}`, 9);
+    });
   }
   gap(6);
-  addText("REGRA APLICADA", 12, true); gap(3);
-  addText(data.regraAplicada || "—", 9); gap(6);
-  addText("ORIENTAÇÃO", 12, true); gap(3);
-  addText(data.orientacaoOperacional || "—", 9); gap(6);
+  addText("JUSTIFICATIVA", 12, true); gap(3);
+  addText(data.motivo_decisao || data.regraAplicada || "—", 9); gap(6);
   addText("OBSERVAÇÕES", 12, true); gap(3);
   addText(data.observacoes || "—", 9);
   doc.save(`analise_credito_${cpfCnpj}.pdf`);
@@ -142,9 +162,7 @@ const CreditHistoryTable = ({ refreshTrigger }: Props) => {
     setLoading(false);
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData, refreshTrigger]);
+  useEffect(() => { fetchData(); }, [fetchData, refreshTrigger]);
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -220,6 +238,14 @@ const CreditHistoryTable = ({ refreshTrigger }: Props) => {
     }
   };
 
+  // Extract taxa_total from resultado for display
+  const getTaxaTotal = (entry: CreditHistoryEntry): string | null => {
+    const r = entry.resultado as any;
+    if (r?.taxa_total !== undefined) return formatCurrency(r.taxa_total);
+    if (r?.valorTaxa) return r.valorTaxa;
+    return null;
+  };
+
   return (
     <>
       <Card className="p-6">
@@ -238,7 +264,8 @@ const CreditHistoryTable = ({ refreshTrigger }: Props) => {
                 <TableHead>CPF/CNPJ</TableHead>
                 <TableHead>Usuário</TableHead>
                 <TableHead>Decisão</TableHead>
-                <TableHead>Regra aplicada</TableHead>
+                <TableHead>Regra</TableHead>
+                <TableHead>Taxa Total</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-center">Ações</TableHead>
               </TableRow>
@@ -246,13 +273,13 @@ const CreditHistoryTable = ({ refreshTrigger }: Props) => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                     Carregando...
                   </TableCell>
                 </TableRow>
               ) : filteredEntries.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                     Nenhuma consulta encontrada
                   </TableCell>
                 </TableRow>
@@ -268,30 +295,19 @@ const CreditHistoryTable = ({ refreshTrigger }: Props) => {
                     </TableCell>
                     <TableCell className="text-sm">{e.user_name || "—"}</TableCell>
                     <TableCell>{decisionBadge(e.decisao_final)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                    <TableCell className="text-sm text-muted-foreground max-w-[180px] truncate">
                       {e.regra_aplicada || "—"}
+                    </TableCell>
+                    <TableCell className="text-sm font-semibold">
+                      {getTaxaTotal(e) || "—"}
                     </TableCell>
                     <TableCell>{statusBadge(e.status)}</TableCell>
                     <TableCell className="text-center">
                       <div className="inline-flex items-center gap-1">
-                        <ActionButton
-                          icon={FileSearch}
-                          tooltip="Ver análise completa"
-                          onClick={() => handleView(e)}
-                        />
-                        <ActionButton
-                          icon={Download}
-                          tooltip="Baixar PDF da análise"
-                          disabled={!e.resultado}
-                          onClick={() => handleDownloadPdf(e)}
-                        />
+                        <ActionButton icon={FileSearch} tooltip="Ver análise completa" onClick={() => handleView(e)} />
+                        <ActionButton icon={Download} tooltip="Baixar PDF" disabled={!e.resultado} onClick={() => handleDownloadPdf(e)} />
                         {isAdmin && (
-                          <ActionButton
-                            icon={Trash2}
-                            tooltip="Excluir consulta"
-                            destructive
-                            onClick={() => setDeleteTarget(e)}
-                          />
+                          <ActionButton icon={Trash2} tooltip="Excluir" destructive onClick={() => setDeleteTarget(e)} />
                         )}
                       </div>
                     </TableCell>
@@ -303,12 +319,7 @@ const CreditHistoryTable = ({ refreshTrigger }: Props) => {
         </div>
       </Card>
 
-      <CreditReportDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        data={dialogData}
-        cpfCnpj={dialogCpf}
-      />
+      <CreditReportDialog open={dialogOpen} onOpenChange={setDialogOpen} data={dialogData} cpfCnpj={dialogCpf} />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>

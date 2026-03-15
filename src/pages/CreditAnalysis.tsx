@@ -68,22 +68,30 @@ const CreditAnalysis = () => {
       const cpfCnpjInfo = extractCpfCnpj(text);
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Get user name from profiles
         const { data: profile } = await supabase
           .from("profiles")
           .select("full_name")
           .eq("id", user.id)
           .maybeSingle();
 
+        // Map new fields to DB columns
+        const decisaoFinal = result.regra_aplicada
+          ? mapRegraToDecisao(result.regra_aplicada, result.classificacao_final)
+          : result.decisaoFinal || null;
+
+        const regraAplicada = result.regra_aplicada
+          ? mapRegraLabel(result.regra_aplicada)
+          : result.regraAplicada || null;
+
         await supabase.from("credit_analyses" as any).insert({
           user_id: user.id,
-          cpf_cnpj: cpfCnpjInfo?.value || result.cpf?.replace(/\D/g, "") || "unknown",
-          doc_type: cpfCnpjInfo?.type || "CPF",
+          cpf_cnpj: cpfCnpjInfo?.value || result.cpf_cnpj?.replace(/\D/g, "") || result.cpf?.replace(/\D/g, "") || "unknown",
+          doc_type: cpfCnpjInfo?.type || (result.tipo_pessoa === "PJ" ? "CNPJ" : "CPF"),
           nome: result.nome || null,
           user_name: profile?.full_name || user.email || null,
-          decisao_final: result.decisaoFinal || null,
-          regra_aplicada: result.regraAplicada || null,
-          observacoes: result.observacoes || null,
+          decisao_final: decisaoFinal,
+          regra_aplicada: regraAplicada,
+          observacoes: result.motivo_decisao || result.observacoes || null,
           status: isReanalysis ? "reanalise" : "nova_consulta",
           resultado: result as any,
         } as any);
@@ -148,7 +156,6 @@ const CreditAnalysis = () => {
 
   return (
     <div className="min-h-screen bg-background" data-module="credit">
-      {/* Header */}
       <header className="border-b border-border bg-card px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -157,7 +164,7 @@ const CreditAnalysis = () => {
               <h1 className="text-xl font-bold text-foreground">
                 Radar Insight — <span className="text-primary">Análise de Crédito</span>
               </h1>
-              <p className="text-xs text-muted-foreground">Análise de CPF via consulta SPC/Serasa</p>
+              <p className="text-xs text-muted-foreground">Motor de decisão com regras de risco por faixa</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -173,18 +180,14 @@ const CreditAnalysis = () => {
         </div>
       </header>
 
-      {/* Main content */}
       <main className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <CreditUploadSection onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} />
           <CreditAnalysisResult data={analysis} />
         </div>
-
-        {/* History */}
         <CreditHistoryTable refreshTrigger={historyRefresh} />
       </main>
 
-      {/* Duplicate confirmation dialog */}
       <AlertDialog open={!!duplicateInfo} onOpenChange={(open) => !open && handleCancelDuplicate()}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -192,9 +195,7 @@ const CreditAnalysis = () => {
             <AlertDialogDescription className="space-y-2">
               <span className="block">
                 Este {duplicateInfo?.type} <strong>{duplicateInfo?.formatted}</strong>
-                {duplicateInfo?.lastNome && (
-                  <> ({duplicateInfo.lastNome})</>
-                )}{" "}
+                {duplicateInfo?.lastNome && <> ({duplicateInfo.lastNome})</>}{" "}
                 já foi consultado em <strong>{duplicateInfo?.lastDate}</strong>.
               </span>
               <span className="block">Deseja realizar uma nova análise?</span>
@@ -209,5 +210,22 @@ const CreditAnalysis = () => {
     </div>
   );
 };
+
+function mapRegraToDecisao(regra: string, classificacao: string): string {
+  if (regra === "regra_especial_debito_provedor") return "COBRAR";
+  if (regra === "regra_01_isencao" && classificacao === "isento") return "ISENTAR";
+  return "COBRAR";
+}
+
+function mapRegraLabel(regra: string): string {
+  const labels: Record<string, string> = {
+    regra_especial_debito_provedor: "Regra Especial — Débito Provedor (R$1.000)",
+    regra_01_isencao: "Regra 01 — Isenção",
+    regra_02_taxa_100: "Regra 02 — Taxa R$100",
+    regra_03_taxa_200: "Regra 03 — Taxa R$200",
+    regra_04_taxa_300: "Regra 04 — Taxa R$300",
+  };
+  return labels[regra] || regra;
+}
 
 export default CreditAnalysis;

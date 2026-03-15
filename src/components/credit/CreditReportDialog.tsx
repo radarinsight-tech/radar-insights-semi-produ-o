@@ -12,6 +12,9 @@ interface Props {
   cpfCnpj: string;
 }
 
+const formatCurrency = (value: number) =>
+  value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
 const exportCreditPdf = (data: CreditAnalysisData, cpfCnpj: string) => {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
@@ -29,39 +32,50 @@ const exportCreditPdf = (data: CreditAnalysisData, cpfCnpj: string) => {
       y += size * 0.45;
     }
   };
-
   const addGap = (gap = 4) => { y += gap; };
 
   addText("RADAR INSIGHT — ANÁLISE DE CRÉDITO", 14, true);
   addGap(6);
 
   addText(`Nome: ${data.nome}`, 10);
-  addText(`CPF/CNPJ: ${data.cpf}`, 10);
-  addText(`Idade: ${data.idade}`, 10);
-  addText(`Registros Negativos: ${data.quantidadeRegistrosNegativos}`, 10);
-  addText(`Valor Total das Dívidas: ${data.valorTotalDividas}`, 10);
-  addText(`Decisão Final: ${data.decisaoFinal}`, 10, true);
-  addGap(6);
+  addText(`CPF/CNPJ: ${data.cpf_cnpj || data.cpf || cpfCnpj}`, 10);
+  if (data.tipo_pessoa) addText(`Tipo: ${data.tipo_pessoa}`, 10);
+  if (data.score) addText(`Score: ${data.score}`, 10);
+  addText(`Registros Negativos: ${data.quantidade_registros_negativos ?? data.quantidadeRegistrosNegativos ?? 0}`, 10);
+  addText(`Valor Total: ${data.valor_total_negativado || data.valorTotalDividas || "—"}`, 10);
+  addGap(4);
+
+  if (data.regra_aplicada) {
+    addText(`Regra Aplicada: ${data.regra_aplicada}`, 10, true);
+    addText(`Classificação Final: ${data.classificacao_final}`, 10);
+    addText(`Protesto: ${data.possui_protesto ? "SIM" : "NÃO"}`, 10);
+    addText(`Débito Provedor: ${data.possui_debito_provedor ? "SIM" : "NÃO"}`, 10);
+    addText(`Documento: ${data.documento_em_nome_do_contratante ? "Válido" : "Não apresentado"}`, 10);
+    addGap(4);
+    addText("COMPOSIÇÃO DE TAXAS", 12, true); addGap(3);
+    addText(`Taxa de Instalação: ${formatCurrency(data.taxa_instalacao)}`, 10);
+    addText(`Taxa de Análise de Crédito: ${formatCurrency(data.taxa_analise_credito)}`, 10);
+    addText(`Taxa Total: ${formatCurrency(data.taxa_total)}`, 10, true);
+    addGap(6);
+  }
 
   addText("CREDORES IDENTIFICADOS", 12, true);
   addGap(3);
   if (data.credores?.length) {
     for (const c of data.credores) {
-      addText(`• ${c.nome} (${c.tipo}) — ${c.valor}`, 9);
+      const cat = (c as any).categoria || (c as any).tipo || "";
+      const antMeses = (c as any).antiguidade_meses;
+      const suffix = antMeses !== undefined ? ` [${antMeses}m]` : "";
+      addText(`• ${c.nome} (${cat}) — ${c.valor}${suffix}`, 9);
     }
   } else {
     addText("Nenhum credor identificado.", 9);
   }
   addGap(6);
 
-  addText("REGRA APLICADA", 12, true);
+  addText("JUSTIFICATIVA DA DECISÃO", 12, true);
   addGap(3);
-  addText(data.regraAplicada || "—", 9);
-  addGap(6);
-
-  addText("ORIENTAÇÃO OPERACIONAL", 12, true);
-  addGap(3);
-  addText(data.orientacaoOperacional || "—", 9);
+  addText(data.motivo_decisao || data.regraAplicada || "—", 9);
   addGap(6);
 
   addText("OBSERVAÇÕES", 12, true);
@@ -79,7 +93,7 @@ const CreditReportDialog = ({ open, onOpenChange, data, cpfCnpj }: Props) => {
       <DialogContent className="max-w-2xl max-h-[90vh] p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="flex items-center justify-between">
-            <span>Análise de Crédito — {data.cpf || cpfCnpj}</span>
+            <span>Análise de Crédito — {data.cpf_cnpj || data.cpf || cpfCnpj}</span>
             <Button
               variant="outline"
               size="sm"
