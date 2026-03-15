@@ -36,16 +36,20 @@ interface CreditHistoryEntry {
   resultado: CreditAnalysisData | null;
 }
 
-const decisionBadge = (d: string | null) => {
+const faixaBadge = (d: string | null) => {
   switch (d) {
     case "ISENTAR":
-      return <Badge className="bg-accent text-accent-foreground">Isentar</Badge>;
-    case "COBRAR":
-      return <Badge className="bg-warning text-warning-foreground">Cobrar</Badge>;
-    case "REPROVAR":
-      return <Badge className="bg-destructive text-destructive-foreground">Reprovar</Badge>;
-    case "ANALISAR MANUALMENTE":
-      return <Badge className="bg-primary text-primary-foreground">Análise Manual</Badge>;
+      return <Badge className="bg-accent text-accent-foreground">Isenção</Badge>;
+    case "TAXA_R$100":
+      return <Badge className="bg-warning/80 text-warning-foreground">R$ 100</Badge>;
+    case "TAXA_R$200":
+      return <Badge className="bg-warning text-warning-foreground">R$ 200</Badge>;
+    case "TAXA_R$300":
+      return <Badge className="bg-destructive/80 text-destructive-foreground">R$ 300</Badge>;
+    case "TAXA_R$400":
+      return <Badge className="bg-destructive text-destructive-foreground">R$ 400</Badge>;
+    case "TAXA_R$1000":
+      return <Badge className="bg-destructive text-destructive-foreground">R$ 1.000</Badge>;
     default:
       return <Badge variant="outline">—</Badge>;
   }
@@ -263,7 +267,7 @@ const CreditHistoryTable = ({ refreshTrigger }: Props) => {
                 <TableHead>Nome</TableHead>
                 <TableHead>CPF/CNPJ</TableHead>
                 <TableHead>Usuário</TableHead>
-                <TableHead>Decisão</TableHead>
+                <TableHead>Faixa Final</TableHead>
                 <TableHead>Regra</TableHead>
                 <TableHead>Taxa Total</TableHead>
                 <TableHead>Status</TableHead>
@@ -294,7 +298,7 @@ const CreditHistoryTable = ({ refreshTrigger }: Props) => {
                       {formatCpfCnpj(e.cpf_cnpj, e.doc_type)}
                     </TableCell>
                     <TableCell className="text-sm">{e.user_name || "—"}</TableCell>
-                    <TableCell>{decisionBadge(e.decisao_final)}</TableCell>
+                    <TableCell>{faixaBadge(e.decisao_final)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground max-w-[180px] truncate">
                       {e.regra_aplicada || "—"}
                     </TableCell>
