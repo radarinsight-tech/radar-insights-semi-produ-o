@@ -3,28 +3,47 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Download, CheckCircle2, XCircle, MinusCircle } from "lucide-react";
+import { Download, CheckCircle2, XCircle, MinusCircle, ShieldAlert } from "lucide-react";
 import jsPDF from "jspdf";
 
 export interface CriterioAvaliacao {
   numero: number;
   nome: string;
-  noEscopo: boolean;
-  atendido: boolean;
+  categoria: string;
+  pesoMaximo: number;
+  resultado: "SIM" | "NÃO" | "FORA DO ESCOPO";
+  pontosObtidos: number;
   explicacao: string;
 }
 
+export interface Subtotais {
+  posturaEComunicacao: { obtidos: number; possiveis: number };
+  entendimentoEConducao: { obtidos: number; possiveis: number };
+  solucaoEConfirmacao: { obtidos: number; possiveis: number };
+  encerramentoEValor: { obtidos: number; possiveis: number };
+}
+
 export interface FullReport {
+  impeditivo?: boolean;
+  motivoImpeditivo?: string;
   data?: string;
   protocolo?: string;
   tipo?: string;
   atendente?: string;
+  criterios?: CriterioAvaliacao[];
+  subtotais?: Subtotais;
+  pontosObtidos?: number;
+  pontosPossiveis?: number;
+  notaFinal?: number;
+  classificacao?: string;
+  bonusQualidade?: number;
+  bonusOperacional?: { atualizacaoCadastral: string; pontosExtras: number };
+  mentoria?: string[];
+  // Legacy fields for backward compatibility
   atualizacaoCadastral?: string;
   nota?: number;
-  classificacao?: string;
   bonus?: boolean;
   pontosMelhoria?: string[];
-  criterios?: CriterioAvaliacao[];
   orientacaoFinal?: string;
 }
 
@@ -36,9 +55,38 @@ interface Props {
 }
 
 const classColor = (c: string) => {
-  if (c === "Excelente" || c === "Ótimo") return "bg-accent text-accent-foreground";
-  if (c === "Bom") return "bg-primary text-primary-foreground";
+  if (c === "Excelente" || c === "Muito bom") return "bg-accent text-accent-foreground";
+  if (c === "Bom atendimento") return "bg-primary text-primary-foreground";
   return "bg-warning text-warning-foreground";
+};
+
+const resultIcon = (resultado: string) => {
+  if (resultado === "FORA DO ESCOPO") return <MinusCircle className="h-4 w-4 text-muted-foreground" />;
+  if (resultado === "SIM") return <CheckCircle2 className="h-4 w-4 text-accent" />;
+  return <XCircle className="h-4 w-4 text-destructive" />;
+};
+
+const resultBadge = (resultado: string) => {
+  if (resultado === "FORA DO ESCOPO") return <Badge variant="outline" className="text-[10px] px-1.5 py-0">Fora do escopo</Badge>;
+  if (resultado === "SIM") return <Badge className="text-[10px] px-1.5 py-0 bg-accent text-accent-foreground">SIM</Badge>;
+  return <Badge className="text-[10px] px-1.5 py-0 bg-destructive text-destructive-foreground">NÃO</Badge>;
+};
+
+const CATEGORY_ORDER = [
+  "Postura e Comunicação",
+  "Entendimento e Condução",
+  "Solução e Confirmação",
+  "Encerramento e Valor",
+];
+
+const subtotalKey = (cat: string): keyof Subtotais => {
+  const map: Record<string, keyof Subtotais> = {
+    "Postura e Comunicação": "posturaEComunicacao",
+    "Entendimento e Condução": "entendimentoEConducao",
+    "Solução e Confirmação": "solucaoEConfirmacao",
+    "Encerramento e Valor": "encerramentoEValor",
+  };
+  return map[cat] || "posturaEComunicacao";
 };
 
 const exportReportPdf = (report: FullReport, protocolo: string) => {
@@ -61,63 +109,89 @@ const exportReportPdf = (report: FullReport, protocolo: string) => {
 
   const addGap = (gap = 4) => { y += gap; };
 
-  // Title
-  addText("RADAR INSIGHT — RELATÓRIO COMPLETO", 14, true);
+  addText("RADAR INSIGHT — AUDITORIA DE ATENDIMENTO", 14, true);
   addGap(6);
 
-  // Summary
+  if (report.impeditivo) {
+    addText("AUDITORIA NÃO REALIZADA", 12, true);
+    addText(report.motivoImpeditivo || "Impeditivo identificado.", 10);
+    doc.save(`auditoria_${protocolo}.pdf`);
+    return;
+  }
+
   addText(`Protocolo: ${report.protocolo || protocolo}`, 10);
   addText(`Data: ${report.data || "—"}`, 10);
   addText(`Atendente: ${report.atendente || "—"}`, 10);
   addText(`Tipo: ${report.tipo || "—"}`, 10);
-  addText(`Atualização Cadastral: ${report.atualizacaoCadastral || "—"}`, 10);
-  addText(`Nota Final: ${report.nota?.toFixed(1) || "—"}`, 10);
+  addText(`Nota Final: ${report.notaFinal?.toFixed(1) ?? report.nota?.toFixed(1) ?? "—"}`, 10);
   addText(`Classificação: ${report.classificacao || "—"}`, 10);
-  addText(`Bônus: ${report.bonus ? "Sim" : "Não"}`, 10);
+  addText(`Bônus Qualidade: ${report.bonusQualidade ?? 0}%`, 10);
+  addText(`Atualização Cadastral: ${report.bonusOperacional?.atualizacaoCadastral ?? report.atualizacaoCadastral ?? "—"} (${report.bonusOperacional?.pontosExtras ?? 0} pts extras)`, 10);
   addGap(6);
 
-  // Criteria
   addText("CRITÉRIOS DE AVALIAÇÃO", 12, true);
   addGap(3);
 
   if (report.criterios) {
-    for (const c of report.criterios) {
-      const status = !c.noEscopo ? "FORA DO ESCOPO" : c.atendido ? "✓ ATENDIDO" : "✗ NÃO ATENDIDO";
-      addText(`${c.numero}. ${c.nome} — ${status}`, 10, true);
-      addText(c.explicacao, 9);
+    for (const cat of CATEGORY_ORDER) {
+      const items = report.criterios.filter(c => c.categoria === cat);
+      if (items.length === 0) continue;
       addGap(2);
+      addText(cat.toUpperCase(), 10, true);
+      addGap(2);
+      for (const c of items) {
+        addText(`${c.numero}. ${c.nome} — ${c.resultado} (${c.pontosObtidos}/${c.pesoMaximo} pts)`, 10, true);
+        addText(c.explicacao, 9);
+        addGap(2);
+      }
     }
   }
 
   addGap(4);
-  addText("PONTOS DE MELHORIA", 12, true);
+  addText("MENTORIA DE COMUNICAÇÃO", 12, true);
   addGap(3);
-  if (report.pontosMelhoria) {
-    report.pontosMelhoria.forEach((p, i) => addText(`${i + 1}. ${p}`, 9));
-  }
+  const mentoriaItems = report.mentoria || report.pontosMelhoria || [];
+  mentoriaItems.forEach((p, i) => addText(`${i + 1}. ${p}`, 9));
 
-  addGap(4);
-  addText("ORIENTAÇÃO FINAL", 12, true);
-  addGap(3);
-  addText(report.orientacaoFinal || "—", 9);
-
-  doc.save(`relatorio_${protocolo}.pdf`);
+  doc.save(`auditoria_${protocolo}.pdf`);
 };
 
 const FullReportDialog = ({ open, onOpenChange, report, protocolo }: Props) => {
   if (!report) return null;
 
-  const criteriosNoEscopo = report.criterios?.filter(c => c.noEscopo) || [];
-  const criteriosForaEscopo = report.criterios?.filter(c => !c.noEscopo) || [];
-  const atendidos = criteriosNoEscopo.filter(c => c.atendido).length;
-  const total = criteriosNoEscopo.length;
+  const nota = report.notaFinal ?? report.nota;
+  const classificacao = report.classificacao || "—";
+  const mentoriaItems = report.mentoria || report.pontosMelhoria || [];
+
+  if (report.impeditivo) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Auditoria — {protocolo}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center text-center py-6">
+            <ShieldAlert className="h-10 w-10 text-warning mb-3" />
+            <p className="font-bold text-foreground">Auditoria não realizada</p>
+            <p className="text-sm text-muted-foreground mt-2">{report.motivoImpeditivo || "Impeditivo identificado."}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  const criteriosGrouped = CATEGORY_ORDER.map(cat => ({
+    categoria: cat,
+    items: (report.criterios || []).filter(c => c.categoria === cat),
+    subtotal: report.subtotais ? report.subtotais[subtotalKey(cat)] : null,
+  }));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="flex items-center justify-between">
-            <span>Avaliação Completa — {protocolo}</span>
+            <span>Auditoria Completa — {protocolo}</span>
             <Button
               variant="outline"
               size="sm"
@@ -125,7 +199,7 @@ const FullReportDialog = ({ open, onOpenChange, report, protocolo }: Props) => {
               className="gap-1.5"
             >
               <Download className="h-4 w-4" />
-              Baixar avaliação em PDF
+              Baixar PDF
             </Button>
           </DialogTitle>
         </DialogHeader>
@@ -142,59 +216,59 @@ const FullReportDialog = ({ open, onOpenChange, report, protocolo }: Props) => {
                 <p className="text-sm font-medium">{report.tipo || "—"}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground uppercase">Nota</p>
-                <p className="text-xl font-bold">{report.nota?.toFixed(1) || "—"}</p>
+                <p className="text-xs text-muted-foreground uppercase">Nota Final</p>
+                <p className="text-xl font-bold">{nota?.toFixed(1) || "—"}</p>
+                {report.pontosObtidos != null && report.pontosPossiveis != null && (
+                  <p className="text-xs text-muted-foreground">{report.pontosObtidos}/{report.pontosPossiveis} pts</p>
+                )}
               </div>
               <div>
                 <p className="text-xs text-muted-foreground uppercase">Classificação</p>
-                <Badge className={`mt-1 ${classColor(report.classificacao || "")}`}>
-                  {report.classificacao || "—"}
-                </Badge>
+                <Badge className={`mt-1 ${classColor(classificacao)}`}>{classificacao}</Badge>
               </div>
             </div>
 
-            <div className="text-xs text-muted-foreground">
-              {atendidos}/{total} critérios atendidos no escopo
-              {criteriosForaEscopo.length > 0 && ` · ${criteriosForaEscopo.length} fora do escopo`}
+            <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+              <span>Bônus qualidade: <strong className="text-foreground">{report.bonusQualidade ?? 0}%</strong></span>
+              <span>Atualização cadastral: <strong className="text-foreground">{report.bonusOperacional?.atualizacaoCadastral ?? report.atualizacaoCadastral ?? "—"}</strong>
+                {report.bonusOperacional?.pontosExtras ? ` (+${report.bonusOperacional.pontosExtras} pts)` : ""}
+              </span>
             </div>
 
             <Separator />
 
-            <div>
-              <h3 className="text-sm font-bold text-primary/90 mb-3">Critérios de Avaliação</h3>
-              <div className="space-y-2">
-                {report.criterios?.map((c) => (
-                  <div key={c.numero} className="flex gap-2.5 p-2.5 rounded-lg bg-muted/50">
-                    <div className="mt-0.5 shrink-0">
-                      {!c.noEscopo ? (
-                        <MinusCircle className="h-4 w-4 text-muted-foreground" />
-                      ) : c.atendido ? (
-                        <CheckCircle2 className="h-4 w-4 text-accent" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-destructive" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{c.numero}. {c.nome}</span>
-                        {!c.noEscopo && (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">Fora do escopo</Badge>
-                        )}
+            {criteriosGrouped.map(({ categoria, items, subtotal }) => (
+              <div key={categoria}>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-bold text-primary/90">{categoria}</h3>
+                  {subtotal && (
+                    <span className="text-xs text-muted-foreground">{subtotal.obtidos}/{subtotal.possiveis} pts</span>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  {items.map((c) => (
+                    <div key={c.numero} className="flex gap-2.5 p-2.5 rounded-lg bg-muted/50">
+                      <div className="mt-0.5 shrink-0">{resultIcon(c.resultado)}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium">{c.numero}. {c.nome}</span>
+                          {resultBadge(c.resultado)}
+                          <span className="text-xs text-muted-foreground">{c.pontosObtidos}/{c.pesoMaximo} pts</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">{c.explicacao}</p>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">{c.explicacao}</p>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+                <Separator className="mt-4" />
               </div>
-            </div>
+            ))}
 
-            <Separator />
-
-            {report.pontosMelhoria && report.pontosMelhoria.length > 0 && (
+            {mentoriaItems.length > 0 && (
               <div>
-                <h3 className="text-sm font-bold text-primary/90 mb-2">Pontos de Melhoria</h3>
+                <h3 className="text-sm font-bold text-primary/90 mb-2">Mentoria de Comunicação</h3>
                 <ul className="space-y-1.5">
-                  {report.pontosMelhoria.map((p, i) => (
+                  {mentoriaItems.map((p, i) => (
                     <li key={i} className="text-sm flex gap-2">
                       <span className="text-muted-foreground shrink-0">{i + 1}.</span>
                       {p}
@@ -202,16 +276,6 @@ const FullReportDialog = ({ open, onOpenChange, report, protocolo }: Props) => {
                   ))}
                 </ul>
               </div>
-            )}
-
-            {report.orientacaoFinal && (
-              <>
-                <Separator />
-                <div>
-                  <h3 className="text-sm font-bold text-primary/90 mb-2">Orientação Final</h3>
-                  <p className="text-sm text-muted-foreground whitespace-pre-line">{report.orientacaoFinal}</p>
-                </div>
-              </>
             )}
           </div>
         </ScrollArea>
