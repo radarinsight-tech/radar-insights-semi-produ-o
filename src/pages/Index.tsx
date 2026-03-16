@@ -8,7 +8,7 @@ import StatsWidgets from "@/components/StatsWidgets";
 import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Users, Search, ArrowLeft, AlertTriangle, RefreshCw, FlaskConical } from "lucide-react";
+import { LogOut, Users, Search, ArrowLeft, AlertTriangle, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import logoSymbol from "@/assets/logo-symbol.png";
@@ -28,28 +28,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// ═══════════════════════════════════════════════════
-// MODO DEMO — Altere para true para ativar
-// ═══════════════════════════════════════════════════
-const DEMO_MODE = false;
-
-const DEMO_RESULT: AnalysisData = {
-  protocolo: "DEMO-2025031567",
-  atendente: "Ana Paula (Demo)",
-  tipo: "Suporte Técnico",
-  atualizacaoCadastral: "SIM",
-  notaFinal: 92.1,
-  classificacao: "Excelente",
-  bonus: true,
-  bonusQualidade: 100,
-  pontosMelhoria: [
-    "Reforçar confirmação de entendimento antes de propor solução.",
-    "Oferecer alternativas de contato para acompanhamento.",
-  ],
-  pontosObtidos: 81,
-  pontosPossiveis: 88,
-};
-
 /** Parse dd/MM/yyyy to a Date object */
 const parseDateBR = (str: string): Date | null => {
   const parts = str.split("/");
@@ -66,7 +44,6 @@ const Index = () => {
   const [analyzedFileName, setAnalyzedFileName] = useState<string>("");
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
-  const [isDemoResult, setIsDemoResult] = useState(false);
   const [filters, setFilters] = useState<FilterValues>({
     atendente: "todos",
     periodo: "",
@@ -127,7 +104,6 @@ const Index = () => {
   const handleNewAnalysis = () => {
     setAnalysis(null);
     setAnalysisError(null);
-    setIsDemoResult(false);
     setUploadState("empty");
     setAnalyzedFileName("");
   };
@@ -135,21 +111,8 @@ const Index = () => {
   const runAnalysis = async (file: File) => {
     setIsAnalyzing(true);
     setAnalysisError(null);
-    setIsDemoResult(false);
     setAnalyzedFileName(file.name);
     console.log("[Radar] Etapa 1: PDF carregado —", file.name, `(${(file.size / 1024).toFixed(1)} KB)`);
-
-    // ═══ MODO DEMO ═══
-    if (DEMO_MODE) {
-      console.log("[Radar] MODO DEMO ativo — gerando resultado mockado");
-      await new Promise((r) => setTimeout(r, 1500)); // simular processamento
-      setAnalysis(DEMO_RESULT);
-      setIsDemoResult(true);
-      setUploadState("completed");
-      setIsAnalyzing(false);
-      toast.success("Análise concluída (Modo Demo)");
-      return;
-    }
     try {
       console.log("[Radar] Etapa 2: Extraindo texto do PDF...");
       const text = await extractTextFromPdf(file);
@@ -408,12 +371,6 @@ const Index = () => {
           <h1 className="text-xl font-bold text-foreground">
             Radar Insight — <span className="text-primary">Sucesso do Cliente</span>
           </h1>
-          {(DEMO_MODE || isDemoResult) && (
-            <Badge variant="outline" className="border-amber-500 text-amber-600 dark:text-amber-400 gap-1">
-              <FlaskConical className="h-3 w-3" />
-              Modo Demo
-            </Badge>
-          )}
           <div className="ml-auto flex items-center gap-1">
             <Button variant="outline" size="sm" onClick={() => navigate("/")}>
               <ArrowLeft className="h-4 w-4" />
