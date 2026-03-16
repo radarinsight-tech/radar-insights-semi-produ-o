@@ -32,7 +32,14 @@ ETAPA 1 — INTERAÇÃO DO CLIENTE
 
 REGRA CRÍTICA: Antes de classificar como "sem_interacao_do_cliente", você DEVE ler TODO o histórico do atendimento do início ao fim. Qualquer mensagem enviada pelo cliente em qualquer momento do atendimento invalida essa classificação.
 
-Verifique se existe qualquer mensagem enviada pelo cliente em TODO o histórico.
+COMO IDENTIFICAR MENSAGENS DO CLIENTE:
+Considere como mensagem do cliente qualquer linha do histórico que NÃO seja enviada pelo BOT (ex: MARTE) e NÃO seja enviada por um atendente humano identificado.
+Normalmente as mensagens do cliente aparecem com:
+- o nome do cliente no início da linha
+- o número de telefone do cliente
+- respostas logo após mensagens do BOT
+- texto livre enviado pelo usuário
+
 Considere como interação válida:
 - saudações (ex: "boa noite", "olá", "oi")
 - perguntas
