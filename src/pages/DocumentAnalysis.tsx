@@ -676,6 +676,34 @@ const DocumentAnalysis = () => {
       if (suspeita) statusOcr = "suspeita_fraude";
       statusOcr = "revisao_manual_pendente"; // Always require human review
 
+      // ── Auto-fill checklist based on OCR results ──
+      const nameMatch = (() => {
+        if (!extractedName || !refNome) return false;
+        return extractedName.includes(refNome) || refNome.includes(extractedName);
+      })();
+
+      const cpfMatch = (() => {
+        if (!extractedCpf || !refCpf) return false;
+        return extractedCpf === refCpf;
+      })();
+
+      const enderecoMatch = !divergencias.some((d: any) => d.campo === "endereco");
+
+      const autoLegivel = confianca >= 0.3 && Object.keys(campos).filter(k => k !== "texto_completo").length > 0;
+
+      // Validity rules
+      let autoValido = true;
+      if (item.tipo === "comprovante_endereco" && alertas.some((a: any) => a.tipo === "comprovante_vencido")) {
+        autoValido = false;
+      }
+      if (item.tipo === "contrato_aluguel" && alertas.some((a: any) => a.tipo === "contrato_curto")) {
+        autoValido = false;
+      }
+      if (divergencias.some((d: any) => d.tipo === "nome_divergente" || d.tipo === "cpf_divergente")) {
+        autoValido = false;
+      }
+      if (!autoLegivel) autoValido = false;
+
       await supabase.from("document_items").update({
         texto_extraido: texto,
         confianca_ocr: confianca,
@@ -688,6 +716,12 @@ const DocumentAnalysis = () => {
         data_emissao: campos.data_emissao ? parseDateToISO(campos.data_emissao) : null,
         data_inicio_contrato: campos.data_inicio ? parseDateToISO(campos.data_inicio) : null,
         data_fim_contrato: campos.data_termino ? parseDateToISO(campos.data_termino) : null,
+        // Auto-filled checklist
+        nome_confere: nameMatch,
+        cpf_confere: cpfMatch,
+        endereco_confere: enderecoMatch,
+        legivel: autoLegivel,
+        valido: autoValido,
       } as any).eq("id", item.id);
 
       await loadDocItems(docAnalysis.id);
