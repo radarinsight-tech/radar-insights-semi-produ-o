@@ -19,19 +19,42 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Radar, ArrowLeft, UserPlus, Users, Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Radar, ArrowLeft, UserPlus, Users, Loader2, Pencil, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 
-interface Profile {
+type AppRole = "admin" | "auditoria" | "credito";
+
+const ROLE_LABELS: Record<AppRole, string> = {
+  admin: "Admin",
+  auditoria: "Auditoria",
+  credito: "Crédito",
+};
+
+const ROLE_COLORS: Record<AppRole, string> = {
+  admin: "bg-primary/10 text-primary border-primary/20",
+  auditoria: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+  credito: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+};
+
+interface ProfileWithRole {
   id: string;
   full_name: string | null;
   created_at: string;
+  role: AppRole | null;
 }
 
 const UsersPage = () => {
   const navigate = useNavigate();
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [profiles, setProfiles] = useState<ProfileWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteLoading, setInviteLoading] = useState(false);
@@ -39,8 +62,13 @@ const UsersPage = () => {
   const [inviteName, setInviteName] = useState("");
   const [invitePassword, setInvitePassword] = useState("");
 
+  const [editOpen, setEditOpen] = useState(false);
+  const [editUser, setEditUser] = useState<ProfileWithRole | null>(null);
+  const [editRole, setEditRole] = useState<AppRole | "none">("none");
+  const [editLoading, setEditLoading] = useState(false);
+
   const loadProfiles = async () => {
-    const { data, error } = await supabase
+    const { data: profilesData, error } = await supabase
       .from("profiles")
       .select("id, full_name, created_at")
       .order("created_at", { ascending: true });
@@ -48,9 +76,26 @@ const UsersPage = () => {
     if (error) {
       console.error("Error loading profiles:", error);
       toast.error("Erro ao carregar usuários.");
+      setLoading(false);
       return;
     }
-    setProfiles(data || []);
+
+    // Load roles for all users
+    const { data: rolesData } = await supabase
+      .from("user_roles")
+      .select("user_id, role");
+
+    const roleMap = new Map<string, AppRole>();
+    (rolesData ?? []).forEach((r) => {
+      roleMap.set(r.user_id, r.role as AppRole);
+    });
+
+    const merged: ProfileWithRole[] = (profilesData || []).map((p) => ({
+      ...p,
+      role: roleMap.get(p.id) ?? null,
+    }));
+
+    setProfiles(merged);
     setLoading(false);
   };
 
@@ -66,8 +111,6 @@ const UsersPage = () => {
     }
     setInviteLoading(true);
 
-    // Use edge function or admin signup — here we use normal signup
-    // The trigger will auto-assign company
     const { error } = await supabase.auth.signUp({
       email: inviteEmail,
       password: invitePassword,
@@ -87,8 +130,50 @@ const UsersPage = () => {
       setInviteName("");
       setInvitePassword("");
       setInviteOpen(false);
-      // Reload after a small delay to allow trigger to run
       setTimeout(loadProfiles, 2000);
+    }
+  };
+
+  const openEditDialog = (profile: ProfileWithRole) => {
+    setEditUser(profile);
+    setEditRole(profile.role ?? "none");
+    setEditOpen(true);
+  };
+
+  const handleSaveRole = async () => {
+    if (!editUser) return;
+    setEditLoading(true);
+
+    try {
+      if (editRole === "none") {
+        // Remove any existing role
+        const { error } = await supabase
+          .from("user_roles")
+          .delete()
+          .eq("user_id", editUser.id);
+        if (error) throw error;
+      } else {
+        // Upsert: delete existing then insert new
+        await supabase
+          .from("user_roles")
+          .delete()
+          .eq("user_id", editUser.id);
+
+        const { error } = await supabase
+          .from("user_roles")
+          .insert({ user_id: editUser.id, role: editRole });
+        if (error) throw error;
+      }
+
+      toast.success("Permissão atualizada com sucesso.");
+      setEditOpen(false);
+      setEditUser(null);
+      await loadProfiles();
+    } catch (err: any) {
+      console.error("Error saving role:", err);
+      toast.error("Erro ao salvar permissão: " + (err.message || "erro desconhecido"));
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -120,7 +205,7 @@ const UsersPage = () => {
                 Usuários — Banda Turbo
               </h2>
               <p className="text-sm text-muted-foreground">
-                Gerencie os membros da equipe
+                Gerencie os membros e permissões da equipe
               </p>
             </div>
           </div>
@@ -196,7 +281,9 @@ const UsersPage = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
+                  <TableHead>Permissão</TableHead>
                   <TableHead>Membro desde</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -205,8 +292,28 @@ const UsersPage = () => {
                     <TableCell className="font-medium">
                       {profile.full_name || "Sem nome"}
                     </TableCell>
+                    <TableCell>
+                      {profile.role ? (
+                        <Badge variant="outline" className={ROLE_COLORS[profile.role]}>
+                          <Shield className="h-3 w-3 mr-1" />
+                          {ROLE_LABELS[profile.role]}
+                        </Badge>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Sem permissão</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {new Date(profile.created_at).toLocaleDateString("pt-BR")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditDialog(profile)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                        Editar
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -215,6 +322,53 @@ const UsersPage = () => {
           )}
         </Card>
       </main>
+
+      {/* Edit Role Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar permissão</DialogTitle>
+          </DialogHeader>
+          {editUser && (
+            <div className="space-y-4 pt-2">
+              <div className="space-y-1">
+                <Label className="text-muted-foreground text-xs">Usuário</Label>
+                <p className="font-medium text-foreground">
+                  {editUser.full_name || "Sem nome"}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Módulo de acesso</Label>
+                <Select
+                  value={editRole}
+                  onValueChange={(v) => setEditRole(v as AppRole | "none")}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a permissão" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem permissão</SelectItem>
+                    <SelectItem value="auditoria">Auditoria de Atendimento</SelectItem>
+                    <SelectItem value="credito">Análise de Crédito</SelectItem>
+                    <SelectItem value="admin">Admin (acesso total)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Define qual módulo o usuário pode acessar no sistema.
+                </p>
+              </div>
+              <Button
+                className="w-full"
+                onClick={handleSaveRole}
+                disabled={editLoading}
+              >
+                {editLoading && <Loader2 className="animate-spin" />}
+                Salvar permissão
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
