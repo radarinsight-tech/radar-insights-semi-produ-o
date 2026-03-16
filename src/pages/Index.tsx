@@ -399,7 +399,23 @@ const Index = () => {
             />
           </ErrorBoundary>
           <ErrorBoundary fallbackTitle="Erro no resultado da análise">
-            <AnalysisResult data={analysis} />
+            {analysisError ? (
+              <Card className="p-6 border-destructive/30 bg-destructive/5">
+                <h2 className="text-lg font-bold text-primary mb-4">Resultado da Auditoria</h2>
+                <div className="flex flex-col items-center text-center gap-3 py-4">
+                  <div className="p-3 rounded-full bg-destructive/10">
+                    <AlertTriangle className="h-6 w-6 text-destructive" />
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">Erro ao processar atendimento</p>
+                  <p className="text-xs text-muted-foreground max-w-sm">{analysisError}</p>
+                  <Button variant="outline" size="sm" onClick={handleNewAnalysis}>
+                    <RefreshCw className="h-4 w-4 mr-1" /> Nova análise
+                  </Button>
+                </div>
+              </Card>
+            ) : (
+              <AnalysisResult data={analysis} />
+            )}
           </ErrorBoundary>
         </div>
 
