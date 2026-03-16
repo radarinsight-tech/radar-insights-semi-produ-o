@@ -127,6 +127,148 @@ const DECISAO_OPTIONS = [
   { value: "documentacao_reprovada", label: "Reprovada" },
 ];
 
+// ── Decision Matrix Engine ──
+interface SuggestedDecision {
+  decisao: string;
+  label: string;
+  motivos: string[];
+  color: string;
+  icon: typeof CheckCircle2;
+}
+
+function computeSuggestedDecision(items: DocItem[]): SuggestedDecision | null {
+  if (items.length === 0) return null;
+
+  const receivedItems = items.filter(i => i.documento_recebido && i.file_url);
+  if (receivedItems.length === 0) return null;
+
+  const motivos: string[] = [];
+  let hasReprovacao = false;
+  let hasPendencia = false;
+
+  for (const item of receivedItems) {
+    const tipoLabel = DOC_TYPES.find(d => d.value === item.tipo)?.label || item.tipo;
+
+    // Suspeita de fraude → reprovada
+    if (item.suspeita_fraude) {
+      motivos.push(`${tipoLabel}: suspeita de fraude detectada`);
+      hasReprovacao = true;
+    }
+
+    // Documento duplicado em outro cliente → reprovada
+    if (item.alertas?.some((a: any) => a.tipo === "documento_duplicado")) {
+      motivos.push(`${tipoLabel}: documento repetido em outro cliente`);
+      hasReprovacao = true;
+    }
+
+    // Nome divergente → reprovada
+    if (item.divergencias?.some((d: any) => d.tipo === "nome_divergente")) {
+      motivos.push(`${tipoLabel}: nome divergente do cadastro`);
+      hasReprovacao = true;
+    }
+
+    // CPF divergente → reprovada
+    if (item.divergencias?.some((d: any) => d.tipo === "cpf_divergente")) {
+      motivos.push(`${tipoLabel}: CPF divergente do cadastro`);
+      hasReprovacao = true;
+    }
+
+    // Endereço divergente → pendente
+    if (item.divergencias?.some((d: any) => d.campo === "endereco")) {
+      motivos.push(`${tipoLabel}: endereço divergente`);
+      hasPendencia = true;
+    }
+
+    // Documento ilegível → pendente
+    if (item.documento_recebido && !item.legivel) {
+      motivos.push(`${tipoLabel}: documento ilegível`);
+      hasPendencia = true;
+    }
+
+    // Checklist incompleto → pendente
+    if (item.documento_recebido && item.file_url) {
+      const checklistComplete = item.nome_confere && item.cpf_confere && item.endereco_confere && item.legivel && item.valido;
+      if (!checklistComplete) {
+        motivos.push(`${tipoLabel}: checklist incompleto`);
+        hasPendencia = true;
+      }
+    }
+
+    // Comprovante > 60 dias → pendente
+    if (item.alertas?.some((a: any) => a.tipo === "comprovante_vencido")) {
+      motivos.push(`${tipoLabel}: comprovante com mais de 60 dias`);
+      hasPendencia = true;
+    }
+
+    // Contrato < 12 meses → pendente
+    if (item.alertas?.some((a: any) => a.tipo === "contrato_curto")) {
+      motivos.push(`${tipoLabel}: contrato com menos de 12 meses`);
+      hasPendencia = true;
+    }
+  }
+
+  // OCR < 50% mas checklist confirmado → aprovar com observação
+  const lowOcrButManualOk = receivedItems.some(i =>
+    i.confianca_ocr !== null && i.confianca_ocr < 0.5 &&
+    i.nome_confere && i.cpf_confere && i.endereco_confere && i.legivel && i.valido
+  );
+
+  if (hasReprovacao) {
+    return {
+      decisao: "documentacao_reprovada",
+      label: "Documentação Reprovada",
+      motivos,
+      color: "text-destructive",
+      icon: XCircle,
+    };
+  }
+
+  if (hasPendencia) {
+    return {
+      decisao: "documentacao_pendente",
+      label: "Documentação Pendente",
+      motivos,
+      color: "text-warning",
+      icon: AlertTriangle,
+    };
+  }
+
+  // All received docs have complete checklist and low risk
+  const allValid = receivedItems.every(i =>
+    i.nome_confere && i.cpf_confere && i.endereco_confere && i.legivel && i.valido &&
+    (i.risco_documental === "baixo" || i.risco_documental === null)
+  );
+
+  if (allValid) {
+    if (lowOcrButManualOk) {
+      motivos.push("OCR com baixa confiança, mas checklist confirmado manualmente");
+      return {
+        decisao: "documentacao_aprovada",
+        label: "Aprovar com Observação",
+        motivos,
+        color: "text-accent",
+        icon: CheckCircle2,
+      };
+    }
+    return {
+      decisao: "documentacao_aprovada",
+      label: "Documentação Aprovada",
+      motivos: ["Todos os documentos válidos, checklist completo, risco baixo"],
+      color: "text-accent",
+      icon: CheckCircle2,
+    };
+  }
+
+  motivos.push("Análise requer revisão adicional");
+  return {
+    decisao: "documentacao_pendente",
+    label: "Documentação Pendente",
+    motivos,
+    color: "text-warning",
+    icon: AlertTriangle,
+  };
+}
+
 const normalizeFaixa = (d: string | null): string => {
   if (!d) return "—";
   const u = d.toUpperCase().trim();
