@@ -131,7 +131,7 @@ const AttendanceDemo = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Análise concluída</p>
-                          <p className="text-sm font-medium text-foreground">atendimento-demo.pdf</p>
+                          <p className="text-sm font-medium text-foreground">BT202681899_renegociacao.pdf</p>
                         </div>
                       </div>
                     </div>
