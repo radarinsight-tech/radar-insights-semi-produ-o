@@ -221,7 +221,7 @@ serve(async (req) => {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Analise o seguinte atendimento e aplique a matriz de auditoria Radar Insight completa:\n\n${text}` },
+          { role: "user", content: `Analise o seguinte atendimento seguindo rigorosamente a ordem: 1) verificar interação do cliente, 2) verificar atendimento humano, 3) verificar impedimentos, 4) verificar erro do BOT, 5) aplicar mentoria. Nunca pule etapas.\n\n${text}` },
         ],
         tools: [
           {
