@@ -112,25 +112,6 @@ const Index = () => {
         return;
       }
 
-      // Check for client interaction before proceeding
-      if (!hasClientInteraction(text)) {
-        setIsAnalyzing(false);
-        setUploadState("no-interaction");
-        setAnalysis({
-          protocolo: "Não identificado",
-          atendente: "Não identificado",
-          tipo: "Indeterminado",
-          atualizacaoCadastral: "NÃO",
-          notaFinal: 0,
-          classificacao: "Fora de Avaliação",
-          bonus: false,
-          bonusQualidade: 0,
-          pontosMelhoria: [],
-          noInteraction: true,
-        });
-        return;
-      }
-
       // Check for duplicate protocol before running analysis
       const protocolMatch = text.match(/(?:protocolo|prot\.?)\s*[:\-]?\s*([A-Za-z0-9]+)/i);
       const extractedProtocol = protocolMatch?.[1];
