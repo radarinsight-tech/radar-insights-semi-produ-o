@@ -19,11 +19,11 @@ const cardClass = "rounded-xl border border-border/60 bg-card shadow-sm";
 
 /* ── MOCK DATA ── */
 const MOCK_RESULT = {
-  protocolo: "DEMO-2025031567",
+  protocolo: "BT202681899",
   atendente: "Ana Paula (Demo)",
   tipo: "Suporte Técnico",
   atualizacaoCadastral: "SIM",
-  notaFinal: 92.1,
+  notaFinal: 9.2,
   classificacao: "Excelente",
   bonusQualidade: 100,
   versaoPrompt: "auditor_v3",
@@ -45,19 +45,19 @@ const MOCK_RESULT = {
 };
 
 const MOCK_HISTORY = [
-  { id: "1", data: "15/03/2025", protocolo: "ATD-1001", atendente: "Ana Paula", nota: 92.1, classificacao: "Excelente", tipo: "Suporte Técnico", bonus: true },
-  { id: "2", data: "15/03/2025", protocolo: "ATD-1002", atendente: "Carlos Lima", nota: 78.5, classificacao: "Bom", tipo: "Financeiro", bonus: false },
-  { id: "3", data: "14/03/2025", protocolo: "ATD-1003", atendente: "Maria Souza", nota: 88.0, classificacao: "Ótimo", tipo: "Cancelamento", bonus: false },
-  { id: "4", data: "14/03/2025", protocolo: "ATD-1004", atendente: "João Santos", nota: 95.2, classificacao: "Excelente", tipo: "Informação", bonus: true },
-  { id: "5", data: "13/03/2025", protocolo: "ATD-1005", atendente: "Bruna Costa", nota: 67.3, classificacao: "Regular", tipo: "Reclamação", bonus: false },
+  { id: "1", data: "15/03/2025", protocolo: "BT202681899", atendente: "Ana Paula", nota: 9.2, classificacao: "Excelente", tipo: "Suporte Técnico", bonus: true },
+  { id: "2", data: "15/03/2025", protocolo: "BT202680175", atendente: "Carlos Lima", nota: 7.8, classificacao: "Bom", tipo: "Financeiro", bonus: false },
+  { id: "3", data: "14/03/2025", protocolo: "BT202675517", atendente: "Maria Souza", nota: 8.8, classificacao: "Bom", tipo: "Cancelamento", bonus: false },
+  { id: "4", data: "14/03/2025", protocolo: "BT202679430", atendente: "João Santos", nota: 9.5, classificacao: "Excelente", tipo: "Informação", bonus: true },
+  { id: "5", data: "13/03/2025", protocolo: "BT202673291", atendente: "Bruna Costa", nota: 6.7, classificacao: "Regular", tipo: "Reclamação", bonus: false },
 ];
 
 const MOCK_RANKING = [
-  { nome: "Ana Paula", media: 92.1 },
-  { nome: "João Santos", media: 91.4 },
-  { nome: "Maria Souza", media: 85.7 },
-  { nome: "Carlos Lima", media: 79.2 },
-  { nome: "Bruna Costa", media: 72.8 },
+  { nome: "Ana Paula", media: 9.2 },
+  { nome: "João Santos", media: 9.1 },
+  { nome: "Maria Souza", media: 8.5 },
+  { nome: "Carlos Lima", media: 7.9 },
+  { nome: "Bruna Costa", media: 7.2 },
 ];
 
 function classifBadge(c: string) {
@@ -223,12 +223,12 @@ const AttendanceDemo = () => {
             <div className={`${cardClass} p-5`}>
               <h2 className="text-sm font-semibold text-primary mb-3 tracking-tight">Evolução da Nota Média</h2>
               <div className="h-40 flex items-end gap-1.5 px-1">
-                {[78, 82, 80, 85, 88, 84, 87, 90, 86, 89, 92, 91].map((v, i) => (
+                {[7.8, 8.2, 8.0, 8.5, 8.8, 8.4, 8.7, 9.0, 8.6, 8.9, 9.2, 9.1].map((v, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
-                    <span className="text-[9px] font-medium text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">{v}</span>
+                    <span className="text-[9px] font-medium text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">{v.toFixed(1).replace(".", ",")}</span>
                     <div
                       className="w-full rounded-t-md bg-primary/70 group-hover:bg-primary transition-colors"
-                      style={{ height: `${(v / 100) * 110}px` }}
+                      style={{ height: `${(v / 10) * 110}px` }}
                     />
                     <span className="text-[9px] text-muted-foreground">{["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][i]}</span>
                   </div>
@@ -244,9 +244,9 @@ const AttendanceDemo = () => {
                   <div key={a.nome} className="flex items-center gap-3">
                     <span className="text-xs font-medium text-foreground w-28 truncate">{a.nome}</span>
                     <div className="flex-1 h-4 bg-muted/50 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full bg-gradient-to-r from-primary/60 to-primary transition-all" style={{ width: `${a.media}%` }} />
+                      <div className="h-full rounded-full bg-gradient-to-r from-primary/60 to-primary transition-all" style={{ width: `${(a.media / 10) * 100}%` }} />
                     </div>
-                    <span className="text-xs font-bold text-foreground tabular-nums w-10 text-right">{a.media}</span>
+                    <span className="text-xs font-bold text-foreground tabular-nums w-10 text-right">{a.media.toFixed(1).replace(".", ",")}</span>
                   </div>
                 ))}
               </div>
@@ -317,7 +317,7 @@ const AttendanceDemo = () => {
                         <TableCell className="text-xs font-medium">{h.protocolo}</TableCell>
                         <TableCell className="text-xs">{h.atendente}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{h.tipo}</TableCell>
-                        <TableCell className="text-xs text-right font-bold tabular-nums">{h.nota}</TableCell>
+                        <TableCell className="text-xs text-right font-bold tabular-nums">{h.nota.toFixed(1).replace(".", ",")}</TableCell>
                         <TableCell>
                           <Badge className={`text-[10px] px-1.5 py-0 border font-medium ${classifBadge(h.classificacao)}`}>
                             {h.classificacao}
@@ -341,7 +341,7 @@ const AttendanceDemo = () => {
             <SideMetric icon={BarChart3} label="Atendimentos Auditados" value="14" color="text-primary" />
             <SideMetric icon={Bot} label="Falhas do BOT" value="2" color="text-destructive" />
             <SideMetric icon={Ban} label="Auditorias Bloqueadas" value="1" color="text-amber-500" />
-            <SideMetric icon={TrendingUp} label="Média da Equipe" value="84.2" color="text-primary" />
+            <SideMetric icon={TrendingUp} label="Média da Equipe" value="8,4" color="text-primary" />
             <SideMetric icon={Users} label="Total Avaliados" value="6" color="text-accent" />
 
             {/* Ranking */}
@@ -357,7 +357,7 @@ const AttendanceDemo = () => {
                       {i + 1}º
                     </span>
                     <span className="text-xs text-foreground flex-1 truncate">{a.nome}</span>
-                    <span className="text-xs font-bold text-foreground tabular-nums">{a.media}</span>
+                    <span className="text-xs font-bold text-foreground tabular-nums">{a.media.toFixed(1).replace(".", ",")}</span>
                   </li>
                 ))}
               </ol>
