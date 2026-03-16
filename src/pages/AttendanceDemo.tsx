@@ -272,7 +272,7 @@ const AttendanceDemo = () => {
                   <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 block">Tipo</label>
                   <Select><SelectTrigger className="h-9"><SelectValue placeholder="Todos" /></SelectTrigger>
                     <SelectContent>
-                      {["Todos","Suporte Técnico","Financeiro","Cancelamento","Informação","Reclamação"].map((t) => (
+                      {["Todos","Renegociação","Suporte Técnico","Cancelamento","2ª Via de Fatura","Reclamação","Contestação","Alteração Cadastral"].map((t) => (
                         <SelectItem key={t} value={t}>{t}</SelectItem>
                       ))}
                     </SelectContent>
