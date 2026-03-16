@@ -13,12 +13,14 @@ import CreditAnalysis from "./pages/CreditAnalysis.tsx";
 import CreditDashboard from "./pages/CreditDashboard.tsx";
 import DocumentAnalysis from "./pages/DocumentAnalysis.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import AppModeBanner from "./components/AppModeBanner.tsx";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <AppModeBanner />
       <Toaster />
       <Sonner />
       <BrowserRouter>
