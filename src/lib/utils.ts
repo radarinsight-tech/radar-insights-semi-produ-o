@@ -10,7 +10,8 @@ export function cn(...inputs: ClassValue[]) {
  * If the value is already ≤ 10, it's returned as-is.
  */
 export function notaToScale10(value: number): number {
-  return value > 10 ? value / 10 : value;
+  const scaled = value > 10 ? value / 10 : value;
+  return Math.round(scaled * 10) / 10;
 }
 
 /**
