@@ -17,47 +17,51 @@ import QualityGauge from "@/components/QualityGauge";
 /* ── Shared card style ── */
 const cardClass = "rounded-xl border border-border/60 bg-card shadow-sm";
 
-/* ── MOCK DATA ── */
+/* ── MOCK DATA (padrão real Radar Insight) ── */
 const MOCK_RESULT = {
   protocolo: "BT202681899",
-  atendente: "Ana Paula (Demo)",
-  tipo: "Suporte Técnico",
+  atendente: "Fernanda Oliveira",
+  tipo: "Renegociação",
   atualizacaoCadastral: "SIM",
   notaFinal: 9.2,
   classificacao: "Excelente",
   bonusQualidade: 100,
-  versaoPrompt: "auditor_v3",
+  versaoPrompt: "auditor_v3.2",
   validade: "Verdadeiro",
   statusInteracao: "Sim",
-  resumo: "Atendimento conduzido de forma adequada, com boa condução e direcionamento correto ao cliente.",
+  resumo: "Atendimento conduzido com empatia e objetividade. A operadora identificou corretamente a demanda de renegociação, apresentou as opções disponíveis e confirmou o aceite do cliente antes de finalizar. Cadastro atualizado conforme protocolo.",
   indicadores: [
-    { label: "Abertura", valor: 10.0 },
+    { label: "Abertura", valor: 9.5 },
     { label: "Condução", valor: 9.2 },
-    { label: "Direcionamento", valor: 9.4 },
-    { label: "Encerramento", valor: 8.8 },
+    { label: "Direcionamento", valor: 9.0 },
+    { label: "Encerramento", valor: 9.3 },
   ],
   pontosMelhoria: [
-    "Reforçar confirmação de entendimento antes de propor solução.",
-    "Oferecer alternativas de contato para acompanhamento.",
+    "Reforçar a confirmação de entendimento antes de apresentar a proposta de renegociação.",
+    "Informar prazo de efetivação do acordo para alinhar expectativa do cliente.",
   ],
-  pontosObtidos: 81,
+  pontosObtidos: 83,
   pontosPossiveis: 88,
 };
 
 const MOCK_HISTORY = [
-  { id: "1", data: "15/03/2025", protocolo: "BT202681899", atendente: "Ana Paula", nota: 9.2, classificacao: "Excelente", tipo: "Suporte Técnico", bonus: true },
-  { id: "2", data: "15/03/2025", protocolo: "BT202680175", atendente: "Carlos Lima", nota: 7.8, classificacao: "Bom", tipo: "Financeiro", bonus: false },
-  { id: "3", data: "14/03/2025", protocolo: "BT202675517", atendente: "Maria Souza", nota: 8.8, classificacao: "Bom", tipo: "Cancelamento", bonus: false },
-  { id: "4", data: "14/03/2025", protocolo: "BT202679430", atendente: "João Santos", nota: 9.5, classificacao: "Excelente", tipo: "Informação", bonus: true },
-  { id: "5", data: "13/03/2025", protocolo: "BT202673291", atendente: "Bruna Costa", nota: 6.7, classificacao: "Regular", tipo: "Reclamação", bonus: false },
+  { id: "1", data: "15/03/2025", protocolo: "BT202681899", atendente: "Fernanda Oliveira", nota: 9.2, classificacao: "Excelente", tipo: "Renegociação", bonus: true },
+  { id: "2", data: "15/03/2025", protocolo: "BT202680175", atendente: "Rafael Mendes", nota: 7.8, classificacao: "Bom", tipo: "Suporte Técnico", bonus: false },
+  { id: "3", data: "14/03/2025", protocolo: "BT202675517", atendente: "Juliana Alves", nota: 8.8, classificacao: "Bom", tipo: "Cancelamento", bonus: false },
+  { id: "4", data: "14/03/2025", protocolo: "BT202679430", atendente: "Lucas Ferreira", nota: 9.5, classificacao: "Excelente", tipo: "2ª Via de Fatura", bonus: true },
+  { id: "5", data: "13/03/2025", protocolo: "BT202673291", atendente: "Patrícia Ramos", nota: 6.7, classificacao: "Regular", tipo: "Reclamação", bonus: false },
+  { id: "6", data: "13/03/2025", protocolo: "BT202672104", atendente: "Diego Nascimento", nota: 5.3, classificacao: "Regular", tipo: "Contestação", bonus: false },
+  { id: "7", data: "12/03/2025", protocolo: "BT202671088", atendente: "Fernanda Oliveira", nota: 9.0, classificacao: "Excelente", tipo: "Alteração Cadastral", bonus: true },
+  { id: "8", data: "12/03/2025", protocolo: "BT202670539", atendente: "Rafael Mendes", nota: 8.1, classificacao: "Bom", tipo: "Renegociação", bonus: false },
 ];
 
 const MOCK_RANKING = [
-  { nome: "Ana Paula", media: 9.2 },
-  { nome: "João Santos", media: 9.1 },
-  { nome: "Maria Souza", media: 8.5 },
-  { nome: "Carlos Lima", media: 7.9 },
-  { nome: "Bruna Costa", media: 7.2 },
+  { nome: "Fernanda Oliveira", media: 9.2 },
+  { nome: "Lucas Ferreira", media: 9.1 },
+  { nome: "Juliana Alves", media: 8.5 },
+  { nome: "Rafael Mendes", media: 7.9 },
+  { nome: "Diego Nascimento", media: 7.0 },
+  { nome: "Patrícia Ramos", media: 6.8 },
 ];
 
 function classifBadge(c: string) {
