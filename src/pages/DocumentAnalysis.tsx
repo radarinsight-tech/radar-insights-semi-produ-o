@@ -332,6 +332,24 @@ const DocumentAnalysis = () => {
   const [ocrProcessing, setOcrProcessing] = useState<Record<string, boolean>>({});
   const [ocrExpanded, setOcrExpanded] = useState<Record<string, boolean>>({});
 
+  // Drag state per doc item
+  const [dragOver, setDragOver] = useState<Record<string, boolean>>({});
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  // Prevent browser default file open on drag/drop globally
+  useEffect(() => {
+    const preventDefaults = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    window.addEventListener("dragover", preventDefaults);
+    window.addEventListener("drop", preventDefaults);
+    return () => {
+      window.removeEventListener("dragover", preventDefaults);
+      window.removeEventListener("drop", preventDefaults);
+    };
+  }, []);
+
   // Delete dialog
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; item: DocItem | null }>({ open: false, item: null });
   const [deleteMotivo, setDeleteMotivo] = useState("");
