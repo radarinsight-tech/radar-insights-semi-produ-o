@@ -1157,22 +1157,31 @@ const DocumentAnalysis = () => {
                         {/* Checklist */}
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
                           {[
-                            { field: "documento_recebido", label: "Recebido" },
-                            { field: "nome_confere", label: "Nome confere" },
-                            { field: "cpf_confere", label: "CPF confere" },
-                            { field: "endereco_confere", label: "Endereço confere" },
-                            { field: "legivel", label: "Legível" },
-                            { field: "valido", label: "Válido" },
-                          ].map(({ field, label }) => (
-                            <div key={field} className="flex items-center gap-2">
-                              <Checkbox
-                                id={`${item.id}-${field}`}
-                                checked={(item as any)[field]}
-                                onCheckedChange={(v) => handleChecklistChange(item.id, field, !!v)}
-                              />
-                              <Label htmlFor={`${item.id}-${field}`} className="text-xs cursor-pointer">{label}</Label>
-                            </div>
-                          ))}
+                            { field: "documento_recebido", label: "Recebido", autoOnly: true },
+                            { field: "nome_confere", label: "Nome confere", autoOnly: false },
+                            { field: "cpf_confere", label: "CPF confere", autoOnly: false },
+                            { field: "endereco_confere", label: "Endereço confere", autoOnly: false },
+                            { field: "legivel", label: "Legível", autoOnly: false },
+                            { field: "valido", label: "Válido", autoOnly: false },
+                          ].map(({ field, label, autoOnly }) => {
+                            const hasOcrData = item.status_ocr && item.status_ocr !== "aguardando_leitura" && item.status_ocr !== "processando";
+                            const isAutoField = field !== "documento_recebido" && hasOcrData;
+                            return (
+                              <div key={field} className="flex items-center gap-2">
+                                <Checkbox
+                                  id={`${item.id}-${field}`}
+                                  checked={(item as any)[field]}
+                                  disabled={autoOnly && (item as any)[field]}
+                                  onCheckedChange={(v) => handleChecklistChange(item.id, field, !!v)}
+                                />
+                                <Label htmlFor={`${item.id}-${field}`} className="text-xs cursor-pointer">
+                                  {label}
+                                  {isAutoField && <span className="text-[9px] text-primary ml-1">(auto)</span>}
+                                  {autoOnly && (item as any)[field] && <span className="text-[9px] text-muted-foreground ml-1">(auto)</span>}
+                                </Label>
+                              </div>
+                            );
+                          })}
                         </div>
 
                         {/* Observation */}
