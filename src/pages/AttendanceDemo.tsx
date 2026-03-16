@@ -341,7 +341,7 @@ const AttendanceDemo = () => {
             <SideMetric icon={BarChart3} label="Atendimentos Auditados" value="14" color="text-primary" />
             <SideMetric icon={Bot} label="Falhas do BOT" value="2" color="text-destructive" />
             <SideMetric icon={Ban} label="Auditorias Bloqueadas" value="1" color="text-amber-500" />
-            <SideMetric icon={TrendingUp} label="Média da Equipe" value="84.2" color="text-primary" />
+            <SideMetric icon={TrendingUp} label="Média da Equipe" value="8,4" color="text-primary" />
             <SideMetric icon={Users} label="Total Avaliados" value="6" color="text-accent" />
 
             {/* Ranking */}
