@@ -337,24 +337,11 @@ const Index = () => {
   const atendentes = useMemo(() => [...new Set(history.map((e) => e.atendente))].sort(), [history]);
   const tipos = useMemo(() => [...new Set(history.map((e) => e.tipo))].sort(), [history]);
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     return history.filter((e) => {
       if (protocolSearch && !e.protocolo.toLowerCase().includes(protocolSearch.toLowerCase())) return false;
       if (filters.atendente !== "todos" && e.atendente !== filters.atendente) return false;
       if (filters.tipo !== "todos" && e.tipo !== filters.tipo) return false;
-
-      // Status filter from indicator cards
-      if (statusFilter === "bot_com_falha") {
-        const report = e.full_report as Record<string, unknown> | null | undefined;
-        if (report?.statusBot !== "bot_com_falha") return false;
-      }
-      if (statusFilter === "nao_auditavel") {
-        const report = e.full_report as Record<string, unknown> | null | undefined;
-        if (
-          report?.statusAuditoria !== "auditoria_bloqueada" &&
-          report?.statusAuditoria !== "impedimento_detectado"
-        ) return false;
-      }
 
       if (filters.periodoInicio && filters.periodoFim) {
         const entryDate = parseDateBR(e.data);
@@ -375,7 +362,19 @@ const Index = () => {
 
       return true;
     });
-  }, [filters, history, protocolSearch, statusFilter]);
+  }, [filters, history, protocolSearch]);
+
+  const filtered = useMemo(() => {
+    if (!statusFilter) return baseFiltered;
+    return baseFiltered.filter((e) => {
+      const report = e.full_report as Record<string, unknown> | null | undefined;
+      if (statusFilter === "bot_com_falha") return report?.statusBot === "bot_com_falha";
+      if (statusFilter === "nao_auditavel") {
+        return report?.statusAuditoria === "auditoria_bloqueada" || report?.statusAuditoria === "impedimento_detectado";
+      }
+      return true;
+    });
+  }, [baseFiltered, statusFilter]);
 
   return (
     <div className="min-h-screen bg-background" data-module="attendance">
