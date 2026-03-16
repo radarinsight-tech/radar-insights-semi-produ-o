@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LogOut, ArrowLeft, LayoutDashboard, FileCheck } from "lucide-react";
+import { LogOut, ArrowLeft, LayoutDashboard, FileCheck, ShieldAlert } from "lucide-react";
 import logoSymbol from "@/assets/logo-symbol.png";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -167,6 +167,10 @@ const CreditAnalysis = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate("/credit-spc")}>
+              <ShieldAlert className="h-4 w-4 mr-1" />
+              Consulta SPC
+            </Button>
             <Button variant="outline" size="sm" onClick={() => navigate("/credit-docs")}>
               <FileCheck className="h-4 w-4 mr-1" />
               Documentação

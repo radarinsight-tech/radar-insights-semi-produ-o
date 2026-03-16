@@ -12,6 +12,7 @@ import Users from "./pages/Users.tsx";
 import CreditAnalysis from "./pages/CreditAnalysis.tsx";
 import CreditDashboard from "./pages/CreditDashboard.tsx";
 import DocumentAnalysis from "./pages/DocumentAnalysis.tsx";
+import SpcConsulta from "./pages/SpcConsulta.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AppModeBanner from "./components/AppModeBanner.tsx";
 
@@ -70,6 +71,16 @@ const App = () => (
               <ProtectedRoute>
                 <ModuleGuard module="credito">
                   <DocumentAnalysis />
+                </ModuleGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/credit-spc"
+            element={
+              <ProtectedRoute>
+                <ModuleGuard module="credito">
+                  <SpcConsulta />
                 </ModuleGuard>
               </ProtectedRoute>
             }
