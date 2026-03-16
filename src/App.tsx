@@ -33,7 +33,20 @@ const App = () => (
           />
           <Route
             path="/attendance"
-            element={<Index />}
+            element={
+              <div style={{ minHeight: "100vh", background: "#0f172a", color: "#e2e8f0", fontFamily: "system-ui, sans-serif", padding: "2rem" }}>
+                <div style={{ maxWidth: 600, margin: "0 auto" }}>
+                  <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.25rem" }}>Radar Insight — Attendance</h1>
+                  <p style={{ fontSize: "0.875rem", color: "#94a3b8", marginBottom: "1.5rem" }}>Teste de isolamento da rota</p>
+                  <span style={{ display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "9999px", border: "1px solid #f59e0b", color: "#fbbf24", fontSize: "0.75rem", fontWeight: 600, marginBottom: "1.5rem" }}>Modo Demo</span>
+                  <div style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: "0.75rem", padding: "2rem", textAlign: "center", marginBottom: "1.5rem" }}>
+                    <p style={{ fontSize: "1.125rem", fontWeight: 600 }}>✅ Rota funcionando</p>
+                    <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "0.5rem" }}>Este conteúdo é estático. Se você está vendo isso, a rota /attendance está OK.</p>
+                  </div>
+                  <button style={{ width: "100%", padding: "0.625rem", borderRadius: "0.5rem", background: "#3b82f6", color: "white", fontWeight: 600, border: "none", cursor: "pointer", fontSize: "0.875rem" }}>Nova análise</button>
+                </div>
+              </div>
+            }
           />
           <Route
             path="/credit"
