@@ -11,7 +11,7 @@ interface Props {
   onStatusFilterChange?: (filter: StatusFilter) => void;
 }
 
-const StatsWidgets = ({ entries }: Props) => {
+const StatsWidgets = ({ entries, activeStatusFilter, onStatusFilterChange }: Props) => {
   const total = entries.length;
   const media = total > 0 ? entries.reduce((s, e) => s + notaToScale10(e.nota), 0) / total : 0;
 
