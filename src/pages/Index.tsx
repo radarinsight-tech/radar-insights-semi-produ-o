@@ -247,6 +247,7 @@ const Index = () => {
         toast.error("Erro ao salvar avaliação no histórico: " + (insertError?.message || "Erro desconhecido"));
         setUploadState("empty");
       } else {
+        const isNoInteraction = data.motivo === "sem_interacao_do_cliente";
         setAnalysis({
           protocolo: savedRow.protocolo,
           atendente: savedRow.atendente,
@@ -261,8 +262,9 @@ const Index = () => {
           motivoImpeditivo: data.motivoImpeditivo,
           pontosObtidos: data.pontosObtidos,
           pontosPossiveis: data.pontosPossiveis,
+          noInteraction: isNoInteraction,
         });
-        setUploadState("completed");
+        setUploadState(isNoInteraction ? "no-interaction" : "completed");
         toast.success(duplicateProtocol ? "Reavaliação concluída e salva!" : "Análise concluída e salva!");
         setDuplicateProtocol(null);
         setPendingFile(null);
