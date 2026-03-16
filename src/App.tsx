@@ -31,7 +31,14 @@ const App = () => (
               </ProtectedRoute>
             }
           />
-          <Route path="/attendance" element={<AttendanceDemo />} />
+          <Route
+            path="/attendance"
+            element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/credit"
             element={
