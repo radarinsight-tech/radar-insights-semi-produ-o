@@ -5,6 +5,7 @@ import AnalysisResult, { type AnalysisData } from "@/components/AnalysisResult";
 import HistoryTable from "@/components/HistoryTable";
 import Filters, { type FilterValues } from "@/components/Filters";
 import StatsWidgets, { type StatusFilter } from "@/components/StatsWidgets";
+import { matchesStatusFilter, getStatusLabel } from "@/lib/auditStatus";
 import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { supabase } from "@/integrations/supabase/client";
@@ -366,14 +367,12 @@ const Index = () => {
 
   const filtered = useMemo(() => {
     if (!statusFilter) return baseFiltered;
-    return baseFiltered.filter((e) => {
-      const report = e.full_report as Record<string, unknown> | null | undefined;
-      if (statusFilter === "bot_com_falha") return report?.statusBot === "bot_com_falha";
-      if (statusFilter === "nao_auditavel") {
-        return report?.statusAuditoria === "auditoria_bloqueada" || report?.statusAuditoria === "impedimento_detectado";
-      }
-      return true;
-    });
+    return baseFiltered.filter((e) =>
+      matchesStatusFilter(
+        e.full_report as Record<string, unknown> | null | undefined,
+        statusFilter
+      )
+    );
   }, [baseFiltered, statusFilter]);
 
   return (
@@ -462,7 +461,7 @@ const Index = () => {
             {statusFilter && (
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20">
                 <span className="text-sm font-medium text-foreground">
-                  Filtrando: {statusFilter === "bot_com_falha" ? "Erros no Fluxo do BOT" : "Atendimentos Não Auditáveis"}
+                  Filtrando: {getStatusLabel(statusFilter)}
                 </span>
                 <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setStatusFilter(null)}>
                   <X className="h-3 w-3 mr-1" /> Limpar filtro
