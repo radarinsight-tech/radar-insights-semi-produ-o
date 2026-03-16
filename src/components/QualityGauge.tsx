@@ -7,7 +7,10 @@ interface QualityGaugeProps {
 }
 
 const QualityGauge = ({ score, classification }: QualityGaugeProps) => {
-  const clampedScore = Math.max(0, Math.min(100, score));
+  // Support both 0-10 and 0-100 scales; normalize to 0-100 internally
+  const normalized = score <= 10 ? score * 10 : score;
+  const clampedScore = Math.max(0, Math.min(100, normalized));
+  const displayScore = score <= 10 ? score : score; // keep original for display
   const [animatedScore, setAnimatedScore] = useState(0);
   const rafRef = useRef<number>(0);
 
@@ -20,7 +23,6 @@ const QualityGauge = ({ score, classification }: QualityGaugeProps) => {
     const tick = (now: number) => {
       const elapsed = now - start;
       const progress = Math.min(elapsed / duration, 1);
-      // ease-out cubic
       const eased = 1 - Math.pow(1 - progress, 3);
       setAnimatedScore(from + (to - from) * eased);
       if (progress < 1) {
