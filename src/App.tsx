@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Hub from "./pages/Hub.tsx";
-import AttendanceDemo from "./pages/AttendanceDemo.tsx";
+import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
 import Users from "./pages/Users.tsx";
 import CreditAnalysis from "./pages/CreditAnalysis.tsx";
@@ -31,7 +31,14 @@ const App = () => (
               </ProtectedRoute>
             }
           />
-          <Route path="/attendance" element={<AttendanceDemo />} />
+          <Route
+            path="/attendance"
+            element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/credit"
             element={
