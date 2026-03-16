@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { formatNota, notaToScale10 } from "@/lib/utils";
 import { Users, BarChart3, Trophy, ClipboardCheck, Bot, ShieldAlert } from "lucide-react";
 import type { HistoryEntry } from "@/lib/mockData";
 
