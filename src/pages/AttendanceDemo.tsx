@@ -3,7 +3,10 @@ import logoSymbol from "@/assets/logo-symbol.png";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { FlaskConical, Upload, FileText, RefreshCw, AlertTriangle } from "lucide-react";
+import {
+  FlaskConical, Upload, FileText, RefreshCw, AlertTriangle,
+  CheckCircle2, Clock, UserCheck, Shield, TrendingUp, BarChart3
+} from "lucide-react";
 import QualityGauge from "@/components/QualityGauge";
 
 const MOCK_RESULT = {
@@ -14,6 +17,9 @@ const MOCK_RESULT = {
   notaFinal: 92.1,
   classificacao: "Excelente",
   bonusQualidade: 100,
+  versaoPrompt: "v3.2.1",
+  validade: "Válido até 15/04/2025",
+  statusInteracao: "Cliente interagiu — diálogo completo",
   pontosMelhoria: [
     "Reforçar confirmação de entendimento antes de propor solução.",
     "Oferecer alternativas de contato para acompanhamento.",
@@ -22,22 +28,25 @@ const MOCK_RESULT = {
   pontosPossiveis: 88,
 };
 
+const MOCK_INDICATORS = [
+  { label: "Auditorias hoje", value: "14", icon: BarChart3, color: "text-primary" },
+  { label: "Média do dia", value: "87.3", icon: TrendingUp, color: "text-accent" },
+  { label: "Taxa de bônus", value: "71%", icon: Shield, color: "text-accent" },
+  { label: "Atendentes avaliados", value: "6", icon: UserCheck, color: "text-primary" },
+];
+
 type PageState = "empty" | "processing" | "completed";
 
 const AttendanceDemo = () => {
   const [state, setState] = useState<PageState>("empty");
-  const [fileName, setFileName] = useState("");
 
-  const handleFile = (file: File) => {
-    setFileName(file.name);
+  const handleAnalyze = () => {
     setState("processing");
-    // Simular processamento
     setTimeout(() => setState("completed"), 1500);
   };
 
   const handleNew = () => {
     setState("empty");
-    setFileName("");
   };
 
   return (
@@ -57,6 +66,21 @@ const AttendanceDemo = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        {/* INDICADORES */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {MOCK_INDICATORS.map((ind) => (
+            <Card key={ind.label} className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-muted">
+                <ind.icon className={`h-5 w-5 ${ind.color}`} />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{ind.value}</p>
+                <p className="text-xs text-muted-foreground">{ind.label}</p>
+              </div>
+            </Card>
+          ))}
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* UPLOAD CARD */}
           <Card className="p-6">
@@ -75,11 +99,11 @@ const AttendanceDemo = () => {
                 <div className="border border-accent/40 rounded-lg p-4 bg-accent/5">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-accent/10">
-                      <FileText className="h-5 w-5 text-accent" />
+                      <CheckCircle2 className="h-5 w-5 text-accent" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Arquivo analisado</p>
-                      <p className="text-sm font-medium text-foreground truncate">{fileName || "arquivo.pdf"}</p>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Análise concluída</p>
+                      <p className="text-sm font-medium text-foreground">atendimento-demo.pdf</p>
                     </div>
                   </div>
                 </div>
@@ -91,24 +115,14 @@ const AttendanceDemo = () => {
 
             {state === "empty" && (
               <>
-                <div
-                  onClick={() => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.accept = ".pdf";
-                    input.onchange = (e: any) => {
-                      const f = e.target?.files?.[0];
-                      if (f) handleFile(f);
-                    };
-                    input.click();
-                  }}
-                  className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
-                >
+                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
                   <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                   <p className="text-sm text-muted-foreground">Arraste o PDF aqui ou clique para selecionar</p>
                   <p className="text-xs text-muted-foreground mt-1">Somente arquivos PDF.</p>
                 </div>
-                <Button className="mt-4 w-full" disabled>Analisar atendimento</Button>
+                <Button className="mt-4 w-full" onClick={handleAnalyze}>
+                  Analisar atendimento
+                </Button>
               </>
             )}
           </Card>
@@ -122,6 +136,7 @@ const AttendanceDemo = () => {
                 <div className="mb-5">
                   <QualityGauge score={MOCK_RESULT.notaFinal} classification={MOCK_RESULT.classificacao} />
                 </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Protocolo</p>
@@ -131,7 +146,7 @@ const AttendanceDemo = () => {
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Atendente</p>
                     <p className="text-sm font-medium mt-0.5">{MOCK_RESULT.atendente}</p>
                   </div>
-                  <div className="sm:col-span-2">
+                  <div>
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Tipo de Atendimento</p>
                     <Badge variant="outline" className="mt-1">{MOCK_RESULT.tipo}</Badge>
                   </div>
@@ -151,11 +166,30 @@ const AttendanceDemo = () => {
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Atualização Cadastral</p>
                     <Badge className="mt-1 bg-accent text-accent-foreground">{MOCK_RESULT.atualizacaoCadastral}</Badge>
                   </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Versão do Prompt</p>
+                    <p className="text-sm font-medium mt-0.5">{MOCK_RESULT.versaoPrompt}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Validade</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                      <p className="text-sm font-medium">{MOCK_RESULT.validade}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Interação do Cliente</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
+                      <p className="text-sm font-medium">{MOCK_RESULT.statusInteracao}</p>
+                    </div>
+                  </div>
                 </div>
+
                 {MOCK_RESULT.pontosMelhoria.length > 0 && (
                   <div className="mt-5 border-t border-border pt-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <AlertTriangle className="h-4 w-4 text-warning" />
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Mentoria de Comunicação</p>
                     </div>
                     <ul className="space-y-1.5">
@@ -175,7 +209,7 @@ const AttendanceDemo = () => {
                   <FileText className="h-8 w-8 text-primary/60" />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {state === "processing" ? "Analisando..." : "Faça upload de um PDF para ver o resultado"}
+                  {state === "processing" ? "Analisando..." : "Clique em \"Analisar atendimento\" para ver o resultado demo"}
                 </p>
               </div>
             )}
