@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, FileSearch, ShieldAlert } from "lucide-react";
 import QualityGauge from "@/components/QualityGauge";
+import { formatNota } from "@/lib/utils";
 
 export interface AnalysisData {
   protocolo: string;
