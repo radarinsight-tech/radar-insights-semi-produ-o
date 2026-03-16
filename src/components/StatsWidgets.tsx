@@ -61,10 +61,10 @@ const StatsWidgets = ({ entries }: Props) => {
           <div className="p-2 rounded-lg bg-destructive/10">
             <Bot className="h-4 w-4 text-destructive" />
           </div>
-          <p className="text-sm font-semibold text-destructive/80">Falhas do BOT</p>
+          <p className="text-sm font-semibold text-destructive/80">Erros no Fluxo do BOT</p>
         </div>
         <p className="text-3xl font-bold">{falhasBot}</p>
-        <p className="text-xs text-muted-foreground mt-1">atendimentos com erro de fluxo</p>
+        <p className="text-xs text-muted-foreground mt-1">Atendimentos onde o bot apresentou erro ou comportamento incorreto no fluxo</p>
       </Card>
 
       <Card className="p-5">
@@ -72,10 +72,10 @@ const StatsWidgets = ({ entries }: Props) => {
           <div className="p-2 rounded-lg bg-orange-500/10">
             <ShieldAlert className="h-4 w-4 text-orange-500" />
           </div>
-          <p className="text-sm font-semibold text-orange-600 dark:text-orange-400">Auditorias Bloqueadas</p>
+          <p className="text-sm font-semibold text-orange-600 dark:text-orange-400">Atendimentos Não Auditáveis</p>
         </div>
         <p className="text-3xl font-bold">{bloqueadas}</p>
-        <p className="text-xs text-muted-foreground mt-1">impedimentos ou apenas bot</p>
+        <p className="text-xs text-muted-foreground mt-1">Casos sem interação humana suficiente para auditoria de qualidade</p>
       </Card>
 
       {/* Existing widgets */}
