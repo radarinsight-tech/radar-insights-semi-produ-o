@@ -367,14 +367,12 @@ const Index = () => {
 
   const filtered = useMemo(() => {
     if (!statusFilter) return baseFiltered;
-    return baseFiltered.filter((e) => {
-      const report = e.full_report as Record<string, unknown> | null | undefined;
-      if (statusFilter === "bot_com_falha") return report?.statusBot === "bot_com_falha";
-      if (statusFilter === "nao_auditavel") {
-        return report?.statusAuditoria === "auditoria_bloqueada" || report?.statusAuditoria === "impedimento_detectado";
-      }
-      return true;
-    });
+    return baseFiltered.filter((e) =>
+      matchesStatusFilter(
+        e.full_report as Record<string, unknown> | null | undefined,
+        statusFilter
+      )
+    );
   }, [baseFiltered, statusFilter]);
 
   return (
