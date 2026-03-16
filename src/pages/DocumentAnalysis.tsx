@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import {
   LogOut, ArrowLeft, Search, Upload, FileCheck, FileX, CheckCircle2, XCircle, Clock,
-  AlertTriangle, User, CreditCard, Scale, Receipt, Loader2, Trash2, RefreshCw, Eye,
+  AlertTriangle, User, CreditCard, Scale, Receipt, Loader2, Trash2, RefreshCw,
   ShieldAlert, ShieldCheck, Shield, FileWarning, Eraser, FileText, ScanLine, X
 } from "lucide-react";
 import logoSymbol from "@/assets/logo-symbol.png";
