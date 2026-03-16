@@ -317,7 +317,7 @@ const AttendanceDemo = () => {
                         <TableCell className="text-xs font-medium">{h.protocolo}</TableCell>
                         <TableCell className="text-xs">{h.atendente}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{h.tipo}</TableCell>
-                        <TableCell className="text-xs text-right font-bold tabular-nums">{h.nota}</TableCell>
+                        <TableCell className="text-xs text-right font-bold tabular-nums">{h.nota.toFixed(1).replace(".", ",")}</TableCell>
                         <TableCell>
                           <Badge className={`text-[10px] px-1.5 py-0 border font-medium ${classifBadge(h.classificacao)}`}>
                             {h.classificacao}
