@@ -81,6 +81,7 @@ const Index = () => {
     const { data, error } = await supabase
       .from("evaluations")
       .select("*")
+      .eq("resultado_validado", true)
       .order("created_at", { ascending: false });
 
     if (error) {
