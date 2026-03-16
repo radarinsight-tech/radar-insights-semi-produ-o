@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import UploadSection, { type UploadState } from "@/components/UploadSection";
 import AnalysisResult, { type AnalysisData } from "@/components/AnalysisResult";
 import HistoryTable from "@/components/HistoryTable";
@@ -53,36 +54,40 @@ const Index = () => {
   const [duplicateProtocol, setDuplicateProtocol] = useState<string | null>(null);
 
   const loadHistory = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("evaluations")
-      .select("*")
-      .eq("resultado_validado", true)
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("evaluations")
+        .select("*")
+        .eq("resultado_validado", true)
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error loading history:", error);
-      return;
+      if (error) {
+        console.error("Error loading history:", error);
+        return;
+      }
+
+      setHistory(
+        (data || []).map((row: any) => ({
+          id: row.id,
+          data: row.data || "",
+          data_avaliacao: row.data_avaliacao
+            ? new Date(row.data_avaliacao).toLocaleString("pt-BR")
+            : "",
+          protocolo: row.protocolo || "—",
+          atendente: row.atendente || "—",
+          nota: Number(row.nota) || 0,
+          classificacao: row.classificacao || "—",
+          bonus: row.bonus ?? false,
+          tipo: row.tipo || "—",
+          atualizacao_cadastral: row.atualizacao_cadastral || "Não",
+          pontos_melhoria: Array.isArray(row.pontos_melhoria) ? row.pontos_melhoria : [],
+          pdf_url: row.pdf_url || undefined,
+          full_report: row.full_report || null,
+        }))
+      );
+    } catch (err) {
+      console.error("Error loading history (uncaught):", err);
     }
-
-    setHistory(
-      (data || []).map((row: any) => ({
-        id: row.id,
-        data: row.data,
-        data_avaliacao: row.data_avaliacao
-          ? new Date(row.data_avaliacao).toLocaleString("pt-BR")
-          : "",
-        protocolo: row.protocolo,
-        atendente: row.atendente,
-        nota: Number(row.nota),
-        classificacao: row.classificacao,
-        bonus: row.bonus,
-        tipo: row.tipo,
-        atualizacao_cadastral: row.atualizacao_cadastral || "Não",
-        pontos_melhoria: row.pontos_melhoria || [],
-        pdf_url: row.pdf_url || undefined,
-        full_report: row.full_report || null,
-      }))
-    );
   }, []);
 
   useEffect(() => {
@@ -349,27 +354,35 @@ const Index = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <UploadSection
-            onAnalyze={runAnalysis}
-            isAnalyzing={isAnalyzing}
-            analysisState={uploadState}
-            analyzedFileName={analyzedFileName}
-            onNewAnalysis={handleNewAnalysis}
-          />
-          <AnalysisResult data={analysis} />
+          <ErrorBoundary fallbackTitle="Erro no upload">
+            <UploadSection
+              onAnalyze={runAnalysis}
+              isAnalyzing={isAnalyzing}
+              analysisState={uploadState}
+              analyzedFileName={analyzedFileName}
+              onNewAnalysis={handleNewAnalysis}
+            />
+          </ErrorBoundary>
+          <ErrorBoundary fallbackTitle="Erro no resultado da análise">
+            <AnalysisResult data={analysis} />
+          </ErrorBoundary>
         </div>
 
-        <ScoreEvolutionChart entries={filtered} />
+        <ErrorBoundary fallbackTitle="Erro nos gráficos">
+          <ScoreEvolutionChart entries={filtered} />
+        </ErrorBoundary>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
           <div className="space-y-4">
             <div className="flex flex-wrap gap-3 items-end">
-              <Filters
-                atendentes={atendentes}
-                tipos={tipos}
-                filters={filters}
-                onChange={setFilters}
-              />
+              <ErrorBoundary fallbackTitle="Erro nos filtros">
+                <Filters
+                  atendentes={atendentes}
+                  tipos={tipos}
+                  filters={filters}
+                  onChange={setFilters}
+                />
+              </ErrorBoundary>
               <div className="relative w-[220px]">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -380,9 +393,13 @@ const Index = () => {
                 />
               </div>
             </div>
-            <HistoryTable entries={filtered} onRefresh={loadHistory} />
+            <ErrorBoundary fallbackTitle="Erro na tabela de histórico">
+              <HistoryTable entries={filtered} onRefresh={loadHistory} />
+            </ErrorBoundary>
           </div>
-          <StatsWidgets entries={filtered} />
+          <ErrorBoundary fallbackTitle="Erro nos indicadores">
+            <StatsWidgets entries={filtered} />
+          </ErrorBoundary>
         </div>
       </main>
 
