@@ -1068,12 +1068,60 @@ const DocumentAnalysis = () => {
               </Card>
             )}
 
+            {/* Suggested Decision */}
+            {docAnalysis && suggestedDecision && (
+              <Card className="p-5 border-l-4 border-l-primary">
+                <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <ScanLine className="h-4 w-4 text-primary" />Sugestão do Sistema
+                </h2>
+                <div className="flex items-center gap-3 mb-3">
+                  {(() => {
+                    const SugIcon = suggestedDecision.icon;
+                    return (
+                      <Badge variant="outline" className={`${suggestedDecision.color} text-sm px-3 py-1`}>
+                        <SugIcon className="h-4 w-4 mr-1.5" />
+                        {suggestedDecision.label}
+                      </Badge>
+                    );
+                  })()}
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground">Motivo da sugestão:</p>
+                  <ul className="space-y-0.5">
+                    {suggestedDecision.motivos.map((m, i) => (
+                      <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                        <span className="text-primary mt-0.5">•</span>{m}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-3 italic">
+                  Esta é uma sugestão automática. O analista pode aceitar ou escolher outra decisão com justificativa.
+                </p>
+              </Card>
+            )}
+
             {/* Decision */}
             {docAnalysis && (
               <Card className="p-5">
                 <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
                   <Scale className="h-4 w-4 text-primary" />Decisão Documental Final
                 </h2>
+
+                {suggestedDecision && (
+                  <div className="mb-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setDecisao(suggestedDecision.decisao); setJustificativaDivergencia(""); }}
+                      className="text-xs"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                      Aceitar sugestão: {suggestedDecision.label}
+                    </Button>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold text-muted-foreground">Decisão *</Label>
@@ -1091,6 +1139,24 @@ const DocumentAnalysis = () => {
                     <Input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Motivo da decisão..." className="bg-card" />
                   </div>
                 </div>
+
+                {isDivergent && (
+                  <Alert className="mb-4 border-warning/50">
+                    <AlertTriangle className="h-4 w-4 text-warning" />
+                    <AlertTitle className="text-xs font-semibold">Decisão divergente da sugestão</AlertTitle>
+                    <AlertDescription className="text-xs text-muted-foreground mb-2">
+                      A sugestão do sistema é "{suggestedDecision?.label}". Justifique a escolha diferente.
+                    </AlertDescription>
+                    <Textarea
+                      value={justificativaDivergencia}
+                      onChange={(e) => setJustificativaDivergencia(e.target.value)}
+                      placeholder="Justificativa obrigatória para divergência..."
+                      rows={2}
+                      className="text-xs"
+                    />
+                  </Alert>
+                )}
+
                 <div className="space-y-1.5 mb-4">
                   <Label className="text-xs font-semibold text-muted-foreground">Observação do analista</Label>
                   <Textarea value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Observações adicionais..." rows={3} />
