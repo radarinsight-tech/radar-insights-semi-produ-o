@@ -4,11 +4,11 @@ import UploadSection, { type UploadState } from "@/components/UploadSection";
 import AnalysisResult, { type AnalysisData } from "@/components/AnalysisResult";
 import HistoryTable from "@/components/HistoryTable";
 import Filters, { type FilterValues } from "@/components/Filters";
-import StatsWidgets from "@/components/StatsWidgets";
+import StatsWidgets, { type StatusFilter } from "@/components/StatsWidgets";
 import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Users, Search, ArrowLeft, AlertTriangle, RefreshCw } from "lucide-react";
+import { LogOut, Users, Search, ArrowLeft, AlertTriangle, RefreshCw, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import logoSymbol from "@/assets/logo-symbol.png";
@@ -50,6 +50,7 @@ const Index = () => {
     tipo: "todos",
   });
   const [protocolSearch, setProtocolSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(null);
 
   // Re-evaluation confirmation state
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -336,7 +337,7 @@ const Index = () => {
   const atendentes = useMemo(() => [...new Set(history.map((e) => e.atendente))].sort(), [history]);
   const tipos = useMemo(() => [...new Set(history.map((e) => e.tipo))].sort(), [history]);
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     return history.filter((e) => {
       if (protocolSearch && !e.protocolo.toLowerCase().includes(protocolSearch.toLowerCase())) return false;
       if (filters.atendente !== "todos" && e.atendente !== filters.atendente) return false;
@@ -362,6 +363,18 @@ const Index = () => {
       return true;
     });
   }, [filters, history, protocolSearch]);
+
+  const filtered = useMemo(() => {
+    if (!statusFilter) return baseFiltered;
+    return baseFiltered.filter((e) => {
+      const report = e.full_report as Record<string, unknown> | null | undefined;
+      if (statusFilter === "bot_com_falha") return report?.statusBot === "bot_com_falha";
+      if (statusFilter === "nao_auditavel") {
+        return report?.statusAuditoria === "auditoria_bloqueada" || report?.statusAuditoria === "impedimento_detectado";
+      }
+      return true;
+    });
+  }, [baseFiltered, statusFilter]);
 
   return (
     <div className="min-h-screen bg-background" data-module="attendance">
@@ -446,12 +459,22 @@ const Index = () => {
                 />
               </div>
             </div>
+            {statusFilter && (
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20">
+                <span className="text-sm font-medium text-foreground">
+                  Filtrando: {statusFilter === "bot_com_falha" ? "Erros no Fluxo do BOT" : "Atendimentos Não Auditáveis"}
+                </span>
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setStatusFilter(null)}>
+                  <X className="h-3 w-3 mr-1" /> Limpar filtro
+                </Button>
+              </div>
+            )}
             <ErrorBoundary fallbackTitle="Erro na tabela de histórico">
               <HistoryTable entries={filtered} onRefresh={loadHistory} />
             </ErrorBoundary>
           </div>
           <ErrorBoundary fallbackTitle="Erro nos indicadores">
-            <StatsWidgets entries={filtered} />
+            <StatsWidgets entries={baseFiltered} activeStatusFilter={statusFilter} onStatusFilterChange={setStatusFilter} />
           </ErrorBoundary>
         </div>
       </main>
