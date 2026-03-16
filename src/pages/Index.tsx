@@ -135,8 +135,21 @@ const Index = () => {
   const runAnalysis = async (file: File) => {
     setIsAnalyzing(true);
     setAnalysisError(null);
+    setIsDemoResult(false);
     setAnalyzedFileName(file.name);
     console.log("[Radar] Etapa 1: PDF carregado —", file.name, `(${(file.size / 1024).toFixed(1)} KB)`);
+
+    // ═══ MODO DEMO ═══
+    if (DEMO_MODE) {
+      console.log("[Radar] MODO DEMO ativo — gerando resultado mockado");
+      await new Promise((r) => setTimeout(r, 1500)); // simular processamento
+      setAnalysis(DEMO_RESULT);
+      setIsDemoResult(true);
+      setUploadState("completed");
+      setIsAnalyzing(false);
+      toast.success("Análise concluída (Modo Demo)");
+      return;
+    }
     try {
       console.log("[Radar] Etapa 2: Extraindo texto do PDF...");
       const text = await extractTextFromPdf(file);
