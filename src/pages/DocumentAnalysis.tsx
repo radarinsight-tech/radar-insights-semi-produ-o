@@ -967,11 +967,6 @@ const DocumentAnalysis = () => {
                               </Button>
                             )}
                             {item.file_url && (
-                              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => window.open(item.file_url!, "_blank")}>
-                                <Eye className="h-3 w-3" />
-                              </Button>
-                            )}
-                            {item.file_url && (
                               <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => setDeleteDialog({ open: true, item })}>
                                 <Trash2 className="h-3 w-3" />
                               </Button>
