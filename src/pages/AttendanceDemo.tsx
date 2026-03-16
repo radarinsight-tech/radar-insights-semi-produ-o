@@ -3,9 +3,10 @@ import logoSymbol from "@/assets/logo-symbol.png";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   FlaskConical, Upload, FileText, RefreshCw, AlertTriangle,
-  CheckCircle2, Clock, UserCheck, Shield, TrendingUp, BarChart3
+  CheckCircle2, Clock, UserCheck, Shield, TrendingUp, BarChart3, ChevronDown
 } from "lucide-react";
 import QualityGauge from "@/components/QualityGauge";
 
