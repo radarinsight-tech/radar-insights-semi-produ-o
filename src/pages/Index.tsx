@@ -233,6 +233,25 @@ const Index = () => {
 
       const fullReport = { ...data };
 
+      // ═══ CLIENT-SIDE CONSISTENCY VALIDATION ═══
+      const isAudited = data.statusAuditoria === "auditoria_realizada";
+      
+      // Block: audited but no score
+      if (isAudited && (!data.pontosPossiveis || data.pontosPossiveis === 0)) {
+        toast.error("Erro de consistência: auditoria realizada mas sem pontuação. Reprocessar atendimento.");
+        setUploadState("empty");
+        setIsAnalyzing(false);
+        return;
+      }
+
+      // Block: positive classification with zero score
+      if (data.notaFinal === 0 && ["Excelente", "Bom atendimento", "Regular"].includes(data.classificacao) && isAudited) {
+        toast.error("Erro de consistência: classificação positiva com nota zero. Reprocessar atendimento.");
+        setUploadState("empty");
+        setIsAnalyzing(false);
+        return;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user?.id) {
@@ -254,7 +273,7 @@ const Index = () => {
         tipo: data.tipo || "Não identificado",
         atualizacao_cadastral: atualizacaoCadastral,
         nota: notaFinal,
-        classificacao: data.classificacao || "Abaixo do esperado",
+        classificacao: data.classificacao || "Fora de Avaliação",
         bonus: bonusQualidade >= 70,
         pontos_melhoria: Array.isArray(data.mentoria) ? data.mentoria : [],
         user_id: user.id,
