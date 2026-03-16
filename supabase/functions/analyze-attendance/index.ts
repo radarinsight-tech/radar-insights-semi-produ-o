@@ -232,8 +232,11 @@ serve(async (req) => {
               parameters: {
                 type: "object",
                 properties: {
-                  impeditivo: { type: "boolean", description: "Se há impeditivo que impede a auditoria (áudio, sem interação humana, URA fez quase tudo)" },
+                  noInteraction: { type: "boolean", description: "true se não houve nenhuma mensagem do cliente no histórico" },
+                  impeditivo: { type: "boolean", description: "Se há impeditivo que impede a auditoria (áudio, sem interação humana, apenas bot, URA fez quase tudo)" },
                   motivoImpeditivo: { type: "string", description: "Motivo do impeditivo, se houver" },
+                  erroBot: { type: "boolean", description: "true se houve falha do BOT durante o atendimento" },
+                  observacaoBot: { type: "string", description: "Descrição da falha do BOT, se houver" },
                   data: { type: "string", description: "Data do atendimento no formato DD/MM/AAAA" },
                   protocolo: { type: "string", description: "Número do protocolo do atendimento" },
                   tipo: { type: "string", description: "Tipo de atendimento (ex: Suporte Técnico, Financeiro, Cancelamento)" },
@@ -287,7 +290,7 @@ serve(async (req) => {
                     description: "Sugestões de melhoria para o atendente: clareza, empatia, orientação ao cliente",
                   },
                 },
-                required: ["impeditivo", "data", "protocolo", "tipo", "atendente", "criterios", "subtotais", "pontosObtidos", "pontosPossiveis", "notaFinal", "classificacao", "bonusQualidade", "bonusOperacional", "mentoria"],
+                required: ["noInteraction", "impeditivo", "erroBot", "data", "protocolo", "tipo", "atendente", "criterios", "subtotais", "pontosObtidos", "pontosPossiveis", "notaFinal", "classificacao", "bonusQualidade", "bonusOperacional", "mentoria"],
                 additionalProperties: false,
               },
             },
