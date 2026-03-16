@@ -50,6 +50,7 @@ const Index = () => {
     tipo: "todos",
   });
   const [protocolSearch, setProtocolSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(null);
 
   // Re-evaluation confirmation state
   const [pendingFile, setPendingFile] = useState<File | null>(null);
