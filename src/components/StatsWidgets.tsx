@@ -9,7 +9,7 @@ interface Props {
 
 const StatsWidgets = ({ entries }: Props) => {
   const total = entries.length;
-  const media = total > 0 ? entries.reduce((s, e) => s + e.nota, 0) / total : 0;
+  const media = total > 0 ? entries.reduce((s, e) => s + notaToScale10(e.nota), 0) / total : 0;
 
   // Audit indicators from full_report
   const auditados = entries.filter((e) => {
