@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { notaToScale10 } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import {
   ChartContainer,
@@ -28,7 +29,7 @@ const ScoreEvolutionChart = ({ entries }: Props) => {
       if (parts.length < 3) return;
       const key = `${parts[1]}/${parts[2]}`;
       if (!byMonth[key]) byMonth[key] = { sum: 0, count: 0 };
-      byMonth[key].sum += e.nota;
+      byMonth[key].sum += notaToScale10(e.nota);
       byMonth[key].count += 1;
     });
 
@@ -49,7 +50,7 @@ const ScoreEvolutionChart = ({ entries }: Props) => {
     const byAgent: Record<string, { sum: number; count: number }> = {};
     entries.forEach((e) => {
       if (!byAgent[e.atendente]) byAgent[e.atendente] = { sum: 0, count: 0 };
-      byAgent[e.atendente].sum += e.nota;
+      byAgent[e.atendente].sum += notaToScale10(e.nota);
       byAgent[e.atendente].count += 1;
     });
     return Object.entries(byAgent)

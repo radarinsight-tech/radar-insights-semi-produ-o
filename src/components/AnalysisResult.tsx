@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, FileSearch, ShieldAlert } from "lucide-react";
 import QualityGauge from "@/components/QualityGauge";
+import { formatNota } from "@/lib/utils";
 
 export interface AnalysisData {
   protocolo: string;
@@ -133,7 +134,7 @@ const AnalysisResult = ({ data }: Props) => {
         <div>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pontuação</p>
           {data.pontosObtidos != null && data.pontosPossiveis != null && (
-            <p className="text-sm font-medium mt-0.5">{data.pontosObtidos}/{data.pontosPossiveis} pontos</p>
+            <p className="text-sm font-medium mt-0.5">{formatNota(data.pontosObtidos)}/{formatNota(data.pontosPossiveis)} pontos</p>
           )}
         </div>
         <div>

@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { formatNota, notaToScale10 } from "@/lib/utils";
 import { Users, BarChart3, Trophy, ClipboardCheck, Bot, ShieldAlert } from "lucide-react";
 import type { HistoryEntry } from "@/lib/mockData";
 
@@ -8,7 +9,7 @@ interface Props {
 
 const StatsWidgets = ({ entries }: Props) => {
   const total = entries.length;
-  const media = total > 0 ? entries.reduce((s, e) => s + e.nota, 0) / total : 0;
+  const media = total > 0 ? entries.reduce((s, e) => s + notaToScale10(e.nota), 0) / total : 0;
 
   // Audit indicators from full_report
   const auditados = entries.filter((e) => {
@@ -33,7 +34,7 @@ const StatsWidgets = ({ entries }: Props) => {
   const byAgent: Record<string, { sum: number; count: number }> = {};
   entries.forEach((e) => {
     if (!byAgent[e.atendente]) byAgent[e.atendente] = { sum: 0, count: 0 };
-    byAgent[e.atendente].sum += e.nota;
+    byAgent[e.atendente].sum += notaToScale10(e.nota);
     byAgent[e.atendente].count += 1;
   });
   const ranking = Object.entries(byAgent)
@@ -85,7 +86,7 @@ const StatsWidgets = ({ entries }: Props) => {
           </div>
           <p className="text-sm font-semibold text-primary/80">Média da Equipe</p>
         </div>
-        <p className="text-3xl font-bold">{media.toFixed(1)}</p>
+        <p className="text-3xl font-bold">{media.toFixed(1).replace(".", ",")}</p>
       </Card>
 
       <Card className="p-5">
@@ -112,7 +113,7 @@ const StatsWidgets = ({ entries }: Props) => {
                 <span className="font-semibold text-muted-foreground w-5">{i + 1}.</span>
                 <span className="font-medium">{r.name}</span>
               </span>
-              <span className="font-semibold">{r.avg.toFixed(1)}</span>
+              <span className="font-semibold">{r.avg.toFixed(1).replace(".", ",")}</span>
             </div>
           ))}
           {ranking.length === 0 && (
