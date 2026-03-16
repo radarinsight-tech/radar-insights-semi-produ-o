@@ -713,11 +713,19 @@ const DocumentAnalysis = () => {
     setDocItems(prev => prev.map(i => i.id === itemId ? { ...i, observacao: obs } : i));
   };
 
+  const suggestedDecision = computeSuggestedDecision(docItems);
+
+  const isDivergent = suggestedDecision && decisao && decisao !== suggestedDecision.decisao;
+
   const handleSaveDecision = async () => {
     if (!docAnalysis) return;
     if (!decisao) { toast.error("Selecione a decisão documental."); return; }
     if ((decisao === "documentacao_pendente" || decisao === "documentacao_reprovada") && !motivo.trim()) {
       toast.error("Informe o motivo da pendência ou reprovação.");
+      return;
+    }
+    if (isDivergent && !justificativaDivergencia.trim()) {
+      toast.error("Justifique a divergência em relação à sugestão do sistema.");
       return;
     }
 
@@ -735,12 +743,15 @@ const DocumentAnalysis = () => {
           observacao: observacao || null,
           user_name: profile?.full_name || user!.email,
           updated_at: new Date().toISOString(),
+          decisao_sugerida: suggestedDecision?.decisao || null,
+          motivo_sugestao: suggestedDecision?.motivos.join("; ") || null,
+          justificativa_divergencia: isDivergent ? justificativaDivergencia : null,
         } as any)
         .eq("id", docAnalysis.id);
 
       if (error) { toast.error("Erro ao salvar decisão."); return; }
 
-      setDocAnalysis({ ...docAnalysis, decisao_documental: decisao, status: decisao, motivo, observacao });
+      setDocAnalysis({ ...docAnalysis, decisao_documental: decisao, status: decisao, motivo, observacao, decisao_sugerida: suggestedDecision?.decisao || null, motivo_sugestao: suggestedDecision?.motivos.join("; ") || null, justificativa_divergencia: isDivergent ? justificativaDivergencia : null });
       toast.success("Decisão documental salva.");
     } catch { toast.error("Erro ao salvar decisão."); }
     finally { setSavingDecision(false); }
