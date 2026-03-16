@@ -75,6 +75,9 @@ interface DocAnalysis {
   status: string;
   created_at: string;
   updated_at: string;
+  decisao_sugerida: string | null;
+  motivo_sugestao: string | null;
+  justificativa_divergencia: string | null;
 }
 
 // ── Constants ──
