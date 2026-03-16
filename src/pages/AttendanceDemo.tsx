@@ -19,11 +19,11 @@ const cardClass = "rounded-xl border border-border/60 bg-card shadow-sm";
 
 /* ── MOCK DATA ── */
 const MOCK_RESULT = {
-  protocolo: "DEMO-2025031567",
+  protocolo: "BT202681899",
   atendente: "Ana Paula (Demo)",
   tipo: "Suporte Técnico",
   atualizacaoCadastral: "SIM",
-  notaFinal: 92.1,
+  notaFinal: 9.2,
   classificacao: "Excelente",
   bonusQualidade: 100,
   versaoPrompt: "auditor_v3",
@@ -45,19 +45,19 @@ const MOCK_RESULT = {
 };
 
 const MOCK_HISTORY = [
-  { id: "1", data: "15/03/2025", protocolo: "ATD-1001", atendente: "Ana Paula", nota: 92.1, classificacao: "Excelente", tipo: "Suporte Técnico", bonus: true },
-  { id: "2", data: "15/03/2025", protocolo: "ATD-1002", atendente: "Carlos Lima", nota: 78.5, classificacao: "Bom", tipo: "Financeiro", bonus: false },
-  { id: "3", data: "14/03/2025", protocolo: "ATD-1003", atendente: "Maria Souza", nota: 88.0, classificacao: "Ótimo", tipo: "Cancelamento", bonus: false },
-  { id: "4", data: "14/03/2025", protocolo: "ATD-1004", atendente: "João Santos", nota: 95.2, classificacao: "Excelente", tipo: "Informação", bonus: true },
-  { id: "5", data: "13/03/2025", protocolo: "ATD-1005", atendente: "Bruna Costa", nota: 67.3, classificacao: "Regular", tipo: "Reclamação", bonus: false },
+  { id: "1", data: "15/03/2025", protocolo: "BT202681899", atendente: "Ana Paula", nota: 9.2, classificacao: "Excelente", tipo: "Suporte Técnico", bonus: true },
+  { id: "2", data: "15/03/2025", protocolo: "BT202680175", atendente: "Carlos Lima", nota: 7.8, classificacao: "Bom", tipo: "Financeiro", bonus: false },
+  { id: "3", data: "14/03/2025", protocolo: "BT202675517", atendente: "Maria Souza", nota: 8.8, classificacao: "Bom", tipo: "Cancelamento", bonus: false },
+  { id: "4", data: "14/03/2025", protocolo: "BT202679430", atendente: "João Santos", nota: 9.5, classificacao: "Excelente", tipo: "Informação", bonus: true },
+  { id: "5", data: "13/03/2025", protocolo: "BT202673291", atendente: "Bruna Costa", nota: 6.7, classificacao: "Regular", tipo: "Reclamação", bonus: false },
 ];
 
 const MOCK_RANKING = [
-  { nome: "Ana Paula", media: 92.1 },
-  { nome: "João Santos", media: 91.4 },
-  { nome: "Maria Souza", media: 85.7 },
-  { nome: "Carlos Lima", media: 79.2 },
-  { nome: "Bruna Costa", media: 72.8 },
+  { nome: "Ana Paula", media: 9.2 },
+  { nome: "João Santos", media: 9.1 },
+  { nome: "Maria Souza", media: 8.5 },
+  { nome: "Carlos Lima", media: 7.9 },
+  { nome: "Bruna Costa", media: 7.2 },
 ];
 
 function classifBadge(c: string) {
