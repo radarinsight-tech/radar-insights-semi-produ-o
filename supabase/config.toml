@@ -1,13 +1,1 @@
-project_id = "zchwivyzegakkuehqfga"
-
-[functions.analyze-attendance]
-verify_jwt = false
-
-[functions.analyze-credit]
-verify_jwt = false
-
-[functions.ocr-image]
-verify_jwt = false
-
-[functions.ocr-document]
-verify_jwt = false
+project_id = "gbmvkbdsoripuqlzpfpm"
