@@ -84,7 +84,7 @@ const QualityGauge = ({ score, classification }: QualityGaugeProps) => {
         />
         <circle cx={cx} cy={cy} r="5" fill="hsl(var(--foreground))" />
         <text x={cx} y={cy - 15} textAnchor="middle" fill="hsl(var(--foreground))" fontSize="28" fontWeight="700">
-          {animatedScore.toFixed(1)}
+          {(score <= 10 ? (animatedScore / 10) : animatedScore).toFixed(1).replace(".", ",")}
         </text>
       </svg>
 
