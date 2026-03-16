@@ -36,7 +36,9 @@ const App = () => (
             path="/attendance"
             element={
               <ProtectedRoute>
-                <Index />
+                <ModuleGuard module="auditoria">
+                  <Index />
+                </ModuleGuard>
               </ProtectedRoute>
             }
           />
@@ -44,7 +46,9 @@ const App = () => (
             path="/credit"
             element={
               <ProtectedRoute>
-                <CreditAnalysis />
+                <ModuleGuard module="credito">
+                  <CreditAnalysis />
+                </ModuleGuard>
               </ProtectedRoute>
             }
           />
@@ -52,7 +56,9 @@ const App = () => (
             path="/credit-dashboard"
             element={
               <ProtectedRoute>
-                <CreditDashboard />
+                <ModuleGuard module="credito">
+                  <CreditDashboard />
+                </ModuleGuard>
               </ProtectedRoute>
             }
           />
@@ -60,7 +66,9 @@ const App = () => (
             path="/credit-docs"
             element={
               <ProtectedRoute>
-                <DocumentAnalysis />
+                <ModuleGuard module="credito">
+                  <DocumentAnalysis />
+                </ModuleGuard>
               </ProtectedRoute>
             }
           />
