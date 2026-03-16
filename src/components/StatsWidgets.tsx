@@ -60,7 +60,10 @@ const StatsWidgets = ({ entries, activeStatusFilter, onStatusFilterChange }: Pro
         <p className="text-xs text-muted-foreground mt-1">de {total} avaliações</p>
       </Card>
 
-      <Card className="p-5">
+      <Card
+        className={`p-5 cursor-pointer transition-all hover:ring-2 hover:ring-destructive/40 ${activeStatusFilter === "bot_com_falha" ? "ring-2 ring-destructive" : ""}`}
+        onClick={() => onStatusFilterChange?.(activeStatusFilter === "bot_com_falha" ? null : "bot_com_falha")}
+      >
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 rounded-lg bg-destructive/10">
             <Bot className="h-4 w-4 text-destructive" />
@@ -71,7 +74,10 @@ const StatsWidgets = ({ entries, activeStatusFilter, onStatusFilterChange }: Pro
         <p className="text-xs text-muted-foreground mt-1">Atendimentos onde o bot apresentou erro ou comportamento incorreto no fluxo</p>
       </Card>
 
-      <Card className="p-5">
+      <Card
+        className={`p-5 cursor-pointer transition-all hover:ring-2 hover:ring-orange-400/40 ${activeStatusFilter === "nao_auditavel" ? "ring-2 ring-orange-500" : ""}`}
+        onClick={() => onStatusFilterChange?.(activeStatusFilter === "nao_auditavel" ? null : "nao_auditavel")}
+      >
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 rounded-lg bg-orange-500/10">
             <ShieldAlert className="h-4 w-4 text-orange-500" />
