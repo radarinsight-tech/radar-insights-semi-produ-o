@@ -408,6 +408,12 @@ const Index = () => {
           <h1 className="text-xl font-bold text-foreground">
             Radar Insight — <span className="text-primary">Sucesso do Cliente</span>
           </h1>
+          {(DEMO_MODE || isDemoResult) && (
+            <Badge variant="outline" className="border-amber-500 text-amber-600 dark:text-amber-400 gap-1">
+              <FlaskConical className="h-3 w-3" />
+              Modo Demo
+            </Badge>
+          )}
           <div className="ml-auto flex items-center gap-1">
             <Button variant="outline" size="sm" onClick={() => navigate("/")}>
               <ArrowLeft className="h-4 w-4" />
