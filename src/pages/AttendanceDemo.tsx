@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   FlaskConical, Upload, FileText, RefreshCw, AlertTriangle,
   CheckCircle2, UserCheck, Shield, TrendingUp, BarChart3,
-  ChevronDown, Bot, Ban, Users, Trophy, Search, Download
+  ChevronDown, Bot, Ban, Users, Trophy, Search, Download, X
 } from "lucide-react";
 import QualityGauge from "@/components/QualityGauge";
 import { jsPDF } from "jspdf";
