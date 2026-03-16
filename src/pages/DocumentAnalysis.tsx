@@ -408,6 +408,7 @@ const DocumentAnalysis = () => {
     setDecisao("");
     setMotivo("");
     setObservacao("");
+    setJustificativaDivergencia("");
     setOcrProcessing({});
     setOcrExpanded({});
   };
