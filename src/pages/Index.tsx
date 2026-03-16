@@ -474,7 +474,7 @@ const Index = () => {
             </ErrorBoundary>
           </div>
           <ErrorBoundary fallbackTitle="Erro nos indicadores">
-            <StatsWidgets entries={filtered} activeStatusFilter={statusFilter} onStatusFilterChange={setStatusFilter} />
+            <StatsWidgets entries={baseFiltered} activeStatusFilter={statusFilter} onStatusFilterChange={setStatusFilter} />
           </ErrorBoundary>
         </div>
       </main>
