@@ -33,31 +33,6 @@ const parseDateBR = (str: string): Date | null => {
   return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
 };
 
-/** Simple heuristic: check if there's at least one client message in the text */
-const hasClientInteraction = (text: string): boolean => {
-  // Look for patterns indicating client messages (common in chat transcripts)
-  const lines = text.split("\n").filter((l) => l.trim());
-  // If very short text with no real dialogue, likely no interaction
-  if (lines.length < 5) return false;
-  
-  // Check for patterns like "Cliente:" or messages not from the agent/URA
-  const uraPatterns = /\b(MARTE|URA|Sistema|Bot)\b/i;
-  const agentPattern = /\b(Atendente|Agente|Operador|especialista)\b/i;
-  
-  let hasNonAgentMessage = false;
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed.length > 10 && !uraPatterns.test(trimmed) && !agentPattern.test(trimmed)) {
-      // Check if it looks like a client response (not a system/header line)
-      if (!/^(protocolo|data|hora|tipo|setor|fila|transfer)/i.test(trimmed)) {
-        hasNonAgentMessage = true;
-        break;
-      }
-    }
-  }
-  
-  return hasNonAgentMessage;
-};
 
 const Index = () => {
   const navigate = useNavigate();
