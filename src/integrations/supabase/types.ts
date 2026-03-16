@@ -282,6 +282,7 @@ export type Database = {
         Row: {
           atendente: string
           atualizacao_cadastral: string
+          audit_log: Json | null
           bonus: boolean
           classificacao: string
           company_id: string | null
@@ -291,15 +292,19 @@ export type Database = {
           full_report: Json | null
           id: string
           nota: number
+          parent_evaluation_id: string | null
           pdf_url: string | null
           pontos_melhoria: string[] | null
+          prompt_version: string
           protocolo: string
+          resultado_validado: boolean
           tipo: string
           user_id: string | null
         }
         Insert: {
           atendente: string
           atualizacao_cadastral?: string
+          audit_log?: Json | null
           bonus?: boolean
           classificacao: string
           company_id?: string | null
@@ -309,15 +314,19 @@ export type Database = {
           full_report?: Json | null
           id?: string
           nota: number
+          parent_evaluation_id?: string | null
           pdf_url?: string | null
           pontos_melhoria?: string[] | null
+          prompt_version?: string
           protocolo: string
+          resultado_validado?: boolean
           tipo: string
           user_id?: string | null
         }
         Update: {
           atendente?: string
           atualizacao_cadastral?: string
+          audit_log?: Json | null
           bonus?: boolean
           classificacao?: string
           company_id?: string | null
@@ -327,9 +336,12 @@ export type Database = {
           full_report?: Json | null
           id?: string
           nota?: number
+          parent_evaluation_id?: string | null
           pdf_url?: string | null
           pontos_melhoria?: string[] | null
+          prompt_version?: string
           protocolo?: string
+          resultado_validado?: boolean
           tipo?: string
           user_id?: string | null
         }
@@ -339,6 +351,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluations_parent_evaluation_id_fkey"
+            columns: ["parent_evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "evaluations"
             referencedColumns: ["id"]
           },
         ]

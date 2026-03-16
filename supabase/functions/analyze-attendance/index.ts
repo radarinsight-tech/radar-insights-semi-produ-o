@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+const PROMPT_VERSION = "auditor_v3";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
@@ -237,6 +239,7 @@ serve(async (req) => {
       });
     }
 
+    const startTime = Date.now();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: "LOVABLE_API_KEY não configurada" }), {
@@ -411,6 +414,7 @@ ${text}`,
     }
 
     const result = JSON.parse(toolCall.function.arguments);
+    const endTime = Date.now();
 
     // ═══════════════════════════════════════════════════
     // SERVER-SIDE CONSISTENCY VALIDATION
@@ -426,7 +430,7 @@ ${text}`,
       errors.push("Auditoria realizada mas pontosPossiveis = 0");
     }
 
-    // Rule 2: If audited, notaFinal must be calculated (can be 0 only if all criteria are NÃO)
+    // Rule 2: If audited, notaFinal must be calculated
     if (isAudited && result.pontosPossiveis > 0 && result.notaFinal == null) {
       errors.push("Auditoria realizada mas notaFinal não calculada");
     }
@@ -441,12 +445,11 @@ ${text}`,
       else expectedClass = "Abaixo do esperado";
 
       if (result.classificacao !== expectedClass) {
-        // Auto-correct classification
         result.classificacao = expectedClass;
       }
     }
 
-    // Rule 4: Never "Bom atendimento" or positive classification with notaFinal = 0
+    // Rule 4: Never positive classification with notaFinal = 0
     if (result.notaFinal === 0 && ["Excelente", "Bom atendimento", "Regular"].includes(result.classificacao)) {
       if (isBlocked || isImpediment) {
         result.classificacao = "Fora de Avaliação";
@@ -472,14 +475,30 @@ ${text}`,
       else result.bonusQualidade = 0;
     }
 
-    // If there are unrecoverable errors, return error
-    if (errors.length > 0) {
+    const resultadoValidado = errors.length === 0;
+
+    // Build audit log
+    const auditLog = {
+      dataExecucao: new Date().toISOString(),
+      promptVersion: PROMPT_VERSION,
+      tempoExecucaoMs: endTime - startTime,
+      resultadoValidado,
+      erroDetectado: errors.length > 0 ? errors : null,
+    };
+
+    // If there are unrecoverable errors, return error with fallback status
+    if (!resultadoValidado) {
       console.error("Consistency validation errors:", errors);
       return new Response(
         JSON.stringify({
           error: "Erro de consistência da auditoria: resultado incompleto. Reprocessar atendimento.",
           details: errors,
           partialResult: result,
+          auditLog,
+          promptVersion: PROMPT_VERSION,
+          // Fallback safe status
+          statusAuditoria: "erro_processamento",
+          motivoResultado: "erro_interno",
         }),
         {
           status: 422,
@@ -487,6 +506,10 @@ ${text}`,
         }
       );
     }
+
+    // Attach versioning and audit log to successful result
+    result.promptVersion = PROMPT_VERSION;
+    result.auditLog = auditLog;
 
     return new Response(JSON.stringify(result), {
       status: 200,
