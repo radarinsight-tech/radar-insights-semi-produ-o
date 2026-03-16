@@ -3,8 +3,12 @@ import { formatNota, notaToScale10 } from "@/lib/utils";
 import { Users, BarChart3, Trophy, ClipboardCheck, Bot, ShieldAlert } from "lucide-react";
 import type { HistoryEntry } from "@/lib/mockData";
 
+export type StatusFilter = "bot_com_falha" | "nao_auditavel" | null;
+
 interface Props {
   entries: HistoryEntry[];
+  activeStatusFilter?: StatusFilter;
+  onStatusFilterChange?: (filter: StatusFilter) => void;
 }
 
 const StatsWidgets = ({ entries }: Props) => {
