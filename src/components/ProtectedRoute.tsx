@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
-import { Loader2, LogIn, FlaskConical } from "lucide-react";
+import { Loader2, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -10,14 +10,10 @@ interface Props {
   children: React.ReactNode;
 }
 
-const DEMO_MODE = true; // Sync with Index.tsx DEMO_MODE
-
 const ProtectedRoute = ({ children }: Props) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [timedOut, setTimedOut] = useState(false);
-  const [demoBypass, setDemoBypass] = useState(false);
-  const location = useLocation();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -32,7 +28,6 @@ const ProtectedRoute = ({ children }: Props) => {
       setLoading(false);
     });
 
-    // Safety timeout — never stay loading forever
     const timeout = setTimeout(() => {
       setTimedOut(true);
       setLoading(false);
@@ -55,15 +50,7 @@ const ProtectedRoute = ({ children }: Props) => {
     );
   }
 
-  // Allow demo bypass for attendance page
-  if (demoBypass) {
-    return <>{children}</>;
-  }
-
   if (!session) {
-    const isAttendance = location.pathname === "/attendance";
-
-    // Show visible fallback instead of silent redirect
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Card className="p-8 max-w-md w-full mx-4 text-center space-y-4">
@@ -76,20 +63,9 @@ const ProtectedRoute = ({ children }: Props) => {
               ? "Não foi possível verificar a autenticação. Verifique sua conexão."
               : "Faça login para acessar o sistema."}
           </p>
-          <div className="flex flex-col gap-2">
-            <Button onClick={() => window.location.href = "/auth"} className="w-full">
-              <LogIn className="h-4 w-4 mr-2" /> Fazer login
-            </Button>
-            {isAttendance && DEMO_MODE && (
-              <Button
-                variant="outline"
-                onClick={() => setDemoBypass(true)}
-                className="w-full gap-2"
-              >
-                <FlaskConical className="h-4 w-4" /> Entrar em Modo Demo
-              </Button>
-            )}
-          </div>
+          <Button onClick={() => window.location.href = "/auth"} className="w-full">
+            <LogIn className="h-4 w-4 mr-2" /> Fazer login
+          </Button>
         </Card>
       </div>
     );
