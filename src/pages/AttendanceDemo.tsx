@@ -357,7 +357,7 @@ const AttendanceDemo = () => {
                       {i + 1}º
                     </span>
                     <span className="text-xs text-foreground flex-1 truncate">{a.nome}</span>
-                    <span className="text-xs font-bold text-foreground tabular-nums">{a.media}</span>
+                    <span className="text-xs font-bold text-foreground tabular-nums">{a.media.toFixed(1).replace(".", ",")}</span>
                   </li>
                 ))}
               </ol>
