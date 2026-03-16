@@ -8,8 +8,9 @@ import StatsWidgets from "@/components/StatsWidgets";
 import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Users, Search, ArrowLeft, AlertTriangle, RefreshCw } from "lucide-react";
+import { LogOut, Users, Search, ArrowLeft, AlertTriangle, RefreshCw, FlaskConical } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import logoSymbol from "@/assets/logo-symbol.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,28 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+// ═══════════════════════════════════════════════════
+// MODO DEMO — Altere para true para ativar
+// ═══════════════════════════════════════════════════
+const DEMO_MODE = false;
+
+const DEMO_RESULT: AnalysisData = {
+  protocolo: "DEMO-2025031567",
+  atendente: "Ana Paula (Demo)",
+  tipo: "Suporte Técnico",
+  atualizacaoCadastral: "SIM",
+  notaFinal: 92.1,
+  classificacao: "Excelente",
+  bonus: true,
+  bonusQualidade: 100,
+  pontosMelhoria: [
+    "Reforçar confirmação de entendimento antes de propor solução.",
+    "Oferecer alternativas de contato para acompanhamento.",
+  ],
+  pontosObtidos: 81,
+  pontosPossiveis: 88,
+};
+
 /** Parse dd/MM/yyyy to a Date object */
 const parseDateBR = (str: string): Date | null => {
   const parts = str.split("/");
@@ -34,7 +57,6 @@ const parseDateBR = (str: string): Date | null => {
   const [dd, mm, yyyy] = parts;
   return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
 };
-
 
 const Index = () => {
   const navigate = useNavigate();
@@ -44,6 +66,7 @@ const Index = () => {
   const [analyzedFileName, setAnalyzedFileName] = useState<string>("");
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [isDemoResult, setIsDemoResult] = useState(false);
   const [filters, setFilters] = useState<FilterValues>({
     atendente: "todos",
     periodo: "",
