@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ModuleGuard from "@/components/ModuleGuard";
+import AdminGuard from "@/components/AdminGuard";
 import Hub from "./pages/Hub.tsx";
 import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
@@ -89,11 +90,12 @@ const App = () => (
             path="/users"
             element={
               <ProtectedRoute>
-                <Users />
+                <AdminGuard>
+                  <Users />
+                </AdminGuard>
               </ProtectedRoute>
             }
           />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

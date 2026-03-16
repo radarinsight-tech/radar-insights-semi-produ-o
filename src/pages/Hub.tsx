@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { LogOut, HeadsetIcon, CreditCard, Loader2, ShieldAlert } from "lucide-react";
+import { LogOut, HeadsetIcon, CreditCard, Loader2, ShieldAlert, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,7 @@ import { useUserPermissions } from "@/hooks/useUserPermissions";
 
 const Hub = () => {
   const navigate = useNavigate();
-  const { canAccess, loading, roles } = useUserPermissions();
+  const { canAccess, loading, isAdmin } = useUserPermissions();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -26,11 +26,11 @@ const Hub = () => {
 
   const showAuditoria = canAccess("auditoria");
   const showCredito = canAccess("credito");
-  const noAccess = !showAuditoria && !showCredito;
+  const showAdmin = canAccess("admin");
+  const noAccess = !showAuditoria && !showCredito && !showAdmin;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
       <header className="border-b border-border bg-card px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -44,9 +44,8 @@ const Hub = () => {
         </div>
       </header>
 
-      {/* Main */}
       <main className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="max-w-3xl w-full text-center">
+        <div className="max-w-4xl w-full text-center">
           <div className="mb-6 flex justify-center">
             <img src={logoFull} alt="Radar Insight" className="h-28 object-contain" />
           </div>
@@ -69,7 +68,7 @@ const Hub = () => {
               </p>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-4xl mx-auto">
               {showAuditoria && (
                 <Card
                   className="group relative p-8 cursor-pointer border-2 border-border hover:border-blue-400/50 transition-all hover:shadow-lg"
@@ -107,7 +106,34 @@ const Hub = () => {
                   </div>
                 </Card>
               )}
+
+              {showAdmin && (
+                <Card
+                  className="group relative p-8 cursor-pointer border-2 border-border hover:border-primary/50 transition-all hover:shadow-lg"
+                  onClick={() => navigate("/users")}
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="p-4 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                      <Users className="h-10 w-10 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-foreground mb-1">
+                        Administração / Usuários
+                      </h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Gerencie acessos, usuários e permissões com acesso total de administrador
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              )}
             </div>
+          )}
+
+          {isAdmin && (
+            <p className="mt-6 text-sm text-muted-foreground">
+              Seu perfil administrativo libera automaticamente todos os módulos do sistema.
+            </p>
           )}
         </div>
       </main>
