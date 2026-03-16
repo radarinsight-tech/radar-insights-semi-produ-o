@@ -30,19 +30,24 @@ ORDEM OBRIGATÓRIA DE DECISÃO — NUNCA PULAR ETAPAS
 
 ETAPA 1 — INTERAÇÃO DO CLIENTE
 
-Verifique se existe qualquer mensagem enviada pelo cliente.
+REGRA CRÍTICA: Antes de classificar como "sem_interacao_do_cliente", você DEVE ler TODO o histórico do atendimento do início ao fim. Qualquer mensagem enviada pelo cliente em qualquer momento do atendimento invalida essa classificação.
+
+Verifique se existe qualquer mensagem enviada pelo cliente em TODO o histórico.
 Considere como interação válida:
-- saudações (ex: "boa noite", "olá")
+- saudações (ex: "boa noite", "olá", "oi")
 - perguntas
 - texto livre
 - relato de problema
 - envio de CPF ou CNPJ
 - escolha de menu
-- respostas numéricas
+- respostas numéricas (ex: "1", "2", "3")
 - respostas curtas como "sim", "não", "ok"
 - Interação com BOT também conta como interação válida.
+- Qualquer texto digitado pelo cliente em qualquer parte do histórico.
 
-Se NÃO existir nenhuma mensagem do cliente no histórico:
+IMPORTANTE: Se existir QUALQUER mensagem do cliente no histórico, o atendimento NÃO pode ser classificado como "sem_interacao_do_cliente". Somente classifique como "sem_interacao_do_cliente" quando NÃO existir absolutamente nenhuma mensagem enviada pelo cliente em todo o histórico.
+
+Se NÃO existir nenhuma mensagem do cliente em TODO o histórico:
 - statusAtendimento = "fora_de_avaliacao"
 - motivo = "sem_interacao_do_cliente"
 - Encerrar análise. Não aplicar mentoria.
