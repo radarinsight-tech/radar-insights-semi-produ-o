@@ -161,47 +161,101 @@ export type Database = {
       }
       document_items: {
         Row: {
+          alertas: Json | null
+          campos_extraidos: Json | null
+          confianca_ocr: number | null
           cpf_confere: boolean
           created_at: string
+          data_emissao: string | null
+          data_exclusao: string | null
+          data_fim_contrato: string | null
+          data_inicio_contrato: string | null
+          data_revisao: string | null
+          divergencias: Json | null
           document_analysis_id: string
           documento_recebido: boolean
           endereco_confere: boolean
+          excluido_por: string | null
           file_name: string | null
           file_url: string | null
+          hash_arquivo: string | null
           id: string
           legivel: boolean
+          motivo_exclusao: string | null
           nome_confere: boolean
           observacao: string | null
+          revisado_por: string | null
+          risco_documental: string | null
+          status_documento: string | null
+          status_ocr: string | null
+          suspeita_fraude: boolean | null
+          texto_extraido: string | null
           tipo: string
           valido: boolean
         }
         Insert: {
+          alertas?: Json | null
+          campos_extraidos?: Json | null
+          confianca_ocr?: number | null
           cpf_confere?: boolean
           created_at?: string
+          data_emissao?: string | null
+          data_exclusao?: string | null
+          data_fim_contrato?: string | null
+          data_inicio_contrato?: string | null
+          data_revisao?: string | null
+          divergencias?: Json | null
           document_analysis_id: string
           documento_recebido?: boolean
           endereco_confere?: boolean
+          excluido_por?: string | null
           file_name?: string | null
           file_url?: string | null
+          hash_arquivo?: string | null
           id?: string
           legivel?: boolean
+          motivo_exclusao?: string | null
           nome_confere?: boolean
           observacao?: string | null
+          revisado_por?: string | null
+          risco_documental?: string | null
+          status_documento?: string | null
+          status_ocr?: string | null
+          suspeita_fraude?: boolean | null
+          texto_extraido?: string | null
           tipo: string
           valido?: boolean
         }
         Update: {
+          alertas?: Json | null
+          campos_extraidos?: Json | null
+          confianca_ocr?: number | null
           cpf_confere?: boolean
           created_at?: string
+          data_emissao?: string | null
+          data_exclusao?: string | null
+          data_fim_contrato?: string | null
+          data_inicio_contrato?: string | null
+          data_revisao?: string | null
+          divergencias?: Json | null
           document_analysis_id?: string
           documento_recebido?: boolean
           endereco_confere?: boolean
+          excluido_por?: string | null
           file_name?: string | null
           file_url?: string | null
+          hash_arquivo?: string | null
           id?: string
           legivel?: boolean
+          motivo_exclusao?: string | null
           nome_confere?: boolean
           observacao?: string | null
+          revisado_por?: string | null
+          risco_documental?: string | null
+          status_documento?: string | null
+          status_ocr?: string | null
+          suspeita_fraude?: boolean | null
+          texto_extraido?: string | null
           tipo?: string
           valido?: boolean
         }
