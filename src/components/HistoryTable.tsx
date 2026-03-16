@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { formatNota } from "@/lib/utils";
+import { formatNota, classificarNota, classColorFromClassificacao } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -25,11 +25,6 @@ interface Props {
   onRefresh?: () => void;
 }
 
-const classColor = (c: string) => {
-  if (c === "Excelente" || c === "Ótimo") return "bg-accent text-accent-foreground";
-  if (c === "Bom") return "bg-primary text-primary-foreground";
-  return "bg-warning text-warning-foreground";
-};
 
 const extractStoragePath = (url: string): string | null => {
   const match = url.match(/\/object\/public\/pdfs\/(.+)$/);
@@ -144,7 +139,7 @@ const HistoryTable = ({ entries, onRefresh }: Props) => {
                     <TableCell className="text-sm">{e.atendente}</TableCell>
                     <TableCell className="text-sm text-right font-semibold">{formatNota(e.nota)}</TableCell>
                     <TableCell>
-                      <Badge className={classColor(e.classificacao)}>{e.classificacao}</Badge>
+                      <Badge className={classColorFromClassificacao(classificarNota(e.nota))}>{classificarNota(e.nota)}</Badge>
                     </TableCell>
                     <TableCell>
                       <Badge className={e.bonus ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"}>

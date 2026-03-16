@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, FileSearch, ShieldAlert } from "lucide-react";
 import QualityGauge from "@/components/QualityGauge";
-import { formatNota } from "@/lib/utils";
+import { formatNota, classificarNota, classColorFromClassificacao } from "@/lib/utils";
 
 export interface AnalysisData {
   protocolo: string;
@@ -25,12 +25,6 @@ interface Props {
   data: AnalysisData | null;
 }
 
-const classColor = (c: string) => {
-  if (c === "Excelente" || c === "Muito bom") return "bg-accent text-accent-foreground";
-  if (c === "Bom atendimento") return "bg-primary text-primary-foreground";
-  return "bg-warning text-warning-foreground";
-};
-
 const AnalysisResult = ({ data }: Props) => {
   if (!data) {
     return (
@@ -45,7 +39,7 @@ const AnalysisResult = ({ data }: Props) => {
         </p>
         <ul className="mt-3 text-xs text-muted-foreground space-y-1">
           <li>• Protocolo e atendente auditado</li>
-          <li>• Nota final (0–100) e classificação</li>
+          <li>• Nota final (0–10) e classificação</li>
           <li>• Bônus de qualidade e operacional</li>
           <li>• Mentoria de comunicação</li>
         </ul>
@@ -115,7 +109,7 @@ const AnalysisResult = ({ data }: Props) => {
       
       {/* Quality Gauge */}
       <div className="mb-5">
-        <QualityGauge score={data.notaFinal} classification={data.classificacao} />
+        <QualityGauge score={data.notaFinal} classification={classificarNota(data.notaFinal)} />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -139,7 +133,7 @@ const AnalysisResult = ({ data }: Props) => {
         </div>
         <div>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Classificação</p>
-          <Badge className={`mt-1 ${classColor(data.classificacao)}`}>{data.classificacao}</Badge>
+          <Badge className={`mt-1 ${classColorFromClassificacao(classificarNota(data.notaFinal))}`}>{classificarNota(data.notaFinal)}</Badge>
         </div>
         <div>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Bônus Qualidade</p>

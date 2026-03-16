@@ -42,9 +42,10 @@ const QualityGauge = ({ score, classification }: QualityGaugeProps) => {
   };
 
   const getLabel = (s: number) => {
-    if (s <= 40) return "Qualidade crítica";
-    if (s <= 60) return "Abaixo do esperado";
-    if (s <= 80) return "Bom";
+    if (s <= 30) return "Crítico";
+    if (s <= 50) return "Ruim";
+    if (s <= 70) return "Regular";
+    if (s <= 90) return "Bom";
     return "Excelente";
   };
 
