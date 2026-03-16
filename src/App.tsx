@@ -33,11 +33,7 @@ const App = () => (
           />
           <Route
             path="/attendance"
-            element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            }
+            element={<Index />}
           />
           <Route
             path="/credit"
