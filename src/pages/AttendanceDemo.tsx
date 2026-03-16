@@ -10,9 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   FlaskConical, Upload, FileText, RefreshCw, AlertTriangle,
   CheckCircle2, UserCheck, Shield, TrendingUp, BarChart3,
-  ChevronDown, Bot, Ban, Users, Trophy, Search
+  ChevronDown, Bot, Ban, Users, Trophy, Search, Download
 } from "lucide-react";
 import QualityGauge from "@/components/QualityGauge";
+import { jsPDF } from "jspdf";
 
 /* ── Shared card style ── */
 const cardClass = "rounded-xl border border-border/60 bg-card shadow-sm";
