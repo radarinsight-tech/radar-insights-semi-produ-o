@@ -239,7 +239,14 @@ const AttendanceDemo = () => {
 
               {/* RESULTADO DA AUDITORIA */}
               <div className={`${cardClass} p-5`}>
-                <h2 className="text-sm font-semibold text-primary mb-3 tracking-tight">Resultado da Auditoria</h2>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-semibold text-primary tracking-tight">Resultado da Auditoria</h2>
+                  {state === "completed" && (
+                    <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1.5" onClick={handleExportPdf}>
+                      <Download className="h-3 w-3" /> Exportar PDF
+                    </Button>
+                  )}
+                </div>
                 {state === "completed" ? (
                   <div className="animate-in fade-in duration-300">
                     <div className="flex gap-4 items-start">
