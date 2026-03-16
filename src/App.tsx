@@ -76,6 +76,16 @@ const App = () => (
             }
           />
           <Route
+            path="/credit-spc"
+            element={
+              <ProtectedRoute>
+                <ModuleGuard module="credito">
+                  <SpcConsulta />
+                </ModuleGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/users"
             element={
               <ProtectedRoute>
