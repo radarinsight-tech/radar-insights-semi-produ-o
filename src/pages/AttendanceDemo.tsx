@@ -224,6 +224,7 @@ const AttendanceDemo = () => {
               {/* UPLOAD */}
               <div className={`${cardClass} p-5`}>
                 <h2 className="text-sm font-semibold text-primary mb-3 tracking-tight">Upload de Atendimento</h2>
+                <input ref={fileInputRef} type="file" accept=".pdf" onChange={handleFileChange} className="hidden" />
                 {state === "processing" && (
                   <div className="border border-primary/20 rounded-lg p-6 text-center bg-primary/5">
                     <div className="h-8 w-8 mx-auto animate-spin mb-3 border-[3px] border-primary/20 border-t-primary rounded-full" />
@@ -240,7 +241,7 @@ const AttendanceDemo = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Análise concluída</p>
-                          <p className="text-sm font-medium text-foreground">BT202681899_renegociacao.pdf</p>
+                          <p className="text-sm font-medium text-foreground truncate">{selectedFile?.name || "arquivo.pdf"}</p>
                         </div>
                       </div>
                     </div>
@@ -249,14 +250,38 @@ const AttendanceDemo = () => {
                     </Button>
                   </>
                 )}
+                {state === "loaded" && selectedFile && (
+                  <>
+                    <div className="border border-primary/30 rounded-lg p-4 bg-primary/5">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <FileText className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{selectedFile.name}</p>
+                          <p className="text-xs text-accent">Arquivo carregado com sucesso</p>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={handleNew} title="Remover">
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <Button size="sm" className="mt-3 w-full" onClick={handleAnalyze}>Analisar atendimento</Button>
+                  </>
+                )}
                 {state === "empty" && (
                   <>
-                    <div className="border-2 border-dashed border-border/80 rounded-lg p-6 text-center hover:border-primary/40 transition-colors cursor-pointer">
+                    <div
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="border-2 border-dashed border-border/80 rounded-lg p-6 text-center hover:border-primary/40 transition-colors cursor-pointer"
+                    >
                       <Upload className="h-7 w-7 mx-auto text-muted-foreground/60 mb-2" />
                       <p className="text-sm text-muted-foreground">Arraste o PDF aqui ou clique para selecionar</p>
                       <p className="text-[10px] text-muted-foreground/60 mt-1">Somente arquivos PDF</p>
                     </div>
-                    <Button size="sm" className="mt-3 w-full" onClick={handleAnalyze}>Analisar atendimento</Button>
+                    <Button size="sm" className="mt-3 w-full" disabled>Analisar atendimento</Button>
                   </>
                 )}
               </div>
