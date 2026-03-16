@@ -463,6 +463,19 @@ const Index = () => {
           </ErrorBoundary>
         </div>
 
+        {/* 🔧 DEBUG TEMPORÁRIO — remover após resolver bug */}
+        <Card className="p-4 border-amber-500/50 bg-amber-500/5 text-xs font-mono space-y-1">
+          <p className="font-bold text-amber-600 uppercase text-[11px] mb-1">🐛 Debug — Dados do Resultado</p>
+          <p><span className="text-muted-foreground">Arquivo enviado:</span> {analyzedFileName || "(nenhum)"}</p>
+          <p><span className="text-muted-foreground">Protocolo no card:</span> {analysis?.protocolo || "(vazio)"}</p>
+          <p><span className="text-muted-foreground">Atendente no card:</span> {analysis?.atendente || "(vazio)"}</p>
+          <p><span className="text-muted-foreground">Fonte dos dados:</span>{" "}
+            <span className={isDemoResult ? "text-amber-600 font-bold" : "text-accent font-bold"}>
+              {isDemoResult ? "DEMO (mock)" : analysis ? "ANALYSIS PAYLOAD (real)" : "NENHUM (estado inicial)"}
+            </span>
+          </p>
+        </Card>
+
         <ErrorBoundary fallbackTitle="Erro nos gráficos">
           <ScoreEvolutionChart entries={filtered} />
         </ErrorBoundary>
