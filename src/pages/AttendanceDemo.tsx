@@ -199,14 +199,6 @@ const AttendanceDemo = () => {
                 <div className="mt-4 rounded-lg bg-muted/40 border border-border p-3">
                   <p className="text-sm text-foreground italic">"{MOCK_RESULT.resumo}"</p>
                 </div>
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Interação do Cliente</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
-                      <p className="text-sm font-medium">{MOCK_RESULT.statusInteracao}</p>
-                    </div>
-                  </div>
-                </div>
 
                 {MOCK_RESULT.pontosMelhoria.length > 0 && (
                   <div className="mt-5 border-t border-border pt-4">
