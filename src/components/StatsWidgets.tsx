@@ -113,7 +113,7 @@ const StatsWidgets = ({ entries }: Props) => {
                 <span className="font-semibold text-muted-foreground w-5">{i + 1}.</span>
                 <span className="font-medium">{r.name}</span>
               </span>
-              <span className="font-semibold">{r.avg.toFixed(1)}</span>
+              <span className="font-semibold">{r.avg.toFixed(1).replace(".", ",")}</span>
             </div>
           ))}
           {ranking.length === 0 && (
