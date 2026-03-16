@@ -109,7 +109,7 @@ const AnalysisResult = ({ data }: Props) => {
       
       {/* Quality Gauge */}
       <div className="mb-5">
-        <QualityGauge score={data.notaFinal} classification={data.classificacao} />
+        <QualityGauge score={data.notaFinal} classification={classificarNota(data.notaFinal)} />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
