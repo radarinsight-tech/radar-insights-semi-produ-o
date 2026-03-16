@@ -44,7 +44,6 @@ const Index = () => {
   const [analyzedFileName, setAnalyzedFileName] = useState<string>("");
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
-  const [isDemoResult, setIsDemoResult] = useState(false);
   const [filters, setFilters] = useState<FilterValues>({
     atendente: "todos",
     periodo: "",
