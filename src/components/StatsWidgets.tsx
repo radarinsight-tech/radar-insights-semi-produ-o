@@ -85,7 +85,7 @@ const StatsWidgets = ({ entries, activeStatusFilter, onStatusFilterChange }: Pro
           <p className="text-sm font-semibold text-orange-600 dark:text-orange-400">Atendimentos Não Auditáveis</p>
         </div>
         <p className="text-3xl font-bold">{bloqueadas}</p>
-        <p className="text-xs text-muted-foreground mt-1">Casos sem interação humana suficiente para auditoria de qualidade</p>
+        <p className="text-xs text-muted-foreground mt-1">Casos sem interação humana suficiente ou sem conteúdo válido para auditoria</p>
       </Card>
 
       {/* Existing widgets */}
