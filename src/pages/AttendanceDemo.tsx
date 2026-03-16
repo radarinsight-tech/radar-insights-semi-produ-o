@@ -223,12 +223,12 @@ const AttendanceDemo = () => {
             <div className={`${cardClass} p-5`}>
               <h2 className="text-sm font-semibold text-primary mb-3 tracking-tight">Evolução da Nota Média</h2>
               <div className="h-40 flex items-end gap-1.5 px-1">
-                {[78, 82, 80, 85, 88, 84, 87, 90, 86, 89, 92, 91].map((v, i) => (
+                {[7.8, 8.2, 8.0, 8.5, 8.8, 8.4, 8.7, 9.0, 8.6, 8.9, 9.2, 9.1].map((v, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
-                    <span className="text-[9px] font-medium text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">{v}</span>
+                    <span className="text-[9px] font-medium text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">{v.toFixed(1).replace(".", ",")}</span>
                     <div
                       className="w-full rounded-t-md bg-primary/70 group-hover:bg-primary transition-colors"
-                      style={{ height: `${(v / 100) * 110}px` }}
+                      style={{ height: `${(v / 10) * 110}px` }}
                     />
                     <span className="text-[9px] text-muted-foreground">{["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][i]}</span>
                   </div>
