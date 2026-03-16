@@ -133,7 +133,7 @@ const AnalysisResult = ({ data }: Props) => {
         </div>
         <div>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Classificação</p>
-          <Badge className={`mt-1 ${classColor(data.classificacao)}`}>{data.classificacao}</Badge>
+          <Badge className={`mt-1 ${classColorFromClassificacao(classificarNota(data.notaFinal))}`}>{classificarNota(data.notaFinal)}</Badge>
         </div>
         <div>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Bônus Qualidade</p>

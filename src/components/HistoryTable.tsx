@@ -139,7 +139,7 @@ const HistoryTable = ({ entries, onRefresh }: Props) => {
                     <TableCell className="text-sm">{e.atendente}</TableCell>
                     <TableCell className="text-sm text-right font-semibold">{formatNota(e.nota)}</TableCell>
                     <TableCell>
-                      <Badge className={classColor(e.classificacao)}>{e.classificacao}</Badge>
+                      <Badge className={classColorFromClassificacao(classificarNota(e.nota))}>{classificarNota(e.nota)}</Badge>
                     </TableCell>
                     <TableCell>
                       <Badge className={e.bonus ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"}>
