@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { notaToScale10 } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import {
   ChartContainer,
