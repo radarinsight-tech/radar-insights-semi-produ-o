@@ -5,6 +5,7 @@ import AnalysisResult, { type AnalysisData } from "@/components/AnalysisResult";
 import HistoryTable from "@/components/HistoryTable";
 import Filters, { type FilterValues } from "@/components/Filters";
 import StatsWidgets, { type StatusFilter } from "@/components/StatsWidgets";
+import { matchesStatusFilter, getStatusLabel } from "@/lib/auditStatus";
 import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { supabase } from "@/integrations/supabase/client";
