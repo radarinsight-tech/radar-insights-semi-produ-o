@@ -10,9 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   FlaskConical, Upload, FileText, RefreshCw, AlertTriangle,
   CheckCircle2, UserCheck, Shield, TrendingUp, BarChart3,
-  ChevronDown, Bot, Ban, Users, Trophy, Search
+  ChevronDown, Bot, Ban, Users, Trophy, Search, Download
 } from "lucide-react";
 import QualityGauge from "@/components/QualityGauge";
+import { jsPDF } from "jspdf";
 
 /* ── Shared card style ── */
 const cardClass = "rounded-xl border border-border/60 bg-card shadow-sm";
@@ -89,6 +90,90 @@ const AttendanceDemo = () => {
     setState("empty");
   };
 
+  const handleExportPdf = () => {
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const w = doc.internal.pageSize.getWidth();
+    const margin = 18;
+    let y = 20;
+
+    // Header
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("Radar Insight", margin, y);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(120);
+    doc.text("Relatório de Auditoria de Atendimento", margin, y + 6);
+    doc.text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`, margin, y + 11);
+    doc.setDrawColor(200);
+    doc.line(margin, y + 14, w - margin, y + 14);
+    y += 22;
+
+    const addSection = (title: string) => {
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(40);
+      doc.text(title, margin, y);
+      y += 7;
+    };
+
+    const addField = (label: string, value: string) => {
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(100);
+      doc.text(label, margin, y);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(40);
+      doc.text(value, margin + 50, y);
+      y += 5.5;
+    };
+
+    addSection("Dados do Atendimento");
+    addField("Protocolo:", MOCK_RESULT.protocolo);
+    addField("Atendente:", MOCK_RESULT.atendente);
+    addField("Tipo:", MOCK_RESULT.tipo);
+    addField("Atualização Cadastral:", MOCK_RESULT.atualizacaoCadastral);
+    addField("Interação do Cliente:", MOCK_RESULT.statusInteracao);
+    y += 3;
+
+    addSection("Resultado da Auditoria");
+    addField("Nota Final:", MOCK_RESULT.notaFinal.toFixed(1).replace(".", ","));
+    addField("Classificação:", MOCK_RESULT.classificacao);
+    addField("Bônus Qualidade:", `${MOCK_RESULT.bonusQualidade}%`);
+    addField("Pontuação:", `${MOCK_RESULT.pontosObtidos}/${MOCK_RESULT.pontosPossiveis} pontos`);
+    addField("Validade:", MOCK_RESULT.validade);
+    addField("Versão do Prompt:", MOCK_RESULT.versaoPrompt);
+    y += 3;
+
+    addSection("Indicadores por Dimensão");
+    MOCK_RESULT.indicadores.forEach((ind) => {
+      addField(`${ind.label}:`, ind.valor.toFixed(1).replace(".", ","));
+    });
+    y += 3;
+
+    addSection("Resumo da Auditoria");
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(60);
+    const resumoLines = doc.splitTextToSize(MOCK_RESULT.resumo, w - margin * 2);
+    doc.text(resumoLines, margin, y);
+    y += resumoLines.length * 4.5 + 5;
+
+    if (MOCK_RESULT.pontosMelhoria.length > 0) {
+      addSection("Mentoria de Comunicação");
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(60);
+      MOCK_RESULT.pontosMelhoria.forEach((p, i) => {
+        const lines = doc.splitTextToSize(`${i + 1}. ${p}`, w - margin * 2);
+        doc.text(lines, margin, y);
+        y += lines.length * 4.5 + 2;
+      });
+    }
+
+    doc.save(`auditoria_${MOCK_RESULT.protocolo}.pdf`);
+  };
+
   return (
     <div className="min-h-screen bg-background" data-module="attendance">
       {/* HEADER */}
@@ -154,7 +239,14 @@ const AttendanceDemo = () => {
 
               {/* RESULTADO DA AUDITORIA */}
               <div className={`${cardClass} p-5`}>
-                <h2 className="text-sm font-semibold text-primary mb-3 tracking-tight">Resultado da Auditoria</h2>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-semibold text-primary tracking-tight">Resultado da Auditoria</h2>
+                  {state === "completed" && (
+                    <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1.5" onClick={handleExportPdf}>
+                      <Download className="h-3 w-3" /> Exportar PDF
+                    </Button>
+                  )}
+                </div>
                 {state === "completed" ? (
                   <div className="animate-in fade-in duration-300">
                     <div className="flex gap-4 items-start">
