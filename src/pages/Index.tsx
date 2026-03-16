@@ -28,28 +28,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// ═══════════════════════════════════════════════════
-// MODO DEMO — Altere para true para ativar
-// ═══════════════════════════════════════════════════
-const DEMO_MODE = false;
-
-const DEMO_RESULT: AnalysisData = {
-  protocolo: "DEMO-2025031567",
-  atendente: "Ana Paula (Demo)",
-  tipo: "Suporte Técnico",
-  atualizacaoCadastral: "SIM",
-  notaFinal: 92.1,
-  classificacao: "Excelente",
-  bonus: true,
-  bonusQualidade: 100,
-  pontosMelhoria: [
-    "Reforçar confirmação de entendimento antes de propor solução.",
-    "Oferecer alternativas de contato para acompanhamento.",
-  ],
-  pontosObtidos: 81,
-  pontosPossiveis: 88,
-};
-
 /** Parse dd/MM/yyyy to a Date object */
 const parseDateBR = (str: string): Date | null => {
   const parts = str.split("/");
