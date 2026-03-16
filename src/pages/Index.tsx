@@ -350,27 +350,35 @@ const Index = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <UploadSection
-            onAnalyze={runAnalysis}
-            isAnalyzing={isAnalyzing}
-            analysisState={uploadState}
-            analyzedFileName={analyzedFileName}
-            onNewAnalysis={handleNewAnalysis}
-          />
-          <AnalysisResult data={analysis} />
+          <ErrorBoundary fallbackTitle="Erro no upload">
+            <UploadSection
+              onAnalyze={runAnalysis}
+              isAnalyzing={isAnalyzing}
+              analysisState={uploadState}
+              analyzedFileName={analyzedFileName}
+              onNewAnalysis={handleNewAnalysis}
+            />
+          </ErrorBoundary>
+          <ErrorBoundary fallbackTitle="Erro no resultado da análise">
+            <AnalysisResult data={analysis} />
+          </ErrorBoundary>
         </div>
 
-        <ScoreEvolutionChart entries={filtered} />
+        <ErrorBoundary fallbackTitle="Erro nos gráficos">
+          <ScoreEvolutionChart entries={filtered} />
+        </ErrorBoundary>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
           <div className="space-y-4">
             <div className="flex flex-wrap gap-3 items-end">
-              <Filters
-                atendentes={atendentes}
-                tipos={tipos}
-                filters={filters}
-                onChange={setFilters}
-              />
+              <ErrorBoundary fallbackTitle="Erro nos filtros">
+                <Filters
+                  atendentes={atendentes}
+                  tipos={tipos}
+                  filters={filters}
+                  onChange={setFilters}
+                />
+              </ErrorBoundary>
               <div className="relative w-[220px]">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -381,9 +389,13 @@ const Index = () => {
                 />
               </div>
             </div>
-            <HistoryTable entries={filtered} onRefresh={loadHistory} />
+            <ErrorBoundary fallbackTitle="Erro na tabela de histórico">
+              <HistoryTable entries={filtered} onRefresh={loadHistory} />
+            </ErrorBoundary>
           </div>
-          <StatsWidgets entries={filtered} />
+          <ErrorBoundary fallbackTitle="Erro nos indicadores">
+            <StatsWidgets entries={filtered} />
+          </ErrorBoundary>
         </div>
       </main>
 
