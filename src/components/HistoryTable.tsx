@@ -25,11 +25,6 @@ interface Props {
   onRefresh?: () => void;
 }
 
-const classColor = (c: string) => {
-  if (c === "Excelente" || c === "Ótimo") return "bg-accent text-accent-foreground";
-  if (c === "Bom") return "bg-primary text-primary-foreground";
-  return "bg-warning text-warning-foreground";
-};
 
 const extractStoragePath = (url: string): string | null => {
   const match = url.match(/\/object\/public\/pdfs\/(.+)$/);

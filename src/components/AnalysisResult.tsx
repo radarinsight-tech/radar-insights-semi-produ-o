@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, FileSearch, ShieldAlert } from "lucide-react";
 import QualityGauge from "@/components/QualityGauge";
-import { formatNota } from "@/lib/utils";
+import { formatNota, classificarNota, classColorFromClassificacao } from "@/lib/utils";
 
 export interface AnalysisData {
   protocolo: string;
@@ -24,12 +24,6 @@ export interface AnalysisData {
 interface Props {
   data: AnalysisData | null;
 }
-
-const classColor = (c: string) => {
-  if (c === "Excelente" || c === "Muito bom") return "bg-accent text-accent-foreground";
-  if (c === "Bom atendimento") return "bg-primary text-primary-foreground";
-  return "bg-warning text-warning-foreground";
-};
 
 const AnalysisResult = ({ data }: Props) => {
   if (!data) {

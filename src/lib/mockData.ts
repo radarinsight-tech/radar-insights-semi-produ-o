@@ -19,9 +19,10 @@ const tipos = ["Suporte Técnico", "Financeiro", "Cancelamento", "Informação",
 
 function classify(nota: number) {
   if (nota >= 9) return "Excelente";
-  if (nota >= 8) return "Ótimo";
   if (nota >= 7) return "Bom";
-  return "Regular";
+  if (nota >= 5) return "Regular";
+  if (nota >= 3) return "Ruim";
+  return "Crítico";
 }
 
 function randomDate(monthsBack: number) {
