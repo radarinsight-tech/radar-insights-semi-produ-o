@@ -42,6 +42,7 @@ const Index = () => {
   const [uploadState, setUploadState] = useState<UploadState>("empty");
   const [analyzedFileName, setAnalyzedFileName] = useState<string>("");
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterValues>({
     atendente: "todos",
     periodo: "",
