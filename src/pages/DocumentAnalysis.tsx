@@ -561,7 +561,19 @@ const DocumentAnalysis = () => {
     if (suspeita) {
       toast.warning("⚠️ Documento duplicado detectado! Verifique os alertas.");
     } else {
-      toast.success(`Arquivo "${file.name}" enviado.`);
+      toast.success(`Arquivo "${file.name}" enviado. OCR será executado automaticamente.`);
+    }
+
+    // Auto-trigger OCR in background (non-blocking)
+    if (tipo !== "outro") {
+      const updatedItems = await supabase
+        .from("document_items")
+        .select("*")
+        .eq("id", itemId)
+        .single();
+      if (updatedItems.data) {
+        handleOcr(updatedItems.data as any);
+      }
     }
   };
 
