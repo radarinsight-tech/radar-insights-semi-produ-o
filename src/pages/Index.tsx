@@ -54,36 +54,40 @@ const Index = () => {
   const [duplicateProtocol, setDuplicateProtocol] = useState<string | null>(null);
 
   const loadHistory = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("evaluations")
-      .select("*")
-      .eq("resultado_validado", true)
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("evaluations")
+        .select("*")
+        .eq("resultado_validado", true)
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error loading history:", error);
-      return;
+      if (error) {
+        console.error("Error loading history:", error);
+        return;
+      }
+
+      setHistory(
+        (data || []).map((row: any) => ({
+          id: row.id,
+          data: row.data || "",
+          data_avaliacao: row.data_avaliacao
+            ? new Date(row.data_avaliacao).toLocaleString("pt-BR")
+            : "",
+          protocolo: row.protocolo || "—",
+          atendente: row.atendente || "—",
+          nota: Number(row.nota) || 0,
+          classificacao: row.classificacao || "—",
+          bonus: row.bonus ?? false,
+          tipo: row.tipo || "—",
+          atualizacao_cadastral: row.atualizacao_cadastral || "Não",
+          pontos_melhoria: Array.isArray(row.pontos_melhoria) ? row.pontos_melhoria : [],
+          pdf_url: row.pdf_url || undefined,
+          full_report: row.full_report || null,
+        }))
+      );
+    } catch (err) {
+      console.error("Error loading history (uncaught):", err);
     }
-
-    setHistory(
-      (data || []).map((row: any) => ({
-        id: row.id,
-        data: row.data,
-        data_avaliacao: row.data_avaliacao
-          ? new Date(row.data_avaliacao).toLocaleString("pt-BR")
-          : "",
-        protocolo: row.protocolo,
-        atendente: row.atendente,
-        nota: Number(row.nota),
-        classificacao: row.classificacao,
-        bonus: row.bonus,
-        tipo: row.tipo,
-        atualizacao_cadastral: row.atualizacao_cadastral || "Não",
-        pontos_melhoria: row.pontos_melhoria || [],
-        pdf_url: row.pdf_url || undefined,
-        full_report: row.full_report || null,
-      }))
-    );
   }, []);
 
   useEffect(() => {
