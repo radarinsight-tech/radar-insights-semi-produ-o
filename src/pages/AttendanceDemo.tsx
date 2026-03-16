@@ -76,18 +76,42 @@ function classifBadge(c: string) {
   return map[c] ?? "border-border";
 }
 
-type PageState = "empty" | "processing" | "completed";
+type PageState = "empty" | "loaded" | "processing" | "completed";
 
 const AttendanceDemo = () => {
   const [state, setState] = useState<PageState>("empty");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = useCallback((file: File) => {
+    if (file?.type === "application/pdf") {
+      setSelectedFile(file);
+      setState("loaded");
+    }
+  }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) handleFileSelect(f);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const f = e.dataTransfer.files[0];
+    if (f) handleFileSelect(f);
+  };
 
   const handleAnalyze = () => {
+    if (!selectedFile) return;
     setState("processing");
     setTimeout(() => setState("completed"), 1500);
   };
 
   const handleNew = () => {
     setState("empty");
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleExportPdf = () => {
