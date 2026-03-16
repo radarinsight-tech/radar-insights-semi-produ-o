@@ -75,6 +75,9 @@ interface DocAnalysis {
   status: string;
   created_at: string;
   updated_at: string;
+  decisao_sugerida: string | null;
+  motivo_sugestao: string | null;
+  justificativa_divergencia: string | null;
 }
 
 // ── Constants ──
@@ -127,6 +130,148 @@ const DECISAO_OPTIONS = [
   { value: "documentacao_reprovada", label: "Reprovada" },
 ];
 
+// ── Decision Matrix Engine ──
+interface SuggestedDecision {
+  decisao: string;
+  label: string;
+  motivos: string[];
+  color: string;
+  icon: typeof CheckCircle2;
+}
+
+function computeSuggestedDecision(items: DocItem[]): SuggestedDecision | null {
+  if (items.length === 0) return null;
+
+  const receivedItems = items.filter(i => i.documento_recebido && i.file_url);
+  if (receivedItems.length === 0) return null;
+
+  const motivos: string[] = [];
+  let hasReprovacao = false;
+  let hasPendencia = false;
+
+  for (const item of receivedItems) {
+    const tipoLabel = DOC_TYPES.find(d => d.value === item.tipo)?.label || item.tipo;
+
+    // Suspeita de fraude → reprovada
+    if (item.suspeita_fraude) {
+      motivos.push(`${tipoLabel}: suspeita de fraude detectada`);
+      hasReprovacao = true;
+    }
+
+    // Documento duplicado em outro cliente → reprovada
+    if (item.alertas?.some((a: any) => a.tipo === "documento_duplicado")) {
+      motivos.push(`${tipoLabel}: documento repetido em outro cliente`);
+      hasReprovacao = true;
+    }
+
+    // Nome divergente → reprovada
+    if (item.divergencias?.some((d: any) => d.tipo === "nome_divergente")) {
+      motivos.push(`${tipoLabel}: nome divergente do cadastro`);
+      hasReprovacao = true;
+    }
+
+    // CPF divergente → reprovada
+    if (item.divergencias?.some((d: any) => d.tipo === "cpf_divergente")) {
+      motivos.push(`${tipoLabel}: CPF divergente do cadastro`);
+      hasReprovacao = true;
+    }
+
+    // Endereço divergente → pendente
+    if (item.divergencias?.some((d: any) => d.campo === "endereco")) {
+      motivos.push(`${tipoLabel}: endereço divergente`);
+      hasPendencia = true;
+    }
+
+    // Documento ilegível → pendente
+    if (item.documento_recebido && !item.legivel) {
+      motivos.push(`${tipoLabel}: documento ilegível`);
+      hasPendencia = true;
+    }
+
+    // Checklist incompleto → pendente
+    if (item.documento_recebido && item.file_url) {
+      const checklistComplete = item.nome_confere && item.cpf_confere && item.endereco_confere && item.legivel && item.valido;
+      if (!checklistComplete) {
+        motivos.push(`${tipoLabel}: checklist incompleto`);
+        hasPendencia = true;
+      }
+    }
+
+    // Comprovante > 60 dias → pendente
+    if (item.alertas?.some((a: any) => a.tipo === "comprovante_vencido")) {
+      motivos.push(`${tipoLabel}: comprovante com mais de 60 dias`);
+      hasPendencia = true;
+    }
+
+    // Contrato < 12 meses → pendente
+    if (item.alertas?.some((a: any) => a.tipo === "contrato_curto")) {
+      motivos.push(`${tipoLabel}: contrato com menos de 12 meses`);
+      hasPendencia = true;
+    }
+  }
+
+  // OCR < 50% mas checklist confirmado → aprovar com observação
+  const lowOcrButManualOk = receivedItems.some(i =>
+    i.confianca_ocr !== null && i.confianca_ocr < 0.5 &&
+    i.nome_confere && i.cpf_confere && i.endereco_confere && i.legivel && i.valido
+  );
+
+  if (hasReprovacao) {
+    return {
+      decisao: "documentacao_reprovada",
+      label: "Documentação Reprovada",
+      motivos,
+      color: "text-destructive",
+      icon: XCircle,
+    };
+  }
+
+  if (hasPendencia) {
+    return {
+      decisao: "documentacao_pendente",
+      label: "Documentação Pendente",
+      motivos,
+      color: "text-warning",
+      icon: AlertTriangle,
+    };
+  }
+
+  // All received docs have complete checklist and low risk
+  const allValid = receivedItems.every(i =>
+    i.nome_confere && i.cpf_confere && i.endereco_confere && i.legivel && i.valido &&
+    (i.risco_documental === "baixo" || i.risco_documental === null)
+  );
+
+  if (allValid) {
+    if (lowOcrButManualOk) {
+      motivos.push("OCR com baixa confiança, mas checklist confirmado manualmente");
+      return {
+        decisao: "documentacao_aprovada",
+        label: "Aprovar com Observação",
+        motivos,
+        color: "text-accent",
+        icon: CheckCircle2,
+      };
+    }
+    return {
+      decisao: "documentacao_aprovada",
+      label: "Documentação Aprovada",
+      motivos: ["Todos os documentos válidos, checklist completo, risco baixo"],
+      color: "text-accent",
+      icon: CheckCircle2,
+    };
+  }
+
+  motivos.push("Análise requer revisão adicional");
+  return {
+    decisao: "documentacao_pendente",
+    label: "Documentação Pendente",
+    motivos,
+    color: "text-warning",
+    icon: AlertTriangle,
+  };
+}
+
 const normalizeFaixa = (d: string | null): string => {
   if (!d) return "—";
   const u = d.toUpperCase().trim();
@@ -177,6 +322,7 @@ const DocumentAnalysis = () => {
   const [motivo, setMotivo] = useState("");
   const [observacao, setObservacao] = useState("");
   const [savingDecision, setSavingDecision] = useState(false);
+  const [justificativaDivergencia, setJustificativaDivergencia] = useState("");
 
   const [history, setHistory] = useState<DocAnalysis[]>([]);
   const [historyFilter, setHistoryFilter] = useState("todos");
@@ -262,6 +408,7 @@ const DocumentAnalysis = () => {
     setDecisao("");
     setMotivo("");
     setObservacao("");
+    setJustificativaDivergencia("");
     setOcrProcessing({});
     setOcrExpanded({});
   };
@@ -568,11 +715,19 @@ const DocumentAnalysis = () => {
     setDocItems(prev => prev.map(i => i.id === itemId ? { ...i, observacao: obs } : i));
   };
 
+  const suggestedDecision = computeSuggestedDecision(docItems);
+
+  const isDivergent = suggestedDecision && decisao && decisao !== suggestedDecision.decisao;
+
   const handleSaveDecision = async () => {
     if (!docAnalysis) return;
     if (!decisao) { toast.error("Selecione a decisão documental."); return; }
     if ((decisao === "documentacao_pendente" || decisao === "documentacao_reprovada") && !motivo.trim()) {
       toast.error("Informe o motivo da pendência ou reprovação.");
+      return;
+    }
+    if (isDivergent && !justificativaDivergencia.trim()) {
+      toast.error("Justifique a divergência em relação à sugestão do sistema.");
       return;
     }
 
@@ -590,12 +745,15 @@ const DocumentAnalysis = () => {
           observacao: observacao || null,
           user_name: profile?.full_name || user!.email,
           updated_at: new Date().toISOString(),
+          decisao_sugerida: suggestedDecision?.decisao || null,
+          motivo_sugestao: suggestedDecision?.motivos.join("; ") || null,
+          justificativa_divergencia: isDivergent ? justificativaDivergencia : null,
         } as any)
         .eq("id", docAnalysis.id);
 
       if (error) { toast.error("Erro ao salvar decisão."); return; }
 
-      setDocAnalysis({ ...docAnalysis, decisao_documental: decisao, status: decisao, motivo, observacao });
+      setDocAnalysis({ ...docAnalysis, decisao_documental: decisao, status: decisao, motivo, observacao, decisao_sugerida: suggestedDecision?.decisao || null, motivo_sugestao: suggestedDecision?.motivos.join("; ") || null, justificativa_divergencia: isDivergent ? justificativaDivergencia : null });
       toast.success("Decisão documental salva.");
     } catch { toast.error("Erro ao salvar decisão."); }
     finally { setSavingDecision(false); }
@@ -911,12 +1069,60 @@ const DocumentAnalysis = () => {
               </Card>
             )}
 
+            {/* Suggested Decision */}
+            {docAnalysis && suggestedDecision && (
+              <Card className="p-5 border-l-4 border-l-primary">
+                <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <ScanLine className="h-4 w-4 text-primary" />Sugestão do Sistema
+                </h2>
+                <div className="flex items-center gap-3 mb-3">
+                  {(() => {
+                    const SugIcon = suggestedDecision.icon;
+                    return (
+                      <Badge variant="outline" className={`${suggestedDecision.color} text-sm px-3 py-1`}>
+                        <SugIcon className="h-4 w-4 mr-1.5" />
+                        {suggestedDecision.label}
+                      </Badge>
+                    );
+                  })()}
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground">Motivo da sugestão:</p>
+                  <ul className="space-y-0.5">
+                    {suggestedDecision.motivos.map((m, i) => (
+                      <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                        <span className="text-primary mt-0.5">•</span>{m}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-3 italic">
+                  Esta é uma sugestão automática. O analista pode aceitar ou escolher outra decisão com justificativa.
+                </p>
+              </Card>
+            )}
+
             {/* Decision */}
             {docAnalysis && (
               <Card className="p-5">
                 <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
                   <Scale className="h-4 w-4 text-primary" />Decisão Documental Final
                 </h2>
+
+                {suggestedDecision && (
+                  <div className="mb-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setDecisao(suggestedDecision.decisao); setJustificativaDivergencia(""); }}
+                      className="text-xs"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                      Aceitar sugestão: {suggestedDecision.label}
+                    </Button>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold text-muted-foreground">Decisão *</Label>
@@ -934,6 +1140,24 @@ const DocumentAnalysis = () => {
                     <Input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Motivo da decisão..." className="bg-card" />
                   </div>
                 </div>
+
+                {isDivergent && (
+                  <Alert className="mb-4 border-warning/50">
+                    <AlertTriangle className="h-4 w-4 text-warning" />
+                    <AlertTitle className="text-xs font-semibold">Decisão divergente da sugestão</AlertTitle>
+                    <AlertDescription className="text-xs text-muted-foreground mb-2">
+                      A sugestão do sistema é "{suggestedDecision?.label}". Justifique a escolha diferente.
+                    </AlertDescription>
+                    <Textarea
+                      value={justificativaDivergencia}
+                      onChange={(e) => setJustificativaDivergencia(e.target.value)}
+                      placeholder="Justificativa obrigatória para divergência..."
+                      rows={2}
+                      className="text-xs"
+                    />
+                  </Alert>
+                )}
+
                 <div className="space-y-1.5 mb-4">
                   <Label className="text-xs font-semibold text-muted-foreground">Observação do analista</Label>
                   <Textarea value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Observações adicionais..." rows={3} />

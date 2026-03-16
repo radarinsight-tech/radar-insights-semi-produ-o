@@ -112,8 +112,11 @@ export type Database = {
           created_at: string
           credit_analysis_id: string | null
           decisao_documental: string
+          decisao_sugerida: string | null
           id: string
+          justificativa_divergencia: string | null
           motivo: string | null
+          motivo_sugestao: string | null
           nome: string | null
           observacao: string | null
           status: string
@@ -126,8 +129,11 @@ export type Database = {
           created_at?: string
           credit_analysis_id?: string | null
           decisao_documental?: string
+          decisao_sugerida?: string | null
           id?: string
+          justificativa_divergencia?: string | null
           motivo?: string | null
+          motivo_sugestao?: string | null
           nome?: string | null
           observacao?: string | null
           status?: string
@@ -140,8 +146,11 @@ export type Database = {
           created_at?: string
           credit_analysis_id?: string | null
           decisao_documental?: string
+          decisao_sugerida?: string | null
           id?: string
+          justificativa_divergencia?: string | null
           motivo?: string | null
+          motivo_sugestao?: string | null
           nome?: string | null
           observacao?: string | null
           status?: string
