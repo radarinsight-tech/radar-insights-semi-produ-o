@@ -31,7 +31,7 @@ import {
 // ═══════════════════════════════════════════════════
 // MODO DEMO — Altere para true para ativar
 // ═══════════════════════════════════════════════════
-const DEMO_MODE = true;
+const DEMO_MODE = false;
 
 const DEMO_RESULT: AnalysisData = {
   protocolo: "DEMO-2025031567",
