@@ -343,6 +343,19 @@ const Index = () => {
       if (filters.atendente !== "todos" && e.atendente !== filters.atendente) return false;
       if (filters.tipo !== "todos" && e.tipo !== filters.tipo) return false;
 
+      // Status filter from indicator cards
+      if (statusFilter === "bot_com_falha") {
+        const report = e.full_report as Record<string, unknown> | null | undefined;
+        if (report?.statusBot !== "bot_com_falha") return false;
+      }
+      if (statusFilter === "nao_auditavel") {
+        const report = e.full_report as Record<string, unknown> | null | undefined;
+        if (
+          report?.statusAuditoria !== "auditoria_bloqueada" &&
+          report?.statusAuditoria !== "impedimento_detectado"
+        ) return false;
+      }
+
       if (filters.periodoInicio && filters.periodoFim) {
         const entryDate = parseDateBR(e.data);
         const startDate = parseDateBR(filters.periodoInicio);
@@ -362,7 +375,7 @@ const Index = () => {
 
       return true;
     });
-  }, [filters, history, protocolSearch]);
+  }, [filters, history, protocolSearch, statusFilter]);
 
   return (
     <div className="min-h-screen bg-background" data-module="attendance">
