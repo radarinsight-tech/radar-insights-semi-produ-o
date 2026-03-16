@@ -8,7 +8,8 @@ import StatsWidgets from "@/components/StatsWidgets";
 import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Users, Search, ArrowLeft } from "lucide-react";
+import { LogOut, Users, Search, ArrowLeft, AlertTriangle, RefreshCw } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import logoSymbol from "@/assets/logo-symbol.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,7 @@ const Index = () => {
   const [uploadState, setUploadState] = useState<UploadState>("empty");
   const [analyzedFileName, setAnalyzedFileName] = useState<string>("");
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterValues>({
     atendente: "todos",
     periodo: "",
@@ -101,21 +103,27 @@ const Index = () => {
 
   const handleNewAnalysis = () => {
     setAnalysis(null);
+    setAnalysisError(null);
     setUploadState("empty");
     setAnalyzedFileName("");
   };
 
   const runAnalysis = async (file: File) => {
     setIsAnalyzing(true);
+    setAnalysisError(null);
     setAnalyzedFileName(file.name);
+    console.log("[Radar] Etapa 1: PDF carregado —", file.name, `(${(file.size / 1024).toFixed(1)} KB)`);
     try {
+      console.log("[Radar] Etapa 2: Extraindo texto do PDF...");
       const text = await extractTextFromPdf(file);
       if (!text.trim()) {
+        console.error("[Radar] Erro na Etapa 2: Texto extraído está vazio");
         toast.error("Não foi possível extrair texto do PDF.");
         setIsAnalyzing(false);
         setUploadState("empty");
         return;
       }
+      console.log("[Radar] Etapa 2: Texto extraído com sucesso —", text.length, "caracteres");
 
       // Check for duplicate protocol before running analysis
       const protocolMatch = text.match(/(?:protocolo|prot\.?)\s*[:\-]?\s*([A-Za-z0-9]+)/i);
@@ -138,20 +146,25 @@ const Index = () => {
 
       await executeAnalysis(file, text);
     } catch (err) {
-      console.error("Analysis error:", err);
+      console.error("[Radar] Erro crítico no pipeline:", err);
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
+      setAnalysisError(`Falha ao processar PDF: ${msg}`);
       toast.error("Erro inesperado ao processar o PDF.");
       setIsAnalyzing(false);
-      setUploadState("empty");
+      setUploadState("completed");
     }
   };
 
   const executeAnalysis = async (file: File, text?: string) => {
     setIsAnalyzing(true);
+    setAnalysisError(null);
     setAnalyzedFileName(file.name);
     try {
       if (!text) {
+        console.log("[Radar] Etapa 2 (retry): Extraindo texto do PDF...");
         text = await extractTextFromPdf(file);
         if (!text.trim()) {
+          console.error("[Radar] Erro na Etapa 2: Texto extraído está vazio");
           toast.error("Não foi possível extrair texto do PDF.");
           setIsAnalyzing(false);
           setUploadState("empty");
@@ -160,6 +173,7 @@ const Index = () => {
       }
 
       // Upload PDF to storage
+      console.log("[Radar] Etapa 3: Upload do PDF para storage...");
       const fileName = `${Date.now()}_${file.name}`;
       const { error: uploadError } = await supabase.storage
         .from("pdfs")
@@ -167,31 +181,38 @@ const Index = () => {
 
       let pdfUrl: string | null = null;
       if (uploadError) {
-        console.error("PDF upload error:", uploadError);
+        console.error("[Radar] Erro na Etapa 3 (não crítico):", uploadError);
         toast.warning("Erro ao armazenar o PDF, mas a análise continuará.");
       } else {
         const { data: urlData } = supabase.storage.from("pdfs").getPublicUrl(fileName);
         pdfUrl = urlData.publicUrl;
+        console.log("[Radar] Etapa 3: PDF armazenado com sucesso");
       }
 
+      console.log("[Radar] Etapa 4: Enviando para análise IA...");
       const { data, error } = await supabase.functions.invoke("analyze-attendance", {
         body: { text },
       });
 
       if (error) {
-        console.error("Edge function error:", error);
+        console.error("[Radar] Erro na Etapa 4 (edge function):", error);
+        setAnalysisError("Erro ao analisar atendimento. A função de análise retornou erro.");
         toast.error("Erro ao analisar atendimento. Tente novamente.");
         setIsAnalyzing(false);
-        setUploadState("empty");
+        setUploadState("completed");
         return;
       }
 
       if (data?.error) {
+        console.error("[Radar] Erro na Etapa 4 (resposta IA):", data.error);
+        setAnalysisError(data.error);
         toast.error(data.error);
         setIsAnalyzing(false);
-        setUploadState("empty");
+        setUploadState("completed");
         return;
       }
+
+      console.log("[Radar] Etapa 4: Análise IA concluída —", data?.statusAuditoria, data?.classificacao);
 
       const fullReport = { ...data };
 
@@ -200,30 +221,39 @@ const Index = () => {
       
       // Block: audited but no score
       if (isAudited && (!data.pontosPossiveis || data.pontosPossiveis === 0)) {
+        console.error("[Radar] Erro na Etapa 5 (consistência): auditoria sem pontuação");
+        setAnalysisError("Erro de consistência: auditoria realizada mas sem pontuação.");
         toast.error("Erro de consistência: auditoria realizada mas sem pontuação. Reprocessar atendimento.");
-        setUploadState("empty");
+        setUploadState("completed");
         setIsAnalyzing(false);
         return;
       }
 
       // Block: positive classification with zero score
       if (data.notaFinal === 0 && ["Excelente", "Bom atendimento", "Regular"].includes(data.classificacao) && isAudited) {
+        console.error("[Radar] Erro na Etapa 5 (consistência): classificação positiva com nota 0");
+        setAnalysisError("Erro de consistência: classificação positiva com nota zero.");
         toast.error("Erro de consistência: classificação positiva com nota zero. Reprocessar atendimento.");
-        setUploadState("empty");
+        setUploadState("completed");
         setIsAnalyzing(false);
         return;
       }
+
+      console.log("[Radar] Etapa 5: Validação de consistência OK");
 
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user?.id) {
+        console.error("[Radar] Erro na Etapa 6: Usuário não autenticado");
+        setAnalysisError("Usuário não autenticado. Faça login novamente.");
         toast.error("Usuário não autenticado. Faça login novamente.");
         setIsAnalyzing(false);
-        setUploadState("empty");
+        setUploadState("completed");
         return;
       }
 
       // Map new audit fields to DB columns
+      console.log("[Radar] Etapa 6: Salvando avaliação no banco...");
       const atualizacaoCadastral = data.bonusOperacional?.atualizacaoCadastral || "NÃO";
       const notaFinal = typeof data.notaFinal === "number" ? data.notaFinal : 0;
       const bonusQualidade = typeof data.bonusQualidade === "number" ? data.bonusQualidade : 0;
@@ -248,37 +278,43 @@ const Index = () => {
       } as any).select().single();
 
       if (insertError || !savedRow) {
-        console.error("Error saving evaluation:", insertError);
+        console.error("[Radar] Erro na Etapa 6 (insert):", insertError);
+        setAnalysisError("Erro ao salvar avaliação: " + (insertError?.message || "Erro desconhecido"));
         toast.error("Erro ao salvar avaliação no histórico: " + (insertError?.message || "Erro desconhecido"));
-        setUploadState("empty");
+        setUploadState("completed");
       } else {
+        console.log("[Radar] Etapa 6: Avaliação salva com sucesso — ID:", savedRow.id);
+        console.log("[Radar] Etapa 7: Renderizando resultado...");
         const isNoInteraction = data.motivo === "sem_interacao_do_cliente";
         setAnalysis({
-          protocolo: savedRow.protocolo,
-          atendente: savedRow.atendente,
-          tipo: savedRow.tipo,
-          atualizacaoCadastral: savedRow.atualizacao_cadastral,
-          notaFinal: Number(savedRow.nota),
-          classificacao: savedRow.classificacao,
-          bonus: savedRow.bonus,
+          protocolo: savedRow.protocolo || "—",
+          atendente: savedRow.atendente || "—",
+          tipo: savedRow.tipo || "—",
+          atualizacaoCadastral: savedRow.atualizacao_cadastral || "NÃO",
+          notaFinal: Number(savedRow.nota) || 0,
+          classificacao: savedRow.classificacao || "Fora de Avaliação",
+          bonus: savedRow.bonus ?? false,
           bonusQualidade: bonusQualidade,
-          pontosMelhoria: savedRow.pontos_melhoria || [],
+          pontosMelhoria: Array.isArray(savedRow.pontos_melhoria) ? savedRow.pontos_melhoria : [],
           impeditivo: data.impeditivo === true,
-          motivoImpeditivo: data.motivoImpeditivo,
-          pontosObtidos: data.pontosObtidos,
-          pontosPossiveis: data.pontosPossiveis,
+          motivoImpeditivo: data.motivoImpeditivo || undefined,
+          pontosObtidos: data.pontosObtidos ?? undefined,
+          pontosPossiveis: data.pontosPossiveis ?? undefined,
           noInteraction: isNoInteraction,
         });
         setUploadState(isNoInteraction ? "no-interaction" : "completed");
         toast.success(duplicateProtocol ? "Reavaliação concluída e salva!" : "Análise concluída e salva!");
         setDuplicateProtocol(null);
         setPendingFile(null);
+        console.log("[Radar] Etapa 7: Resultado renderizado com sucesso");
         await loadHistory();
       }
     } catch (err) {
-      console.error("Analysis error:", err);
+      console.error("[Radar] Erro crítico no pipeline:", err);
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
+      setAnalysisError(`Falha inesperada: ${msg}`);
       toast.error("Erro inesperado ao processar o PDF.");
-      setUploadState("empty");
+      setUploadState("completed");
     } finally {
       setIsAnalyzing(false);
     }
@@ -364,7 +400,23 @@ const Index = () => {
             />
           </ErrorBoundary>
           <ErrorBoundary fallbackTitle="Erro no resultado da análise">
-            <AnalysisResult data={analysis} />
+            {analysisError ? (
+              <Card className="p-6 border-destructive/30 bg-destructive/5">
+                <h2 className="text-lg font-bold text-primary mb-4">Resultado da Auditoria</h2>
+                <div className="flex flex-col items-center text-center gap-3 py-4">
+                  <div className="p-3 rounded-full bg-destructive/10">
+                    <AlertTriangle className="h-6 w-6 text-destructive" />
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">Erro ao processar atendimento</p>
+                  <p className="text-xs text-muted-foreground max-w-sm">{analysisError}</p>
+                  <Button variant="outline" size="sm" onClick={handleNewAnalysis}>
+                    <RefreshCw className="h-4 w-4 mr-1" /> Nova análise
+                  </Button>
+                </div>
+              </Card>
+            ) : (
+              <AnalysisResult data={analysis} />
+            )}
           </ErrorBoundary>
         </div>
 
