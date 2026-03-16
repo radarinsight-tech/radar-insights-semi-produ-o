@@ -461,7 +461,7 @@ const Index = () => {
             {statusFilter && (
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20">
                 <span className="text-sm font-medium text-foreground">
-                  Filtrando: {statusFilter === "bot_com_falha" ? "Erros no Fluxo do BOT" : "Atendimentos Não Auditáveis"}
+                  Filtrando: {getStatusLabel(statusFilter)}
                 </span>
                 <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setStatusFilter(null)}>
                   <X className="h-3 w-3 mr-1" /> Limpar filtro
