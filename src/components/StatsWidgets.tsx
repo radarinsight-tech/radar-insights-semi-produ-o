@@ -86,7 +86,7 @@ const StatsWidgets = ({ entries }: Props) => {
           </div>
           <p className="text-sm font-semibold text-primary/80">Média da Equipe</p>
         </div>
-        <p className="text-3xl font-bold">{media.toFixed(1)}</p>
+        <p className="text-3xl font-bold">{media.toFixed(1).replace(".", ",")}</p>
       </Card>
 
       <Card className="p-5">
