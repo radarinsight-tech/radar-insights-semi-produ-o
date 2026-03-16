@@ -332,6 +332,24 @@ const DocumentAnalysis = () => {
   const [ocrProcessing, setOcrProcessing] = useState<Record<string, boolean>>({});
   const [ocrExpanded, setOcrExpanded] = useState<Record<string, boolean>>({});
 
+  // Drag state per doc item
+  const [dragOver, setDragOver] = useState<Record<string, boolean>>({});
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  // Prevent browser default file open on drag/drop globally
+  useEffect(() => {
+    const preventDefaults = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    window.addEventListener("dragover", preventDefaults);
+    window.addEventListener("drop", preventDefaults);
+    return () => {
+      window.removeEventListener("dragover", preventDefaults);
+      window.removeEventListener("drop", preventDefaults);
+    };
+  }, []);
+
   // Delete dialog
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; item: DocItem | null }>({ open: false, item: null });
   const [deleteMotivo, setDeleteMotivo] = useState("");
@@ -955,19 +973,50 @@ const DocumentAnalysis = () => {
                           </div>
                         )}
 
-                        {/* Upload */}
+                        {/* Upload with drag and drop */}
                         {!item.file_url && (
                           <div className="mb-3">
-                            <label className="cursor-pointer">
-                              <div className="border-2 border-dashed border-border rounded px-4 py-3 text-center hover:border-primary/40 transition-colors">
-                                <Upload className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
-                                <p className="text-xs text-muted-foreground">Arraste ou clique para anexar (PDF, JPG, PNG)</p>
-                              </div>
-                              <input type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => {
+                            <div
+                              onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(p => ({ ...p, [item.id]: true })); }}
+                              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(p => ({ ...p, [item.id]: true })); }}
+                              onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(p => ({ ...p, [item.id]: false })); }}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setDragOver(p => ({ ...p, [item.id]: false }));
+                                const f = e.dataTransfer.files?.[0];
+                                if (f) {
+                                  const validTypes = ["application/pdf", "image/png", "image/jpeg", "image/jpg"];
+                                  if (validTypes.includes(f.type)) {
+                                    handleUploadFile(item.id, item.tipo, f);
+                                  } else {
+                                    toast.error("Formato não suportado. Use PDF, JPG ou PNG.");
+                                  }
+                                }
+                              }}
+                              onClick={() => fileInputRefs.current[item.id]?.click()}
+                              className={`border-2 border-dashed rounded px-4 py-3 text-center cursor-pointer transition-colors ${
+                                dragOver[item.id]
+                                  ? "border-primary bg-primary/10 scale-[1.01]"
+                                  : "border-border hover:border-primary/40"
+                              }`}
+                            >
+                              <Upload className={`h-4 w-4 mx-auto mb-1 ${dragOver[item.id] ? "text-primary" : "text-muted-foreground"}`} />
+                              <p className={`text-xs ${dragOver[item.id] ? "text-primary font-medium" : "text-muted-foreground"}`}>
+                                {dragOver[item.id] ? "Solte o arquivo aqui" : "Arraste ou clique para anexar (PDF, JPG, PNG)"}
+                              </p>
+                            </div>
+                            <input
+                              ref={(el) => { fileInputRefs.current[item.id] = el; }}
+                              type="file"
+                              className="hidden"
+                              accept=".pdf,.png,.jpg,.jpeg"
+                              onChange={(e) => {
                                 const f = e.target.files?.[0];
                                 if (f) handleUploadFile(item.id, item.tipo, f);
-                              }} />
-                            </label>
+                                if (e.target) e.target.value = "";
+                              }}
+                            />
                           </div>
                         )}
 
