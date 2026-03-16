@@ -39,7 +39,7 @@ const AnalysisResult = ({ data }: Props) => {
         </p>
         <ul className="mt-3 text-xs text-muted-foreground space-y-1">
           <li>• Protocolo e atendente auditado</li>
-          <li>• Nota final (0–100) e classificação</li>
+          <li>• Nota final (0–10) e classificação</li>
           <li>• Bônus de qualidade e operacional</li>
           <li>• Mentoria de comunicação</li>
         </ul>
