@@ -139,11 +139,36 @@ interface SuggestedDecision {
   icon: typeof CheckCircle2;
 }
 
+// Check if an item has been reviewed (checklist touched, OCR run, or status changed manually)
+function itemHasBeenReviewed(item: DocItem): boolean {
+  // Any checklist field checked = analyst started reviewing
+  if (item.nome_confere || item.cpf_confere || item.endereco_confere || item.legivel || item.valido) return true;
+  // OCR was executed
+  if (item.status_ocr && item.status_ocr !== "aguardando_leitura") return true;
+  // Status changed from default
+  if (item.status_documento && item.status_documento !== "recebido") return true;
+  // Has reviewer
+  if (item.revisado_por) return true;
+  return false;
+}
+
 function computeSuggestedDecision(items: DocItem[]): SuggestedDecision | null {
   if (items.length === 0) return null;
 
   const receivedItems = items.filter(i => i.documento_recebido && i.file_url);
   if (receivedItems.length === 0) return null;
+
+  // If NO received item has been reviewed yet → aguardando revisão
+  const anyReviewed = receivedItems.some(itemHasBeenReviewed);
+  if (!anyReviewed) {
+    return {
+      decisao: "aguardando_revisao",
+      label: "Aguardando Revisão",
+      motivos: ["Documento(s) recebido(s), aguardando validação do analista"],
+      color: "text-muted-foreground",
+      icon: Clock,
+    };
+  }
 
   const motivos: string[] = [];
   let hasReprovacao = false;
@@ -151,8 +176,9 @@ function computeSuggestedDecision(items: DocItem[]): SuggestedDecision | null {
 
   for (const item of receivedItems) {
     const tipoLabel = DOC_TYPES.find(d => d.value === item.tipo)?.label || item.tipo;
+    const reviewed = itemHasBeenReviewed(item);
 
-    // Suspeita de fraude → reprovada
+    // Suspeita de fraude → reprovada (always applies, comes from OCR/hash)
     if (item.suspeita_fraude) {
       motivos.push(`${tipoLabel}: suspeita de fraude detectada`);
       hasReprovacao = true;
@@ -164,32 +190,36 @@ function computeSuggestedDecision(items: DocItem[]): SuggestedDecision | null {
       hasReprovacao = true;
     }
 
-    // Nome divergente → reprovada
+    // Nome divergente → reprovada (from OCR)
     if (item.divergencias?.some((d: any) => d.tipo === "nome_divergente")) {
       motivos.push(`${tipoLabel}: nome divergente do cadastro`);
       hasReprovacao = true;
     }
 
-    // CPF divergente → reprovada
+    // CPF divergente → reprovada (from OCR)
     if (item.divergencias?.some((d: any) => d.tipo === "cpf_divergente")) {
       motivos.push(`${tipoLabel}: CPF divergente do cadastro`);
       hasReprovacao = true;
     }
 
-    // Endereço divergente → pendente
+    // Endereço divergente → pendente (from OCR)
     if (item.divergencias?.some((d: any) => d.campo === "endereco")) {
       motivos.push(`${tipoLabel}: endereço divergente`);
       hasPendencia = true;
     }
 
-    // Documento ilegível → pendente
-    if (item.documento_recebido && !item.legivel) {
-      motivos.push(`${tipoLabel}: documento ilegível`);
-      hasPendencia = true;
+    // Documento ilegível → only if analyst unchecked legível OR OCR returned very low confidence
+    if (reviewed && !item.legivel) {
+      const hasOcrEvidence = item.status_ocr !== "aguardando_leitura" && item.confianca_ocr !== null && item.confianca_ocr < 0.3;
+      const analystMarked = item.legivel === false && (item.nome_confere || item.cpf_confere || item.endereco_confere || item.valido);
+      if (hasOcrEvidence || analystMarked) {
+        motivos.push(`${tipoLabel}: documento ilegível`);
+        hasPendencia = true;
+      }
     }
 
-    // Checklist incompleto → pendente
-    if (item.documento_recebido && item.file_url) {
+    // Checklist incompleto → only if item has been reviewed
+    if (reviewed && item.documento_recebido && item.file_url) {
       const checklistComplete = item.nome_confere && item.cpf_confere && item.endereco_confere && item.legivel && item.valido;
       if (!checklistComplete) {
         motivos.push(`${tipoLabel}: checklist incompleto`);
@@ -197,13 +227,13 @@ function computeSuggestedDecision(items: DocItem[]): SuggestedDecision | null {
       }
     }
 
-    // Comprovante > 60 dias → pendente
+    // Comprovante > 60 dias → pendente (from OCR alert)
     if (item.alertas?.some((a: any) => a.tipo === "comprovante_vencido")) {
       motivos.push(`${tipoLabel}: comprovante com mais de 60 dias`);
       hasPendencia = true;
     }
 
-    // Contrato < 12 meses → pendente
+    // Contrato < 12 meses → pendente (from OCR alert)
     if (item.alertas?.some((a: any) => a.tipo === "contrato_curto")) {
       motivos.push(`${tipoLabel}: contrato com menos de 12 meses`);
       hasPendencia = true;
