@@ -322,6 +322,7 @@ const DocumentAnalysis = () => {
   const [motivo, setMotivo] = useState("");
   const [observacao, setObservacao] = useState("");
   const [savingDecision, setSavingDecision] = useState(false);
+  const [justificativaDivergencia, setJustificativaDivergencia] = useState("");
 
   const [history, setHistory] = useState<DocAnalysis[]>([]);
   const [historyFilter, setHistoryFilter] = useState("todos");
