@@ -342,11 +342,11 @@ const AttendanceDemo = () => {
 
           {/* ══════ COLUNA LATERAL (métricas) ══════ */}
           <aside className="hidden xl:flex flex-col gap-3.5 w-60 shrink-0">
-            <SideMetric icon={BarChart3} label="Atendimentos Auditados" value="14" color="text-primary" />
-            <SideMetric icon={Bot} label="Falhas do BOT" value="2" color="text-destructive" />
-            <SideMetric icon={Ban} label="Auditorias Bloqueadas" value="1" color="text-amber-500" />
+            <SideMetric icon={BarChart3} label="Atendimentos Auditados" value="127" color="text-primary" />
+            <SideMetric icon={Bot} label="Falhas do BOT" value="4" color="text-destructive" />
+            <SideMetric icon={Ban} label="Auditorias Bloqueadas" value="3" color="text-amber-500" />
             <SideMetric icon={TrendingUp} label="Média da Equipe" value="8,4" color="text-primary" />
-            <SideMetric icon={Users} label="Total Avaliados" value="6" color="text-accent" />
+            <SideMetric icon={Users} label="Total Avaliados" value="8" color="text-accent" />
 
             {/* Ranking */}
             <div className={`${cardClass} p-4`}>
