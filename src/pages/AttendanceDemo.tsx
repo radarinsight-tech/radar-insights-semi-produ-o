@@ -3,9 +3,10 @@ import logoSymbol from "@/assets/logo-symbol.png";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   FlaskConical, Upload, FileText, RefreshCw, AlertTriangle,
-  CheckCircle2, Clock, UserCheck, Shield, TrendingUp, BarChart3
+  CheckCircle2, Clock, UserCheck, Shield, TrendingUp, BarChart3, ChevronDown
 } from "lucide-react";
 import QualityGauge from "@/components/QualityGauge";
 
@@ -135,86 +136,92 @@ const AttendanceDemo = () => {
           </Card>
 
           {/* RESULTADO DA AUDITORIA */}
-          <Card className="p-6">
-            <h2 className="text-lg font-bold text-primary mb-4">Resultado da Auditoria</h2>
+          <Card className="p-4">
+            <h2 className="text-base font-bold text-primary mb-2">Resultado da Auditoria</h2>
 
             {state === "completed" ? (
               <div className="animate-in fade-in duration-300">
-                <div className="mb-5">
-                  <QualityGauge score={MOCK_RESULT.notaFinal} classification={MOCK_RESULT.classificacao} />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Protocolo</p>
-                    <p className="text-sm font-medium mt-0.5">{MOCK_RESULT.protocolo}</p>
+                {/* GAUGE + DADOS PRINCIPAIS lado a lado */}
+                <div className="flex gap-4 items-start">
+                  <div className="shrink-0">
+                    <QualityGauge score={MOCK_RESULT.notaFinal} classification={MOCK_RESULT.classificacao} />
                   </div>
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Atendente</p>
-                    <p className="text-sm font-medium mt-0.5">{MOCK_RESULT.atendente}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Tipo</p>
-                    <Badge variant="outline" className="mt-1">{MOCK_RESULT.tipo}</Badge>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Classificação</p>
-                    <Badge className="mt-1 bg-accent text-accent-foreground">{MOCK_RESULT.classificacao}</Badge>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Bônus Qualidade</p>
-                    <Badge className="mt-1 bg-accent text-accent-foreground">{MOCK_RESULT.bonusQualidade}%</Badge>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Versão</p>
-                    <p className="text-sm font-medium mt-0.5">{MOCK_RESULT.versaoPrompt}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Validade</p>
-                    <p className="text-sm font-medium mt-0.5">{MOCK_RESULT.validade}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Interação do Cliente</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
-                      <p className="text-sm font-medium">{MOCK_RESULT.statusInteracao}</p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 flex-1 min-w-0">
+                    <div>
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Protocolo</p>
+                      <p className="text-xs font-medium">{MOCK_RESULT.protocolo}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Atendente</p>
+                      <p className="text-xs font-medium">{MOCK_RESULT.atendente}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Tipo</p>
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">{MOCK_RESULT.tipo}</Badge>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Classificação</p>
+                      <Badge className="text-[10px] px-1.5 py-0 bg-accent text-accent-foreground">{MOCK_RESULT.classificacao}</Badge>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Bônus</p>
+                      <Badge className="text-[10px] px-1.5 py-0 bg-accent text-accent-foreground">{MOCK_RESULT.bonusQualidade}%</Badge>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Versão</p>
+                      <p className="text-xs font-medium">{MOCK_RESULT.versaoPrompt}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Validade</p>
+                      <p className="text-xs font-medium">{MOCK_RESULT.validade}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Interação</p>
+                      <div className="flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3 text-accent" />
+                        <p className="text-xs font-medium">{MOCK_RESULT.statusInteracao}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* INDICADORES POR DIMENSÃO */}
-                <div className="mt-5 border-t border-border pt-4">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Indicadores por Dimensão</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {/* INDICADORES — linha horizontal compacta */}
+                <div className="mt-3 pt-2 border-t border-border">
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Indicadores por Dimensão</p>
+                  <div className="grid grid-cols-4 gap-2">
                     {MOCK_RESULT.indicadores.map((ind) => (
-                      <div key={ind.label} className="rounded-lg border border-border bg-muted/30 p-3 text-center">
-                        <p className="text-lg font-bold text-foreground">{ind.valor.toFixed(1)}</p>
-                        <p className="text-xs text-muted-foreground">{ind.label}</p>
+                      <div key={ind.label} className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-center">
+                        <p className="text-sm font-bold text-foreground leading-none">{ind.valor.toFixed(1)}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{ind.label}</p>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* RESUMO */}
-                <div className="mt-4 rounded-lg bg-muted/40 border border-border p-3">
-                  <p className="text-sm text-foreground italic">"{MOCK_RESULT.resumo}"</p>
+                {/* RESUMO compacto */}
+                <div className="mt-2 rounded-md bg-muted/40 border border-border px-3 py-2">
+                  <p className="text-xs text-foreground italic leading-snug">"{MOCK_RESULT.resumo}"</p>
                 </div>
 
+                {/* MENTORIA colapsável */}
                 {MOCK_RESULT.pontosMelhoria.length > 0 && (
-                  <div className="mt-5 border-t border-border pt-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <AlertTriangle className="h-4 w-4 text-amber-500" />
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Mentoria de Comunicação</p>
-                    </div>
-                    <ul className="space-y-1.5">
-                      {MOCK_RESULT.pontosMelhoria.map((p, i) => (
-                        <li key={i} className="text-sm text-foreground flex gap-2">
-                          <span className="text-muted-foreground shrink-0">{i + 1}.</span>
-                          {p}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  <Collapsible className="mt-2">
+                    <CollapsibleTrigger className="flex items-center gap-1.5 w-full text-left group">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide flex-1">Mentoria de Comunicação</p>
+                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-1.5">
+                      <ul className="space-y-1">
+                        {MOCK_RESULT.pontosMelhoria.map((p, i) => (
+                          <li key={i} className="text-xs text-foreground flex gap-1.5">
+                            <span className="text-muted-foreground shrink-0">{i + 1}.</span>
+                            {p}
+                          </li>
+                        ))}
+                      </ul>
+                    </CollapsibleContent>
+                  </Collapsible>
                 )}
               </div>
             ) : (
