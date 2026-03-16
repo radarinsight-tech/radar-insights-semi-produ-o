@@ -34,7 +34,7 @@ const StatsWidgets = ({ entries }: Props) => {
   const byAgent: Record<string, { sum: number; count: number }> = {};
   entries.forEach((e) => {
     if (!byAgent[e.atendente]) byAgent[e.atendente] = { sum: 0, count: 0 };
-    byAgent[e.atendente].sum += e.nota;
+    byAgent[e.atendente].sum += notaToScale10(e.nota);
     byAgent[e.atendente].count += 1;
   });
   const ranking = Object.entries(byAgent)
