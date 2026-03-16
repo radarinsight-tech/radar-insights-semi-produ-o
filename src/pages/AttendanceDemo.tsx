@@ -154,12 +154,8 @@ const AttendanceDemo = () => {
                     <p className="text-sm font-medium mt-0.5">{MOCK_RESULT.atendente}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Tipo de Atendimento</p>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Tipo</p>
                     <Badge variant="outline" className="mt-1">{MOCK_RESULT.tipo}</Badge>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pontuação</p>
-                    <p className="text-sm font-medium mt-0.5">{MOCK_RESULT.pontosObtidos}/{MOCK_RESULT.pontosPossiveis} pontos</p>
                   </div>
                   <div>
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Classificação</p>
@@ -170,20 +166,39 @@ const AttendanceDemo = () => {
                     <Badge className="mt-1 bg-accent text-accent-foreground">{MOCK_RESULT.bonusQualidade}%</Badge>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Atualização Cadastral</p>
-                    <Badge className="mt-1 bg-accent text-accent-foreground">{MOCK_RESULT.atualizacaoCadastral}</Badge>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Versão do Prompt</p>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Versão</p>
                     <p className="text-sm font-medium mt-0.5">{MOCK_RESULT.versaoPrompt}</p>
                   </div>
                   <div>
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Validade</p>
+                    <p className="text-sm font-medium mt-0.5">{MOCK_RESULT.validade}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Interação do Cliente</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                      <p className="text-sm font-medium">{MOCK_RESULT.validade}</p>
+                      <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
+                      <p className="text-sm font-medium">{MOCK_RESULT.statusInteracao}</p>
                     </div>
                   </div>
+                </div>
+
+                {/* INDICADORES POR DIMENSÃO */}
+                <div className="mt-5 border-t border-border pt-4">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Indicadores por Dimensão</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {MOCK_RESULT.indicadores.map((ind) => (
+                      <div key={ind.label} className="rounded-lg border border-border bg-muted/30 p-3 text-center">
+                        <p className="text-lg font-bold text-foreground">{ind.valor.toFixed(1)}</p>
+                        <p className="text-xs text-muted-foreground">{ind.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* RESUMO */}
+                <div className="mt-4 rounded-lg bg-muted/40 border border-border p-3">
+                  <p className="text-sm text-foreground italic">"{MOCK_RESULT.resumo}"</p>
+                </div>
                   <div>
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Interação do Cliente</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
