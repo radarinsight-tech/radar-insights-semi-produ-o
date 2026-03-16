@@ -280,7 +280,11 @@ const Index = () => {
         user_id: user.id,
         pdf_url: pdfUrl,
         full_report: fullReport as unknown as import("@/integrations/supabase/types").Json,
-      }).select().single();
+        prompt_version: data.promptVersion || "auditor_v3",
+        resultado_validado: true,
+        audit_log: (data.auditLog || null) as unknown as import("@/integrations/supabase/types").Json,
+        parent_evaluation_id: null,
+      } as any).select().single();
 
       if (insertError || !savedRow) {
         console.error("Error saving evaluation:", insertError);
