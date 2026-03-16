@@ -4,7 +4,7 @@ import UploadSection, { type UploadState } from "@/components/UploadSection";
 import AnalysisResult, { type AnalysisData } from "@/components/AnalysisResult";
 import HistoryTable from "@/components/HistoryTable";
 import Filters, { type FilterValues } from "@/components/Filters";
-import StatsWidgets from "@/components/StatsWidgets";
+import StatsWidgets, { type StatusFilter } from "@/components/StatsWidgets";
 import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { supabase } from "@/integrations/supabase/client";
