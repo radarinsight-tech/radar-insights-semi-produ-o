@@ -244,7 +244,7 @@ const AttendanceDemo = () => {
                   <div key={a.nome} className="flex items-center gap-3">
                     <span className="text-xs font-medium text-foreground w-28 truncate">{a.nome}</span>
                     <div className="flex-1 h-4 bg-muted/50 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full bg-gradient-to-r from-primary/60 to-primary transition-all" style={{ width: `${a.media}%` }} />
+                      <div className="h-full rounded-full bg-gradient-to-r from-primary/60 to-primary transition-all" style={{ width: `${(a.media / 10) * 100}%` }} />
                     </div>
                     <span className="text-xs font-bold text-foreground tabular-nums w-10 text-right">{a.media.toFixed(1).replace(".", ",")}</span>
                   </div>
