@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import {
   LogOut, ArrowLeft, Search, Upload, FileCheck, FileX, CheckCircle2, XCircle, Clock,
-  AlertTriangle, User, CreditCard, Scale, Receipt, Loader2, Trash2, RefreshCw, Eye,
+  AlertTriangle, User, CreditCard, Scale, Receipt, Loader2, Trash2, RefreshCw,
   ShieldAlert, ShieldCheck, Shield, FileWarning, Eraser, FileText, ScanLine, X
 } from "lucide-react";
 import logoSymbol from "@/assets/logo-symbol.png";
@@ -561,7 +561,19 @@ const DocumentAnalysis = () => {
     if (suspeita) {
       toast.warning("⚠️ Documento duplicado detectado! Verifique os alertas.");
     } else {
-      toast.success(`Arquivo "${file.name}" enviado.`);
+      toast.success(`Arquivo "${file.name}" enviado. OCR será executado automaticamente.`);
+    }
+
+    // Auto-trigger OCR in background (non-blocking)
+    if (tipo !== "outro") {
+      const updatedItems = await supabase
+        .from("document_items")
+        .select("*")
+        .eq("id", itemId)
+        .single();
+      if (updatedItems.data) {
+        handleOcr(updatedItems.data as any);
+      }
     }
   };
 
@@ -664,6 +676,34 @@ const DocumentAnalysis = () => {
       if (suspeita) statusOcr = "suspeita_fraude";
       statusOcr = "revisao_manual_pendente"; // Always require human review
 
+      // ── Auto-fill checklist based on OCR results ──
+      const nameMatch = (() => {
+        if (!extractedName || !refNome) return false;
+        return extractedName.includes(refNome) || refNome.includes(extractedName);
+      })();
+
+      const cpfMatch = (() => {
+        if (!extractedCpf || !refCpf) return false;
+        return extractedCpf === refCpf;
+      })();
+
+      const enderecoMatch = !divergencias.some((d: any) => d.campo === "endereco");
+
+      const autoLegivel = confianca >= 0.3 && Object.keys(campos).filter(k => k !== "texto_completo").length > 0;
+
+      // Validity rules
+      let autoValido = true;
+      if (item.tipo === "comprovante_endereco" && alertas.some((a: any) => a.tipo === "comprovante_vencido")) {
+        autoValido = false;
+      }
+      if (item.tipo === "contrato_aluguel" && alertas.some((a: any) => a.tipo === "contrato_curto")) {
+        autoValido = false;
+      }
+      if (divergencias.some((d: any) => d.tipo === "nome_divergente" || d.tipo === "cpf_divergente")) {
+        autoValido = false;
+      }
+      if (!autoLegivel) autoValido = false;
+
       await supabase.from("document_items").update({
         texto_extraido: texto,
         confianca_ocr: confianca,
@@ -676,6 +716,12 @@ const DocumentAnalysis = () => {
         data_emissao: campos.data_emissao ? parseDateToISO(campos.data_emissao) : null,
         data_inicio_contrato: campos.data_inicio ? parseDateToISO(campos.data_inicio) : null,
         data_fim_contrato: campos.data_termino ? parseDateToISO(campos.data_termino) : null,
+        // Auto-filled checklist
+        nome_confere: nameMatch,
+        cpf_confere: cpfMatch,
+        endereco_confere: enderecoMatch,
+        legivel: autoLegivel,
+        valido: autoValido,
       } as any).eq("id", item.id);
 
       await loadDocItems(docAnalysis.id);
@@ -967,11 +1013,6 @@ const DocumentAnalysis = () => {
                               </Button>
                             )}
                             {item.file_url && (
-                              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => window.open(item.file_url!, "_blank")}>
-                                <Eye className="h-3 w-3" />
-                              </Button>
-                            )}
-                            {item.file_url && (
                               <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => setDeleteDialog({ open: true, item })}>
                                 <Trash2 className="h-3 w-3" />
                               </Button>
@@ -1116,22 +1157,31 @@ const DocumentAnalysis = () => {
                         {/* Checklist */}
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
                           {[
-                            { field: "documento_recebido", label: "Recebido" },
-                            { field: "nome_confere", label: "Nome confere" },
-                            { field: "cpf_confere", label: "CPF confere" },
-                            { field: "endereco_confere", label: "Endereço confere" },
-                            { field: "legivel", label: "Legível" },
-                            { field: "valido", label: "Válido" },
-                          ].map(({ field, label }) => (
-                            <div key={field} className="flex items-center gap-2">
-                              <Checkbox
-                                id={`${item.id}-${field}`}
-                                checked={(item as any)[field]}
-                                onCheckedChange={(v) => handleChecklistChange(item.id, field, !!v)}
-                              />
-                              <Label htmlFor={`${item.id}-${field}`} className="text-xs cursor-pointer">{label}</Label>
-                            </div>
-                          ))}
+                            { field: "documento_recebido", label: "Recebido", autoOnly: true },
+                            { field: "nome_confere", label: "Nome confere", autoOnly: false },
+                            { field: "cpf_confere", label: "CPF confere", autoOnly: false },
+                            { field: "endereco_confere", label: "Endereço confere", autoOnly: false },
+                            { field: "legivel", label: "Legível", autoOnly: false },
+                            { field: "valido", label: "Válido", autoOnly: false },
+                          ].map(({ field, label, autoOnly }) => {
+                            const hasOcrData = item.status_ocr && item.status_ocr !== "aguardando_leitura" && item.status_ocr !== "processando";
+                            const isAutoField = field !== "documento_recebido" && hasOcrData;
+                            return (
+                              <div key={field} className="flex items-center gap-2">
+                                <Checkbox
+                                  id={`${item.id}-${field}`}
+                                  checked={(item as any)[field]}
+                                  disabled={autoOnly && (item as any)[field]}
+                                  onCheckedChange={(v) => handleChecklistChange(item.id, field, !!v)}
+                                />
+                                <Label htmlFor={`${item.id}-${field}`} className="text-xs cursor-pointer">
+                                  {label}
+                                  {isAutoField && <span className="text-[9px] text-primary ml-1">(auto)</span>}
+                                  {autoOnly && (item as any)[field] && <span className="text-[9px] text-muted-foreground ml-1">(auto)</span>}
+                                </Label>
+                              </div>
+                            );
+                          })}
                         </div>
 
                         {/* Observation */}
