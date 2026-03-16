@@ -29,7 +29,7 @@ const ScoreEvolutionChart = ({ entries }: Props) => {
       if (parts.length < 3) return;
       const key = `${parts[1]}/${parts[2]}`;
       if (!byMonth[key]) byMonth[key] = { sum: 0, count: 0 };
-      byMonth[key].sum += e.nota;
+      byMonth[key].sum += notaToScale10(e.nota);
       byMonth[key].count += 1;
     });
 
