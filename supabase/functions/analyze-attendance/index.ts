@@ -28,35 +28,39 @@ ORDEM OBRIGATÓRIA DE DECISÃO — NUNCA PULAR ETAPAS
 4 — Verificar erro do BOT
 5 — Aplicar mentoria
 
-ETAPA 1 — DETECTAR INTERAÇÃO DO CLIENTE
+ETAPA 1 — INTERAÇÃO DO CLIENTE
 
 Verifique se existe qualquer mensagem enviada pelo cliente.
-Considere como interação válida do cliente:
+Considere como interação válida:
 - saudações (ex: "boa noite", "olá")
 - perguntas
-- explicação de problema
-- respostas curtas ("sim", "não", "ok")
+- texto livre
+- relato de problema
 - envio de CPF ou CNPJ
 - escolha de menu
 - respostas numéricas
-- qualquer texto digitado pelo cliente
+- respostas curtas como "sim", "não", "ok"
 - Interação com BOT também conta como interação válida.
 
 Se NÃO existir nenhuma mensagem do cliente no histórico:
-- noInteraction = true
-- impeditivo = true
-- motivoImpeditivo = "Sem interação do cliente"
+- statusAtendimento = "fora_de_avaliacao"
+- motivo = "sem_interacao_do_cliente"
 - Encerrar análise. Não aplicar mentoria.
 
-ETAPA 2 — IDENTIFICAR ATENDIMENTO HUMANO
+Se existir interação, continuar.
+
+ETAPA 2 — ATENDIMENTO HUMANO
 
 Verifique se houve participação de um atendente humano.
 Normalmente identificado por nome do atendente no histórico da conversa.
 
 Se não houver atendente humano e o atendimento foi realizado apenas pelo BOT:
-- impeditivo = true
-- motivoImpeditivo = "Atendimento realizado apenas por bot"
+- statusAtendimento = "apenas_bot"
+- statusAuditoria = "auditoria_bloqueada"
+- motivo = "atendimento_apenas_por_bot"
 - Encerrar análise.
+
+Se houver atendente humano, continuar.
 
 ETAPA 3 — VERIFICAR IMPEDIMENTOS DE AUDITORIA
 
@@ -67,31 +71,37 @@ Impedimentos:
 - arquivo de áudio (ex: gravacao_de_voz.mp3)
 
 Se o atendente enviou áudio:
-- impeditivo = true
-- motivoImpeditivo = "Envio de áudio pelo atendente"
-- Encerrar análise.
+- statusAuditoria = "impedimento_detectado"
+- motivo = "envio_de_audio_pelo_atendente"
+- Não aplicar mentoria. Encerrar análise.
 
 ETAPA 4 — DETECTAR ERRO DO BOT
 
 Analise se ocorreu falha do BOT durante o atendimento.
 Considere erro do BOT quando ocorrer situações como:
 - BOT responde "opção inválida" mesmo quando o cliente descreve um problema válido
-- BOT não entende mensagem do cliente
+- BOT não entende texto livre do cliente
 - BOT não encaminha corretamente para atendimento humano
 - BOT repete respostas sem resolver a solicitação
 - BOT gera bloqueio de fluxo para o cliente
-- BOT não interpreta texto livre do cliente
 - BOT impede continuidade do atendimento
 
-Se houver erro claro do BOT, registrar:
-- erroBot = true
-- observacaoBot = descrição da falha
+Se houver erro claro do BOT:
+- statusBot = "bot_com_falha"
+- observacaoBot = descrição breve da falha
+
+Se não houver erro:
+- statusBot = "bot_ok"
+
 Essa observação não bloqueia a mentoria, mas deve ser reportada.
 
 ETAPA 5 — APLICAR A MENTORIA
 
 Se: houve interação do cliente, houve atendimento humano, não existe impedimento de auditoria
-Então aplicar normalmente a Mentoria de Atendimento conforme os critérios abaixo.
+Então:
+- statusAtendimento = "auditado"
+- statusAuditoria = "auditoria_realizada"
+- Aplicar normalmente a Mentoria de Atendimento conforme os critérios abaixo.
 
 IDENTIFICAÇÃO DA URA
 
@@ -182,7 +192,7 @@ Destacar: clareza nas frases, oportunidades de empatia, melhor forma de orientar
 A mentoria não altera a pontuação.
 
 REGRAS IMPORTANTES
-- Nunca classificar como "Sem interação do cliente" se existir qualquer mensagem enviada pelo cliente.
+- Nunca classificar como "sem_interacao_do_cliente" se existir qualquer mensagem enviada pelo cliente.
 - Mensagens curtas, números, CPF, escolhas de menu ou respostas ao BOT contam como interação válida.
 - A análise deve sempre considerar todo o histórico da conversa.
 - Quando existir impedimento de auditoria, informar claramente o motivo.
@@ -232,11 +242,27 @@ serve(async (req) => {
               parameters: {
                 type: "object",
                 properties: {
-                  noInteraction: { type: "boolean", description: "true se não houve nenhuma mensagem do cliente no histórico" },
-                  impeditivo: { type: "boolean", description: "Se há impeditivo que impede a auditoria (áudio, sem interação humana, apenas bot, URA fez quase tudo)" },
-                  motivoImpeditivo: { type: "string", description: "Motivo do impeditivo, se houver" },
-                  erroBot: { type: "boolean", description: "true se houve falha do BOT durante o atendimento" },
-                  observacaoBot: { type: "string", description: "Descrição da falha do BOT, se houver" },
+                  statusAtendimento: {
+                    type: "string",
+                    enum: ["auditado", "fora_de_avaliacao", "apenas_bot"],
+                    description: "Status do atendimento: auditado (mentoria aplicada), fora_de_avaliacao (sem interação do cliente), apenas_bot (sem atendente humano)",
+                  },
+                  statusAuditoria: {
+                    type: "string",
+                    enum: ["auditoria_realizada", "auditoria_bloqueada", "impedimento_detectado"],
+                    description: "Status da auditoria: auditoria_realizada (mentoria aplicada), auditoria_bloqueada (apenas bot), impedimento_detectado (áudio do atendente)",
+                  },
+                  motivo: {
+                    type: "string",
+                    enum: ["sem_interacao_do_cliente", "atendimento_apenas_por_bot", "envio_de_audio_pelo_atendente", ""],
+                    description: "Motivo quando o atendimento não pode ser auditado. Vazio se auditado normalmente.",
+                  },
+                  statusBot: {
+                    type: "string",
+                    enum: ["bot_ok", "bot_com_falha"],
+                    description: "Status do BOT: bot_ok (sem falha) ou bot_com_falha (falha detectada)",
+                  },
+                  observacaoBot: { type: "string", description: "Descrição breve da falha do BOT, se houver. Vazio se bot_ok." },
                   data: { type: "string", description: "Data do atendimento no formato DD/MM/AAAA" },
                   protocolo: { type: "string", description: "Número do protocolo do atendimento" },
                   tipo: { type: "string", description: "Tipo de atendimento (ex: Suporte Técnico, Financeiro, Cancelamento)" },
@@ -257,7 +283,7 @@ serve(async (req) => {
                       required: ["numero", "nome", "categoria", "pesoMaximo", "resultado", "pontosObtidos", "explicacao"],
                       additionalProperties: false,
                     },
-                    description: "Avaliação dos 19 critérios da matriz",
+                    description: "Avaliação dos 19 critérios da matriz. Vazio se auditoria não realizada.",
                   },
                   subtotais: {
                     type: "object",
@@ -287,10 +313,10 @@ serve(async (req) => {
                   mentoria: {
                     type: "array",
                     items: { type: "string" },
-                    description: "Sugestões de melhoria para o atendente: clareza, empatia, orientação ao cliente",
+                    description: "Sugestões de melhoria para o atendente. Vazio se auditoria não realizada.",
                   },
                 },
-                required: ["noInteraction", "impeditivo", "erroBot", "data", "protocolo", "tipo", "atendente", "criterios", "subtotais", "pontosObtidos", "pontosPossiveis", "notaFinal", "classificacao", "bonusQualidade", "bonusOperacional", "mentoria"],
+                required: ["statusAtendimento", "statusAuditoria", "motivo", "statusBot", "observacaoBot", "data", "protocolo", "tipo", "atendente", "criterios", "subtotais", "pontosObtidos", "pontosPossiveis", "notaFinal", "classificacao", "bonusQualidade", "bonusOperacional", "mentoria"],
                 additionalProperties: false,
               },
             },
