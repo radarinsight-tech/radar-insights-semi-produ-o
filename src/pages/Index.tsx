@@ -102,6 +102,7 @@ const Index = () => {
 
   const handleNewAnalysis = () => {
     setAnalysis(null);
+    setAnalysisError(null);
     setUploadState("empty");
     setAnalyzedFileName("");
   };
