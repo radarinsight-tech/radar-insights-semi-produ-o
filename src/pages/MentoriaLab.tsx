@@ -874,19 +874,6 @@ const MentoriaLab = () => {
                   placeholder="Período"
                 />
 
-                {/* Canal */}
-                <Select value={filterCanal} onValueChange={setFilterCanal}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Canal" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos canais</SelectItem>
-                    {canais.map((c) => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
                 {/* Áudio */}
                 <Select value={filterAudio} onValueChange={setFilterAudio}>
                   <SelectTrigger className="w-[140px]">
