@@ -778,60 +778,89 @@ const MentoriaLab = () => {
           </Card>
         )}
 
-        {/* Welcome header */}
+        {/* 3 Main Action Cards */}
         {files.length === 0 && (
-          <div className="text-center py-6">
-            <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <BookOpen className="h-7 w-7 text-primary" />
-            </div>
-            <h2 className="text-lg font-bold text-foreground">Comece sua mentoria</h2>
-            <p className="text-sm text-muted-foreground mt-1 max-w-lg mx-auto">
-              Importe atendimentos para organizar, analisar e gerar insights automaticamente.
-            </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card
+              className="p-6 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group"
+              onClick={() => inputRef.current?.click()}
+            >
+              <div className="flex flex-col items-center text-center gap-3">
+                <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                  <Upload className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-foreground mb-1">Importar Atendimentos</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Envie PDFs ou um ZIP com atendimentos para iniciar a curadoria.
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card
+              className="p-6 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group opacity-60 pointer-events-none"
+            >
+              <div className="flex flex-col items-center text-center gap-3">
+                <div className="p-3 rounded-xl bg-accent/10 group-hover:bg-accent/15 transition-colors">
+                  <Play className="h-6 w-6 text-accent" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-foreground mb-1">Analisar Lote</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Selecione atendimentos importados e gere análises automáticas em lote.
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card
+              className="p-6 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group opacity-60 pointer-events-none"
+            >
+              <div className="flex flex-col items-center text-center gap-3">
+                <div className="p-3 rounded-xl bg-secondary/50 group-hover:bg-secondary/70 transition-colors">
+                  <BookOpen className="h-6 w-6 text-secondary-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-foreground mb-1">Ver Insights</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Visualize tendências, pontos de melhoria e evolução dos atendentes.
+                  </p>
+                </div>
+              </div>
+            </Card>
           </div>
         )}
 
-        {/* Upload block */}
-        <Card className="p-6">
-          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-            <Upload className="h-4 w-4 text-primary" />
-            Importação de arquivos
-          </h3>
-          <div
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleDrop}
-            onClick={() => inputRef.current?.click()}
-            className="border-2 border-dashed border-primary/30 rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
-          >
-            <Upload className="h-8 w-8 mx-auto text-primary/60 mb-2" />
-            <p className="text-sm text-muted-foreground">
-              Arraste os PDFs aqui ou clique para selecionar <strong>múltiplos arquivos</strong>
-            </p>
-            <p className="text-xs text-muted-foreground mt-2 flex items-center justify-center gap-1">
-              <Archive className="h-3.5 w-3.5" />
-              Você também pode importar um arquivo ZIP com vários atendimentos.
-            </p>
-          </div>
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".pdf,.zip"
-            multiple
-            onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ""; }}
-            className="hidden"
-          />
-        </Card>
+        {/* Upload input (hidden) */}
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".pdf,.zip"
+          multiple
+          onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ""; }}
+          className="hidden"
+        />
 
-        {/* Atendimentos importados — empty or populated */}
-        {files.length === 0 ? (
-          <Card className="p-10 text-center">
-            <FileText className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-            <h3 className="text-sm font-semibold text-foreground mb-1">📂 Atendimentos importados</h3>
-            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              Os atendimentos enviados aparecerão aqui para curadoria, seleção e análise.
-            </p>
+        {/* Upload drop zone — only when files exist (inline re-import) */}
+        {files.length > 0 && (
+          <Card className="p-4">
+            <div
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDrop}
+              onClick={() => inputRef.current?.click()}
+              className="border-2 border-dashed border-primary/30 rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+            >
+              <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
+                <Upload className="h-4 w-4 text-primary/60" />
+                Arraste PDFs ou ZIP aqui para adicionar ao lote
+              </p>
+            </div>
           </Card>
-        ) : (
+        )}
+
+        {/* Atendimentos importados — populated */}
+        {files.length > 0 && (
           <>
             <Card className="p-4">
               <h3 className="text-sm font-semibold text-foreground mb-3">📂 Atendimentos importados</h3>
