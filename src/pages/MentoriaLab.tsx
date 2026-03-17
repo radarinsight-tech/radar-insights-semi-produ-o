@@ -569,9 +569,14 @@ const MentoriaLab = () => {
               </div>
             </Card>
 
-            {/* Insights da Mentoria - appears after analyses */}
+            {/* Insights da Mentoria - prominent section after analyses */}
             {files.some((f) => f.status === "analisado") && (
-              <MentoriaInsights files={files} />
+              <div id="mentoria-insights" className="scroll-mt-6">
+                <div className="relative">
+                  <div className="absolute -inset-3 bg-primary/[0.03] rounded-2xl -z-10" />
+                  <MentoriaInsights files={files} />
+                </div>
+              </div>
             )}
           </>
         )}
