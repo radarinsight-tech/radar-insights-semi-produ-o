@@ -93,7 +93,7 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
   const insights = useMemo(() => {
     if (analyzed.length === 0) return null;
 
-    const notas = analyzed.map((f) => f.result!.notaFinal!);
+    const notas = analyzed.map((f) => notaToScale10(f.result!.notaFinal!));
     const media = round1(notas.reduce((a, b) => a + b, 0) / notas.length);
 
     // Aggregate by atendente
