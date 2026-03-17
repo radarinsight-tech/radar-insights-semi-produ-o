@@ -22,6 +22,7 @@ import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import logoSymbol from "@/assets/logo-symbol.png";
 import { toast } from "sonner";
 import MentoriaInsights from "@/components/MentoriaInsights";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro";
 
@@ -703,14 +704,32 @@ const MentoriaLab = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Limit tags */}
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge className="bg-blue-100 text-blue-700 border border-blue-200 text-xs font-medium px-3 py-1">
-            <Upload className="h-3 w-3 mr-1.5" />
-            IMPORTAR: até {IMPORT_RECOMMENDED} por mês
-          </Badge>
-          <Badge className="bg-accent/15 text-accent border border-accent/25 text-xs font-medium px-3 py-1">
-            <Play className="h-3 w-3 mr-1.5" />
-            ANALISAR: até {ANALYZE_LIMIT} por vez
-          </Badge>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge className="bg-blue-100 text-blue-700 border border-blue-200 text-xs font-medium px-3 py-1 cursor-help">
+                  <Upload className="h-3 w-3 mr-1.5" />
+                  IMPORTAR: até {IMPORT_RECOMMENDED} por mês
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">Volume recomendado de atendimentos por período mensal.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge className="bg-accent/15 text-accent border border-accent/25 text-xs font-medium px-3 py-1 cursor-help">
+                  <Play className="h-3 w-3 mr-1.5" />
+                  ANALISAR: até {ANALYZE_LIMIT} por vez
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">Para melhor desempenho, analise em blocos de até 50 atendimentos.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
         {/* Stats */}
