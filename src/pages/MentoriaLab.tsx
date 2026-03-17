@@ -803,7 +803,7 @@ const MentoriaLab = () => {
           </Card>
         )}
 
-        {/* Empty state hero */}
+        {/* Welcome header */}
         {files.length === 0 && (
           <div className="text-center py-6">
             <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -811,7 +811,7 @@ const MentoriaLab = () => {
             </div>
             <h2 className="text-lg font-bold text-foreground">Comece sua mentoria</h2>
             <p className="text-sm text-muted-foreground mt-1 max-w-lg mx-auto">
-              Importe atendimentos em PDF ou um arquivo ZIP para organizar, analisar e gerar insights automaticamente.
+              Importe atendimentos para organizar, analisar e gerar insights automaticamente.
             </p>
           </div>
         )}
