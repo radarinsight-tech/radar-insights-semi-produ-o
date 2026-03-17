@@ -9,6 +9,7 @@ import CreditQuerySection, { type SpcQueryResult } from "@/components/credit/Cre
 import CreditQueryResult, { aplicarPoliticaBandaTurbo } from "@/components/credit/CreditQueryResult";
 import CreditHistoryTable from "@/components/credit/CreditHistoryTable";
 import CreditDailySummary from "@/components/credit/CreditDailySummary";
+import { useUserPermissions } from "@/hooks/useUserPermissions";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
