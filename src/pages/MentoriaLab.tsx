@@ -818,8 +818,8 @@ const MentoriaLab = () => {
               className="p-6 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group opacity-60 pointer-events-none"
             >
               <div className="flex flex-col items-center text-center gap-3">
-                <div className="p-3 rounded-xl bg-blue-500/10 group-hover:bg-blue-500/15 transition-colors">
-                  <BookOpen className="h-6 w-6 text-blue-600" />
+                <div className="p-3 rounded-xl bg-secondary/50 group-hover:bg-secondary/70 transition-colors">
+                  <BookOpen className="h-6 w-6 text-secondary-foreground" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-foreground mb-1">Ver Insights</h3>
