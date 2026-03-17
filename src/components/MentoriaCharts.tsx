@@ -182,7 +182,7 @@ const MentoriaCharts = ({ files }: MentoriaChartsProps) => {
                   borderRadius: "8px",
                   fontSize: "12px",
                 }}
-                formatter={(value: number) => [value.toFixed(1), "Nota média"]}
+                formatter={(value: number) => [value.toFixed(1).replace(".", ","), "Nota média"]}
               />
               <ReferenceLine y={7} stroke="hsl(var(--accent))" strokeDasharray="4 4" strokeOpacity={0.5} />
               <Line
