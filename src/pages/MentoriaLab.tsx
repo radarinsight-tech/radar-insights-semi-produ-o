@@ -1073,7 +1073,7 @@ const MentoriaLab = () => {
                   </thead>
                   <tbody>
                     {paginatedFiles.map((f) => (
-                      <tr key={f.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                      <tr key={f.id} className={cn("border-b border-border last:border-0 hover:bg-muted/30 transition-colors", f.status === "analisado" && "bg-accent/8 border-l-[3px] border-l-accent")}>
                         <td className="p-3">
                           <Checkbox checked={selected.has(f.id)} onCheckedChange={() => toggleSelect(f.id)} />
                         </td>
