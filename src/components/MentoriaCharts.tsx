@@ -167,7 +167,7 @@ const MentoriaCharts = ({ files }: MentoriaChartsProps) => {
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="h-4 w-4 text-primary" />
           <h4 className="text-xs font-semibold text-foreground uppercase tracking-wide">Evolução da Nota Média</h4>
-          <Badge variant="outline" className="ml-auto text-[10px]">Média: {globalMedia.toFixed(1)}</Badge>
+          <Badge variant="outline" className="ml-auto text-[10px]">Média: {globalMedia.toFixed(1).replace(".", ",")}</Badge>
         </div>
         <div className="h-[220px]">
           <ResponsiveContainer width="100%" height="100%">
@@ -182,7 +182,7 @@ const MentoriaCharts = ({ files }: MentoriaChartsProps) => {
                   borderRadius: "8px",
                   fontSize: "12px",
                 }}
-                formatter={(value: number) => [value.toFixed(1), "Nota média"]}
+                formatter={(value: number) => [value.toFixed(1).replace(".", ","), "Nota média"]}
               />
               <ReferenceLine y={7} stroke="hsl(var(--accent))" strokeDasharray="4 4" strokeOpacity={0.5} />
               <Line
@@ -225,7 +225,7 @@ const MentoriaCharts = ({ files }: MentoriaChartsProps) => {
                     fontSize: "12px",
                   }}
                   formatter={(value: number, _name: string, props: any) => [
-                    `${value.toFixed(1)} (${props.payload.total} atend.)`,
+                    `${value.toFixed(1).replace(".", ",")} (${props.payload.total} atend.)`,
                     "Nota média",
                   ]}
                 />
