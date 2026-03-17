@@ -17,6 +17,7 @@ import {
 
 const CreditAnalysis = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useUserPermissions();
   const [result, setResult] = useState<SpcQueryResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [historyRefresh, setHistoryRefresh] = useState(0);
