@@ -1217,20 +1217,23 @@ const MentoriaLab = () => {
             {/* Charts card */}
             {filteredFiles.some((f) => f.status === "analisado") && !showCharts && (
               <Card
-                className="p-5 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group"
+                className="p-6 cursor-pointer hover:shadow-lg hover:border-primary/40 border-border/60 transition-all group"
                 onClick={() => setShowCharts(true)}
               >
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors">
-                    <BarChart3 className="h-6 w-6 text-primary" />
+                <div className="flex items-center gap-5">
+                  <div className="p-3.5 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors shrink-0">
+                    <BarChart3 className="h-7 w-7 text-primary" />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-sm font-bold text-foreground mb-0.5">Ver Gráficos</h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Evolução de notas, performance por atendente e volume de auditorias.
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-bold text-foreground tracking-tight">Gráficos de Evolução</h3>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                      Evolução de notas, performance por atendente e volume de auditorias
                     </p>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <Badge variant="outline" className="text-[10px] font-semibold shrink-0 mr-1">
+                    {filteredFiles.filter(f => f.status === "analisado").length} análises
+                  </Badge>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
                 </div>
               </Card>
             )}
