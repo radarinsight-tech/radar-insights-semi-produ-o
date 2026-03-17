@@ -243,11 +243,19 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
         .cat-bar { height: 100%; background: #2563eb; border-radius: 2px; }
 
         .criterio { padding: 6px 0; border-bottom: 1px solid #f3f4f6; }
+        .criterio-sim { background: #f0fdf4; border-radius: 6px; padding: 8px 10px; margin: 4px 0; border-bottom: none; }
+        .criterio-sim-critico { background: #dcfce7; border: 1px solid #86efac; border-radius: 6px; padding: 8px 10px; margin: 4px 0; border-bottom: none; }
+        .criterio-nao { background: #fef2f2; border-radius: 6px; padding: 8px 10px; margin: 4px 0; border-bottom: none; }
+        .criterio-nao-critico { background: #fde2e2; border: 1px solid #fca5a5; border-radius: 6px; padding: 8px 10px; margin: 4px 0; border-bottom: none; }
         .criterio:last-child { border-bottom: none; }
         .criterio-row { display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; }
         .criterio-num { font-weight: 700; color: #6b7280; font-size: 10px; min-width: 18px; }
         .criterio-nome { font-weight: 600; font-size: 10.5px; color: #1a1a1a; flex: 1; }
         .criterio-badge { display: inline-block; font-size: 8px; font-weight: 800; padding: 1px 6px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .badge-critico { background: #eff6ff; color: #1e40af; }
+        .explicacao-nao { color: #991b1b; font-weight: 500; }
+        .trecho-sim { border-left-color: #16a34a; background: #f0fdf4; }
+        .trecho-nao { border-left-color: #dc2626; background: #fef2f2; }
         .badge-sim { background: #dcfce7; color: #166534; }
         .badge-nao { background: #fde2e2; color: #991b1b; }
         .badge-fora { background: #f3f4f6; color: #9ca3af; }
