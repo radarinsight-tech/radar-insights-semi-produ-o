@@ -382,7 +382,7 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
                           </Badge>
                         );
                       })()}
-                      {at.media < 7 && (
+                      {notaToScale10(at.media) < 7 && (
                         <Badge className="bg-warning/15 text-warning text-[10px]">Necessita mentoria</Badge>
                       )}
                     </>
