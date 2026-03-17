@@ -130,19 +130,7 @@ const MentoriaLab = () => {
         }
         return;
       }
-      const protocolMatch = text.match(/(?:protocolo|prot\.?)\s*[:\-]?\s*([A-Za-z0-9]+)/i);
-      const atendenteMatch = text.match(/(?:atendente|agente|operador)\s*[:\-]?\s*([^\n]+)/i);
-      const dataMatch = text.match(/(\d{2}\/\d{2}\/\d{4})/);
-      const canal = detectCanal(text);
-      const hasAudio = detectAudio(text);
-
-      const metadata = {
-        protocolo: protocolMatch?.[1] || undefined,
-        atendente: atendenteMatch?.[1]?.trim() || undefined,
-        data: dataMatch?.[1] || undefined,
-        canal,
-        hasAudio,
-      };
+      const metadata = extractAllMetadata(text);
 
       setFiles((prev) =>
         prev.map((f) =>
