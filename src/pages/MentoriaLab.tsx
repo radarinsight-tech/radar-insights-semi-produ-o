@@ -385,14 +385,27 @@ const MentoriaLab = () => {
     }
   };
 
-  // Batch analyze
+  // Batch analyze with cloud storage for results
   const analyzeSelected = async () => {
     const toAnalyze = files.filter((f) => selected.has(f.id) && (f.status === "lido" || f.status === "pendente"));
     if (toAnalyze.length === 0) {
       toast.warning("Selecione arquivos lidos ou pendentes para análise.");
       return;
     }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Você precisa estar autenticado.");
+      return;
+    }
+
     setProcessing(true);
+
+    // Update batch status to analyzing
+    if (currentBatchId) {
+      await supabase.from("mentoria_batches").update({ status: "analyzing" } as any).eq("id", currentBatchId);
+    }
+
     let success = 0;
     let errors = 0;
 
@@ -403,29 +416,32 @@ const MentoriaLab = () => {
           text = await extractTextFromPdf(labFile.file);
           if (!text.trim()) {
             setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Sem texto" } : f)));
+            if (labFile.batchFileId) {
+              await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Sem texto" } as any).eq("id", labFile.batchFileId);
+            }
             errors++;
             continue;
           }
         }
 
-        const fileName = `mentoria_${Date.now()}_${labFile.name}`;
-        await supabase.storage.from("pdfs").upload(fileName, labFile.file, { contentType: "application/pdf" });
-        const { data: urlData } = supabase.storage.from("pdfs").getPublicUrl(fileName);
+        // Use the already-stored path in mentoria-lab bucket instead of re-uploading
+        const pdfUrl = labFile.storagePath || "";
 
         const { data, error } = await supabase.functions.invoke("analyze-attendance", { body: { text } });
 
         if (error || data?.error) {
           setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: data?.error || "Erro na análise" } : f)));
+          if (labFile.batchFileId) {
+            await supabase.from("mentoria_batch_files").update({ status: "error", error_message: data?.error || "Erro na análise" } as any).eq("id", labFile.batchFileId);
+          }
           errors++;
           continue;
         }
 
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("Não autenticado");
-
         const notaFinal = typeof data.notaFinal === "number" ? data.notaFinal : 0;
         const bonusQualidade = typeof data.bonusQualidade === "number" ? data.bonusQualidade : 0;
 
+        // Save evaluation
         await supabase.from("evaluations").insert({
           data: data.data || new Date().toLocaleDateString("pt-BR"),
           protocolo: data.protocolo || "Não identificado",
@@ -437,11 +453,33 @@ const MentoriaLab = () => {
           bonus: bonusQualidade >= 70,
           pontos_melhoria: Array.isArray(data.mentoria) ? data.mentoria : [],
           user_id: user.id,
-          pdf_url: urlData.publicUrl,
+          pdf_url: pdfUrl,
           full_report: { ...data },
           prompt_version: data.promptVersion || "auditor_v3",
           resultado_validado: true,
         } as any);
+
+        // Save result JSON to cloud: results/<batchCode>/
+        if (labFile.batchId) {
+          const { data: batchData } = await supabase.from("mentoria_batches").select("batch_code").eq("id", labFile.batchId).single();
+          if (batchData) {
+            const resultPath = `${user.id}/results/${batchData.batch_code}/${labFile.name.replace(".pdf", ".json")}`;
+            const resultBlob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            await supabase.storage.from("mentoria-lab").upload(resultPath, resultBlob, { contentType: "application/json" }).catch(() => {});
+          }
+        }
+
+        // Sync batch file DB
+        if (labFile.batchFileId) {
+          await supabase.from("mentoria_batch_files").update({
+            status: "analyzed",
+            nota: notaFinal,
+            classificacao: data.classificacao || "Fora de Avaliação",
+            atendente: data.atendente || labFile.atendente,
+            protocolo: data.protocolo || labFile.protocolo,
+            result: data,
+          } as any).eq("id", labFile.batchFileId);
+        }
 
         setFiles((prev) =>
           prev.map((f) =>
@@ -453,14 +491,35 @@ const MentoriaLab = () => {
         success++;
       } catch {
         setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Erro inesperado" } : f)));
+        if (labFile.batchFileId) {
+          await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Erro inesperado" } as any).eq("id", labFile.batchFileId);
+        }
         errors++;
+      }
+    }
+
+    // Update batch status + save summary
+    if (currentBatchId) {
+      const analyzed = files.filter((f) => f.status === "analisado" || f.result);
+      const summary = {
+        total_analyzed: success,
+        total_errors: errors,
+        completed_at: new Date().toISOString(),
+      };
+      await supabase.from("mentoria_batches").update({ status: errors === toAnalyze.length ? "error" : "completed", summary } as any).eq("id", currentBatchId);
+
+      // Save summary.json to cloud
+      const { data: batchData } = await supabase.from("mentoria_batches").select("batch_code").eq("id", currentBatchId).single();
+      if (batchData) {
+        const summaryPath = `${user.id}/results/${batchData.batch_code}/summary.json`;
+        const summaryBlob = new Blob([JSON.stringify(summary, null, 2)], { type: "application/json" });
+        await supabase.storage.from("mentoria-lab").upload(summaryPath, summaryBlob, { contentType: "application/json", upsert: true }).catch(() => {});
       }
     }
 
     setProcessing(false);
     setSelected(new Set());
     toast.success(`Análise concluída: ${success} sucesso(s), ${errors} erro(s).`);
-    // Scroll to insights
     setTimeout(() => {
       document.getElementById("mentoria-insights")?.scrollIntoView({ behavior: "smooth" });
     }, 300);
