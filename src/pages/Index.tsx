@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { formatDateTimeBR } from "@/lib/utils";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import UploadSection, { type UploadState } from "@/components/UploadSection";
 import AnalysisResult, { type AnalysisData } from "@/components/AnalysisResult";
