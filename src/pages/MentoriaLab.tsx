@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import {
   ArrowLeft, LogOut, Upload, FileText, Trash2, Eye, Play, Loader2,
   Search, X, Filter, Volume2, VolumeX, BookOpen, Archive, Package, Clock, CheckCircle2, AlertTriangle,
-  ChevronLeft, ChevronRight, Info, CalendarIcon
+  ChevronLeft, ChevronRight, Info, CalendarIcon, BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -105,6 +105,7 @@ const MentoriaLab = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showAnalyzeWarning, setShowAnalyzeWarning] = useState(false);
   const [mentoriaFile, setMentoriaFile] = useState<LabFile | null>(null);
+  const [showCharts, setShowCharts] = useState(false);
 
   // Filters
   const [filterAtendente, setFilterAtendente] = useState("todos");
@@ -1175,9 +1176,41 @@ const MentoriaLab = () => {
               </div>
             )}
 
-            {/* Charts — evolution graphs (filtered) */}
-            {filteredFiles.some((f) => f.status === "analisado") && (
-              <MentoriaCharts files={filteredFiles} />
+            {/* Charts card */}
+            {filteredFiles.some((f) => f.status === "analisado") && !showCharts && (
+              <Card
+                className="p-5 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group"
+                onClick={() => setShowCharts(true)}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                    <BarChart3 className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-bold text-foreground mb-0.5">Ver Gráficos</h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Evolução de notas, performance por atendente e volume de auditorias.
+                    </p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                </div>
+              </Card>
+            )}
+
+            {/* Charts section (expandable) */}
+            {showCharts && filteredFiles.some((f) => f.status === "analisado") && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-primary" />
+                    Gráficos de Evolução
+                  </h3>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => setShowCharts(false)}>
+                    <X className="h-3 w-3" /> Fechar
+                  </Button>
+                </div>
+                <MentoriaCharts files={filteredFiles} />
+              </div>
             )}
 
             {/* Insights do lote - seção secundária colapsável (filtered) */}
