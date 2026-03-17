@@ -7,14 +7,35 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
+import logoSymbol from "@/assets/logo-symbol.png";
 import type { SpcQueryResult } from "./CreditQuerySection";
 
 // ---------- Banda Turbo policy ----------
 interface PolicyResult {
   faixa: string;
+  regra: string;
   valor: number;
   justificativa: string;
-  documentacao: string | null;
+  documentacao: string[];
+}
+
+const DOCS_BANDA_TURBO = [
+  "CPF ou CNH",
+  "Comprovante de endereço em nome do contratante",
+  "Contrato de aluguel com mínimo de 12 meses e reconhecimento",
+  "Último boleto pago do provedor atual, se houver",
+];
+
+function gerarMotivoRisco(r: SpcQueryResult): string {
+  const parts: string[] = [];
+  if (r.registroSpc > 0) parts.push(`${r.registroSpc} registro(s) SPC`);
+  if (r.pendenciasSerasa > 0) parts.push(`${r.pendenciasSerasa} pendência(s) Serasa`);
+  if (r.protestos > 0) parts.push(`${r.protestos} protesto(s)`);
+  if (r.chequesSemFundo > 0) parts.push(`${r.chequesSemFundo} cheque(s) sem fundo`);
+  if (r.valorTotalPendencias > 0)
+    parts.push(`valor total R$ ${r.valorTotalPendencias.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`);
+  if (parts.length === 0) return "Nenhuma restrição identificada nos bureaus consultados.";
+  return parts.join(", ") + ".";
 }
 
 function aplicarPoliticaBandaTurbo(r: SpcQueryResult): PolicyResult {
@@ -23,44 +44,49 @@ function aplicarPoliticaBandaTurbo(r: SpcQueryResult): PolicyResult {
   if (registroSpc === 0 && pendenciasSerasa === 0 && protestos === 0 && chequesSemFundo === 0) {
     return {
       faixa: "Isento",
+      regra: "Regra 01",
       valor: 0,
-      justificativa: "Cliente sem restrições em nenhum bureau de crédito. Enquadrado na Regra 01 — Isenção.",
-      documentacao: null,
+      justificativa: "Cliente sem restrições em nenhum bureau. Isenção de taxa.",
+      documentacao: DOCS_BANDA_TURBO.slice(0, 2),
     };
   }
 
   if (totalOcorrencias <= 2 && valorTotalPendencias <= 1000 && protestos === 0) {
     return {
       faixa: "R$ 100,00",
+      regra: "Regra 02",
       valor: 100,
-      justificativa: `Enquadrado na Regra 02 — Taxa R$100. ${totalOcorrencias} ocorrência(s) com valor total de R$ ${valorTotalPendencias.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}. Sem protesto.`,
-      documentacao: "Comprovante de residência atualizado (últimos 90 dias).",
+      justificativa: `${totalOcorrencias} ocorrência(s), valor R$ ${valorTotalPendencias.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}. Sem protesto.`,
+      documentacao: DOCS_BANDA_TURBO.slice(0, 3),
     };
   }
 
   if (totalOcorrencias <= 4 && valorTotalPendencias <= 3000) {
     return {
       faixa: "R$ 200,00",
+      regra: "Regra 03",
       valor: 200,
-      justificativa: `Enquadrado na Regra 03 — Taxa R$200. ${totalOcorrencias} ocorrência(s), valor total R$ ${valorTotalPendencias.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}.${protestos > 0 ? ` ${protestos} protesto(s) identificado(s).` : ""}`,
-      documentacao: "Comprovante de residência atualizado e documento de identidade com foto.",
+      justificativa: `${totalOcorrencias} ocorrência(s), valor R$ ${valorTotalPendencias.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}.${protestos > 0 ? ` ${protestos} protesto(s).` : ""}`,
+      documentacao: DOCS_BANDA_TURBO.slice(0, 3),
     };
   }
 
   if (totalOcorrencias > 4 || valorTotalPendencias > 3000) {
     return {
       faixa: "R$ 300,00",
+      regra: "Regra 04",
       valor: 300,
-      justificativa: `Enquadrado na Regra 04 — Taxa R$300. ${totalOcorrencias} ocorrência(s), valor total R$ ${valorTotalPendencias.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}.${protestos > 0 ? ` ${protestos} protesto(s).` : ""}`,
-      documentacao: "Comprovante de residência atualizado, documento de identidade com foto e comprovante de renda.",
+      justificativa: `${totalOcorrencias} ocorrência(s), valor R$ ${valorTotalPendencias.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}.${protestos > 0 ? ` ${protestos} protesto(s).` : ""}`,
+      documentacao: DOCS_BANDA_TURBO,
     };
   }
 
   return {
     faixa: "R$ 200,00",
+    regra: "Regra 03",
     valor: 200,
     justificativa: "Enquadramento por análise complementar.",
-    documentacao: "Comprovante de residência atualizado e documento de identidade com foto.",
+    documentacao: DOCS_BANDA_TURBO.slice(0, 3),
   };
 }
 
@@ -104,41 +130,47 @@ function gerarParecerPdf(r: SpcQueryResult, policy: PolicyResult) {
   };
   const gap = (g = 4) => { y += g; };
 
-  addText("RADAR INSIGHT", 16, true); gap(2);
-  addText("Parecer de Análise de Crédito — Banda Turbo", 12, true); gap(8);
+  // Logo placeholder — draw "R" icon
+  doc.setFillColor(35, 134, 206);
+  doc.roundedRect(margin, y - 5, 10, 10, 2, 2, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.text("R", margin + 3.5, y + 1.5);
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("Parecer de Crédito — Radar Insight", margin + 13, y + 1);
+  y += 12;
+  gap(4);
 
   addText("DADOS DO CLIENTE", 11, true); gap(3);
   addText(`Nome: ${r.nome}`, 10);
   addText(`${r.tipo}: ${r.formatted}`, 10);
-  addText(`Situação: ${r.situacaoCpf}`, 10);
   addText(`Data da consulta: ${r.dataConsulta}`, 10);
+  addText(`Situação: ${r.situacaoCpf}`, 10);
   gap(6);
 
   addText("RESUMO DAS OCORRÊNCIAS", 11, true); gap(3);
-  addText(`Registros SPC: ${r.registroSpc}`, 10);
-  addText(`Pendências Serasa: ${r.pendenciasSerasa}`, 10);
-  addText(`Protestos: ${r.protestos}`, 10);
-  addText(`Cheques sem fundo: ${r.chequesSemFundo}`, 10);
+  addText(`SPC: ${r.registroSpc} | Serasa: ${r.pendenciasSerasa} | Protestos: ${r.protestos} | Cheques: ${r.chequesSemFundo}`, 10);
   addText(`Total de ocorrências: ${r.totalOcorrencias}`, 10);
   addText(`Valor total: R$ ${r.valorTotalPendencias.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, 10);
   gap(6);
 
   addText("CLASSIFICAÇÃO DE RISCO", 11, true); gap(3);
-  addText(r.classificacaoRisco, 10, true);
+  addText(`${r.classificacaoRisco} — ${gerarMotivoRisco(r)}`, 10);
   gap(6);
 
   addText("ENQUADRAMENTO — POLÍTICA BANDA TURBO", 11, true); gap(3);
-  addText(`Faixa: ${policy.faixa}`, 10, true);
-  gap(3);
-  addText("Justificativa:", 10, true);
+  addText(`${policy.regra} — ${policy.faixa}`, 10, true);
   addText(policy.justificativa, 10);
-  gap(4);
+  gap(6);
 
-  if (policy.documentacao) {
-    addText("Documentação obrigatória:", 10, true);
-    addText(policy.documentacao, 10);
-    gap(6);
-  }
+  addText("DOCUMENTOS ACEITOS PARA CONTRATAÇÃO", 11, true); gap(3);
+  policy.documentacao.forEach((doc_item, i) => {
+    addText(`${i + 1}. ${doc_item}`, 10);
+  });
+  gap(8);
 
   addText("---", 8);
   addText("Documento gerado automaticamente pelo Radar Insight.", 8);
@@ -149,6 +181,7 @@ function gerarParecerPdf(r: SpcQueryResult, policy: PolicyResult) {
 
 // ---------- Copy summary ----------
 function copiarResumo(r: SpcQueryResult, policy: PolicyResult) {
+  const motivo = gerarMotivoRisco(r);
   const text = [
     `📋 Parecer de Crédito — Radar Insight`,
     ``,
@@ -158,12 +191,14 @@ function copiarResumo(r: SpcQueryResult, policy: PolicyResult) {
     ``,
     `📊 SPC: ${r.registroSpc} | Serasa: ${r.pendenciasSerasa} | Protestos: ${r.protestos} | Cheques: ${r.chequesSemFundo}`,
     `💰 Valor total: R$ ${r.valorTotalPendencias.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
-    `⚡ Risco: ${r.classificacaoRisco}`,
     ``,
-    `🏷️ Enquadramento: ${policy.faixa}`,
-    `${policy.justificativa}`,
-    policy.documentacao ? `📎 Docs: ${policy.documentacao}` : "",
-  ].filter(Boolean).join("\n");
+    `⚡ Risco: ${r.classificacaoRisco} — ${motivo}`,
+    ``,
+    `🏷️ Enquadramento: ${policy.regra} — ${policy.faixa}`,
+    ``,
+    `📎 Docs aceitos:`,
+    ...policy.documentacao.map((d) => `- ${d}`),
+  ].join("\n");
 
   navigator.clipboard.writeText(text);
   toast.success("Resumo copiado para a área de transferência");
@@ -191,31 +226,48 @@ const CreditQueryResult = ({ data }: Props) => {
 
   const policy = aplicarPoliticaBandaTurbo(data);
   const colors = faixaColors(policy.faixa);
+  const motivo = gerarMotivoRisco(data);
 
   return (
     <Card className="p-0 animate-in fade-in duration-300 overflow-hidden">
+      {/* ── Header with logo ── */}
+      <div className="flex items-center gap-2 px-5 pt-4 pb-2">
+        <img src={logoSymbol} alt="Radar Insight" className="h-6 w-6 rounded object-contain" />
+        <p className="text-xs font-semibold text-muted-foreground tracking-wide">Parecer de Crédito — Radar Insight</p>
+      </div>
+
       {/* ── 1. Enquadramento Banda Turbo (hero) ── */}
-      <div className={`${colors.bg} border-b-2 ${colors.border} px-5 py-4`}>
+      <div className={`${colors.bg} border-y ${colors.border} px-5 py-4`}>
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">
           Enquadramento — Política Banda Turbo
         </p>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Shield className={`h-8 w-8 ${colors.text}`} />
-            <span className={`text-2xl font-extrabold tracking-tight ${colors.text}`}>{policy.faixa}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {riscoIcon(data.classificacaoRisco)}
-            <Badge variant={riscoBadgeVariant(data.classificacaoRisco)} className="text-xs">
-              {data.classificacaoRisco}
-            </Badge>
+            <div>
+              <span className={`text-2xl font-extrabold tracking-tight ${colors.text}`}>{policy.faixa}</span>
+              <p className="text-[11px] text-muted-foreground font-medium">{policy.regra}</p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* ── Body ── */}
       <div className="px-5 py-4 space-y-4">
-        {/* ── 2. Dados do cliente ── */}
+        {/* ── 2. Classificação de risco + motivo ── */}
+        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/40 border border-border">
+          {riscoIcon(data.classificacaoRisco)}
+          <div>
+            <div className="flex items-center gap-2">
+              <Badge variant={riscoBadgeVariant(data.classificacaoRisco)} className="text-xs">
+                {data.classificacaoRisco}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{motivo}</p>
+          </div>
+        </div>
+
+        {/* ── 3. Dados do cliente ── */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-3">
           <InfoRow icon={<User className="h-4 w-4 text-primary" />} label="Nome" value={data.nome} />
           <InfoRow icon={<CreditCard className="h-4 w-4 text-primary" />} label={data.tipo} value={data.formatted} mono />
@@ -228,7 +280,7 @@ const CreditQueryResult = ({ data }: Props) => {
           </div>
         </div>
 
-        {/* ── 3. Situação de crédito ── */}
+        {/* ── 4. Ocorrências ── */}
         <div>
           <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide mb-2">Ocorrências</p>
           <div className="grid grid-cols-4 gap-2">
@@ -246,7 +298,7 @@ const CreditQueryResult = ({ data }: Props) => {
           </div>
         </div>
 
-        {/* ── 4. Resumo financeiro ── */}
+        {/* ── 5. Resumo financeiro ── */}
         <div className="grid grid-cols-2 gap-2">
           <div className="p-3 rounded-lg bg-muted/50 border border-border">
             <p className="text-[10px] text-muted-foreground font-medium uppercase">Total ocorrências</p>
@@ -260,17 +312,18 @@ const CreditQueryResult = ({ data }: Props) => {
           </div>
         </div>
 
-        {/* ── 5. Justificativa ── */}
-        <Section icon={<FileText className="h-4 w-4 text-primary" />} label="Justificativa">
-          <p className="text-sm text-foreground leading-relaxed">{policy.justificativa}</p>
-        </Section>
-
-        {/* ── 6. Documentação obrigatória ── */}
-        {policy.documentacao && (
-          <Section icon={<AlertTriangle className="h-4 w-4 text-warning" />} label="Documentação obrigatória">
-            <p className="text-sm text-foreground leading-relaxed">{policy.documentacao}</p>
-          </Section>
-        )}
+        {/* ── 6. Documentos aceitos ── */}
+        <div className="border-t border-border pt-3">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText className="h-4 w-4 text-primary" />
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Documentos aceitos para contratação</p>
+          </div>
+          <ul className="space-y-1 pl-6">
+            {policy.documentacao.map((doc, i) => (
+              <li key={i} className="text-sm text-foreground list-disc">{doc}</li>
+            ))}
+          </ul>
+        </div>
 
         {/* ── 7. Botões ── */}
         <div className="flex gap-2 pt-2 border-t border-border">
@@ -298,18 +351,6 @@ function InfoRow({ icon, label, value, mono }: { icon: React.ReactNode; label: s
         <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
         <p className={`text-sm font-semibold truncate ${mono ? "font-mono" : ""}`}>{value}</p>
       </div>
-    </div>
-  );
-}
-
-function Section({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
-  return (
-    <div className="border-t border-border pt-3">
-      <div className="flex items-center gap-2 mb-1">
-        {icon}
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
-      </div>
-      {children}
     </div>
   );
 }
