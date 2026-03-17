@@ -39,6 +39,9 @@ interface LabFile {
   data?: string;
   canal?: string;
   hasAudio?: boolean;
+  batchId?: string;
+  batchFileId?: string;
+  storagePath?: string;
 }
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
