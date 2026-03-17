@@ -1186,7 +1186,7 @@ const MentoriaLab = () => {
                 <summary className="flex items-center gap-2 cursor-pointer select-none py-3 px-4 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors">
                   <Info className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium text-muted-foreground">Resumo geral do lote</span>
-                  <span className="text-xs text-muted-foreground ml-auto">Clique para expandir</span>
+                  
                 </summary>
                 <div className="mt-3">
                   <MentoriaInsights files={filteredFiles} />
