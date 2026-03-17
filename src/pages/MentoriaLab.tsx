@@ -560,6 +560,11 @@ const MentoriaLab = () => {
                 </table>
               </div>
             </Card>
+
+            {/* Insights da Mentoria - appears after analyses */}
+            {files.some((f) => f.status === "analisado") && (
+              <MentoriaInsights files={files} />
+            )}
           </>
         )}
 
