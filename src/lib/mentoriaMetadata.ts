@@ -89,19 +89,41 @@ const BOT_NAMES = new Set([
   "assistente virtual", "atendimento automático", "chatbot",
 ]);
 
+/** Institutional / non-person terms to always exclude */
+const INSTITUTIONAL_TERMS = new Set([
+  "protocolo", "cliente", "sistema", "atendente", "agente", "operador",
+  "informação", "informacao", "aviso", "nota", "observação", "observacao",
+]);
+
+/** Regex for company-like names (contains Internet, Telecom, LTDA, etc.) */
+const COMPANY_PATTERN = /\b(internet|telecom|telecomunica|ltda|s\.?a\.?|eireli|me\b|fibra|provedor|banda\s*larga|serviços|servicos|tecnologia|soluções|solucoes|group|corp|inc)\b/i;
+
 function isBot(name: string): boolean {
   const lower = name.toLowerCase().trim();
   return BOT_NAMES.has(lower) || /^(bot|sistema|robô|robo)\b/i.test(lower);
 }
 
+function isInstitutional(name: string): boolean {
+  const lower = name.toLowerCase().trim();
+  // Single-word institutional terms
+  if (INSTITUTIONAL_TERMS.has(lower)) return true;
+  // Company-like names
+  if (COMPANY_PATTERN.test(lower)) return true;
+  return false;
+}
+
 function isLikelyPersonName(name: string): boolean {
   const trimmed = name.trim();
-  // Must have at least 2 words (first + last name) or be a single long word
-  if (trimmed.length < 3) return false;
+  // Must have at least 2 words (first + last name)
+  const words = trimmed.split(/\s+/);
+  if (words.length < 2) return false;
+  if (trimmed.length < 5) return false;
   // No URLs, emails, numbers-only
   if (/[@:\/\d]{3,}/.test(trimmed)) return false;
   // Should mostly be letters and spaces
   if (!/^[A-Za-zÀ-ÿ\s'.]+$/.test(trimmed)) return false;
+  // Reject institutional/company names
+  if (isInstitutional(trimmed)) return false;
   return true;
 }
 
