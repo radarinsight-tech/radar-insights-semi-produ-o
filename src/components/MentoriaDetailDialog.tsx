@@ -484,29 +484,46 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                         {items.map((c) => {
                           const badge = resultLabel(c.resultado);
                           const excerpt = findRelevantExcerpt(rawText, c.explicacao);
+                          const isCritical = c.pesoMaximo >= 10;
+                          const rowBg =
+                            c.resultado === "SIM"
+                              ? isCritical ? "bg-accent/10 border border-accent/25 rounded-lg" : "bg-accent/5 rounded-lg"
+                              : c.resultado === "NÃO"
+                              ? isCritical ? "bg-destructive/10 border border-destructive/25 rounded-lg" : "bg-destructive/5 rounded-lg"
+                              : "";
                           return (
-                            <div key={c.numero} className="relative pl-6 py-3 group">
+                            <div key={c.numero} className={`relative pl-6 py-3 group ${rowBg} ${rowBg ? "px-4 my-1" : ""}`}>
                               {/* Dot on timeline */}
-                              <div className={`absolute left-[-5px] top-[18px] w-2 h-2 rounded-full ${
+                              <div className={`absolute ${rowBg ? "left-[11px]" : "left-[-5px]"} top-[18px] w-2.5 h-2.5 rounded-full ring-2 ring-background ${
                                 c.resultado === "SIM" ? "bg-accent" :
                                 c.resultado === "NÃO" ? "bg-destructive" : "bg-muted-foreground/40"
                               }`} />
 
                               {/* Question + badge + pts */}
                               <div className="flex items-baseline gap-2 flex-wrap">
-                                <span className="text-[13px] font-semibold text-foreground leading-snug">
+                                <span className={`text-[13px] font-semibold leading-snug ${
+                                  c.resultado === "SIM" ? "text-accent-foreground" :
+                                  c.resultado === "NÃO" ? "text-destructive-foreground" : "text-foreground"
+                                }`}>
                                   {c.numero}. {c.nome}
                                 </span>
-                                <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${badge.cls}`}>
+                                <Badge variant="outline" className={`text-[10px] px-2 py-0.5 border font-extrabold ${badge.cls}`}>
                                   {badge.text}
                                 </Badge>
+                                {isCritical && c.resultado !== "FORA DO ESCOPO" && (
+                                  <Badge className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-0 font-bold">
+                                    CRÍTICO
+                                  </Badge>
+                                )}
                                 <span className="text-[10px] text-muted-foreground font-semibold ml-auto shrink-0 tabular-nums">
                                   {c.pontosObtidos}/{c.pesoMaximo} pts
                                 </span>
                               </div>
 
                               {/* Justification */}
-                              <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed pl-0.5">
+                              <p className={`text-xs mt-1.5 leading-relaxed pl-0.5 ${
+                                c.resultado === "NÃO" ? "text-destructive/80 font-medium" : "text-muted-foreground"
+                              }`}>
                                 {c.explicacao}
                               </p>
 
@@ -514,8 +531,8 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                               {excerpt && (
                                 <div className={`mt-2 rounded-md px-3 py-2 text-[11px] italic border-l-[3px] ${
                                   c.resultado === "SIM"
-                                    ? "bg-accent/5 border-accent/40 text-foreground/70"
-                                    : "bg-destructive/5 border-destructive/40 text-foreground/70"
+                                    ? "bg-accent/10 border-accent/50 text-accent-foreground/80"
+                                    : "bg-destructive/10 border-destructive/50 text-destructive-foreground/80"
                                 }`}>
                                   <MessageSquareQuote className="h-3 w-3 inline mr-1.5 opacity-50" />
                                   "{excerpt}"
