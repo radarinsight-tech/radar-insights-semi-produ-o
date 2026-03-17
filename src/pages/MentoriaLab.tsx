@@ -497,9 +497,9 @@ const MentoriaLab = () => {
         const { data, error } = await supabase.functions.invoke("analyze-attendance", { body: { text } });
 
         if (error || data?.error) {
-          setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: data?.error || "Erro na análise" } : f)));
+          setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Ocorreu uma falha ao analisar este atendimento." } : f)));
           if (labFile.batchFileId) {
-            await supabase.from("mentoria_batch_files").update({ status: "error", error_message: data?.error || "Erro na análise" } as any).eq("id", labFile.batchFileId);
+            await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha na análise" } as any).eq("id", labFile.batchFileId);
           }
           errors++;
           continue;
