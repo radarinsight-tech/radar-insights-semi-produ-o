@@ -64,7 +64,7 @@ const MentoriaCharts = ({ files }: MentoriaChartsProps) => {
   const scoreEvolution = useMemo(() => {
     const items = analyzed.map(f => {
       const date = f.analyzedAt || parseDate(f.result?.data || f.data);
-      return { date, nota: f.result!.notaFinal! };
+      return { date, nota: notaToScale10(f.result!.notaFinal!) };
     }).filter(i => i.date !== null) as { date: Date; nota: number }[];
 
     items.sort((a, b) => a.date.getTime() - b.date.getTime());
