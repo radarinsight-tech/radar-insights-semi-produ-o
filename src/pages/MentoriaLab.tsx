@@ -77,21 +77,7 @@ const statusConfig: Record<FileStatus, { label: string; color: string }> = {
   erro: { label: "Erro", color: "bg-destructive/15 text-destructive" },
 };
 
-/** Extract channel from text heuristics */
-function detectCanal(text: string): string {
-  const lower = text.toLowerCase();
-  if (lower.includes("whatsapp") || lower.includes("wpp")) return "WhatsApp";
-  if (lower.includes("telefone") || lower.includes("ligação") || lower.includes("chamada")) return "Telefone";
-  if (lower.includes("e-mail") || lower.includes("email")) return "E-mail";
-  if (lower.includes("chat")) return "Chat";
-  return "Não identificado";
-}
-
-/** Detect if audio references exist */
-function detectAudio(text: string): boolean {
-  const lower = text.toLowerCase();
-  return /\b(áudio|audio|gravação|gravacao|escuta|ligação|ligacao|chamada)\b/.test(lower);
-}
+import { extractAllMetadata, extractCanal, detectAudio } from "@/lib/mentoriaMetadata";
 
 const IMPORT_LIMIT = 1000;
 const IMPORT_RECOMMENDED = 500;
