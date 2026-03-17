@@ -336,7 +336,7 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
                   >
                     {isInsuficiente ? "Pendente" : bonus.classificacao}
                   </Badge>
-                  <span className={`text-sm font-bold ${isInsuficiente ? "text-muted-foreground" : at.media >= 70 ? "text-accent" : at.media >= 50 ? "text-warning" : "text-destructive"}`}>
+                  <span className={`text-sm font-bold ${isInsuficiente ? "text-muted-foreground" : media10 >= 7 ? "text-accent" : media10 >= 5 ? "text-warning" : "text-destructive"}`}>
                     {isInsuficiente ? "—" : formatBRL(bonus.valor)}
                   </span>
                 </div>
