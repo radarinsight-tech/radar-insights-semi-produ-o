@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { Search, ShieldAlert, AlertTriangle, User as UserIcon, Lock } from "lucide-react";
+import { Search, ShieldAlert, AlertTriangle, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export type ConsultaMode = "simulacao" | "producao";
 
@@ -25,66 +26,9 @@ export interface SpcQueryResult {
   classificacaoRisco: "Baixo risco" | "Médio risco" | "Alto risco";
   dataConsulta: string;
   modoConsulta: ConsultaMode;
-}
-
-// Placeholder for future real SPC integration
-export async function consultarSPCReal(cpf: string): Promise<SpcQueryResult | null> {
-  // TODO: Implement real SPC 643 API call
-  // This function will be called when mode is "producao"
-  console.warn("[SPC] consultarSPCReal called — integration not yet implemented for:", cpf);
-  return null;
-}
-
-
-function classificarRisco(spc: number, serasa: number, protestos: number, valor: number): SpcQueryResult["classificacaoRisco"] {
-  if (spc === 0 && serasa === 0 && protestos === 0) return "Baixo risco";
-  if (spc > 3 || valor > 3000) return "Alto risco";
-  return "Médio risco";
-}
-
-function generateMockResult(raw: string, nomeCliente?: string): Omit<SpcQueryResult, "modoConsulta"> {
-  const digits = raw.replace(/\D/g, "");
-  const isCnpj = digits.length === 14;
-  const seed = digits.split("").reduce((a, b) => a + Number(b), 0);
-
-  const formatted = isCnpj
-    ? `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`
-    : `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
-
-  const now = new Date().toLocaleString("pt-BR");
-
-  // Known CPFs for demo
-  if (digits === "12345678900") {
-    return {
-      cpfCnpj: digits, formatted, tipo: "CPF", nome: nomeCliente || "Nome não informado",
-      situacaoCpf: "Regular", registroSpc: 0, pendenciasSerasa: 0, protestos: 0, chequesSemFundo: 0,
-      totalOcorrencias: 0, valorTotalPendencias: 0, classificacaoRisco: "Baixo risco", dataConsulta: now,
-    };
-  }
-  if (digits === "98765432100") {
-    return {
-      cpfCnpj: digits, formatted, tipo: "CPF", nome: nomeCliente || "Nome não informado",
-      situacaoCpf: "Com restrições", registroSpc: 4, pendenciasSerasa: 2, protestos: 1, chequesSemFundo: 1,
-      totalOcorrencias: 8, valorTotalPendencias: 4500, classificacaoRisco: "Alto risco", dataConsulta: now,
-    };
-  }
-
-  const registroSpc = seed % 7;
-  const pendenciasSerasa = seed % 4;
-  const protestos = seed % 3;
-  const chequesSemFundo = seed % 2;
-  const valorTotalPendencias = registroSpc === 0 && pendenciasSerasa === 0 ? 0 : ((seed * 127) % 8000) + 50;
-  const totalOcorrencias = registroSpc + pendenciasSerasa + protestos + chequesSemFundo;
-  const situacaoCpf = registroSpc === 0 && pendenciasSerasa === 0 ? "Regular" : "Com restrições";
-
-  return {
-    cpfCnpj: digits, formatted, tipo: isCnpj ? "CNPJ" : "CPF",
-    nome: nomeCliente || "Nome não informado", situacaoCpf,
-    registroSpc, pendenciasSerasa, protestos, chequesSemFundo,
-    totalOcorrencias, valorTotalPendencias,
-    classificacaoRisco: classificarRisco(registroSpc, pendenciasSerasa, protestos, valorTotalPendencias),
-    dataConsulta: now,
-  };
+  consultas30dias?: number;
+  consultas90dias?: number;
+  protocoloConsulta?: string;
 }
 
 interface Props {
@@ -107,30 +51,64 @@ const CreditQuerySection = ({ onResult, isLoading, setIsLoading, isAdmin }: Prop
   const handleConsultar = async () => {
     const digits = cpfCnpj.replace(/\D/g, "");
     if (digits.length !== 11 && digits.length !== 14) {
-      const { toast } = await import("sonner");
       toast.error("Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.");
       return;
     }
     setIsLoading(true);
 
-    if (mode === "producao") {
-      // Future real integration
-      const realResult = await consultarSPCReal(digits);
-      if (realResult) {
-        onResult({ ...realResult, modoConsulta: "producao" });
-      } else {
-        const { toast } = await import("sonner");
-        toast.error("Integração SPC real ainda não disponível. Use o modo simulação.");
-      }
-      setIsLoading(false);
-      return;
-    }
+    try {
+      const { data, error } = await supabase.functions.invoke("consult-spc", {
+        body: {
+          cpfCnpj: digits,
+          nome: nomeCliente.trim() || undefined,
+          mode: mode === "producao" ? "production" : "simulation",
+        },
+      });
 
-    // Simulate API call
-    await new Promise((r) => setTimeout(r, 1500));
-    const result = generateMockResult(digits, nomeCliente.trim() || undefined);
-    onResult({ ...result, modoConsulta: "simulacao" });
-    setIsLoading(false);
+      if (error) {
+        // Edge function returned an error
+        const msg = data?.error || error.message || "Erro na consulta.";
+        const code = data?.code;
+
+        if (code === "SPC_INTEGRATION_NOT_AVAILABLE") {
+          toast.error("Integração SPC real ainda não disponível. Use o modo simulação.");
+        } else if (code === "SPC_CREDENTIALS_MISSING") {
+          toast.error("Credenciais SPC não configuradas. Contate o administrador.");
+        } else {
+          toast.error(msg);
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // Map backend response to frontend model
+      const result: SpcQueryResult = {
+        cpfCnpj: data.cpf,
+        formatted: data.cpfFormatado,
+        tipo: data.tipo,
+        nome: data.nome,
+        situacaoCpf: data.situacaoCpf,
+        registroSpc: data.registroSpc,
+        pendenciasSerasa: data.pendenciasSerasa,
+        protestos: data.protestos,
+        chequesSemFundo: data.chequesSemFundo,
+        totalOcorrencias: data.totalOcorrencias,
+        valorTotalPendencias: data.valorTotalPendencias,
+        classificacaoRisco: data.classificacaoRisco,
+        dataConsulta: data.dataHoraConsulta,
+        modoConsulta: data.modoConsulta,
+        consultas30dias: data.consultas30dias,
+        consultas90dias: data.consultas90dias,
+        protocoloConsulta: data.protocoloConsulta,
+      };
+
+      onResult(result);
+    } catch (err) {
+      console.error("[CreditQuery] Error:", err);
+      toast.error("Erro inesperado ao consultar. Tente novamente.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isProducao = mode === "producao";
