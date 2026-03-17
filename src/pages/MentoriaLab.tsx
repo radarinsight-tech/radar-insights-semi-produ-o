@@ -727,64 +727,40 @@ const MentoriaLab = () => {
           </Card>
         )}
 
-        {/* Upload zone — enhanced empty state when no files */}
-        <Card className={`p-6 ${files.length === 0 ? "border-dashed border-2 border-border" : ""}`}>
-          {files.length === 0 ? (
-            <>
-              <div className="text-center mb-5">
-                <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                  <BookOpen className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="text-base font-bold text-foreground">Nenhum atendimento importado ainda</h3>
-                <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
-                  Envie arquivos em PDF ou um ZIP com vários atendimentos para começar a preparação da mentoria.
-                </p>
-              </div>
-              <div
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleDrop}
-                onClick={() => inputRef.current?.click()}
-                className="border-2 border-dashed border-primary/30 rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
-              >
-                <Upload className="h-8 w-8 mx-auto text-primary/60 mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  Arraste os PDFs aqui ou clique para selecionar <strong>múltiplos arquivos</strong>
-                </p>
-                <p className="text-xs text-muted-foreground mt-2 flex items-center justify-center gap-1">
-                  <Archive className="h-3.5 w-3.5" />
-                  Você também pode importar um arquivo ZIP com vários atendimentos.
-                </p>
-              </div>
-              <p className="text-xs text-muted-foreground mt-4 text-center">
-                Comece sua mentoria por aqui. Importe os atendimentos para filtrar, selecionar e gerar insights automaticamente.
-              </p>
-            </>
-          ) : (
-            <>
-              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <Upload className="h-4 w-4 text-primary" />
-                Importar atendimentos
-              </h3>
-              <div
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleDrop}
-                onClick={() => inputRef.current?.click()}
-                className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
-              >
-                <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  Arraste os PDFs aqui ou clique para selecionar <strong>múltiplos arquivos</strong>
-                </p>
-                <p className="text-xs text-muted-foreground mt-2 flex items-center justify-center gap-1">
-                  <Archive className="h-3.5 w-3.5" />
-                  Você também pode importar um arquivo ZIP com vários atendimentos.
-                </p>
-              </div>
-              <p className="text-xs text-muted-foreground mt-3 text-center">
-                O sistema organiza os arquivos para curadoria, leitura automática e análise em lote.
-              </p>
-            </>
-          )}
+        {/* Empty state hero */}
+        {files.length === 0 && (
+          <div className="text-center py-6">
+            <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <BookOpen className="h-7 w-7 text-primary" />
+            </div>
+            <h2 className="text-lg font-bold text-foreground">Comece sua mentoria</h2>
+            <p className="text-sm text-muted-foreground mt-1 max-w-lg mx-auto">
+              Importe atendimentos em PDF ou um arquivo ZIP para organizar, analisar e gerar insights automaticamente.
+            </p>
+          </div>
+        )}
+
+        {/* Upload block */}
+        <Card className="p-6">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Upload className="h-4 w-4 text-primary" />
+            Importação de arquivos
+          </h3>
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop}
+            onClick={() => inputRef.current?.click()}
+            className="border-2 border-dashed border-primary/30 rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+          >
+            <Upload className="h-8 w-8 mx-auto text-primary/60 mb-2" />
+            <p className="text-sm text-muted-foreground">
+              Arraste os PDFs aqui ou clique para selecionar <strong>múltiplos arquivos</strong>
+            </p>
+            <p className="text-xs text-muted-foreground mt-2 flex items-center justify-center gap-1">
+              <Archive className="h-3.5 w-3.5" />
+              Você também pode importar um arquivo ZIP com vários atendimentos.
+            </p>
+          </div>
           <input
             ref={inputRef}
             type="file"
@@ -794,6 +770,18 @@ const MentoriaLab = () => {
             className="hidden"
           />
         </Card>
+
+        {/* Atendimentos importados — empty or populated */}
+        {files.length === 0 ? (
+          <Card className="p-10 text-center">
+            <FileText className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+            <h3 className="text-sm font-semibold text-foreground mb-1">Atendimentos importados</h3>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+              Os atendimentos enviados aparecerão aqui para curadoria, seleção e análise.
+            </p>
+          </Card>
+        ) : (
+          <>
 
         {/* Filters + Actions */}
         {files.length > 0 && (
