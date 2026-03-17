@@ -13,34 +13,35 @@ interface ModuleCardProps {
   description: string;
   icon: React.ReactNode;
   onClick: () => void;
-  hoverColor: string;
+  accentClass: string;
   badge?: string;
 }
 
-const ModuleCard = ({ title, description, icon, onClick, hoverColor, badge }: ModuleCardProps) => (
-  <Card
-    className={`group relative p-5 cursor-pointer border border-border/60 hover:${hoverColor} transition-all hover:shadow-md flex-1 min-w-0`}
+const ModuleCard = ({ title, description, icon, onClick, accentClass, badge }: ModuleCardProps) => (
+  <button
+    type="button"
     onClick={onClick}
+    className={`group relative text-left rounded-xl border border-border/60 bg-card p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${accentClass}`}
   >
-    <div className="flex items-start gap-3">
+    <div className="flex items-start gap-3.5">
       {icon}
-      <div className="min-w-0">
-        <h4 className="text-sm font-bold text-foreground mb-0.5 leading-tight">{title}</h4>
-        <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
+      <div className="min-w-0 flex-1">
+        <h4 className="text-[13px] font-semibold text-foreground leading-snug">{title}</h4>
+        <p className="text-[11px] text-muted-foreground leading-relaxed mt-0.5">{description}</p>
       </div>
     </div>
-    {badge && <Badge variant="outline" className="absolute top-2.5 right-2.5 text-[10px] py-0">{badge}</Badge>}
-  </Card>
+    {badge && (
+      <Badge variant="outline" className="absolute top-2.5 right-2.5 text-[9px] px-1.5 py-0 font-medium">{badge}</Badge>
+    )}
+  </button>
 );
 
-const SectionHeader = ({ icon, title, subtitle, badge }: { icon: React.ReactNode; title: string; subtitle: string; badge?: React.ReactNode }) => (
-  <div className="flex items-center gap-2.5 mb-3">
+const SectionLabel = ({ icon, title, subtitle, badge }: { icon: React.ReactNode; title: string; subtitle: string; badge?: React.ReactNode }) => (
+  <div className="flex items-center gap-2 mb-2.5">
     {icon}
-    <div className="min-w-0">
-      <h3 className="text-sm font-bold text-foreground leading-tight">{title}</h3>
-      <p className="text-[11px] text-muted-foreground">{subtitle}</p>
-    </div>
-    {badge && <div className="ml-auto shrink-0">{badge}</div>}
+    <span className="text-xs font-semibold text-foreground tracking-wide uppercase">{title}</span>
+    <span className="hidden sm:inline text-[10px] text-muted-foreground font-normal normal-case">— {subtitle}</span>
+    {badge && <div className="ml-auto">{badge}</div>}
   </div>
 );
 
@@ -68,67 +69,67 @@ const Hub = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b border-border bg-card px-6 py-3">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={logoSymbol} alt="Radar Insight" className="h-7 w-7 rounded-lg object-contain" />
-            <h1 className="text-lg font-bold text-primary">Radar Insight</h1>
+      {/* Header */}
+      <header className="border-b border-border/60 bg-card/80 backdrop-blur-sm px-6 py-2.5 sticky top-0 z-30">
+        <div className="max-w-3xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <img src={logoSymbol} alt="Radar Insight" className="h-6 w-6 rounded-md object-contain" />
+            <span className="text-sm font-bold text-primary tracking-tight">Radar Insight</span>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-1" />
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-foreground" onClick={handleLogout}>
+            <LogOut className="h-3.5 w-3.5 mr-1" />
             Sair
           </Button>
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-6 py-8">
-        <div className="max-w-4xl w-full">
-          <div className="mb-5 flex justify-center">
-            <img src={logoFull} alt="Radar Insight" className="h-20 object-contain" />
+      {/* Main */}
+      <main className="flex-1 flex items-center justify-center px-4 py-6">
+        <div className="max-w-3xl w-full">
+          {/* Hero */}
+          <div className="text-center mb-7">
+            <img src={logoFull} alt="Radar Insight" className="h-14 mx-auto mb-3 object-contain" />
+            <h2 className="text-lg font-bold text-foreground">
+              Bem-vindo ao <span className="text-primary">Radar Insight</span>
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Selecione o ambiente que deseja acessar</p>
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-1 text-center">
-            Bem-vindo ao <span className="text-primary">Radar Insight</span>
-          </h2>
-          <p className="text-sm text-muted-foreground mb-8 text-center">
-            Selecione o ambiente que deseja acessar
-          </p>
-
           {noAccess ? (
-            <Card className="p-8 max-w-md mx-auto text-center space-y-4">
+            <Card className="p-8 max-w-sm mx-auto text-center space-y-3 shadow-sm">
               <div className="p-3 rounded-full bg-destructive/10 w-fit mx-auto">
-                <ShieldAlert className="h-8 w-8 text-destructive" />
+                <ShieldAlert className="h-7 w-7 text-destructive" />
               </div>
-              <h3 className="text-lg font-bold text-foreground">Sem permissão</h3>
-              <p className="text-sm text-muted-foreground">
-                Seu usuário ainda não possui acesso a nenhum módulo. Solicite ao administrador a liberação do acesso.
+              <h3 className="text-sm font-bold text-foreground">Sem permissão</h3>
+              <p className="text-xs text-muted-foreground">
+                Seu usuário ainda não possui acesso a nenhum módulo. Solicite ao administrador.
               </p>
             </Card>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-5">
               {/* ── Avaliação Oficial ── */}
               {showAuditoria && (
                 <section>
-                  <SectionHeader
-                    icon={<div className="p-1.5 rounded-md bg-blue-500/10"><ClipboardCheck className="h-4 w-4 text-blue-500" /></div>}
+                  <SectionLabel
+                    icon={<ClipboardCheck className="h-3.5 w-3.5 text-blue-500" />}
                     title="Avaliação Oficial"
-                    subtitle="Impacta nota, bônus e ranking mensal"
-                    badge={<Badge className="bg-blue-500/15 text-blue-600 border-blue-500/30 text-[10px] py-0">Oficial</Badge>}
+                    subtitle="Impacta nota, bônus e ranking"
+                    badge={<Badge className="bg-blue-500/10 text-blue-600 border-blue-200/60 text-[9px] px-1.5 py-0 font-medium">Oficial</Badge>}
                   />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <ModuleCard
                       title="Sucesso do Cliente"
                       description="Avaliação oficial de qualidade — gera nota, classificação e elegibilidade a bônus"
-                      icon={<div className="p-2.5 rounded-xl bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors shrink-0"><HeadsetIcon className="h-6 w-6 text-blue-500" /></div>}
+                      icon={<div className="p-2 rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors shrink-0"><HeadsetIcon className="h-5 w-5 text-blue-500" /></div>}
                       onClick={() => navigate("/attendance")}
-                      hoverColor="border-blue-400/50"
+                      accentClass="hover:border-blue-400/40"
                     />
                     <ModuleCard
                       title="Mentoria Lab"
-                      description="Análise em lote para preparação de mentorias — resultados compõem a avaliação oficial"
-                      icon={<div className="p-2.5 rounded-xl bg-teal-500/10 group-hover:bg-teal-500/20 transition-colors shrink-0"><FlaskConical className="h-6 w-6 text-teal-500" /></div>}
+                      description="Análise em lote para preparação de mentorias — compõe a avaliação oficial"
+                      icon={<div className="p-2 rounded-lg bg-teal-500/10 group-hover:bg-teal-500/20 transition-colors shrink-0"><FlaskConical className="h-5 w-5 text-teal-500" /></div>}
                       onClick={() => navigate("/mentoria-lab")}
-                      hoverColor="border-teal-400/50"
+                      accentClass="hover:border-teal-400/40"
                       badge="Beta"
                     />
                   </div>
@@ -138,50 +139,50 @@ const Hub = () => {
               {/* ── Desenvolvimento Preventivo ── */}
               {showAuditoria && (
                 <section>
-                  <SectionHeader
-                    icon={<div className="p-1.5 rounded-md bg-emerald-500/10"><Sprout className="h-4 w-4 text-emerald-500" /></div>}
+                  <SectionLabel
+                    icon={<Sprout className="h-3.5 w-3.5 text-emerald-500" />}
                     title="Desenvolvimento Preventivo"
-                    subtitle="Sem impacto em nota, bônus ou ranking — apenas desenvolvimento"
-                    badge={<Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 text-[10px] py-0">Não oficial</Badge>}
+                    subtitle="Sem impacto em nota ou bônus"
+                    badge={<Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200/60 text-[9px] px-1.5 py-0 font-medium">Não oficial</Badge>}
                   />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <ModuleCard
                       title="Mentoria Preventiva"
-                      description="Identifica oportunidades de melhoria antes que virem problemas — sem impacto em indicadores oficiais"
-                      icon={<div className="p-2.5 rounded-xl bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors shrink-0"><ShieldCheck className="h-6 w-6 text-emerald-500" /></div>}
+                      description="Identifica oportunidades de melhoria antes que virem problemas recorrentes"
+                      icon={<div className="p-2 rounded-lg bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors shrink-0"><ShieldCheck className="h-5 w-5 text-emerald-500" /></div>}
                       onClick={() => navigate("/mentoria-preventiva")}
-                      hoverColor="border-emerald-400/50"
+                      accentClass="hover:border-emerald-400/40"
                       badge="Beta"
                     />
                   </div>
                 </section>
               )}
 
-              {/* ── Crédito + Admin ── */}
+              {/* ── Outros ── */}
               {(showCredito || showAdmin) && (
                 <section>
-                  <SectionHeader
-                    icon={<div className="p-1.5 rounded-md bg-muted"><Users className="h-4 w-4 text-muted-foreground" /></div>}
+                  <SectionLabel
+                    icon={<CreditCard className="h-3.5 w-3.5 text-muted-foreground" />}
                     title="Outros Módulos"
-                    subtitle="Crédito e administração do sistema"
+                    subtitle="Crédito e administração"
                   />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {showCredito && (
                       <ModuleCard
                         title="Análise de Crédito"
-                        description="Análise de CPF via consulta SPC/Serasa com parecer técnico automatizado"
-                        icon={<div className="p-2.5 rounded-xl bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors shrink-0"><CreditCard className="h-6 w-6 text-purple-500" /></div>}
+                        description="Consulta SPC/Serasa com parecer técnico automatizado"
+                        icon={<div className="p-2 rounded-lg bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors shrink-0"><CreditCard className="h-5 w-5 text-purple-500" /></div>}
                         onClick={() => navigate("/credit")}
-                        hoverColor="border-purple-400/50"
+                        accentClass="hover:border-purple-400/40"
                       />
                     )}
                     {showAdmin && (
                       <ModuleCard
                         title="Usuários e Permissões"
-                        description="Gerencie acessos, usuários e permissões com acesso total de administrador"
-                        icon={<div className="p-2.5 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors shrink-0"><Users className="h-6 w-6 text-primary" /></div>}
+                        description="Gerencie acessos e permissões do sistema"
+                        icon={<div className="p-2 rounded-lg bg-muted group-hover:bg-muted/80 transition-colors shrink-0"><Users className="h-5 w-5 text-muted-foreground" /></div>}
                         onClick={() => navigate("/users")}
-                        hoverColor="border-primary/50"
+                        accentClass="hover:border-border"
                       />
                     )}
                   </div>
@@ -191,8 +192,8 @@ const Hub = () => {
           )}
 
           {isAdmin && (
-            <p className="mt-5 text-xs text-muted-foreground text-center">
-              Seu perfil administrativo libera automaticamente todos os módulos do sistema.
+            <p className="mt-4 text-[10px] text-muted-foreground text-center">
+              Perfil administrativo — acesso liberado a todos os módulos
             </p>
           )}
         </div>
