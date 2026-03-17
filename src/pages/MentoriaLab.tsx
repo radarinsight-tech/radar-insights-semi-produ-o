@@ -434,25 +434,40 @@ const MentoriaLab = () => {
       if (filterCanal !== "todos" && f.canal !== filterCanal) return false;
       if (filterAudio === "com" && !f.hasAudio) return false;
       if (filterAudio === "sem" && f.hasAudio) return false;
-      if (filterPeriodo) {
-        if (f.data) {
-          const parts = f.data.split("/");
-          if (parts.length === 3) {
-            const ym = `${parts[2]}-${parts[1]}`;
-            if (ym !== filterPeriodo) return false;
-          }
-        } else {
-          return false;
+
+      // Period filter (attendance date)
+      if (filterPeriodoFrom || filterPeriodoTo) {
+        if (!f.data) return false;
+        const parts = f.data.split("/");
+        if (parts.length !== 3) return false;
+        const fileDate = new Date(+parts[2], +parts[1] - 1, +parts[0]);
+        if (filterPeriodoFrom && fileDate < filterPeriodoFrom) return false;
+        if (filterPeriodoTo) {
+          const endOfDay = new Date(filterPeriodoTo);
+          endOfDay.setHours(23, 59, 59, 999);
+          if (fileDate > endOfDay) return false;
         }
       }
+
+      // Audit date filter
+      if (filterAuditoriaFrom || filterAuditoriaTo) {
+        if (!f.analyzedAt) return false;
+        if (filterAuditoriaFrom && f.analyzedAt < filterAuditoriaFrom) return false;
+        if (filterAuditoriaTo) {
+          const endOfDay = new Date(filterAuditoriaTo);
+          endOfDay.setHours(23, 59, 59, 999);
+          if (f.analyzedAt > endOfDay) return false;
+        }
+      }
+
       return true;
     });
-  }, [files, searchTerm, filterAtendente, filterCanal, filterAudio, filterPeriodo]);
+  }, [files, searchTerm, filterAtendente, filterCanal, filterAudio, filterPeriodoFrom, filterPeriodoTo, filterAuditoriaFrom, filterAuditoriaTo]);
 
   // Reset page on filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterAtendente, filterCanal, filterAudio, filterPeriodo]);
+  }, [searchTerm, filterAtendente, filterCanal, filterAudio, filterPeriodoFrom, filterPeriodoTo, filterAuditoriaFrom, filterAuditoriaTo]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredFiles.length / PAGE_SIZE));
