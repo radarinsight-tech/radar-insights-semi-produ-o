@@ -665,13 +665,22 @@ const MentoriaLab = () => {
 
   const formatSize = (b: number) => b < 1024 ? `${b} B` : `${(b / 1024).toFixed(1)} KB`;
 
-  const counts = useMemo(() => ({
-    total: files.length,
-    pendente: files.filter((f) => f.status === "pendente").length,
-    lido: files.filter((f) => f.status === "lido").length,
-    analisado: files.filter((f) => f.status === "analisado").length,
-    erro: files.filter((f) => f.status === "erro").length,
-  }), [files]);
+  const counts = useMemo(() => {
+    const analisados = files.filter((f) => f.status === "analisado");
+    const atendentesSet = new Set(
+      analisados
+        .map((f) => (f.result?.atendente || f.atendente || "").trim().toLowerCase())
+        .filter(Boolean)
+    );
+    return {
+      total: files.length,
+      pendente: files.filter((f) => f.status === "pendente").length,
+      lido: files.filter((f) => f.status === "lido").length,
+      analisado: analisados.length,
+      erro: files.filter((f) => f.status === "erro").length,
+      atendentes: atendentesSet.size,
+    };
+  }, [files]);
 
   // Keep sideFile in sync with files state
   useEffect(() => {
@@ -731,12 +740,13 @@ const MentoriaLab = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
           {[
             { label: "Total", value: counts.total, color: "text-foreground" },
             { label: "Pendentes", value: counts.pendente, color: "text-muted-foreground" },
-            { label: "Lidos", value: counts.lido, color: "text-blue-600" },
+            { label: "Lidos", value: counts.lido, color: "text-primary" },
             { label: "Analisados", value: counts.analisado, color: "text-accent" },
+            { label: "Atendentes", value: counts.atendentes, color: "text-primary" },
             { label: "Erros", value: counts.erro, color: "text-destructive" },
           ].map((s) => (
             <Card key={s.label} className="p-3 text-center">
