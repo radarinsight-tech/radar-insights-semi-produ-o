@@ -43,14 +43,14 @@ function generateMockResult(raw: string, nomeCliente?: string): SpcQueryResult {
   // Known CPFs for demo
   if (digits === "12345678900") {
     return {
-      cpfCnpj: digits, formatted, tipo: "CPF", nome: nomeCliente || MOCK_NAMES[digits],
+      cpfCnpj: digits, formatted, tipo: "CPF", nome: nomeCliente || "Nome não informado",
       situacaoCpf: "Regular", registroSpc: 0, pendenciasSerasa: 0, protestos: 0, chequesSemFundo: 0,
       totalOcorrencias: 0, valorTotalPendencias: 0, classificacaoRisco: "Baixo risco", dataConsulta: now,
     };
   }
   if (digits === "98765432100") {
     return {
-      cpfCnpj: digits, formatted, tipo: "CPF", nome: nomeCliente || MOCK_NAMES[digits],
+      cpfCnpj: digits, formatted, tipo: "CPF", nome: nomeCliente || "Nome não informado",
       situacaoCpf: "Com restrições", registroSpc: 4, pendenciasSerasa: 2, protestos: 1, chequesSemFundo: 1,
       totalOcorrencias: 8, valorTotalPendencias: 4500, classificacaoRisco: "Alto risco", dataConsulta: now,
     };
