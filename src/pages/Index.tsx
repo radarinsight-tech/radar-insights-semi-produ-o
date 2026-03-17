@@ -435,9 +435,41 @@ const Index = () => {
         </div>
 
 
-        <ErrorBoundary fallbackTitle="Erro nos gráficos">
-          <ScoreEvolutionChart entries={filtered} />
-        </ErrorBoundary>
+        {/* Charts toggle card */}
+        {filtered.length >= 2 && !showCharts && (
+          <Card
+            className="p-4 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group"
+            onClick={() => setShowCharts(true)}
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                <BarChart3 className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-bold text-foreground">Ver Gráficos</h3>
+                <p className="text-xs text-muted-foreground">Evolução de notas e ranking de atendentes</p>
+              </div>
+              <Badge variant="outline" className="text-[10px]">{filtered.length} registros</Badge>
+            </div>
+          </Card>
+        )}
+
+        {showCharts && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-primary" />
+                Gráficos de Evolução
+              </h3>
+              <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => setShowCharts(false)}>
+                <X className="h-3.5 w-3.5" /> Fechar
+              </Button>
+            </div>
+            <ErrorBoundary fallbackTitle="Erro nos gráficos">
+              <ScoreEvolutionChart entries={filtered} />
+            </ErrorBoundary>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
           <div className="space-y-4">
