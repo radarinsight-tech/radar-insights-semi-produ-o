@@ -1,9 +1,9 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   User, CreditCard, DollarSign, Shield, FileText, Download, Copy, Clock,
-  AlertTriangle, CheckCircle2, XCircle, FileSearch
+  AlertTriangle, CheckCircle2, XCircle, FileSearch, Hash
 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
@@ -18,13 +18,8 @@ interface PolicyResult {
 }
 
 function aplicarPoliticaBandaTurbo(r: SpcQueryResult): PolicyResult {
-  // Regra especial — débito com provedor de internet
-  // In simulation we check if there's a naming pattern or SPC category hinting at "provedor"
-  // For now, this would be triggered by real data; skip in simulation unless explicitly flagged.
-
   const { registroSpc, pendenciasSerasa, protestos, chequesSemFundo, valorTotalPendencias, totalOcorrencias } = r;
 
-  // Regra 01 — Isenção: sem negativação
   if (registroSpc === 0 && pendenciasSerasa === 0 && protestos === 0 && chequesSemFundo === 0) {
     return {
       faixa: "Isento",
@@ -34,7 +29,6 @@ function aplicarPoliticaBandaTurbo(r: SpcQueryResult): PolicyResult {
     };
   }
 
-  // Regra 02 — R$100: até 2 registros, valor ≤ R$1.000, sem protesto
   if (totalOcorrencias <= 2 && valorTotalPendencias <= 1000 && protestos === 0) {
     return {
       faixa: "R$ 100,00",
@@ -44,7 +38,6 @@ function aplicarPoliticaBandaTurbo(r: SpcQueryResult): PolicyResult {
     };
   }
 
-  // Regra 03 — R$200: até 4 registros, valor ≤ R$3.000
   if (totalOcorrencias <= 4 && valorTotalPendencias <= 3000) {
     return {
       faixa: "R$ 200,00",
@@ -54,7 +47,6 @@ function aplicarPoliticaBandaTurbo(r: SpcQueryResult): PolicyResult {
     };
   }
 
-  // Regra 04 — R$300: acima de 4 registros ou valor > R$3.000
   if (totalOcorrencias > 4 || valorTotalPendencias > 3000) {
     return {
       faixa: "R$ 300,00",
@@ -64,7 +56,6 @@ function aplicarPoliticaBandaTurbo(r: SpcQueryResult): PolicyResult {
     };
   }
 
-  // Fallback
   return {
     faixa: "R$ 200,00",
     valor: 200,
@@ -74,18 +65,24 @@ function aplicarPoliticaBandaTurbo(r: SpcQueryResult): PolicyResult {
 }
 
 function faixaColors(faixa: string) {
-  if (faixa === "Isento") return { bg: "bg-accent/10", border: "border-accent", text: "text-accent" };
-  if (faixa === "R$ 100,00") return { bg: "bg-warning/10", border: "border-warning", text: "text-warning" };
-  if (faixa === "R$ 200,00") return { bg: "bg-primary/10", border: "border-primary", text: "text-primary" };
-  if (faixa === "R$ 300,00") return { bg: "bg-destructive/10", border: "border-destructive", text: "text-destructive" };
-  if (faixa === "R$ 1.000,00") return { bg: "bg-destructive/10", border: "border-destructive", text: "text-destructive" };
-  return { bg: "bg-secondary", border: "border-border", text: "text-foreground" };
+  if (faixa === "Isento") return { bg: "bg-accent/10", border: "border-accent", text: "text-accent", label: "ISENTO" };
+  if (faixa === "R$ 100,00") return { bg: "bg-warning/10", border: "border-warning", text: "text-warning", label: "R$ 100,00" };
+  if (faixa === "R$ 200,00") return { bg: "bg-primary/10", border: "border-primary", text: "text-primary", label: "R$ 200,00" };
+  if (faixa === "R$ 300,00") return { bg: "bg-destructive/10", border: "border-destructive", text: "text-destructive", label: "R$ 300,00" };
+  if (faixa === "R$ 1.000,00") return { bg: "bg-destructive/10", border: "border-destructive", text: "text-destructive", label: "R$ 1.000,00" };
+  return { bg: "bg-secondary", border: "border-border", text: "text-foreground", label: faixa };
 }
 
 function riscoIcon(risco: string) {
   if (risco === "Baixo risco") return <CheckCircle2 className="h-5 w-5 text-accent" />;
   if (risco === "Médio risco") return <AlertTriangle className="h-5 w-5 text-warning" />;
   return <XCircle className="h-5 w-5 text-destructive" />;
+}
+
+function riscoBadgeVariant(risco: string): "default" | "secondary" | "destructive" {
+  if (risco === "Baixo risco") return "default";
+  if (risco === "Médio risco") return "secondary";
+  return "destructive";
 }
 
 // ---------- PDF generation ----------
@@ -108,7 +105,7 @@ function gerarParecerPdf(r: SpcQueryResult, policy: PolicyResult) {
   const gap = (g = 4) => { y += g; };
 
   addText("RADAR INSIGHT", 16, true); gap(2);
-  addText("Parecer de Análise de Crédito", 12, true); gap(8);
+  addText("Parecer de Análise de Crédito — Banda Turbo", 12, true); gap(8);
 
   addText("DADOS DO CLIENTE", 11, true); gap(3);
   addText(`Nome: ${r.nome}`, 10);
@@ -161,6 +158,7 @@ function copiarResumo(r: SpcQueryResult, policy: PolicyResult) {
     ``,
     `📊 SPC: ${r.registroSpc} | Serasa: ${r.pendenciasSerasa} | Protestos: ${r.protestos} | Cheques: ${r.chequesSemFundo}`,
     `💰 Valor total: R$ ${r.valorTotalPendencias.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+    `⚡ Risco: ${r.classificacaoRisco}`,
     ``,
     `🏷️ Enquadramento: ${policy.faixa}`,
     `${policy.justificativa}`,
@@ -183,7 +181,7 @@ const CreditQueryResult = ({ data }: Props) => {
         <div className="p-3 rounded-full bg-primary/10 mb-4">
           <FileSearch className="h-8 w-8 text-primary/60" />
         </div>
-        <p className="text-sm font-semibold text-foreground mb-2">Resultado da Análise de Crédito</p>
+        <p className="text-sm font-semibold text-foreground mb-2">Parecer de Crédito</p>
         <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
           Informe o CPF ou CNPJ do cliente e clique em "Consultar SPC" para gerar o parecer com o enquadramento pela política Banda Turbo.
         </p>
@@ -195,122 +193,126 @@ const CreditQueryResult = ({ data }: Props) => {
   const colors = faixaColors(policy.faixa);
 
   return (
-    <Card className="p-6 animate-in fade-in duration-300">
-      <h2 className="text-lg font-bold text-primary mb-4">Resultado da Análise de Crédito</h2>
-
-      {/* Policy decision highlight */}
-      <div className={`rounded-lg border-2 ${colors.border} ${colors.bg} p-4 mb-5`}>
+    <Card className="p-0 animate-in fade-in duration-300 overflow-hidden">
+      {/* ── 1. Enquadramento Banda Turbo (hero) ── */}
+      <div className={`${colors.bg} border-b-2 ${colors.border} px-5 py-4`}>
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+          Enquadramento — Política Banda Turbo
+        </p>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Shield className={`h-7 w-7 ${colors.text}`} />
-            <div>
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Enquadramento Banda Turbo</p>
-              <p className={`text-xl font-bold ${colors.text}`}>{policy.faixa}</p>
-            </div>
+            <Shield className={`h-8 w-8 ${colors.text}`} />
+            <span className={`text-2xl font-extrabold tracking-tight ${colors.text}`}>{policy.faixa}</span>
           </div>
           <div className="flex items-center gap-2">
             {riscoIcon(data.classificacaoRisco)}
-            <Badge variant={data.classificacaoRisco === "Baixo risco" ? "default" : data.classificacaoRisco === "Médio risco" ? "secondary" : "destructive"}>
+            <Badge variant={riscoBadgeVariant(data.classificacaoRisco)} className="text-xs">
               {data.classificacaoRisco}
             </Badge>
           </div>
         </div>
       </div>
 
-      {/* Client data */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="flex items-start gap-2">
-          <User className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+      {/* ── Body ── */}
+      <div className="px-5 py-4 space-y-4">
+        {/* ── 2. Dados do cliente ── */}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+          <InfoRow icon={<User className="h-4 w-4 text-primary" />} label="Nome" value={data.nome} />
+          <InfoRow icon={<CreditCard className="h-4 w-4 text-primary" />} label={data.tipo} value={data.formatted} mono />
+          <InfoRow icon={<Clock className="h-4 w-4 text-primary" />} label="Data / hora" value={data.dataConsulta} />
           <div>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Nome</p>
-            <p className="text-sm font-semibold">{data.nome}</p>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Situação</p>
+            <Badge variant={data.situacaoCpf === "Regular" ? "default" : "destructive"} className="mt-0.5 text-xs">
+              {data.situacaoCpf}
+            </Badge>
           </div>
         </div>
-        <div className="flex items-start gap-2">
-          <CreditCard className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-          <div>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">{data.tipo}</p>
-            <p className="text-sm font-mono font-semibold">{data.formatted}</p>
-          </div>
-        </div>
-        <div className="flex items-start gap-2">
-          <Clock className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-          <div>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Consulta</p>
-            <p className="text-xs font-medium">{data.dataConsulta}</p>
-          </div>
-        </div>
+
+        {/* ── 3. Situação de crédito ── */}
         <div>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Situação</p>
-          <Badge variant={data.situacaoCpf === "Regular" ? "default" : "destructive"} className="mt-0.5 text-xs">
-            {data.situacaoCpf}
-          </Badge>
-        </div>
-      </div>
-
-      {/* Credit situation */}
-      <div className="grid grid-cols-4 gap-2 mb-4">
-        {[
-          { label: "SPC", value: data.registroSpc },
-          { label: "Serasa", value: data.pendenciasSerasa },
-          { label: "Protestos", value: data.protestos },
-          { label: "Cheques", value: data.chequesSemFundo },
-        ].map((item) => (
-          <div key={item.label} className="text-center p-2 rounded-lg bg-muted/50">
-            <p className="text-[10px] text-muted-foreground font-medium">{item.label}</p>
-            <p className={`text-lg font-bold ${item.value > 0 ? "text-destructive" : "text-foreground"}`}>{item.value}</p>
+          <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide mb-2">Ocorrências</p>
+          <div className="grid grid-cols-4 gap-2">
+            {([
+              { label: "SPC", value: data.registroSpc },
+              { label: "Serasa", value: data.pendenciasSerasa },
+              { label: "Protestos", value: data.protestos },
+              { label: "Cheques", value: data.chequesSemFundo },
+            ] as const).map((item) => (
+              <div key={item.label} className="text-center p-2 rounded-lg bg-muted/50 border border-border">
+                <p className="text-[10px] text-muted-foreground font-medium">{item.label}</p>
+                <p className={`text-lg font-bold ${item.value > 0 ? "text-destructive" : "text-foreground"}`}>{item.value}</p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-
-      {/* Financial summary */}
-      <div className="grid grid-cols-2 gap-2 mb-4">
-        <div className="p-3 rounded-lg bg-muted/50">
-          <p className="text-[10px] text-muted-foreground font-medium uppercase">Total ocorrências</p>
-          <p className="text-xl font-bold text-foreground">{data.totalOcorrencias}</p>
         </div>
-        <div className="p-3 rounded-lg bg-muted/50">
-          <p className="text-[10px] text-muted-foreground font-medium uppercase">Valor total</p>
-          <p className={`text-xl font-bold ${data.valorTotalPendencias > 0 ? "text-destructive" : "text-foreground"}`}>
-            R$ {data.valorTotalPendencias.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-          </p>
-        </div>
-      </div>
 
-      {/* Justificativa */}
-      <div className="border-t border-border pt-3 mb-3">
-        <div className="flex items-center gap-2 mb-1">
-          <FileText className="h-4 w-4 text-primary" />
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Justificativa</p>
-        </div>
-        <p className="text-sm text-foreground leading-relaxed">{policy.justificativa}</p>
-      </div>
-
-      {/* Documentação */}
-      {policy.documentacao && (
-        <div className="border-t border-border pt-3 mb-4">
-          <div className="flex items-center gap-2 mb-1">
-            <AlertTriangle className="h-4 w-4 text-warning" />
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Documentação obrigatória</p>
+        {/* ── 4. Resumo financeiro ── */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="p-3 rounded-lg bg-muted/50 border border-border">
+            <p className="text-[10px] text-muted-foreground font-medium uppercase">Total ocorrências</p>
+            <p className="text-xl font-bold text-foreground">{data.totalOcorrencias}</p>
           </div>
-          <p className="text-sm text-foreground leading-relaxed">{policy.documentacao}</p>
+          <div className="p-3 rounded-lg bg-muted/50 border border-border">
+            <p className="text-[10px] text-muted-foreground font-medium uppercase">Valor total</p>
+            <p className={`text-xl font-bold ${data.valorTotalPendencias > 0 ? "text-destructive" : "text-foreground"}`}>
+              R$ {data.valorTotalPendencias.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+            </p>
+          </div>
         </div>
-      )}
 
-      {/* Action buttons */}
-      <div className="flex gap-2 border-t border-border pt-4">
-        <Button variant="outline" size="sm" className="flex-1" onClick={() => gerarParecerPdf(data, policy)}>
-          <Download className="h-4 w-4 mr-1" />
-          Baixar parecer
-        </Button>
-        <Button variant="outline" size="sm" className="flex-1" onClick={() => copiarResumo(data, policy)}>
-          <Copy className="h-4 w-4 mr-1" />
-          Copiar resumo
-        </Button>
+        {/* ── 5. Justificativa ── */}
+        <Section icon={<FileText className="h-4 w-4 text-primary" />} label="Justificativa">
+          <p className="text-sm text-foreground leading-relaxed">{policy.justificativa}</p>
+        </Section>
+
+        {/* ── 6. Documentação obrigatória ── */}
+        {policy.documentacao && (
+          <Section icon={<AlertTriangle className="h-4 w-4 text-warning" />} label="Documentação obrigatória">
+            <p className="text-sm text-foreground leading-relaxed">{policy.documentacao}</p>
+          </Section>
+        )}
+
+        {/* ── 7. Botões ── */}
+        <div className="flex gap-2 pt-2 border-t border-border">
+          <Button variant="outline" size="sm" className="flex-1" onClick={() => gerarParecerPdf(data, policy)}>
+            <Download className="h-4 w-4 mr-1" />
+            Baixar parecer
+          </Button>
+          <Button variant="outline" size="sm" className="flex-1" onClick={() => copiarResumo(data, policy)}>
+            <Copy className="h-4 w-4 mr-1" />
+            Copiar resumo
+          </Button>
+        </div>
       </div>
     </Card>
   );
 };
+
+// ── Helper sub-components ──
+
+function InfoRow({ icon, label, value, mono }: { icon: React.ReactNode; label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="mt-0.5 shrink-0">{icon}</span>
+      <div className="min-w-0">
+        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
+        <p className={`text-sm font-semibold truncate ${mono ? "font-mono" : ""}`}>{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function Section({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
+  return (
+    <div className="border-t border-border pt-3">
+      <div className="flex items-center gap-2 mb-1">
+        {icon}
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
+      </div>
+      {children}
+    </div>
+  );
+}
 
 export { aplicarPoliticaBandaTurbo };
 export default CreditQueryResult;

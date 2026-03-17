@@ -22,18 +22,6 @@ export interface SpcQueryResult {
   dataConsulta: string;
 }
 
-const MOCK_NAMES: Record<string, string> = {
-  "12345678900": "Maria Aparecida da Silva",
-  "98765432100": "José Carlos Ferreira",
-  "11222333000181": "Comércio Souza & Filhos LTDA",
-};
-
-function generateName(digits: string): string {
-  if (MOCK_NAMES[digits]) return MOCK_NAMES[digits];
-  const nomes = ["Ana Paula Oliveira", "Carlos Eduardo Santos", "Fernanda Lima Costa", "Roberto Almeida Neto", "Juliana Pereira Dias"];
-  const seed = digits.split("").reduce((a, b) => a + Number(b), 0);
-  return nomes[seed % nomes.length];
-}
 
 function classificarRisco(spc: number, serasa: number, protestos: number, valor: number): SpcQueryResult["classificacaoRisco"] {
   if (spc === 0 && serasa === 0 && protestos === 0) return "Baixo risco";
@@ -55,14 +43,14 @@ function generateMockResult(raw: string, nomeCliente?: string): SpcQueryResult {
   // Known CPFs for demo
   if (digits === "12345678900") {
     return {
-      cpfCnpj: digits, formatted, tipo: "CPF", nome: nomeCliente || MOCK_NAMES[digits],
+      cpfCnpj: digits, formatted, tipo: "CPF", nome: nomeCliente || "Nome não informado",
       situacaoCpf: "Regular", registroSpc: 0, pendenciasSerasa: 0, protestos: 0, chequesSemFundo: 0,
       totalOcorrencias: 0, valorTotalPendencias: 0, classificacaoRisco: "Baixo risco", dataConsulta: now,
     };
   }
   if (digits === "98765432100") {
     return {
-      cpfCnpj: digits, formatted, tipo: "CPF", nome: nomeCliente || MOCK_NAMES[digits],
+      cpfCnpj: digits, formatted, tipo: "CPF", nome: nomeCliente || "Nome não informado",
       situacaoCpf: "Com restrições", registroSpc: 4, pendenciasSerasa: 2, protestos: 1, chequesSemFundo: 1,
       totalOcorrencias: 8, valorTotalPendencias: 4500, classificacaoRisco: "Alto risco", dataConsulta: now,
     };
@@ -78,7 +66,7 @@ function generateMockResult(raw: string, nomeCliente?: string): SpcQueryResult {
 
   return {
     cpfCnpj: digits, formatted, tipo: isCnpj ? "CNPJ" : "CPF",
-    nome: nomeCliente || generateName(digits), situacaoCpf,
+    nome: nomeCliente || "Nome não informado", situacaoCpf,
     registroSpc, pendenciasSerasa, protestos, chequesSemFundo,
     totalOcorrencias, valorTotalPendencias,
     classificacaoRisco: classificarRisco(registroSpc, pendenciasSerasa, protestos, valorTotalPendencias),
