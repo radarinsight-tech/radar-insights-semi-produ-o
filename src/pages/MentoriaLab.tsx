@@ -519,13 +519,20 @@ const MentoriaLab = () => {
                           )}
                         </td>
                         <td className="p-3 text-center">
-                          {readingIds.has(f.id) ? (
-                            <Badge className="bg-primary/10 text-primary text-xs">Lendo...</Badge>
-                          ) : (
-                            <Badge className={`${statusConfig[f.status].color} text-xs`}>
-                              {statusConfig[f.status].label}
-                            </Badge>
-                          )}
+                          <div className="flex flex-col items-center gap-1">
+                            {readingIds.has(f.id) ? (
+                              <Badge className="bg-primary/10 text-primary text-xs">Lendo...</Badge>
+                            ) : (
+                              <Badge className={`${statusConfig[f.status].color} text-xs`}>
+                                {statusConfig[f.status].label}
+                              </Badge>
+                            )}
+                            {f.status === "analisado" && f.result?.notaFinal != null && f.result.notaFinal < 7 && (
+                              <Badge className="bg-warning/15 text-warning text-[10px] whitespace-nowrap">
+                                Necessita mentoria
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="p-3 text-center">
                           <div className="flex items-center justify-center gap-1">
