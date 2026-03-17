@@ -1162,7 +1162,7 @@ const MentoriaLab = () => {
                     ))}
                     {filteredFiles.length === 0 && (
                       <tr>
-                        <td colSpan={9} className="p-8 text-center text-muted-foreground">
+                        <td colSpan={10} className="p-8 text-center text-muted-foreground">
                           Nenhum atendimento encontrado com os filtros aplicados.
                         </td>
                       </tr>
