@@ -478,6 +478,66 @@ export type Database = {
         }
         Relationships: []
       }
+      preventive_mentorings: {
+        Row: {
+          atendente: string | null
+          classificacao_interna: string | null
+          cliente: string | null
+          created_at: string
+          data_atendimento: string | null
+          error_message: string | null
+          id: string
+          nota_interna: number | null
+          pdf_url: string | null
+          pontos_melhoria: string[] | null
+          pontos_obtidos: number | null
+          pontos_possiveis: number | null
+          protocolo: string | null
+          resultado: Json | null
+          status: string
+          tipo: string | null
+          user_id: string
+        }
+        Insert: {
+          atendente?: string | null
+          classificacao_interna?: string | null
+          cliente?: string | null
+          created_at?: string
+          data_atendimento?: string | null
+          error_message?: string | null
+          id?: string
+          nota_interna?: number | null
+          pdf_url?: string | null
+          pontos_melhoria?: string[] | null
+          pontos_obtidos?: number | null
+          pontos_possiveis?: number | null
+          protocolo?: string | null
+          resultado?: Json | null
+          status?: string
+          tipo?: string | null
+          user_id: string
+        }
+        Update: {
+          atendente?: string | null
+          classificacao_interna?: string | null
+          cliente?: string | null
+          created_at?: string
+          data_atendimento?: string | null
+          error_message?: string | null
+          id?: string
+          nota_interna?: number | null
+          pdf_url?: string | null
+          pontos_melhoria?: string[] | null
+          pontos_obtidos?: number | null
+          pontos_possiveis?: number | null
+          protocolo?: string | null
+          resultado?: Json | null
+          status?: string
+          tipo?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company_id: string | null
