@@ -482,9 +482,9 @@ const MentoriaLab = () => {
         if (!text) {
           text = await extractTextFromPdf(labFile.file);
           if (!text.trim()) {
-            setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Sem texto" } : f)));
+            setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível extrair texto deste arquivo." } : f)));
             if (labFile.batchFileId) {
-              await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Sem texto" } as any).eq("id", labFile.batchFileId);
+              await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Sem texto extraído" } as any).eq("id", labFile.batchFileId);
             }
             errors++;
             continue;
