@@ -1,17 +1,23 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import JSZip from "jszip";
 import {
   ArrowLeft, ShieldCheck, Upload, Loader2, FileText,
   CheckCircle2, AlertTriangle, ThumbsUp, Lightbulb, ChevronDown, ChevronUp,
-  Hash, User, Calendar, Tag, Info
+  Hash, User, Calendar, Tag, Info, Shuffle, Volume2, VolumeX, X, Play,
+  Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
+import { extractAllMetadata, type PdfMetadata } from "@/lib/mentoriaMetadata";
 import logoSymbol from "@/assets/logo-symbol.png";
+
+// ── Types ──────────────────────────────────────────────────────────────
 
 interface Oportunidade {
   criterio: string;
@@ -46,108 +52,232 @@ interface PreventiveResult {
   resumoGeral: string;
 }
 
-interface HistoryEntry {
+type FileStatus = "pendente" | "lido" | "analisado" | "erro";
+
+interface LabFile {
   id: string;
-  atendente: string | null;
-  protocolo: string | null;
-  data_atendimento: string | null;
-  tipo: string | null;
-  nota_interna: number | null;
-  classificacao_interna: string | null;
-  status: string;
-  created_at: string;
-  resultado: PreventiveResult | null;
+  file: File;
+  name: string;
+  size: number;
+  status: FileStatus;
+  text?: string;
+  result?: PreventiveResult;
+  error?: string;
+  atendente?: string;
+  protocolo?: string;
+  data?: string;
+  canal?: string;
+  hasAudio?: boolean;
+  tipo?: string;
+  selected: boolean; // for sampling
 }
+
+// ── Sampling logic ─────────────────────────────────────────────────────
+
+function autoSample(files: LabFile[], minPerAtendente = 2): Set<string> {
+  // Only consider readable files without audio
+  const eligible = files.filter((f) => f.status === "lido" && !f.hasAudio);
+  if (eligible.length === 0) return new Set();
+
+  // Group by atendente
+  const byAtendente = new Map<string, LabFile[]>();
+  for (const f of eligible) {
+    const key = f.atendente || "__desconhecido__";
+    if (!byAtendente.has(key)) byAtendente.set(key, []);
+    byAtendente.get(key)!.push(f);
+  }
+
+  const selected = new Set<string>();
+
+  for (const [, group] of byAtendente) {
+    // Shuffle
+    const shuffled = [...group].sort(() => Math.random() - 0.5);
+    // Pick min(minPerAtendente, available)
+    const count = Math.min(minPerAtendente, shuffled.length);
+    for (let i = 0; i < count; i++) {
+      selected.add(shuffled[i].id);
+    }
+  }
+
+  return selected;
+}
+
+// ── Component ──────────────────────────────────────────────────────────
+
+const statusConfig: Record<FileStatus, { label: string; color: string }> = {
+  pendente: { label: "Pendente", color: "bg-muted text-muted-foreground" },
+  lido: { label: "Lido", color: "bg-blue-100 text-blue-700" },
+  analisado: { label: "Analisado", color: "bg-accent/15 text-accent" },
+  erro: { label: "Erro", color: "bg-destructive/15 text-destructive" },
+};
 
 const MentoriaPreventiva = () => {
   const navigate = useNavigate();
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<LabFile[]>([]);
+  const [readingIds, setReadingIds] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState(false);
-  const [result, setResult] = useState<PreventiveResult | null>(null);
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [activeResult, setActiveResult] = useState<PreventiveResult | null>(null);
   const [showCriterios, setShowCriterios] = useState(false);
-  const [selectedHistory, setSelectedHistory] = useState<HistoryEntry | null>(null);
+  const [sampled, setSampled] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const loadHistory = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data } = await supabase
-      .from("preventive_mentorings")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(50);
-    if (data) setHistory(data as unknown as HistoryEntry[]);
-    setLoadingHistory(false);
-  }, []);
-
-  useEffect(() => { loadHistory(); }, [loadHistory]);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f && f.type === "application/pdf") {
-      setFile(f);
-      setResult(null);
-      setSelectedHistory(null);
-    } else {
-      toast.error("Selecione um arquivo PDF");
-    }
-  };
-
-  const handleAnalyze = async () => {
-    if (!file) return;
-    setAnalyzing(true);
-    setResult(null);
-
+  // ── File reading ─────────────────────────────────────────────────────
+  const readFile = useCallback(async (labFile: LabFile) => {
+    setReadingIds((prev) => new Set(prev).add(labFile.id));
     try {
-      const text = await extractTextFromPdf(file);
-      if (!text || text.trim().length < 50) {
-        toast.error("Não foi possível extrair texto suficiente do PDF.");
-        setAnalyzing(false);
+      const text = await extractTextFromPdf(labFile.file);
+      if (!text.trim()) {
+        setFiles((prev) => prev.map((f) => f.id === labFile.id ? { ...f, status: "erro" as FileStatus, error: "Não foi possível extrair texto." } : f));
         return;
       }
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const { data: fnData, error: fnError } = await supabase.functions.invoke("analyze-preventive", {
-        body: { text },
-      });
-
-      if (fnError) throw fnError;
-      const res = fnData as PreventiveResult;
-      setResult(res);
-
-      // Save to database (separate table, no impact on official)
-      await supabase.from("preventive_mentorings").insert({
-        user_id: user.id,
-        atendente: res.atendente || null,
-        protocolo: res.protocolo || null,
-        data_atendimento: res.data || null,
-        tipo: res.tipo || null,
-        cliente: res.cliente || null,
-        nota_interna: res.viavel ? res.notaInterna : null,
-        classificacao_interna: res.viavel ? res.classificacaoInterna : null,
-        pontos_obtidos: res.pontosObtidos || 0,
-        pontos_possiveis: res.pontosPossiveis || 0,
-        resultado: res as unknown as Record<string, unknown>,
-        pontos_melhoria: res.oportunidadesMelhoria?.map((o) => o.criterio) || [],
-        status: res.viavel ? "analisado" : "inviavel",
-      } as any);
-
-      loadHistory();
-      toast.success("Mentoria preventiva concluída!");
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || "Erro ao analisar");
+      const metadata = extractAllMetadata(text);
+      setFiles((prev) => prev.map((f) => f.id === labFile.id ? { ...f, status: "lido" as FileStatus, text, ...metadata } : f));
+    } catch {
+      setFiles((prev) => prev.map((f) => f.id === labFile.id ? { ...f, status: "erro" as FileStatus, error: "Falha na leitura." } : f));
     } finally {
-      setAnalyzing(false);
+      setReadingIds((prev) => { const n = new Set(prev); n.delete(labFile.id); return n; });
     }
+  }, []);
+
+  // ── Upload handler (PDF + ZIP) ───────────────────────────────────────
+  const handleFiles = useCallback(async (newFiles: FileList | File[]) => {
+    const fileArray = Array.from(newFiles);
+    const zips = fileArray.filter((f) => f.name.toLowerCase().endsWith(".zip"));
+    const pdfs = fileArray.filter((f) => f.name.toLowerCase().endsWith(".pdf"));
+    const invalid = fileArray.filter((f) => {
+      const ext = f.name.toLowerCase().slice(f.name.lastIndexOf("."));
+      return ext !== ".pdf" && ext !== ".zip";
+    });
+    if (invalid.length > 0) {
+      toast.error("Envie apenas PDFs ou ZIPs.");
+      return;
+    }
+
+    let allPdfs = [...pdfs];
+
+    for (const zf of zips) {
+      try {
+        const zip = await JSZip.loadAsync(zf);
+        const entries = Object.entries(zip.files).filter(([, e]) => !e.dir);
+        for (const [name, entry] of entries) {
+          if (name.toLowerCase().endsWith(".pdf")) {
+            const blob = await entry.async("blob");
+            const fileName = name.split("/").pop() || name;
+            allPdfs.push(new File([blob], fileName, { type: "application/pdf" }));
+          }
+        }
+      } catch {
+        toast.error("Não foi possível abrir o ZIP.");
+      }
+    }
+
+    if (allPdfs.length === 0) {
+      toast.error("Nenhum PDF encontrado.");
+      return;
+    }
+
+    setSampled(false);
+    const entries: LabFile[] = allPdfs.map((pdf) => ({
+      id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      file: pdf,
+      name: pdf.name,
+      size: pdf.size,
+      status: "pendente" as FileStatus,
+      selected: false,
+    }));
+
+    setFiles((prev) => [...prev, ...entries]);
+    toast.success(`${allPdfs.length} arquivo(s) importado(s). Leitura automática iniciada.`);
+    entries.forEach((e) => readFile(e));
+  }, [readFile]);
+
+  const handleDrop = (e: React.DragEvent) => { e.preventDefault(); handleFiles(e.dataTransfer.files); };
+
+  // ── Auto sample ──────────────────────────────────────────────────────
+  const runAutoSample = useCallback(() => {
+    const selectedIds = autoSample(files);
+    setFiles((prev) => prev.map((f) => ({ ...f, selected: selectedIds.has(f.id) })));
+    setSampled(true);
+    const excluded = files.filter((f) => f.status === "lido" && f.hasAudio).length;
+    toast.success(`Amostragem concluída: ${selectedIds.size} atendimento(s) selecionado(s).${excluded > 0 ? ` ${excluded} com áudio excluído(s).` : ""}`);
+  }, [files]);
+
+  // ── Manual toggle ────────────────────────────────────────────────────
+  const toggleSelect = (id: string) => {
+    setFiles((prev) => prev.map((f) => f.id === id ? { ...f, selected: !f.selected } : f));
   };
 
-  const activeResult = selectedHistory?.resultado || result;
+  // ── Stats ────────────────────────────────────────────────────────────
+  const readyFiles = useMemo(() => files.filter((f) => f.status === "lido"), [files]);
+  const selectedFiles = useMemo(() => files.filter((f) => f.selected), [files]);
+  const isReading = readingIds.size > 0;
+  const readyCount = readyFiles.length;
+  const selectedCount = selectedFiles.length;
+  const audioCount = useMemo(() => readyFiles.filter((f) => f.hasAudio).length, [readyFiles]);
 
+  // Atendentes summary
+  const atendenteSummary = useMemo(() => {
+    const map = new Map<string, { total: number; selected: number }>();
+    for (const f of files.filter((x) => x.status === "lido")) {
+      const key = f.atendente || "Não identificado";
+      if (!map.has(key)) map.set(key, { total: 0, selected: 0 });
+      map.get(key)!.total++;
+      if (f.selected) map.get(key)!.selected++;
+    }
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [files]);
+
+  // ── Batch analyze selected ───────────────────────────────────────────
+  const handleBatchAnalyze = async () => {
+    const toAnalyze = selectedFiles.filter((f) => f.status === "lido" && f.text);
+    if (toAnalyze.length === 0) {
+      toast.error("Nenhum atendimento selecionado com texto extraído.");
+      return;
+    }
+
+    setAnalyzing(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { toast.error("Não autenticado."); setAnalyzing(false); return; }
+
+    let successCount = 0;
+    for (const f of toAnalyze) {
+      try {
+        const { data: fnData, error: fnError } = await supabase.functions.invoke("analyze-preventive", {
+          body: { text: f.text },
+        });
+        if (fnError) throw fnError;
+        const res = fnData as PreventiveResult;
+
+        setFiles((prev) => prev.map((x) => x.id === f.id ? { ...x, status: "analisado" as FileStatus, result: res } : x));
+
+        await supabase.from("preventive_mentorings").insert({
+          user_id: user.id,
+          atendente: res.atendente || null,
+          protocolo: res.protocolo || null,
+          data_atendimento: res.data || null,
+          tipo: res.tipo || null,
+          cliente: res.cliente || null,
+          nota_interna: res.viavel ? res.notaInterna : null,
+          classificacao_interna: res.viavel ? res.classificacaoInterna : null,
+          pontos_obtidos: res.pontosObtidos || 0,
+          pontos_possiveis: res.pontosPossiveis || 0,
+          resultado: res as unknown as Record<string, unknown>,
+          pontos_melhoria: res.oportunidadesMelhoria?.map((o) => o.criterio) || [],
+          status: res.viavel ? "analisado" : "inviavel",
+        } as any);
+
+        successCount++;
+      } catch (err: any) {
+        console.error(err);
+        setFiles((prev) => prev.map((x) => x.id === f.id ? { ...x, status: "erro" as FileStatus, error: err.message } : x));
+      }
+    }
+
+    setAnalyzing(false);
+    toast.success(`${successCount} de ${toAnalyze.length} análise(s) concluída(s).`);
+  };
+
+  // ── Colors ───────────────────────────────────────────────────────────
   const classColor = (c: string) => {
     if (c === "Excelente") return "text-emerald-500";
     if (c === "Bom atendimento") return "text-blue-500";
@@ -155,131 +285,254 @@ const MentoriaPreventiva = () => {
     return "text-destructive";
   };
 
+  // ── Render ───────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="border-b border-border bg-card px-6 py-3">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={logoSymbol} alt="Radar Insight" className="h-7 w-7 rounded-lg object-contain" />
             <h1 className="text-lg font-bold text-primary">Mentoria Preventiva</h1>
             <Badge variant="outline" className="text-xs">Beta</Badge>
           </div>
           <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Voltar
+            <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
           </Button>
         </div>
       </header>
 
       <main className="flex-1 px-6 py-6">
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div className="max-w-7xl mx-auto space-y-5">
           {/* Disclaimer */}
           <div className="flex items-start gap-3 p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
             <Info className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-foreground">Ambiente de desenvolvimento</p>
               <p className="text-xs text-muted-foreground">
-                As análises realizadas aqui são exclusivamente para mentoria e desenvolvimento. Não geram nota oficial, não impactam bônus e não entram no ranking mensal.
+                Análises preventivas não geram nota oficial, não impactam bônus e não entram no ranking mensal.
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left: Upload + History */}
-            <div className="space-y-4">
-              {/* Upload */}
-              <Card className="p-5 space-y-4">
-                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <Upload className="h-4 w-4 text-primary" />
-                  Upload de Atendimento
-                </h3>
-                <label className="block cursor-pointer">
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/40 transition-colors">
-                    <Upload className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-xs text-muted-foreground">
-                      {file ? file.name : "Clique ou arraste um PDF"}
-                    </p>
-                  </div>
-                  <input type="file" accept=".pdf" className="hidden" onChange={handleFileChange} />
-                </label>
-                <Button
-                  className="w-full"
-                  onClick={handleAnalyze}
-                  disabled={!file || analyzing}
-                >
-                  {analyzing ? (
-                    <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Analisando...</>
-                  ) : (
-                    "Analisar para Mentoria"
-                  )}
-                </Button>
-              </Card>
+          {/* Upload zone */}
+          {files.length === 0 && (
+            <Card
+              className="p-8 text-center cursor-pointer border-2 border-dashed border-border hover:border-primary/40 transition-colors"
+              onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()}
+              onClick={() => inputRef.current?.click()}
+            >
+              <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+              <h3 className="text-base font-bold text-foreground mb-1">Importar Atendimentos</h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Arraste PDFs ou um ZIP com atendimentos para iniciar
+              </p>
+              <Button variant="outline" size="sm">
+                <Upload className="h-3 w-3 mr-1" /> Selecionar Arquivos
+              </Button>
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".pdf,.zip"
+                multiple
+                className="hidden"
+                onChange={(e) => e.target.files && handleFiles(e.target.files)}
+              />
+            </Card>
+          )}
 
-              {/* History */}
-              <Card className="p-5 space-y-3">
-                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-primary" />
-                  Histórico
-                </h3>
-                {loadingHistory ? (
-                  <div className="flex justify-center py-4">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                  </div>
-                ) : history.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">Nenhuma mentoria preventiva ainda.</p>
-                ) : (
-                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                    {history.map((h) => (
-                      <div
-                        key={h.id}
-                        className={`p-3 rounded-md border cursor-pointer transition-colors text-left ${
-                          selectedHistory?.id === h.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
-                        }`}
-                        onClick={() => {
-                          setSelectedHistory(h);
-                          setResult(null);
-                        }}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-foreground truncate">
-                            {h.atendente || "—"}
-                          </span>
-                          {h.nota_interna != null && (
-                            <Badge variant="secondary" className="text-xs">
-                              {Number(h.nota_interna).toFixed(1)}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-[10px] text-muted-foreground mt-1">
-                          {h.protocolo || "Sem protocolo"} · {new Date(h.created_at).toLocaleDateString("pt-BR")}
-                        </p>
+          {/* Files imported: sampling controls */}
+          {files.length > 0 && (
+            <>
+              {/* Actions bar */}
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => inputRef.current?.click()}
+                >
+                  <Upload className="h-3 w-3 mr-1" /> Importar mais
+                </Button>
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept=".pdf,.zip"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => e.target.files && handleFiles(e.target.files)}
+                />
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={runAutoSample}
+                  disabled={readyCount === 0 || isReading}
+                >
+                  <Shuffle className="h-3 w-3 mr-1" /> Amostragem Automática
+                </Button>
+
+                {selectedCount > 0 && (
+                  <Button
+                    size="sm"
+                    onClick={handleBatchAnalyze}
+                    disabled={analyzing}
+                  >
+                    {analyzing ? (
+                      <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Analisando...</>
+                    ) : (
+                      <><Play className="h-3 w-3 mr-1" /> Analisar {selectedCount} selecionado(s)</>
+                    )}
+                  </Button>
+                )}
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setFiles([]); setSampled(false); setActiveResult(null); }}
+                >
+                  <X className="h-3 w-3 mr-1" /> Limpar tudo
+                </Button>
+              </div>
+
+              {/* Stats cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Card className="p-3 text-center">
+                  <p className="text-2xl font-bold text-foreground">{files.length}</p>
+                  <p className="text-[10px] text-muted-foreground">Total importado</p>
+                </Card>
+                <Card className="p-3 text-center">
+                  <p className="text-2xl font-bold text-foreground">{readyCount}</p>
+                  <p className="text-[10px] text-muted-foreground">Lidos</p>
+                  {isReading && <Loader2 className="h-3 w-3 animate-spin text-primary mx-auto mt-1" />}
+                </Card>
+                <Card className="p-3 text-center">
+                  <p className="text-2xl font-bold text-amber-500">{audioCount}</p>
+                  <p className="text-[10px] text-muted-foreground">Com áudio (excluídos)</p>
+                </Card>
+                <Card className="p-3 text-center">
+                  <p className="text-2xl font-bold text-primary">{selectedCount}</p>
+                  <p className="text-[10px] text-muted-foreground">Selecionados</p>
+                </Card>
+              </div>
+
+              {/* Atendente distribution */}
+              {sampled && atendenteSummary.length > 0 && (
+                <Card className="p-4 space-y-2">
+                  <h3 className="text-xs font-bold text-foreground">Distribuição por Atendente</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {atendenteSummary.map(([name, { total, selected }]) => (
+                      <div key={name} className="flex items-center justify-between p-2 rounded bg-muted/40 border border-border">
+                        <span className="text-xs text-foreground truncate">{name}</span>
+                        <Badge variant={selected > 0 ? "default" : "secondary"} className="text-[10px] ml-2 shrink-0">
+                          {selected}/{total}
+                        </Badge>
                       </div>
                     ))}
                   </div>
-                )}
-              </Card>
-            </div>
-
-            {/* Right: Result */}
-            <div className="lg:col-span-2">
-              {!activeResult ? (
-                <Card className="p-12 text-center space-y-4">
-                  <ShieldCheck className="h-10 w-10 text-muted-foreground mx-auto" />
-                  <h3 className="text-lg font-bold text-foreground">Mentoria Preventiva</h3>
-                  <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                    Envie um PDF de atendimento ou selecione um item do histórico para visualizar o feedback de desenvolvimento.
-                  </p>
                 </Card>
-              ) : !activeResult.viavel ? (
+              )}
+
+              {/* File table */}
+              <Card className="overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/30">
+                        <th className="p-2 w-8 text-center">
+                          <Checkbox
+                            checked={files.length > 0 && files.every((f) => f.selected)}
+                            onCheckedChange={(checked) => {
+                              setFiles((prev) => prev.map((f) => ({ ...f, selected: !!checked })));
+                            }}
+                          />
+                        </th>
+                        <th className="p-2 text-left font-medium text-muted-foreground">Arquivo</th>
+                        <th className="p-2 text-left font-medium text-muted-foreground">Atendente</th>
+                        <th className="p-2 text-left font-medium text-muted-foreground">Protocolo</th>
+                        <th className="p-2 text-center font-medium text-muted-foreground">Áudio</th>
+                        <th className="p-2 text-center font-medium text-muted-foreground">Status</th>
+                        <th className="p-2 text-center font-medium text-muted-foreground">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {files.map((f) => (
+                        <tr
+                          key={f.id}
+                          className={`border-b border-border/50 transition-colors ${
+                            f.selected ? "bg-primary/5" : "hover:bg-muted/20"
+                          } ${f.hasAudio ? "opacity-60" : ""}`}
+                        >
+                          <td className="p-2 text-center">
+                            <Checkbox
+                              checked={f.selected}
+                              disabled={f.hasAudio}
+                              onCheckedChange={() => toggleSelect(f.id)}
+                            />
+                          </td>
+                          <td className="p-2 max-w-[200px] truncate text-foreground">{f.name}</td>
+                          <td className="p-2 text-foreground">{f.atendente || "—"}</td>
+                          <td className="p-2 text-foreground font-mono text-[10px]">{f.protocolo || "—"}</td>
+                          <td className="p-2 text-center">
+                            {f.hasAudio ? (
+                              <Badge variant="destructive" className="text-[10px]">
+                                <Volume2 className="h-2.5 w-2.5 mr-0.5" /> Sim
+                              </Badge>
+                            ) : f.status !== "pendente" ? (
+                              <Badge variant="outline" className="text-[10px]">
+                                <VolumeX className="h-2.5 w-2.5 mr-0.5" /> Não
+                              </Badge>
+                            ) : null}
+                          </td>
+                          <td className="p-2 text-center">
+                            {readingIds.has(f.id) ? (
+                              <Loader2 className="h-3 w-3 animate-spin text-primary mx-auto" />
+                            ) : (
+                              <Badge className={`text-[10px] ${statusConfig[f.status].color}`}>
+                                {statusConfig[f.status].label}
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="p-2 text-center">
+                            {f.status === "analisado" && f.result && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-[10px]"
+                                onClick={() => setActiveResult(f.result!)}
+                              >
+                                <Eye className="h-3 w-3 mr-0.5" /> Ver
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            </>
+          )}
+
+          {/* Result detail panel */}
+          {activeResult && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold text-foreground">Resultado da Mentoria Preventiva</h2>
+                <Button variant="ghost" size="sm" onClick={() => setActiveResult(null)}>
+                  <X className="h-3 w-3 mr-1" /> Fechar
+                </Button>
+              </div>
+
+              {!activeResult.viavel ? (
                 <Card className="p-8 text-center space-y-4">
                   <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto" />
                   <h3 className="text-base font-bold text-foreground">Análise Inviável</h3>
                   <p className="text-sm text-muted-foreground">{activeResult.motivoInviavel}</p>
                 </Card>
               ) : (
-                <div className="space-y-4">
-                  {/* Header info */}
+                <>
+                  {/* Header */}
                   <Card className="p-5">
                     <div className="flex items-start justify-between gap-4">
                       <div className="grid grid-cols-2 gap-x-6 gap-y-2 flex-1">
@@ -337,7 +590,7 @@ const MentoriaPreventiva = () => {
                     </Card>
                   )}
 
-                  {/* Oportunidades de Melhoria */}
+                  {/* Oportunidades */}
                   {activeResult.oportunidadesMelhoria?.length > 0 && (
                     <Card className="p-5 space-y-3">
                       <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
@@ -357,7 +610,7 @@ const MentoriaPreventiva = () => {
                     </Card>
                   )}
 
-                  {/* Critérios (collapsible) */}
+                  {/* Critérios */}
                   <Card className="p-5 space-y-3">
                     <button
                       className="flex items-center justify-between w-full text-left"
@@ -387,10 +640,10 @@ const MentoriaPreventiva = () => {
                       </div>
                     )}
                   </Card>
-                </div>
+                </>
               )}
             </div>
-          </div>
+          )}
         </div>
       </main>
     </div>
