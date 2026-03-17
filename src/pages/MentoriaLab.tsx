@@ -1091,6 +1091,13 @@ const MentoriaLab = () => {
                         <td className="p-3 text-muted-foreground text-xs">
                           {readingIds.has(f.id) ? <Loader2 className="h-3 w-3 animate-spin inline" /> : (f.atendente || <span className="italic opacity-60">Não identificado</span>)}
                         </td>
+                        <td className="p-3 text-xs">
+                          {(() => {
+                            const tipo = f.result?.tipo || f.tipo;
+                            if (!tipo || tipo === "Outro") return <span className="italic text-muted-foreground opacity-60">—</span>;
+                            return <Badge variant="outline" className="text-[10px] font-medium">{tipo}</Badge>;
+                          })()}
+                        </td>
                         <td className="p-3 text-muted-foreground text-xs">{f.data ? formatDateBR(f.data) : <span className="italic opacity-60">—</span>}</td>
                         <td className="p-3 text-muted-foreground text-xs">{f.protocolo || <span className="italic opacity-60">—</span>}</td>
                         <td className="p-3 text-center">
