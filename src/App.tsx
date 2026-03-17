@@ -14,6 +14,7 @@ import CreditAnalysis from "./pages/CreditAnalysis.tsx";
 import CreditDashboard from "./pages/CreditDashboard.tsx";
 import DocumentAnalysis from "./pages/DocumentAnalysis.tsx";
 import SpcConsulta from "./pages/SpcConsulta.tsx";
+import MentoriaLab from "./pages/MentoriaLab.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AppModeBanner from "./components/AppModeBanner.tsx";
 
@@ -82,6 +83,16 @@ const App = () => (
               <ProtectedRoute>
                 <ModuleGuard module="credito">
                   <SpcConsulta />
+                </ModuleGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/mentoria-lab"
+            element={
+              <ProtectedRoute>
+                <ModuleGuard module="auditoria">
+                  <MentoriaLab />
                 </ModuleGuard>
               </ProtectedRoute>
             }

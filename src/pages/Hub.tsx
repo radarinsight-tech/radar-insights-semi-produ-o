@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import { LogOut, HeadsetIcon, CreditCard, Loader2, ShieldAlert, Users } from "lucide-react";
+import { LogOut, HeadsetIcon, CreditCard, Loader2, ShieldAlert, Users, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import logoSymbol from "@/assets/logo-symbol.png";
 import logoFull from "@/assets/logo-full.png";
@@ -85,6 +86,26 @@ const Hub = () => {
                       </p>
                     </div>
                   </div>
+                </Card>
+              )}
+
+              {showAuditoria && (
+                <Card
+                  className="group relative p-8 cursor-pointer border-2 border-border hover:border-teal-400/50 transition-all hover:shadow-lg"
+                  onClick={() => navigate("/mentoria-lab")}
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="p-4 rounded-xl bg-teal-500/10 group-hover:bg-teal-500/20 transition-colors">
+                      <FlaskConical className="h-10 w-10 text-teal-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-foreground mb-1">Mentoria Lab</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Upload múltiplo, seleção e análise em lote de atendimentos para preparação de mentorias
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="absolute top-3 right-3 text-xs">Beta</Badge>
                 </Card>
               )}
 
