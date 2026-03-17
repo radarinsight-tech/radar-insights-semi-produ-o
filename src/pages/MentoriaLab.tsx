@@ -989,14 +989,6 @@ const MentoriaLab = () => {
             )}
           </>
         )}
-
-        {files.length === 0 && (
-          <Card className="p-12 text-center">
-            <FileText className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground">Nenhum arquivo carregado ainda.</p>
-            <p className="text-xs text-muted-foreground mt-1">Faça upload de PDFs de atendimentos para começar a preparar a mentoria.</p>
-          </Card>
-        )}
       </main>
 
       {/* Side panel */}
