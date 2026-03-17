@@ -121,7 +121,7 @@ const exportReportPdf = (report: FullReport, protocolo: string) => {
   }
 
   addText(`Protocolo: ${report.protocolo || protocolo}`, 10);
-  addText(`Data: ${report.data || "—"}`, 10);
+  addText(`Data: ${formatDateBR(report.data)}`, 10);
   addText(`Atendente: ${report.atendente || "—"}`, 10);
   addText(`Tipo: ${report.tipo || "—"}`, 10);
   addText(`Nota Final: ${report.notaFinal?.toFixed(1) ?? report.nota?.toFixed(1) ?? "—"}`, 10);
