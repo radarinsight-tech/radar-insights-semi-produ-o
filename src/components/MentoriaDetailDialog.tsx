@@ -69,9 +69,10 @@ const classColor = (c: string) => {
 
 const notaColor = (nota: number | null | undefined) => {
   if (nota == null) return "text-muted-foreground";
-  if (nota >= 90) return "text-accent";
-  if (nota >= 70) return "text-primary";
-  if (nota >= 50) return "text-warning";
+  const n10 = notaToScale10(nota);
+  if (n10 >= 9) return "text-accent";
+  if (n10 >= 7) return "text-primary";
+  if (n10 >= 5) return "text-warning";
   return "text-destructive";
 };
 
