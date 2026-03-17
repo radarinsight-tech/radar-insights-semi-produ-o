@@ -1097,7 +1097,7 @@ const MentoriaLab = () => {
                 {[
                   { label: "Atendente", value: sideFile.atendente },
                   { label: "Data", value: sideFile.data },
-                  { label: "Canal", value: sideFile.canal },
+                  
                   { label: "Áudio", value: sideFile.hasAudio ? "Sim" : "Não" },
                   { label: "Protocolo", value: sideFile.protocolo },
                   { label: "Status", value: statusConfig[sideFile.status].label },
