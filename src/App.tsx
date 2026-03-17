@@ -15,6 +15,7 @@ import CreditDashboard from "./pages/CreditDashboard.tsx";
 import DocumentAnalysis from "./pages/DocumentAnalysis.tsx";
 import SpcConsulta from "./pages/SpcConsulta.tsx";
 import MentoriaLab from "./pages/MentoriaLab.tsx";
+import MentoriaPreventiva from "./pages/MentoriaPreventiva.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AppModeBanner from "./components/AppModeBanner.tsx";
 
