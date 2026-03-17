@@ -88,6 +88,16 @@ const App = () => (
             }
           />
           <Route
+            path="/mentoria-lab"
+            element={
+              <ProtectedRoute>
+                <ModuleGuard module="auditoria">
+                  <MentoriaLab />
+                </ModuleGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/users"
             element={
               <ProtectedRoute>
