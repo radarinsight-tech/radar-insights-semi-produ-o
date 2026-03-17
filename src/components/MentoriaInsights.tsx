@@ -127,8 +127,8 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
 
     const elegiveisStats = atendenteStats.filter((a) => !a.amostragemInsuficiente);
 
-    const melhor = atendenteStats[0];
-    const pior = atendenteStats[atendenteStats.length - 1];
+    const melhor = elegiveisStats[0] || atendenteStats[0];
+    const pior = elegiveisStats.length > 0 ? elegiveisStats[elegiveisStats.length - 1] : atendenteStats[atendenteStats.length - 1];
 
     // Global improvement points
     const allMelhoria: string[] = [];
