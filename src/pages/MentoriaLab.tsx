@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import MentoriaInsights from "@/components/MentoriaInsights";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import ConversationView from "@/components/ConversationView";
+import MentoriaDetailDialog from "@/components/MentoriaDetailDialog";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro";
 
@@ -97,6 +98,7 @@ const MentoriaLab = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [showAnalyzeWarning, setShowAnalyzeWarning] = useState(false);
+  const [mentoriaFile, setMentoriaFile] = useState<LabFile | null>(null);
 
   // Filters
   const [filterAtendente, setFilterAtendente] = useState("todos");
@@ -1000,6 +1002,16 @@ const MentoriaLab = () => {
                             >
                               <Eye className="h-3 w-3" /> Abrir
                             </Button>
+                            {f.status === "analisado" && f.result && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/5"
+                                onClick={() => setMentoriaFile(f)}
+                              >
+                                <BookOpen className="h-3 w-3" /> Mentoria
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1168,6 +1180,15 @@ const MentoriaLab = () => {
           )}
         </SheetContent>
       </Sheet>
+      {/* Mentoria Detail Dialog */}
+      <MentoriaDetailDialog
+        open={!!mentoriaFile}
+        onOpenChange={() => setMentoriaFile(null)}
+        result={mentoriaFile?.result}
+        fileName={mentoriaFile?.name || ""}
+        rawText={mentoriaFile?.text}
+        atendente={mentoriaFile?.atendente}
+      />
     </div>
   );
 };
