@@ -1098,7 +1098,7 @@ const MentoriaLab = () => {
                           </div>
                         </td>
                         <td className="p-3 text-muted-foreground text-xs">
-                          {f.analyzedAt ? f.analyzedAt.toLocaleDateString("pt-BR") : <span className="italic opacity-60">—</span>}
+                          {f.analyzedAt ? formatDateBR(f.analyzedAt) : <span className="italic opacity-60">—</span>}
                         </td>
                         <td className="p-3 text-center">
                           <div className="flex items-center justify-center gap-1">
