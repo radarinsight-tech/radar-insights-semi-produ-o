@@ -91,11 +91,18 @@ interface Props {
   onResult: (result: SpcQueryResult) => void;
   isLoading: boolean;
   setIsLoading: (v: boolean) => void;
+  isAdmin: boolean;
 }
 
-const CreditQuerySection = ({ onResult, isLoading, setIsLoading }: Props) => {
+const CreditQuerySection = ({ onResult, isLoading, setIsLoading, isAdmin }: Props) => {
   const [cpfCnpj, setCpfCnpj] = useState("");
   const [nomeCliente, setNomeCliente] = useState("");
+  const [mode, setMode] = useState<ConsultaMode>("simulacao");
+
+  const handleToggleMode = (checked: boolean) => {
+    if (checked && !isAdmin) return;
+    setMode(checked ? "producao" : "simulacao");
+  };
 
   const handleConsultar = async () => {
     const digits = cpfCnpj.replace(/\D/g, "");
@@ -105,12 +112,28 @@ const CreditQuerySection = ({ onResult, isLoading, setIsLoading }: Props) => {
       return;
     }
     setIsLoading(true);
+
+    if (mode === "producao") {
+      // Future real integration
+      const realResult = await consultarSPCReal(digits);
+      if (realResult) {
+        onResult({ ...realResult, modoConsulta: "producao" });
+      } else {
+        const { toast } = await import("sonner");
+        toast.error("Integração SPC real ainda não disponível. Use o modo simulação.");
+      }
+      setIsLoading(false);
+      return;
+    }
+
     // Simulate API call
     await new Promise((r) => setTimeout(r, 1500));
     const result = generateMockResult(digits, nomeCliente.trim() || undefined);
-    onResult(result);
+    onResult({ ...result, modoConsulta: "simulacao" });
     setIsLoading(false);
   };
+
+  const isProducao = mode === "producao";
 
   return (
     <Card>
@@ -122,12 +145,46 @@ const CreditQuerySection = ({ onResult, isLoading, setIsLoading }: Props) => {
         <CardDescription>Informe o CPF ou CNPJ do cliente para consultar no SPC — Opção 643</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Simulation badge */}
-        <div className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-          <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span className="text-xs font-medium">Modo simulação</span>
-          <span className="text-[10px] opacity-75">— dados fictícios</span>
+        {/* Mode toggle */}
+        <div className="flex items-center justify-between">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={isProducao}
+                    onCheckedChange={handleToggleMode}
+                    disabled={!isAdmin}
+                  />
+                  <span className={`text-xs font-semibold ${isProducao ? "text-accent" : "text-warning"}`}>
+                    {isProducao ? "Produção" : "Simulação"}
+                  </span>
+                  {!isAdmin && <Lock className="h-3 w-3 text-muted-foreground" />}
+                </div>
+              </TooltipTrigger>
+              {!isAdmin && (
+                <TooltipContent>
+                  <p className="text-xs">Somente administradores podem usar o modo Produção</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         </div>
+
+        {/* Mode banner */}
+        {isProducao ? (
+          <div className="flex items-center gap-2 rounded-lg border border-accent/50 bg-accent/10 px-3 py-2 text-sm text-accent dark:border-accent/30 dark:text-accent">
+            <ShieldAlert className="h-4 w-4 shrink-0" />
+            <span className="text-xs font-medium">Consulta real</span>
+            <span className="text-[10px] opacity-75">— poderá gerar custo</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 rounded-lg border border-warning/50 bg-warning/10 px-3 py-2 text-sm text-warning dark:border-warning/30 dark:text-warning">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span className="text-xs font-medium">Modo simulação</span>
+            <span className="text-[10px] opacity-75">— dados fictícios</span>
+          </div>
+        )}
 
         <div className="space-y-3">
           <div>

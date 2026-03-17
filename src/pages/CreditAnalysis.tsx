@@ -164,6 +164,7 @@ const CreditAnalysis = () => {
             onResult={handleResult}
             isLoading={isLoading}
             setIsLoading={setIsLoading}
+            isAdmin={isAdmin}
           />
           <CreditQueryResult data={result} />
         </div>
