@@ -1002,12 +1002,11 @@ const MentoriaLab = () => {
                             </Button>
                             {f.status === "analisado" && f.result && (
                               <Button
-                                variant="outline"
                                 size="sm"
-                                className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/5"
+                                className="h-7 text-xs gap-1"
                                 onClick={() => setMentoriaFile(f)}
                               >
-                                <BookOpen className="h-3 w-3" /> Mentoria
+                                <BookOpen className="h-3 w-3" /> Ver mentoria
                               </Button>
                             )}
                             <Button
