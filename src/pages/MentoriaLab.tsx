@@ -285,7 +285,7 @@ const MentoriaLab = () => {
 
     if (isZipSource && extractedPdfs.length === 0 && pdfFiles.length === 0) {
       setBatchInfo((prev) => prev ? { ...prev, status: "erro", totalFilesInSource: totalZipEntries, ignoredFiles: totalZipEntries } : prev);
-      toast.error(`O ZIP contém ${totalZipEntries} arquivo(s), mas nenhum é PDF. Apenas arquivos PDF são aceitos.`);
+      toast.error("O ZIP não contém PDFs válidos para análise.");
       return;
     }
 
