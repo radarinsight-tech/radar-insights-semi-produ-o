@@ -292,7 +292,7 @@ const MentoriaLab = () => {
     const allPdfs = [...pdfFiles, ...extractedPdfs];
     if (allPdfs.length === 0) {
       setBatchInfo((prev) => prev ? { ...prev, status: "erro" } : prev);
-      toast.error("Nenhum arquivo PDF válido encontrado.");
+      toast.error("Nenhum PDF válido encontrado. Verifique os arquivos enviados.");
       return;
     }
 
