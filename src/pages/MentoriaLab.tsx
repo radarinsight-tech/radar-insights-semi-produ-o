@@ -280,6 +280,10 @@ const MentoriaLab = () => {
     setProcessing(false);
     setSelected(new Set());
     toast.success(`Análise concluída: ${success} sucesso(s), ${errors} erro(s).`);
+    // Scroll to insights
+    setTimeout(() => {
+      document.getElementById("mentoria-insights")?.scrollIntoView({ behavior: "smooth" });
+    }, 300);
   };
 
   const removeFile = (id: string) => {
