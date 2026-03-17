@@ -77,7 +77,7 @@ const statusConfig: Record<FileStatus, { label: string; color: string }> = {
   erro: { label: "Erro", color: "bg-destructive/15 text-destructive" },
 };
 
-import { extractAllMetadata, extractCanal, detectAudio } from "@/lib/mentoriaMetadata";
+import { extractAllMetadata } from "@/lib/mentoriaMetadata";
 
 const IMPORT_LIMIT = 1000;
 const IMPORT_RECOMMENDED = 500;
