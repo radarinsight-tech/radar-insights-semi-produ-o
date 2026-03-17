@@ -897,6 +897,7 @@ const MentoriaLab = () => {
                       <th className="p-3 text-left font-medium text-muted-foreground">Atendente</th>
                       <th className="p-3 text-left font-medium text-muted-foreground">Data</th>
                       <th className="p-3 text-left font-medium text-muted-foreground">Canal</th>
+                      <th className="p-3 text-left font-medium text-muted-foreground">Protocolo</th>
                       <th className="p-3 text-center font-medium text-muted-foreground">Áudio</th>
                       <th className="p-3 text-center font-medium text-muted-foreground">Status</th>
                       <th className="p-3 text-center font-medium text-muted-foreground">Ação</th>
