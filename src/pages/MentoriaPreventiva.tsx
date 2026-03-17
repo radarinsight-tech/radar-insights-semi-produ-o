@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { extractAllMetadata, type PdfMetadata } from "@/lib/mentoriaMetadata";
 import logoSymbol from "@/assets/logo-symbol.png";
+import PreventiveInsights from "@/components/PreventiveInsights";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
