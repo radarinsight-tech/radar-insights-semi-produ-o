@@ -392,63 +392,62 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           <div ref={printRef} className="px-8 py-6">
 
             {/* ═══ 1. CABEÇALHO — layout relatório ═══ */}
-            <div className="flex items-start justify-between pb-6 border-b-2 border-foreground/10">
-              {/* Left: metadata */}
-              <div className="space-y-4">
-                <h1 className="text-lg font-extrabold text-foreground tracking-tight">
+            <div className="flex items-stretch gap-6 pb-5 border-b-2 border-foreground/10">
+              {/* Left: metadata — fill available space */}
+              <div className="flex-1 min-w-0">
+                <h1 className="text-base font-extrabold text-foreground tracking-tight mb-3">
                   Auditoria de Atendimento
                 </h1>
-                <div className="grid grid-cols-2 gap-x-10 gap-y-3">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2.5">
                   <div className="flex items-center gap-2">
-                    <Hash className="h-3.5 w-3.5 text-muted-foreground" />
-                    <div>
+                    <Hash className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <div className="min-w-0">
                       <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Protocolo</p>
-                      <p className="text-sm font-bold text-foreground font-mono">{result.protocolo || "—"}</p>
+                      <p className="text-sm font-bold text-foreground font-mono truncate">{result.protocolo || "—"}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <User className="h-3.5 w-3.5 text-muted-foreground" />
-                    <div>
+                    <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <div className="min-w-0">
                       <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Atendente</p>
-                      <p className="text-sm font-bold text-foreground">{result.atendente || atendente || "—"}</p>
+                      <p className="text-sm font-bold text-foreground truncate">{result.atendente || atendente || "—"}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                    <div>
+                    <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <div className="min-w-0">
                       <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Data</p>
                       <p className="text-sm font-semibold text-foreground">{result.data || "—"}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                    <div>
+                    <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <div className="min-w-0">
                       <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Tipo</p>
-                      <p className="text-sm font-semibold text-foreground">{result.tipo || "—"}</p>
+                      <p className="text-sm font-semibold text-foreground truncate">{result.tipo || "—"}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Right: score */}
-              <div className="text-right pl-8 shrink-0">
+              {/* Right: score — card visual, centered */}
+              <div className="shrink-0 w-40 flex flex-col items-center justify-center text-center rounded-xl bg-muted/30 border border-border p-4">
                 <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">Nota Final</p>
-                <p className={`text-5xl font-black tracking-tighter leading-none ${notaColor(nota)}`}>
-          {nota != null ? notaToScale10(nota).toFixed(1).replace(".", ",") : "—"}
+                <p className={`text-4xl font-black tracking-tighter leading-none ${notaColor(nota)}`}>
+                  {nota != null ? notaToScale10(nota).toFixed(1).replace(".", ",") : "—"}
                 </p>
                 <p className="text-[10px] text-muted-foreground mt-1">
                   {result.pontosObtidos ?? totalObtidos}/{result.pontosPossiveis ?? totalPossiveis} pts
                 </p>
-                <Badge className={`mt-2 text-xs px-2.5 py-0.5 ${classColor(classificacao)}`}>
+                <Badge className={`mt-1.5 text-xs px-2 py-0.5 ${classColor(classificacao)}`}>
                   {classificacao}
                 </Badge>
                 {nota != null && (() => {
                   const bonus = calcularBonus(nota);
                   return (
-                    <div className="mt-3 p-2.5 rounded-lg bg-muted/40 border border-border text-center">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Bônus</p>
-                      <p className="text-sm font-bold text-foreground">{bonus.percentual}% · {formatBRL(bonus.valor)}</p>
-                      <p className="text-[10px] text-muted-foreground">{bonus.classificacao}</p>
+                    <div className="mt-2 pt-2 border-t border-border w-full">
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Bônus</p>
+                      <p className="text-xs font-bold text-foreground mt-0.5">{bonus.percentual}% · {formatBRL(bonus.valor)}</p>
                     </div>
                   );
                 })()}
