@@ -287,7 +287,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
         </div>
         <div class="score-block">
           <p class="score-label">Nota Final</p>
-          <p class="score-value ${nota >= 90 ? "score-green" : nota >= 70 ? "score-blue" : nota >= 50 ? "score-yellow" : "score-red"}">${nota != null ? nota.toFixed(1).replace(".", ",") : "—"}</p>
+          <p class="score-value ${notaToScale10(nota) >= 9 ? "score-green" : notaToScale10(nota) >= 7 ? "score-blue" : notaToScale10(nota) >= 5 ? "score-yellow" : "score-red"}">${nota != null ? notaToScale10(nota).toFixed(1).replace(".", ",") : "—"}</p>
           <p class="score-pts">${result.pontosObtidos ?? totalObtidos}/${result.pontosPossiveis ?? totalPossiveis} pontos</p>
           <span class="score-class ${badgeClass}">${classificacao}</span>
           ${nota != null ? (() => { const b = calcularBonus(nota); return `<div style="margin-top:8px;padding:4px 10px;background:#f3f4f6;border-radius:4px;font-size:9px;color:#374151"><strong>${b.percentual}%</strong> · ${formatBRL(b.valor)} <span style="color:#6b7280">— ${b.classificacao}</span></div>`; })() : ""}
