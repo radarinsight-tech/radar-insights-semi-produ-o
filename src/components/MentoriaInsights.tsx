@@ -9,7 +9,7 @@ import {
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
-import { calcularBonus, formatBRL } from "@/lib/utils";
+import { calcularBonus, formatBRL, notaToScale10 } from "@/lib/utils";
 
 interface AnalyzedFile {
   name: string;
@@ -40,14 +40,15 @@ function round1(n: number): number {
 }
 
 function formatNota(n: number): string {
-  return round1(n).toFixed(1).replace(".", ",");
+  return notaToScale10(n).toFixed(1).replace(".", ",");
 }
 
 function classificacao(nota: number): string {
-  if (nota >= 9) return "Excelente";
-  if (nota >= 7) return "Bom";
-  if (nota >= 5) return "Regular";
-  if (nota >= 3) return "Ruim";
+  const n10 = notaToScale10(nota);
+  if (n10 >= 9) return "Excelente";
+  if (n10 >= 7) return "Bom";
+  if (n10 >= 5) return "Regular";
+  if (n10 >= 3) return "Ruim";
   return "Crítico";
 }
 
@@ -143,9 +144,9 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
 
     // Recommended files
     const sorted = [...analyzed].sort((a, b) => a.result!.notaFinal! - b.result!.notaFinal!);
-    const piores = sorted.filter((f) => f.result!.notaFinal! < 5).slice(0, 5);
-    const medianos = sorted.filter((f) => f.result!.notaFinal! >= 5 && f.result!.notaFinal! < 7).slice(0, 5);
-    const melhores = [...sorted].reverse().filter((f) => f.result!.notaFinal! >= 7).slice(0, 5);
+    const piores = sorted.filter((f) => notaToScale10(f.result!.notaFinal!) < 5).slice(0, 5);
+    const medianos = sorted.filter((f) => notaToScale10(f.result!.notaFinal!) >= 5 && notaToScale10(f.result!.notaFinal!) < 7).slice(0, 5);
+    const melhores = [...sorted].reverse().filter((f) => notaToScale10(f.result!.notaFinal!) >= 7).slice(0, 5);
 
     // Build mentoria script
     const temaPrincipal = topCriticos[0]?.text || "Qualidade do atendimento";
@@ -164,7 +165,7 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
       exemploPositivo: exemploPositivo
         ? `Como exemplo positivo, temos "${exemploPositivo.result?.protocolo || exemploPositivo.name}" (${exemploPositivo.result?.atendente || "—"}) com nota ${formatNota(exemploPositivo.result!.notaFinal!)} — um bom modelo a seguir.`
         : null,
-      fechamento: `Próximos passos: ${atendenteStats.filter((a) => a.media < 7).length > 0 ? `acompanhamento individual para ${atendenteStats.filter((a) => a.media < 7).map((a) => a.name).join(", ")}` : "manter o padrão de qualidade"}.`,
+      fechamento: `Próximos passos: ${atendenteStats.filter((a) => notaToScale10(a.media) < 7).length > 0 ? `acompanhamento individual para ${atendenteStats.filter((a) => notaToScale10(a.media) < 7).map((a) => a.name).join(", ")}` : "manter o padrão de qualidade"}.`,
     };
 
     return {
@@ -285,12 +286,13 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
           {insights.atendenteStats.map((at) => {
             const bonus = calcularBonus(at.media);
             const isInsuficiente = at.amostragemInsuficiente;
+            const media10 = notaToScale10(at.media);
             const borderColor = isInsuficiente
               ? "border-l-muted-foreground"
-              : at.media >= 70 ? "border-l-accent" : at.media >= 50 ? "border-l-warning" : "border-l-destructive";
+              : media10 >= 7 ? "border-l-accent" : media10 >= 5 ? "border-l-warning" : "border-l-destructive";
             const bgColor = isInsuficiente
               ? "bg-muted/30"
-              : at.media >= 70 ? "bg-accent/5" : at.media >= 50 ? "bg-warning/5" : "bg-destructive/5";
+              : media10 >= 7 ? "bg-accent/5" : media10 >= 5 ? "bg-warning/5" : "bg-destructive/5";
 
             return (
               <div
@@ -313,7 +315,7 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
                 {/* Metrics */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="text-center p-2 rounded-lg bg-background/60">
-                    <p className={`text-lg font-black leading-none ${isInsuficiente ? "text-muted-foreground" : at.media >= 70 ? "text-accent" : at.media >= 50 ? "text-warning" : "text-destructive"}`}>
+                    <p className={`text-lg font-black leading-none ${isInsuficiente ? "text-muted-foreground" : media10 >= 7 ? "text-accent" : media10 >= 5 ? "text-warning" : "text-destructive"}`}>
                       {formatNota(at.media)}
                     </p>
                     <p className="text-[9px] text-muted-foreground mt-1">Nota Média</p>
@@ -334,7 +336,7 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
                   >
                     {isInsuficiente ? "Pendente" : bonus.classificacao}
                   </Badge>
-                  <span className={`text-sm font-bold ${isInsuficiente ? "text-muted-foreground" : at.media >= 70 ? "text-accent" : at.media >= 50 ? "text-warning" : "text-destructive"}`}>
+                  <span className={`text-sm font-bold ${isInsuficiente ? "text-muted-foreground" : media10 >= 7 ? "text-accent" : media10 >= 5 ? "text-warning" : "text-destructive"}`}>
                     {isInsuficiente ? "—" : formatBRL(bonus.valor)}
                   </span>
                 </div>
@@ -380,7 +382,7 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
                           </Badge>
                         );
                       })()}
-                      {at.media < 7 && (
+                      {notaToScale10(at.media) < 7 && (
                         <Badge className="bg-warning/15 text-warning text-[10px]">Necessita mentoria</Badge>
                       )}
                     </>
@@ -476,7 +478,7 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
                     <Badge key={i} variant="outline" className="text-[11px] text-muted-foreground">{p}</Badge>
                   ))}
                 </div>
-                {at.media < 5 && (
+                {notaToScale10(at.media) < 5 && (
                   <p className="text-xs text-destructive mt-2 font-medium">
                     ⚠ Padrão recorrente — necessita acompanhamento próximo
                   </p>

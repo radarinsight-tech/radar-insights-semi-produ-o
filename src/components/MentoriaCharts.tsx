@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { notaToScale10 } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -63,7 +64,7 @@ const MentoriaCharts = ({ files }: MentoriaChartsProps) => {
   const scoreEvolution = useMemo(() => {
     const items = analyzed.map(f => {
       const date = f.analyzedAt || parseDate(f.result?.data || f.data);
-      return { date, nota: f.result!.notaFinal! };
+      return { date, nota: notaToScale10(f.result!.notaFinal!) };
     }).filter(i => i.date !== null) as { date: Date; nota: number }[];
 
     items.sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -101,7 +102,7 @@ const MentoriaCharts = ({ files }: MentoriaChartsProps) => {
     analyzed.forEach(f => {
       const name = f.result?.atendente || f.atendente || "Não identificado";
       if (!map.has(name)) map.set(name, []);
-      map.get(name)!.push(f.result!.notaFinal!);
+      map.get(name)!.push(notaToScale10(f.result!.notaFinal!));
     });
     return [...map.entries()].map(([name, notas]) => ({
       name: name.length > 15 ? name.slice(0, 14) + "…" : name,
@@ -142,7 +143,7 @@ const MentoriaCharts = ({ files }: MentoriaChartsProps) => {
     return null; // Need at least 2 analyses for charts
   }
 
-  const globalMedia = Math.round((analyzed.reduce((s, f) => s + f.result!.notaFinal!, 0) / analyzed.length) * 10) / 10;
+  const globalMedia = Math.round(notaToScale10(analyzed.reduce((s, f) => s + f.result!.notaFinal!, 0) / analyzed.length) * 10) / 10;
 
   return (
     <div className="space-y-4">
