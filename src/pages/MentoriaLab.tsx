@@ -72,6 +72,7 @@ interface LabFile {
   data?: string;
   canal?: string;
   hasAudio?: boolean;
+  tipo?: string;
   batchId?: string;
   batchFileId?: string;
   storagePath?: string;
