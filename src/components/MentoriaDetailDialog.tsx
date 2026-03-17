@@ -367,18 +367,18 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[96vh] p-0 gap-0">
+      <DialogContent className="max-w-4xl max-h-[96vh] p-0 gap-0 overflow-hidden">
         {/* ═══ TOOLBAR ═══ */}
-        <DialogHeader className="px-8 py-4 border-b border-border bg-muted/30">
+        <DialogHeader className="px-8 py-5 border-b border-border/60 bg-gradient-to-r from-muted/40 to-muted/20">
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="text-sm font-bold text-foreground tracking-wide uppercase">
+              <DialogTitle className="text-xs font-extrabold text-primary uppercase tracking-[0.15em]">
                 Relatório de Mentoria
               </DialogTitle>
-              <p className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-lg">{fileName}</p>
+              <p className="text-[11px] text-muted-foreground mt-1 truncate max-w-lg font-medium">{fileName}</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5 text-xs h-8">
+              <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5 text-xs h-8 font-semibold">
                 <Printer className="h-3.5 w-3.5" /> Imprimir
               </Button>
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOpenChange(false)}>
@@ -388,140 +388,159 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           </div>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(96vh-64px)]">
-          <div ref={printRef} className="px-8 py-6">
+        <ScrollArea className="max-h-[calc(96vh-72px)]">
+          <div ref={printRef} className="px-8 py-8 space-y-0">
 
-            {/* ═══ 1. CABEÇALHO — layout relatório ═══ */}
-            <div className="flex items-stretch gap-6 pb-5 border-b-2 border-foreground/10">
-              {/* Left: metadata — fill available space */}
-              <div className="flex-1 min-w-0">
-                <h1 className="text-base font-extrabold text-foreground tracking-tight mb-3">
-                  Auditoria de Atendimento
-                </h1>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2.5">
-                  <div className="flex items-center gap-2">
-                    <Hash className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Protocolo</p>
-                      <p className="text-sm font-bold text-foreground font-mono truncate">{result.protocolo || "—"}</p>
+            {/* ═══ 1. HERO — Nota + Classificação + Bônus ═══ */}
+            <div className="rounded-2xl bg-gradient-to-br from-muted/50 via-muted/30 to-background border border-border/60 p-6 mb-8 shadow-sm">
+              <div className="flex items-stretch gap-8">
+                {/* Left: metadata */}
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-lg font-extrabold text-foreground tracking-tight mb-4">
+                    Auditoria de Atendimento
+                  </h1>
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[9px] text-muted-foreground uppercase tracking-[0.12em] font-semibold">Protocolo</p>
+                        <p className="text-sm font-bold text-foreground font-mono truncate">{result.protocolo || "—"}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Atendente</p>
-                      <p className="text-sm font-bold text-foreground truncate">{result.atendente || atendente || "—"}</p>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        <User className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[9px] text-muted-foreground uppercase tracking-[0.12em] font-semibold">Atendente</p>
+                        <p className="text-sm font-bold text-foreground truncate">{result.atendente || atendente || "—"}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Data</p>
-                      <p className="text-sm font-semibold text-foreground">{formatDateBR(result.data)}</p>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[9px] text-muted-foreground uppercase tracking-[0.12em] font-semibold">Data</p>
+                        <p className="text-sm font-semibold text-foreground">{formatDateBR(result.data)}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Tipo</p>
-                      <p className="text-sm font-semibold text-foreground truncate">{result.tipo || "—"}</p>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[9px] text-muted-foreground uppercase tracking-[0.12em] font-semibold">Tipo</p>
+                        <p className="text-sm font-semibold text-foreground truncate">{result.tipo || "—"}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Right: score — card visual, centered */}
-              <div className="shrink-0 w-40 flex flex-col items-center justify-center text-center rounded-xl bg-muted/30 border border-border p-4">
-                <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">Nota Final</p>
-                <p className={`text-4xl font-black tracking-tighter leading-none ${notaColor(nota)}`}>
-                  {nota != null ? notaToScale10(nota).toFixed(1).replace(".", ",") : "—"}
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  {result.pontosObtidos ?? totalObtidos}/{result.pontosPossiveis ?? totalPossiveis} pts
-                </p>
-                <Badge className={`mt-1.5 text-xs px-2 py-0.5 ${classColor(classificacao)}`}>
-                  {classificacao}
-                </Badge>
-                {nota != null && (() => {
-                  const bonus = calcularBonus(nota);
-                  return (
-                    <div className="mt-2 pt-2 border-t border-border w-full">
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Bônus</p>
-                      <p className="text-xs font-bold text-foreground mt-0.5">{bonus.percentual}% · {formatBRL(bonus.valor)}</p>
-                    </div>
-                  );
-                })()}
+                {/* Right: score hero card */}
+                <div className="shrink-0 w-48 flex flex-col items-center justify-center text-center rounded-2xl bg-background border-2 border-border/80 p-5 shadow-md">
+                  <p className="text-[9px] text-muted-foreground uppercase tracking-[0.15em] font-bold mb-1.5">Nota Final</p>
+                  <p className={`text-5xl font-black tracking-tighter leading-none ${notaColor(nota)}`}>
+                    {nota != null ? notaToScale10(nota).toFixed(1).replace(".", ",") : "—"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-1.5 font-medium tabular-nums">
+                    {result.pontosObtidos ?? totalObtidos}/{result.pontosPossiveis ?? totalPossiveis} pontos
+                  </p>
+                  <Badge className={`mt-2.5 text-xs px-3 py-1 font-bold shadow-sm ${classColor(classificacao)}`}>
+                    {classificacao}
+                  </Badge>
+                  {nota != null && (() => {
+                    const bonus = calcularBonus(nota);
+                    return (
+                      <div className="mt-3 pt-3 border-t border-border/60 w-full">
+                        <div className="flex items-center justify-center gap-1.5 mb-1">
+                          <Award className="h-3.5 w-3.5 text-primary" />
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-[0.12em] font-bold">Bônus</p>
+                        </div>
+                        <p className="text-sm font-extrabold text-foreground">{bonus.percentual}%</p>
+                        <p className="text-xs font-semibold text-primary mt-0.5">{formatBRL(bonus.valor)}</p>
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
 
-            {/* Bonus row if applicable */}
+            {/* Bonus operacional row */}
             {(result.bonusOperacional?.atualizacaoCadastral || result.atualizacaoCadastral) && (
-              <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-md bg-muted/40 border border-border text-xs text-muted-foreground">
-                <TrendingUp className="h-3.5 w-3.5" />
-                <span>Atualização Cadastral: <span className="font-semibold text-foreground">{result.bonusOperacional?.atualizacaoCadastral ?? result.atualizacaoCadastral ?? "—"}</span></span>
+              <div className="flex items-center gap-2.5 mb-8 px-4 py-3 rounded-xl bg-muted/40 border border-border/60 text-xs text-muted-foreground">
+                <TrendingUp className="h-4 w-4 text-primary shrink-0" />
+                <span className="font-medium">Atualização Cadastral: <span className="font-bold text-foreground">{result.bonusOperacional?.atualizacaoCadastral ?? result.atualizacaoCadastral ?? "—"}</span></span>
                 {result.bonusOperacional?.pontosExtras && (
-                  <span className="ml-1 font-semibold text-accent">(+{result.bonusOperacional.pontosExtras} pts)</span>
+                  <Badge variant="outline" className="ml-auto text-accent border-accent/30 font-bold text-[10px]">+{result.bonusOperacional.pontosExtras} pts</Badge>
                 )}
               </div>
             )}
 
             {/* ═══ 2. CRITÉRIOS DE AVALIAÇÃO ═══ */}
-            <div className="mt-8">
-              <h2 className="text-[11px] font-extrabold text-foreground uppercase tracking-widest pb-3 border-b-2 border-foreground/10 mb-6">
-                Critérios de Avaliação
-              </h2>
+            <div>
+              <div className="flex items-center gap-3 pb-4 border-b-2 border-foreground/10 mb-8">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <FileText className="h-4 w-4 text-primary" />
+                </div>
+                <h2 className="text-sm font-extrabold text-foreground uppercase tracking-[0.1em]">
+                  Critérios de Avaliação
+                </h2>
+              </div>
 
-              <div className="space-y-8">
+              <div className="space-y-10">
                 {criteriosGrouped.map(({ categoria, items, subtotal }, catIdx) => {
                   if (items.length === 0) return null;
                   const catPct = subtotal ? Math.round((subtotal.obtidos / subtotal.possiveis) * 100) : null;
                   return (
                     <div key={categoria}>
                       {/* Category header */}
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-base">{CATEGORY_ICONS[categoria] || "📋"}</span>
-                          <h3 className="text-xs font-extrabold text-primary uppercase tracking-widest">
+                      <div className="flex items-center justify-between mb-4 pb-2 border-b border-border/40">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-lg">{CATEGORY_ICONS[categoria] || "📋"}</span>
+                          <h3 className="text-[13px] font-extrabold text-primary uppercase tracking-widest">
                             {catIdx + 1}. {categoria}
                           </h3>
                         </div>
                         {subtotal && (
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div className="flex items-center gap-3">
+                            <div className="w-20 h-2 rounded-full bg-muted overflow-hidden">
                               <div
                                 className="h-full rounded-full bg-primary transition-all"
                                 style={{ width: `${catPct}%` }}
                               />
                             </div>
-                            <span className="text-[11px] font-bold text-muted-foreground tabular-nums">
-                              {subtotal.obtidos}/{subtotal.possiveis}
+                            <span className="text-xs font-bold text-muted-foreground tabular-nums whitespace-nowrap">
+                              {subtotal.obtidos}/{subtotal.possiveis} pts
                             </span>
                           </div>
                         )}
                       </div>
 
-                      {/* Criteria list — clean vertical layout */}
-                      <div className="space-y-0 border-l-2 border-border ml-3">
+                      {/* Criteria list */}
+                      <div className="space-y-1 border-l-2 border-border/60 ml-4">
                         {items.map((c) => {
                           const badge = resultLabel(c.resultado);
                           const excerpt = findRelevantExcerpt(rawText, c.explicacao);
                           const isCritical = c.pesoMaximo >= 10;
                           const rowBg =
                             c.resultado === "SIM"
-                              ? isCritical ? "bg-accent/10 border border-accent/25 rounded-lg" : "bg-accent/5 rounded-lg"
+                              ? isCritical ? "bg-accent/10 border border-accent/25 rounded-xl" : "bg-accent/5 rounded-xl"
                               : c.resultado === "NÃO"
-                              ? isCritical ? "bg-destructive/10 border border-destructive/25 rounded-lg" : "bg-destructive/5 rounded-lg"
+                              ? isCritical ? "bg-destructive/10 border border-destructive/25 rounded-xl" : "bg-destructive/5 rounded-xl"
                               : "";
                           return (
-                            <div key={c.numero} className={`relative pl-6 py-3 group ${rowBg} ${rowBg ? "px-4 my-1" : ""}`}>
+                            <div key={c.numero} className={`relative pl-7 py-3.5 group ${rowBg} ${rowBg ? "px-5 my-1.5" : ""}`}>
                               {/* Dot on timeline */}
-                              <div className={`absolute ${rowBg ? "left-[11px]" : "left-[-5px]"} top-[18px] w-2.5 h-2.5 rounded-full ring-2 ring-background ${
+                              <div className={`absolute ${rowBg ? "left-[13px]" : "left-[-5px]"} top-[20px] w-2.5 h-2.5 rounded-full ring-2 ring-background ${
                                 c.resultado === "SIM" ? "bg-accent" :
                                 c.resultado === "NÃO" ? "bg-destructive" : "bg-muted-foreground/40"
                               }`} />
 
                               {/* Question + badge + pts */}
-                              <div className="flex items-baseline gap-2 flex-wrap">
+                              <div className="flex items-baseline gap-2.5 flex-wrap">
                                 <span className={`text-[13px] font-semibold leading-snug ${
                                   c.resultado === "SIM" ? "text-accent-foreground" :
                                   c.resultado === "NÃO" ? "text-destructive-foreground" : "text-foreground"
@@ -542,7 +561,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                               </div>
 
                               {/* Justification */}
-                              <p className={`text-xs mt-1.5 leading-relaxed pl-0.5 ${
+                              <p className={`text-xs mt-2 leading-relaxed pl-0.5 ${
                                 c.resultado === "NÃO" ? "text-destructive/80 font-medium" : "text-muted-foreground"
                               }`}>
                                 {c.explicacao}
@@ -550,7 +569,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
 
                               {/* Conversation excerpt */}
                               {excerpt && (
-                                <div className={`mt-2 rounded-md px-3 py-2 text-[11px] italic border-l-[3px] ${
+                                <div className={`mt-2.5 rounded-lg px-3.5 py-2.5 text-[11px] italic border-l-[3px] ${
                                   c.resultado === "SIM"
                                     ? "bg-accent/10 border-accent/50 text-accent-foreground/80"
                                     : "bg-destructive/10 border-destructive/50 text-destructive-foreground/80"
@@ -570,42 +589,47 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
             </div>
 
             {/* ═══ 3. MENTORIA DE COMUNICAÇÃO ═══ */}
-            <div className="mt-10">
-              <h2 className="text-[11px] font-extrabold text-foreground uppercase tracking-widest pb-3 border-b-2 border-foreground/10 mb-6">
-                Mentoria de Comunicação
-              </h2>
+            <div className="mt-12">
+              <div className="flex items-center gap-3 pb-4 border-b-2 border-foreground/10 mb-8">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Lightbulb className="h-4 w-4 text-primary" />
+                </div>
+                <h2 className="text-sm font-extrabold text-foreground uppercase tracking-[0.1em]">
+                  Mentoria de Comunicação
+                </h2>
+              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {/* Principal acerto */}
                 {melhorAcerto && (
-                  <div className="rounded-xl bg-accent/5 border border-accent/20 p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-7 h-7 rounded-full bg-accent/15 flex items-center justify-center">
-                        <CheckCircle2 className="h-4 w-4 text-accent" />
+                  <div className="rounded-2xl bg-accent/5 border border-accent/20 p-6">
+                    <div className="flex items-center gap-2.5 mb-4">
+                      <div className="w-8 h-8 rounded-full bg-accent/15 flex items-center justify-center">
+                        <CheckCircle2 className="h-4.5 w-4.5 text-accent" />
                       </div>
-                      <p className="text-[10px] font-extrabold text-accent uppercase tracking-widest">Principal Acerto</p>
+                      <p className="text-[10px] font-extrabold text-accent uppercase tracking-[0.12em]">Principal Acerto</p>
                     </div>
                     <p className="text-sm font-bold text-foreground leading-snug">{melhorAcerto.nome}</p>
-                    <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{melhorAcerto.explicacao}</p>
+                    <p className="text-xs text-muted-foreground mt-2.5 leading-relaxed">{melhorAcerto.explicacao}</p>
                   </div>
                 )}
 
                 {/* Principal ponto de melhoria */}
                 {principalMelhoria && (
-                  <div className="rounded-xl bg-destructive/5 border border-destructive/20 p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-7 h-7 rounded-full bg-destructive/15 flex items-center justify-center">
-                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                  <div className="rounded-2xl bg-destructive/5 border border-destructive/20 p-6">
+                    <div className="flex items-center gap-2.5 mb-4">
+                      <div className="w-8 h-8 rounded-full bg-destructive/15 flex items-center justify-center">
+                        <AlertTriangle className="h-4.5 w-4.5 text-destructive" />
                       </div>
-                      <p className="text-[10px] font-extrabold text-destructive uppercase tracking-widest">Principal Melhoria</p>
+                      <p className="text-[10px] font-extrabold text-destructive uppercase tracking-[0.12em]">Principal Melhoria</p>
                     </div>
                     <p className="text-sm font-bold text-foreground leading-snug">{principalMelhoria.nome}</p>
-                    <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{principalMelhoria.explicacao}</p>
+                    <p className="text-xs text-muted-foreground mt-2.5 leading-relaxed">{principalMelhoria.explicacao}</p>
                     {(() => {
                       const ex = findRelevantExcerpt(rawText, principalMelhoria.explicacao);
                       if (!ex) return null;
                       return (
-                        <div className="mt-3 rounded-md px-3 py-2 text-[11px] italic border-l-[3px] border-destructive/40 bg-destructive/5 text-foreground/70">
+                        <div className="mt-3.5 rounded-lg px-3.5 py-2.5 text-[11px] italic border-l-[3px] border-destructive/40 bg-destructive/5 text-foreground/70">
                           <MessageSquareQuote className="h-3 w-3 inline mr-1.5 opacity-50" />
                           "{ex}"
                         </div>
@@ -617,19 +641,19 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
 
               {/* Orientações práticas */}
               {mentoriaItems.length > 0 && (
-                <div className="mt-5 rounded-xl border border-primary/20 bg-primary/5 p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center">
+                <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-6">
+                  <div className="flex items-center gap-2.5 mb-5">
+                    <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center">
                       <Lightbulb className="h-4 w-4 text-primary" />
                     </div>
-                    <p className="text-[10px] font-extrabold text-primary uppercase tracking-widest">
+                    <p className="text-[10px] font-extrabold text-primary uppercase tracking-[0.12em]">
                       Orientações Práticas
                     </p>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-3.5">
                     {mentoriaItems.map((item, i) => (
-                      <div key={i} className="flex gap-3 items-start">
-                        <span className="text-[10px] font-bold text-primary-foreground shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center mt-0.5">
+                      <div key={i} className="flex gap-3.5 items-start">
+                        <span className="text-[10px] font-bold text-primary-foreground shrink-0 w-5.5 h-5.5 rounded-full bg-primary flex items-center justify-center mt-0.5 w-6 h-6">
                           {i + 1}
                         </span>
                         <p className="text-[13px] text-foreground leading-relaxed">{item}</p>
@@ -638,6 +662,12 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* ═══ FOOTER ═══ */}
+            <div className="mt-10 pt-4 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground">
+              <span className="font-medium">Radar Insight · Relatório gerado automaticamente</span>
+              <span>{new Date().toLocaleDateString("pt-BR")} às {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
             </div>
 
           </div>
