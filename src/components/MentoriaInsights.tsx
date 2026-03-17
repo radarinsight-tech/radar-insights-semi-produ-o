@@ -186,27 +186,34 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Lightbulb className="h-5 w-5 text-primary" />
-        <h2 className="text-lg font-bold text-foreground">Insights da Mentoria</h2>
-        <Badge variant="outline" className="text-xs">{insights.total} atendimentos</Badge>
-      </div>
-
-      {/* 1. Resumo Geral */}
-      <Card className="p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-primary" /> Resumo Geral
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="p-3 rounded-lg bg-muted/50 text-center">
-            <p className="text-2xl font-bold text-foreground">{formatNota(insights.media)}</p>
-            <p className="text-xs text-muted-foreground">Nota média</p>
-            <Badge className={`mt-1 text-xs ${classColor(insights.classificacaoMedia)} bg-transparent border-0 p-0 font-semibold`}>
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center gap-3 pb-3 border-b border-primary/20">
+        <div className="p-2 rounded-xl bg-primary/10">
+          <Lightbulb className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <h2 className="text-lg font-bold text-foreground">Insights da Mentoria</h2>
+          <p className="text-xs text-muted-foreground">{insights.total} atendimentos analisados • {insights.atendenteStats.length} atendente{insights.atendenteStats.length > 1 ? "s" : ""}</p>
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <div className="text-right">
+            <p className="text-2xl font-bold text-foreground leading-none">{formatNota(insights.media)}</p>
+            <Badge className={`text-[10px] ${classColor(insights.classificacaoMedia)} bg-transparent border-0 p-0 font-semibold`}>
               {insights.classificacaoMedia}
             </Badge>
           </div>
-          <div className="p-3 rounded-lg bg-accent/5 border border-accent/20 text-center">
+        </div>
+      </div>
+
+      {/* 1. Resumo Geral */}
+      <Card className="p-5 space-y-4 rounded-xl border-border/60 shadow-sm">
+        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <BarChart3 className="h-4 w-4 text-primary" />
+          <span>1. Resumo Geral</span>
+        </h3>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="p-3 rounded-xl bg-accent/5 border border-accent/20 text-center">
             <Award className="h-5 w-5 text-accent mx-auto mb-1" />
             <p className="text-sm font-bold text-foreground">{insights.melhor.name}</p>
             <p className="text-xs text-muted-foreground">Melhor — {formatNota(insights.melhor.media)}</p>
@@ -263,9 +270,9 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
       </Card>
 
       {/* 2. Performance por Atendente */}
-      <Card className="p-5">
+      <Card className="p-5 rounded-xl border-border/60 shadow-sm">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-          <Users className="h-4 w-4 text-primary" /> Performance por Atendente
+          <Users className="h-4 w-4 text-primary" /> 2. Performance por Atendente
         </h3>
         <Accordion type="multiple" className="space-y-2">
           {insights.atendenteStats.map((at) => (
@@ -327,9 +334,9 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
       </Card>
 
       {/* 3. Atendimentos Recomendados */}
-      <Card className="p-5">
+      <Card className="p-5 rounded-xl border-border/60 shadow-sm">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-          <Target className="h-4 w-4 text-primary" /> Atendimentos Recomendados para Mentoria
+          <Target className="h-4 w-4 text-primary" /> 3. Atendimentos Recomendados
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <RecommendedList
@@ -361,9 +368,9 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
 
       {/* 4. Padrões de Comportamento */}
       {insights.atendenteStats.some((a) => a.pontosFracos.length > 0) && (
-        <Card className="p-5">
+        <Card className="p-5 rounded-xl border-border/60 shadow-sm">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-            <MessageSquare className="h-4 w-4 text-primary" /> Padrões de Comportamento Identificados
+            <MessageSquare className="h-4 w-4 text-primary" /> 4. Padrões de Comportamento
           </h3>
           <div className="space-y-3">
             {insights.atendenteStats.filter((a) => a.pontosFracos.length > 0).map((at) => (
@@ -386,9 +393,9 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
       )}
 
       {/* 5. Roteiro de Mentoria */}
-      <Card className="p-5 border-primary/20 bg-primary/[0.02]">
+      <Card className="p-5 rounded-xl border-primary/20 bg-primary/[0.02] shadow-sm">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-4">
-          <BookOpen className="h-4 w-4 text-primary" /> Roteiro de Mentoria (sugestão automática)
+          <BookOpen className="h-4 w-4 text-primary" /> 5. Roteiro de Mentoria
         </h3>
         <div className="space-y-4">
           <RoteiroStep step="1" title="Abertura" text={insights.roteiro.abertura} />

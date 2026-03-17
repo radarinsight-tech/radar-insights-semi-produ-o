@@ -280,6 +280,10 @@ const MentoriaLab = () => {
     setProcessing(false);
     setSelected(new Set());
     toast.success(`Análise concluída: ${success} sucesso(s), ${errors} erro(s).`);
+    // Scroll to insights
+    setTimeout(() => {
+      document.getElementById("mentoria-insights")?.scrollIntoView({ behavior: "smooth" });
+    }, 300);
   };
 
   const removeFile = (id: string) => {
@@ -451,10 +455,11 @@ const MentoriaLab = () => {
                 <Button
                   onClick={analyzeSelected}
                   disabled={selected.size === 0 || processing}
-                  className="gap-2"
+                  size="lg"
+                  className="gap-2 font-semibold"
                 >
                   {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                  Analisar selecionados ({selected.size})
+                  {processing ? "Analisando..." : `Analisar ${selected.size} selecionado${selected.size !== 1 ? "s" : ""}`}
                 </Button>
                 {selected.size > 0 && (
                   <Button variant="ghost" size="sm" onClick={removeSelected} className="text-destructive">
@@ -518,13 +523,20 @@ const MentoriaLab = () => {
                           )}
                         </td>
                         <td className="p-3 text-center">
-                          {readingIds.has(f.id) ? (
-                            <Badge className="bg-primary/10 text-primary text-xs">Lendo...</Badge>
-                          ) : (
-                            <Badge className={`${statusConfig[f.status].color} text-xs`}>
-                              {statusConfig[f.status].label}
-                            </Badge>
-                          )}
+                          <div className="flex flex-col items-center gap-1">
+                            {readingIds.has(f.id) ? (
+                              <Badge className="bg-primary/10 text-primary text-xs">Lendo...</Badge>
+                            ) : (
+                              <Badge className={`${statusConfig[f.status].color} text-xs`}>
+                                {statusConfig[f.status].label}
+                              </Badge>
+                            )}
+                            {f.status === "analisado" && f.result?.notaFinal != null && f.result.notaFinal < 7 && (
+                              <Badge className="bg-warning/15 text-warning text-[10px] whitespace-nowrap">
+                                Necessita mentoria
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="p-3 text-center">
                           <div className="flex items-center justify-center gap-1">
@@ -561,9 +573,14 @@ const MentoriaLab = () => {
               </div>
             </Card>
 
-            {/* Insights da Mentoria - appears after analyses */}
+            {/* Insights da Mentoria - prominent section after analyses */}
             {files.some((f) => f.status === "analisado") && (
-              <MentoriaInsights files={files} />
+              <div id="mentoria-insights" className="scroll-mt-6">
+                <div className="relative">
+                  <div className="absolute -inset-3 bg-primary/[0.03] rounded-2xl -z-10" />
+                  <MentoriaInsights files={files} />
+                </div>
+              </div>
             )}
           </>
         )}
