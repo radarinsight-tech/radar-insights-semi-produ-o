@@ -776,10 +776,28 @@ const MentoriaLab = () => {
                 const cfg = batchStatusConfig[batchInfo.status];
                 const Icon = cfg.icon;
                 const isAnimated = batchInfo.status === "extraindo_arquivos" || batchInfo.status === "organizando_atendimentos" || batchInfo.status === "em_analise";
+                const isActionable = batchInfo.status === "pronto_para_curadoria";
+                const readyFiles = isActionable ? files.filter(f => f.status === "lido") : [];
+                const handleBadgeClick = () => {
+                  if (!isActionable || readyFiles.length === 0) return;
+                  // Select all "lido" files
+                  setSelected(new Set(readyFiles.map(f => f.id)));
+                  // Scroll to table
+                  document.getElementById("mentoria-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  toast.success(`${readyFiles.length} atendimento${readyFiles.length !== 1 ? "s" : ""} pronto${readyFiles.length !== 1 ? "s" : ""} selecionado${readyFiles.length !== 1 ? "s" : ""}. Clique em "Analisar" para iniciar.`);
+                };
                 return (
-                  <Badge variant="outline" className={`gap-1.5 ${cfg.color} border-current/20 shrink-0`}>
+                  <Badge
+                    variant="outline"
+                    className={`gap-1.5 ${cfg.color} border-current/20 shrink-0 ${isActionable ? "cursor-pointer hover:bg-primary/10 hover:scale-105 transition-all" : ""}`}
+                    onClick={isActionable ? handleBadgeClick : undefined}
+                    title={isActionable ? `Selecionar ${readyFiles.length} atendimento(s) pronto(s) para análise` : undefined}
+                  >
                     <Icon className={`h-3.5 w-3.5 ${isAnimated ? "animate-spin" : ""}`} />
                     {cfg.label}
+                    {isActionable && readyFiles.length > 0 && (
+                      <span className="ml-1 px-1.5 py-0.5 rounded-full bg-primary/15 text-[10px] font-bold">{readyFiles.length}</span>
+                    )}
                   </Badge>
                 );
               })()}
@@ -1032,7 +1050,7 @@ const MentoriaLab = () => {
             </Card>
 
             {/* Table */}
-            <Card className="overflow-hidden">
+            <Card id="mentoria-table" className="overflow-hidden scroll-mt-4">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
