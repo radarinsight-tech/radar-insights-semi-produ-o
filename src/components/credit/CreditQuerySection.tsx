@@ -66,7 +66,7 @@ function generateMockResult(raw: string, nomeCliente?: string): SpcQueryResult {
 
   return {
     cpfCnpj: digits, formatted, tipo: isCnpj ? "CNPJ" : "CPF",
-    nome: nomeCliente || generateName(digits), situacaoCpf,
+    nome: nomeCliente || "Nome não informado", situacaoCpf,
     registroSpc, pendenciasSerasa, protestos, chequesSemFundo,
     totalOcorrencias, valorTotalPendencias,
     classificacaoRisco: classificarRisco(registroSpc, pendenciasSerasa, protestos, valorTotalPendencias),
