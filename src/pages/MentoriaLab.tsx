@@ -577,7 +577,7 @@ const MentoriaLab = () => {
         setFiles((prev) =>
           prev.map((f) =>
             f.id === labFile.id
-              ? { ...f, status: "analisado", result: data, protocolo: data.protocolo || f.protocolo, atendente: data.atendente || f.atendente, data: data.data || f.data }
+              ? { ...f, status: "analisado", result: data, protocolo: data.protocolo || f.protocolo, atendente: data.atendente || f.atendente, data: data.data || f.data, analyzedAt: new Date() }
               : f
           )
         );
