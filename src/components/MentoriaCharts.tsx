@@ -108,6 +108,7 @@ const MentoriaCharts = ({ files }: MentoriaChartsProps) => {
       fullName: name,
       media: Math.round((notas.reduce((a, b) => a + b, 0) / notas.length) * 10) / 10,
       total: notas.length,
+      insuficiente: notas.length < 6,
     })).sort((a, b) => b.media - a.media);
   }, [analyzed]);
 
@@ -225,16 +226,17 @@ const MentoriaCharts = ({ files }: MentoriaChartsProps) => {
                     fontSize: "12px",
                   }}
                   formatter={(value: number, _name: string, props: any) => [
-                    `${value.toFixed(1).replace(".", ",")} (${props.payload.total} atend.)`,
+                    `${value.toFixed(1).replace(".", ",")} (${props.payload.total} atend.)${props.payload.insuficiente ? " · Amostragem insuficiente" : ""}`,
                     "Nota média",
                   ]}
                 />
                 <ReferenceLine x={7} stroke="hsl(var(--accent))" strokeDasharray="4 4" strokeOpacity={0.5} />
                 <Bar dataKey="media" radius={[0, 4, 4, 0]} maxBarSize={28}>
-                  {atendentePerformance.map((entry, i) => (
+                  {atendentePerformance.map((entry) => (
                     <Cell
                       key={entry.fullName}
-                      fill={entry.media >= 7 ? "hsl(var(--accent))" : entry.media >= 5 ? "hsl(var(--warning))" : "hsl(var(--destructive))"}
+                      fill={entry.insuficiente ? "hsl(var(--muted-foreground))" : entry.media >= 7 ? "hsl(var(--accent))" : entry.media >= 5 ? "hsl(var(--warning))" : "hsl(var(--destructive))"}
+                      opacity={entry.insuficiente ? 0.4 : 1}
                     />
                   ))}
                 </Bar>

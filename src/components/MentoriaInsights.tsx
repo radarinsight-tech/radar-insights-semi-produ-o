@@ -70,7 +70,10 @@ interface AtendenteStats {
   pontosFortes: string[];
   pontosFracos: string[];
   files: AnalyzedFile[];
+  amostragemInsuficiente: boolean;
 }
+
+const MIN_MENTORIAS = 6;
 
 function countOccurrences(items: string[]): { text: string; count: number }[] {
   const map = new Map<string, number>();
@@ -118,11 +121,14 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
         pontosFortes: countOccurrences(fortes).slice(0, 5).map((o) => o.text),
         pontosFracos: countOccurrences(fracos).slice(0, 5).map((o) => o.text),
         files: aFiles,
+        amostragemInsuficiente: notasAt.length < MIN_MENTORIAS,
       };
     }).sort((a, b) => b.media - a.media);
 
-    const melhor = atendenteStats[0];
-    const pior = atendenteStats[atendenteStats.length - 1];
+    const elegiveisStats = atendenteStats.filter((a) => !a.amostragemInsuficiente);
+
+    const melhor = elegiveisStats[0] || atendenteStats[0];
+    const pior = elegiveisStats.length > 0 ? elegiveisStats[elegiveisStats.length - 1] : atendenteStats[atendenteStats.length - 1];
 
     // Global improvement points
     const allMelhoria: string[] = [];
@@ -284,20 +290,32 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
                     <span className="font-medium text-foreground text-sm">{at.name}</span>
                     <span className="text-xs text-muted-foreground ml-2">({at.notas.length} atendimento{at.notas.length > 1 ? "s" : ""})</span>
                   </div>
-                  <Badge className={`text-xs ${classColor(at.classificacao)} bg-transparent border-0 p-0 font-bold`}>
-                    {formatNota(at.media)}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">{at.classificacao}</Badge>
-                  {(() => {
-                    const bonus = calcularBonus(at.media);
-                    return (
-                      <Badge variant="outline" className="text-[10px] gap-1">
-                        {bonus.percentual}% · {formatBRL(bonus.valor)}
+                  {at.amostragemInsuficiente ? (
+                    <>
+                      <Badge className={`text-xs ${classColor(at.classificacao)} bg-transparent border-0 p-0 font-bold opacity-50`}>
+                        {formatNota(at.media)}
                       </Badge>
-                    );
-                  })()}
-                  {at.media < 7 && (
-                    <Badge className="bg-warning/15 text-warning text-[10px]">Necessita mentoria</Badge>
+                      <Badge className="bg-muted text-muted-foreground text-[10px]">Amostragem insuficiente</Badge>
+                      <span className="text-[10px] text-muted-foreground">mín. {MIN_MENTORIAS}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Badge className={`text-xs ${classColor(at.classificacao)} bg-transparent border-0 p-0 font-bold`}>
+                        {formatNota(at.media)}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">{at.classificacao}</Badge>
+                      {(() => {
+                        const bonus = calcularBonus(at.media);
+                        return (
+                          <Badge variant="outline" className="text-[10px] gap-1">
+                            {bonus.percentual}% · {formatBRL(bonus.valor)}
+                          </Badge>
+                        );
+                      })()}
+                      {at.media < 7 && (
+                        <Badge className="bg-warning/15 text-warning text-[10px]">Necessita mentoria</Badge>
+                      )}
+                    </>
                   )}
                 </div>
               </AccordionTrigger>
