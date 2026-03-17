@@ -192,30 +192,33 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
       <!DOCTYPE html>
       <html><head><title>Mentoria — ${result.protocolo || "Atendimento"}</title>
       <style>
-        @page { size: A4; margin: 20mm 18mm; }
+        @page { size: A4; margin: 15mm 12mm 18mm 12mm; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
-          font-size: 10.5px; color: #1a1a1a; line-height: 1.55;
-          padding: 0;
+          font-size: 10px; color: #1a1a1a; line-height: 1.5;
+          padding: 0; margin: 0;
+          max-width: 100%; overflow-x: hidden;
+          width: 100%;
         }
 
         /* ── HEADER ── */
         .report-header {
           display: flex; justify-content: space-between; align-items: flex-start;
-          padding-bottom: 14px; border-bottom: 3px solid #111; margin-bottom: 18px;
+          padding-bottom: 12px; border-bottom: 3px solid #111; margin-bottom: 14px;
+          gap: 12px;
         }
-        .header-brand { font-size: 7px; text-transform: uppercase; letter-spacing: 0.15em; color: #9ca3af; margin-bottom: 10px; }
-        .header-title { font-size: 16px; font-weight: 800; color: #111; letter-spacing: -0.02em; }
-        .header-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 28px; margin-top: 10px; }
-        .header-grid dt { font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; }
-        .header-grid dd { font-size: 11px; font-weight: 600; color: #1a1a1a; margin-bottom: 2px; }
+        .header-brand { font-size: 7px; text-transform: uppercase; letter-spacing: 0.15em; color: #9ca3af; margin-bottom: 8px; }
+        .header-title { font-size: 14px; font-weight: 800; color: #111; letter-spacing: -0.02em; }
+        .header-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 20px; margin-top: 8px; }
+        .header-grid dt { font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; }
+        .header-grid dd { font-size: 10px; font-weight: 600; color: #1a1a1a; margin-bottom: 2px; word-break: break-word; }
 
-        .score-block { text-align: right; min-width: 100px; }
-        .score-label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; }
-        .score-value { font-size: 40px; font-weight: 900; line-height: 1; letter-spacing: -0.03em; margin: 2px 0 4px; }
-        .score-pts { font-size: 9px; color: #6b7280; }
-        .score-class { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 10px; border-radius: 4px; margin-top: 6px; }
+        .score-block { text-align: right; min-width: 90px; flex-shrink: 0; }
+        .score-label { font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; }
+        .score-value { font-size: 34px; font-weight: 900; line-height: 1; letter-spacing: -0.03em; margin: 2px 0 3px; }
+        .score-pts { font-size: 8.5px; color: #6b7280; }
+        .score-class { display: inline-block; font-size: 8.5px; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-top: 5px; }
         .class-excelente { background: #dcfce7; color: #166534; }
         .class-bom { background: #dbeafe; color: #1e40af; }
         .class-medio { background: #fef3c7; color: #92400e; }
@@ -228,30 +231,30 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
 
         /* ── SECTION TITLES ── */
         .section-title {
-          font-size: 10px; font-weight: 800; text-transform: uppercase;
+          font-size: 9.5px; font-weight: 800; text-transform: uppercase;
           letter-spacing: 0.08em; color: #374151;
-          padding-bottom: 6px; border-bottom: 2px solid #e5e7eb;
-          margin: 22px 0 12px;
+          padding-bottom: 5px; border-bottom: 2px solid #e5e7eb;
+          margin: 16px 0 10px;
         }
 
         /* ── CRITERIA ── */
-        .secao-cat { margin-bottom: 16px; page-break-inside: avoid; }
-        .cat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-        .cat-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #374151; }
-        .cat-score { font-size: 9px; font-weight: 700; color: #6b7280; }
-        .cat-bar-wrapper { height: 3px; background: #f3f4f6; border-radius: 2px; margin-bottom: 8px; }
-        .cat-bar { height: 100%; background: #2563eb; border-radius: 2px; }
+        .secao-cat { margin-bottom: 12px; page-break-inside: avoid; }
+        .cat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+        .cat-title { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #374151; }
+        .cat-score { font-size: 8.5px; font-weight: 700; color: #6b7280; }
+        .cat-bar-wrapper { height: 3px; background: #f3f4f6; border-radius: 2px; margin-bottom: 6px; overflow: hidden; }
+        .cat-bar { height: 100%; background: #2563eb; border-radius: 2px; max-width: 100%; }
 
-        .criterio { padding: 6px 0; border-bottom: 1px solid #f3f4f6; }
-        .criterio-sim { background: #f0fdf4; border-radius: 6px; padding: 8px 10px; margin: 4px 0; border-bottom: none; }
-        .criterio-sim-critico { background: #dcfce7; border: 1px solid #86efac; border-radius: 6px; padding: 8px 10px; margin: 4px 0; border-bottom: none; }
-        .criterio-nao { background: #fef2f2; border-radius: 6px; padding: 8px 10px; margin: 4px 0; border-bottom: none; }
-        .criterio-nao-critico { background: #fde2e2; border: 1px solid #fca5a5; border-radius: 6px; padding: 8px 10px; margin: 4px 0; border-bottom: none; }
+        .criterio { padding: 5px 0; border-bottom: 1px solid #f3f4f6; word-wrap: break-word; overflow-wrap: break-word; }
+        .criterio-sim { background: #f0fdf4; border-radius: 5px; padding: 6px 8px; margin: 3px 0; border-bottom: none; }
+        .criterio-sim-critico { background: #dcfce7; border: 1px solid #86efac; border-radius: 5px; padding: 6px 8px; margin: 3px 0; border-bottom: none; }
+        .criterio-nao { background: #fef2f2; border-radius: 5px; padding: 6px 8px; margin: 3px 0; border-bottom: none; }
+        .criterio-nao-critico { background: #fde2e2; border: 1px solid #fca5a5; border-radius: 5px; padding: 6px 8px; margin: 3px 0; border-bottom: none; }
         .criterio:last-child { border-bottom: none; }
-        .criterio-row { display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; }
-        .criterio-num { font-weight: 700; color: #6b7280; font-size: 10px; min-width: 18px; }
-        .criterio-nome { font-weight: 600; font-size: 10.5px; color: #1a1a1a; flex: 1; }
-        .criterio-badge { display: inline-block; font-size: 8px; font-weight: 800; padding: 1px 6px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .criterio-row { display: flex; align-items: baseline; gap: 3px; flex-wrap: wrap; }
+        .criterio-num { font-weight: 700; color: #6b7280; font-size: 9.5px; min-width: 16px; flex-shrink: 0; }
+        .criterio-nome { font-weight: 600; font-size: 9.5px; color: #1a1a1a; flex: 1; min-width: 0; word-break: break-word; }
+        .criterio-badge { display: inline-block; font-size: 7.5px; font-weight: 800; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0; }
         .badge-critico { background: #eff6ff; color: #1e40af; }
         .explicacao-nao { color: #991b1b; font-weight: 500; }
         .trecho-sim { border-left-color: #16a34a; background: #f0fdf4; }
@@ -259,32 +262,36 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
         .badge-sim { background: #dcfce7; color: #166534; }
         .badge-nao { background: #fde2e2; color: #991b1b; }
         .badge-fora { background: #f3f4f6; color: #9ca3af; }
-        .criterio-pts { font-size: 9px; color: #9ca3af; font-weight: 600; margin-left: auto; white-space: nowrap; }
-        .criterio-explicacao { color: #6b7280; font-size: 9.5px; margin-top: 2px; padding-left: 22px; }
-        .criterio-trecho { margin: 4px 0 2px 22px; padding: 4px 10px; border-left: 2px solid #d1d5db; color: #6b7280; font-style: italic; background: #fafafa; font-size: 9px; }
+        .criterio-pts { font-size: 8.5px; color: #9ca3af; font-weight: 600; margin-left: auto; white-space: nowrap; flex-shrink: 0; }
+        .criterio-explicacao { color: #6b7280; font-size: 9px; margin-top: 2px; padding-left: 20px; word-break: break-word; overflow-wrap: break-word; }
+        .criterio-trecho { margin: 3px 0 2px 20px; padding: 3px 8px; border-left: 2px solid #d1d5db; color: #6b7280; font-style: italic; background: #fafafa; font-size: 8.5px; word-break: break-word; }
 
         /* ── MENTORIA ── */
-        .mentoria-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
-        .mentoria-card { padding: 10px 14px; border-radius: 6px; page-break-inside: avoid; }
+        .mentoria-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+        .mentoria-card { padding: 8px 10px; border-radius: 5px; page-break-inside: avoid; word-break: break-word; }
         .mentoria-positivo { background: #f0fdf4; border: 1px solid #bbf7d0; }
         .mentoria-negativo { background: #fef2f2; border: 1px solid #fecaca; }
-        .mentoria-label { font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+        .mentoria-label { font-size: 7.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
         .label-positivo { color: #166534; }
         .label-negativo { color: #991b1b; }
-        .mentoria-nome { font-size: 10.5px; font-weight: 700; color: #1a1a1a; margin-bottom: 3px; }
-        .mentoria-desc { font-size: 9.5px; color: #6b7280; line-height: 1.5; }
+        .mentoria-nome { font-size: 9.5px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+        .mentoria-desc { font-size: 9px; color: #6b7280; line-height: 1.45; word-break: break-word; }
 
-        .orientacoes { margin-top: 12px; padding: 12px 14px; border-radius: 6px; background: #eff6ff; border: 1px solid #bfdbfe; page-break-inside: avoid; }
-        .orientacao-item { display: flex; gap: 8px; align-items: flex-start; padding: 3px 0; }
-        .orientacao-num { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #2563eb; color: #fff; font-size: 8px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
-        .orientacao-text { font-size: 10px; color: #1a1a1a; line-height: 1.5; }
+        .orientacoes { margin-top: 10px; padding: 10px 12px; border-radius: 5px; background: #eff6ff; border: 1px solid #bfdbfe; page-break-inside: avoid; }
+        .orientacao-item { display: flex; gap: 6px; align-items: flex-start; padding: 2px 0; }
+        .orientacao-num { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; background: #2563eb; color: #fff; font-size: 7.5px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+        .orientacao-text { font-size: 9px; color: #1a1a1a; line-height: 1.45; word-break: break-word; }
 
         /* ── FOOTER ── */
-        .report-footer { margin-top: 24px; padding-top: 10px; border-top: 1px solid #e5e7eb; font-size: 8px; color: #9ca3af; display: flex; justify-content: space-between; }
+        .report-footer { margin-top: 18px; padding-top: 8px; border-top: 1px solid #e5e7eb; font-size: 7.5px; color: #9ca3af; display: flex; justify-content: space-between; }
 
         @media print {
-          body { padding: 0; }
+          body { padding: 0; margin: 0; max-width: 100%; overflow: hidden; }
           .secao-cat { page-break-inside: avoid; }
+          .criterio { page-break-inside: avoid; }
+          .mentoria-card { page-break-inside: avoid; }
+          .orientacoes { page-break-inside: avoid; }
+          .report-header { page-break-after: avoid; }
         }
       </style>
       </head><body>
