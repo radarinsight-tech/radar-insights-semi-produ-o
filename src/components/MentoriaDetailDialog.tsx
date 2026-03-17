@@ -562,7 +562,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
 
                               {/* Justification */}
                               <p className={`text-xs mt-2 leading-relaxed pl-0.5 ${
-                                c.resultado === "NÃO" ? "text-destructive/80 font-medium" : "text-muted-foreground"
+                                c.resultado === "NÃO" ? "text-destructive font-medium" : "text-muted-foreground"
                               }`}>
                                 {c.explicacao}
                               </p>
