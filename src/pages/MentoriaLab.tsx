@@ -128,10 +128,10 @@ const MentoriaLab = () => {
       const text = await extractTextFromPdf(labFile.file);
       if (!text.trim()) {
         setFiles((prev) =>
-          prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Sem texto extraído" } : f))
+          prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível extrair texto deste PDF." } : f))
         );
         if (labFile.batchFileId) {
-          await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Sem texto extraído" } as any).eq("id", labFile.batchFileId);
+          await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Não foi possível extrair texto deste PDF." } as any).eq("id", labFile.batchFileId);
         }
         return;
       }
@@ -170,10 +170,10 @@ const MentoriaLab = () => {
       }
     } catch {
       setFiles((prev) =>
-        prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Falha na leitura" } : f))
+        prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível ler este arquivo. Verifique se o PDF é válido." } : f))
       );
       if (labFile.batchFileId) {
-        await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha na leitura" } as any).eq("id", labFile.batchFileId);
+        await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha na leitura do PDF" } as any).eq("id", labFile.batchFileId);
       }
     } finally {
       setReadingIds((prev) => {
@@ -192,7 +192,7 @@ const MentoriaLab = () => {
       const totalEntries = allEntries.length;
 
       if (totalEntries === 0) {
-        toast.error("O arquivo ZIP está vazio. Nenhum arquivo encontrado.");
+        toast.error("O arquivo ZIP está vazio. Verifique o conteúdo e tente novamente.");
         return { pdfs: [], totalEntries: 0, ignored: 0 };
       }
 
@@ -208,7 +208,7 @@ const MentoriaLab = () => {
 
       return { pdfs: pdfFiles, totalEntries, ignored };
     } catch {
-      toast.error("Erro ao processar o arquivo ZIP. O arquivo pode estar corrompido ou em formato inválido.");
+      toast.error("Não foi possível abrir o ZIP enviado. Verifique o arquivo e tente novamente.");
       return { pdfs: [], totalEntries: 0, ignored: 0 };
     }
   }, []);
@@ -237,7 +237,7 @@ const MentoriaLab = () => {
       return !allowedExts.includes(ext);
     });
     if (invalid.length > 0) {
-      toast.error(`Formato não suportado: ${invalid.map((f) => f.name).join(", ")}. Use apenas PDF ou ZIP.`);
+      toast.error("Este formato não é suportado. Envie PDFs ou um arquivo ZIP.");
       return;
     }
 
@@ -285,14 +285,14 @@ const MentoriaLab = () => {
 
     if (isZipSource && extractedPdfs.length === 0 && pdfFiles.length === 0) {
       setBatchInfo((prev) => prev ? { ...prev, status: "erro", totalFilesInSource: totalZipEntries, ignoredFiles: totalZipEntries } : prev);
-      toast.error(`O ZIP contém ${totalZipEntries} arquivo(s), mas nenhum é PDF. Apenas arquivos PDF são aceitos.`);
+      toast.error("O ZIP não contém PDFs válidos para análise.");
       return;
     }
 
     const allPdfs = [...pdfFiles, ...extractedPdfs];
     if (allPdfs.length === 0) {
       setBatchInfo((prev) => prev ? { ...prev, status: "erro" } : prev);
-      toast.error("Nenhum arquivo PDF válido encontrado.");
+      toast.error("Nenhum PDF válido encontrado. Verifique os arquivos enviados.");
       return;
     }
 
@@ -482,9 +482,9 @@ const MentoriaLab = () => {
         if (!text) {
           text = await extractTextFromPdf(labFile.file);
           if (!text.trim()) {
-            setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Sem texto" } : f)));
+            setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível extrair texto deste arquivo." } : f)));
             if (labFile.batchFileId) {
-              await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Sem texto" } as any).eq("id", labFile.batchFileId);
+              await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Sem texto extraído" } as any).eq("id", labFile.batchFileId);
             }
             errors++;
             continue;
@@ -497,9 +497,9 @@ const MentoriaLab = () => {
         const { data, error } = await supabase.functions.invoke("analyze-attendance", { body: { text } });
 
         if (error || data?.error) {
-          setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: data?.error || "Erro na análise" } : f)));
+          setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Ocorreu uma falha ao analisar este atendimento." } : f)));
           if (labFile.batchFileId) {
-            await supabase.from("mentoria_batch_files").update({ status: "error", error_message: data?.error || "Erro na análise" } as any).eq("id", labFile.batchFileId);
+            await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha na análise" } as any).eq("id", labFile.batchFileId);
           }
           errors++;
           continue;
@@ -557,9 +557,9 @@ const MentoriaLab = () => {
         );
         success++;
       } catch {
-        setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Erro inesperado" } : f)));
+        setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Ocorreu uma falha temporária no processamento. Tente novamente." } : f)));
         if (labFile.batchFileId) {
-          await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Erro inesperado" } as any).eq("id", labFile.batchFileId);
+          await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha temporária" } as any).eq("id", labFile.batchFileId);
         }
         errors++;
       }
@@ -588,7 +588,13 @@ const MentoriaLab = () => {
 
     setProcessing(false);
     setSelected(new Set());
-    toast.success(`Análise concluída: ${success} sucesso(s), ${errors} erro(s).`);
+    if (errors === 0) {
+      toast.success(`Análise concluída com sucesso. ${success} atendimento(s) analisado(s).`);
+    } else if (success > 0) {
+      toast.warning(`Alguns arquivos não puderam ser analisados, mas os demais foram processados. ${success} sucesso(s), ${errors} erro(s).`);
+    } else {
+      toast.error("Ocorreu uma falha temporária no processamento do lote. Tente novamente.");
+    }
     setTimeout(() => {
       document.getElementById("mentoria-insights")?.scrollIntoView({ behavior: "smooth" });
     }, 300);
