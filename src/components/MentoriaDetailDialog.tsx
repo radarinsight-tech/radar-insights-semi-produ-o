@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { calcularBonus, formatBRL } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
