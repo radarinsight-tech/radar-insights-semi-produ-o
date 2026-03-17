@@ -9,7 +9,7 @@ import {
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
-import { calcularBonus, formatBRL } from "@/lib/utils";
+import { calcularBonus, formatBRL, notaToScale10 } from "@/lib/utils";
 
 interface AnalyzedFile {
   name: string;
