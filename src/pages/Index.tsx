@@ -75,7 +75,7 @@ const Index = () => {
           id: row.id,
           data: row.data || "",
           data_avaliacao: row.data_avaliacao
-            ? new Date(row.data_avaliacao).toLocaleString("pt-BR")
+            ? new Date(row.data_avaliacao).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }) + " " + new Date(row.data_avaliacao).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
             : "",
           protocolo: row.protocolo || "—",
           atendente: row.atendente || "—",

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { formatNota, classificarNota, classColorFromClassificacao } from "@/lib/utils";
+import { formatNota, classificarNota, classColorFromClassificacao, formatDateBR } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -133,7 +133,7 @@ const HistoryTable = ({ entries, onRefresh }: Props) => {
               ) : (
                 entries.map((e) => (
                   <TableRow key={e.id}>
-                    <TableCell className="text-sm">{e.data}</TableCell>
+                    <TableCell className="text-sm">{formatDateBR(e.data)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{e.data_avaliacao}</TableCell>
                     <TableCell className="text-sm font-medium">{e.protocolo}</TableCell>
                     <TableCell className="text-sm">{e.atendente}</TableCell>

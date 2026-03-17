@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
+import { cn, formatDateBR } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import logoSymbol from "@/assets/logo-symbol.png";
@@ -1070,7 +1070,7 @@ const MentoriaLab = () => {
                         <td className="p-3 text-muted-foreground text-xs">
                           {readingIds.has(f.id) ? <Loader2 className="h-3 w-3 animate-spin inline" /> : (f.atendente || <span className="italic opacity-60">Não identificado</span>)}
                         </td>
-                        <td className="p-3 text-muted-foreground text-xs">{f.data || <span className="italic opacity-60">—</span>}</td>
+                        <td className="p-3 text-muted-foreground text-xs">{f.data ? formatDateBR(f.data) : <span className="italic opacity-60">—</span>}</td>
                         <td className="p-3 text-muted-foreground text-xs">{f.protocolo || <span className="italic opacity-60">—</span>}</td>
                         <td className="p-3 text-center">
                           {f.hasAudio === undefined ? (
@@ -1098,7 +1098,7 @@ const MentoriaLab = () => {
                           </div>
                         </td>
                         <td className="p-3 text-muted-foreground text-xs">
-                          {f.analyzedAt ? f.analyzedAt.toLocaleDateString("pt-BR") : <span className="italic opacity-60">—</span>}
+                          {f.analyzedAt ? formatDateBR(f.analyzedAt) : <span className="italic opacity-60">—</span>}
                         </td>
                         <td className="p-3 text-center">
                           <div className="flex items-center justify-center gap-1">

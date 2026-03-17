@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { calcularBonus, formatBRL, notaToScale10 } from "@/lib/utils";
+import { calcularBonus, formatBRL, notaToScale10, formatDateBR } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -303,7 +303,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           <dl class="header-grid">
             <dt>Protocolo</dt><dd>${result.protocolo || "—"}</dd>
             <dt>Atendente</dt><dd>${result.atendente || atendente || "—"}</dd>
-            <dt>Data do Atendimento</dt><dd>${result.data || "—"}</dd>
+            <dt>Data do Atendimento</dt><dd>${formatDateBR(result.data)}</dd>
             <dt>Tipo</dt><dd>${result.tipo || "—"}</dd>
           </dl>
         </div>
@@ -417,7 +417,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                     <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <div className="min-w-0">
                       <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Data</p>
-                      <p className="text-sm font-semibold text-foreground">{result.data || "—"}</p>
+                      <p className="text-sm font-semibold text-foreground">{formatDateBR(result.data)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
