@@ -78,3 +78,69 @@ export function calcularBonus(nota: number): BonusTier {
 export function formatBRL(value: number): string {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
+
+/**
+ * Normalizes any date string or Date object to DD/MM/AAAA (Brazilian format).
+ * Handles ISO strings, "YYYY-MM-DD", "MM/DD/YYYY", "DD/MM/YYYY", Date objects, and timestamps.
+ * Returns "—" if the input is invalid or empty.
+ */
+export function formatDateBR(value: string | Date | null | undefined): string {
+  if (!value) return "—";
+
+  // If already a Date object
+  if (value instanceof Date) {
+    if (isNaN(value.getTime())) return "—";
+    return value.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  }
+
+  const str = String(value).trim();
+  if (!str) return "—";
+
+  // Already DD/MM/YYYY — validate and return
+  const brMatch = str.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (brMatch) {
+    const [, dd, mm, yyyy] = brMatch;
+    const d = +dd, m = +mm;
+    if (d >= 1 && d <= 31 && m >= 1 && m <= 12) return `${dd}/${mm}/${yyyy}`;
+  }
+
+  // ISO or "YYYY-MM-DD..." format
+  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const [, yyyy, mm, dd] = isoMatch;
+    return `${dd}/${mm}/${yyyy}`;
+  }
+
+  // MM/DD/YYYY (American) — detect by checking if month > 12 means it's actually DD/MM
+  const slashMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (slashMatch) {
+    const [, a, b, yyyy] = slashMatch;
+    const pa = a.padStart(2, "0");
+    const pb = b.padStart(2, "0");
+    // If first number > 12, it must be a day (DD/MM/YYYY) — already handled above
+    // If second number > 12, first is month (MM/DD/YYYY)
+    if (+b > 12) return `${pb}/${pa}/${yyyy}`;
+    // If first <= 12 and second <= 12, ambiguous — assume MM/DD/YYYY (American) and convert
+    if (+a <= 12 && +b <= 12 && +a !== +b) return `${pb}/${pa}/${yyyy}`;
+    return `${pa}/${pb}/${yyyy}`;
+  }
+
+  // Try parsing as Date
+  const parsed = new Date(str);
+  if (!isNaN(parsed.getTime())) {
+    return parsed.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  }
+
+  return str; // Return as-is if nothing matches
+}
+
+/**
+ * Formats a date+time string/Date to "DD/MM/AAAA HH:MM" in Brazilian format.
+ */
+export function formatDateTimeBR(value: string | Date | null | undefined): string {
+  if (!value) return "—";
+  const d = value instanceof Date ? value : new Date(String(value));
+  if (isNaN(d.getTime())) return String(value);
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }) +
+    " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
