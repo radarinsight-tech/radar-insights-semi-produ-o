@@ -1050,7 +1050,7 @@ const MentoriaLab = () => {
             </Card>
 
             {/* Table */}
-            <Card className="overflow-hidden">
+            <Card id="mentoria-table" className="overflow-hidden scroll-mt-4">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
