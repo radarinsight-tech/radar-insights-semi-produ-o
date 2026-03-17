@@ -9,6 +9,7 @@ import CreditQuerySection, { type SpcQueryResult } from "@/components/credit/Cre
 import CreditQueryResult, { aplicarPoliticaBandaTurbo } from "@/components/credit/CreditQueryResult";
 import CreditHistoryTable from "@/components/credit/CreditHistoryTable";
 import CreditDailySummary from "@/components/credit/CreditDailySummary";
+import { useUserPermissions } from "@/hooks/useUserPermissions";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -16,6 +17,7 @@ import {
 
 const CreditAnalysis = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useUserPermissions();
   const [result, setResult] = useState<SpcQueryResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [historyRefresh, setHistoryRefresh] = useState(0);
@@ -74,6 +76,7 @@ const CreditAnalysis = () => {
         faixa: policy.faixa,
         justificativa: policy.justificativa,
         documentacao: policy.documentacao,
+        modoConsulta: r.modoConsulta,
       } as any,
     } as any);
 
@@ -161,6 +164,7 @@ const CreditAnalysis = () => {
             onResult={handleResult}
             isLoading={isLoading}
             setIsLoading={setIsLoading}
+            isAdmin={isAdmin}
           />
           <CreditQueryResult data={result} />
         </div>
