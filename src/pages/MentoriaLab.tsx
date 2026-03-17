@@ -462,6 +462,18 @@ const MentoriaLab = () => {
     });
   }, [files, searchTerm, filterAtendente, filterCanal, filterAudio, filterPeriodo]);
 
+  // Reset page on filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterAtendente, filterCanal, filterAudio, filterPeriodo]);
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredFiles.length / PAGE_SIZE));
+  const paginatedFiles = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredFiles.slice(start, start + PAGE_SIZE);
+  }, [filteredFiles, currentPage]);
+
   const toggleSelectAll = () => {
     if (selected.size === filteredFiles.length && filteredFiles.length > 0) {
       setSelected(new Set());
