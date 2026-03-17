@@ -39,6 +39,9 @@ interface LabFile {
   data?: string;
   canal?: string;
   hasAudio?: boolean;
+  batchId?: string;
+  batchFileId?: string;
+  storagePath?: string;
 }
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
@@ -70,6 +73,7 @@ const MentoriaLab = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [processing, setProcessing] = useState(false);
   const [readingIds, setReadingIds] = useState<Set<string>>(new Set());
+  const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
   const [sideFile, setSideFile] = useState<LabFile | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -92,7 +96,7 @@ const MentoriaLab = () => {
     return [...set].sort();
   }, [files]);
 
-  // Auto-read a file
+  // Auto-read a file + sync metadata to DB
   const readFile = useCallback(async (labFile: LabFile) => {
     setReadingIds((prev) => new Set(prev).add(labFile.id));
     try {
@@ -101,6 +105,9 @@ const MentoriaLab = () => {
         setFiles((prev) =>
           prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Sem texto extraído" } : f))
         );
+        if (labFile.batchFileId) {
+          await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Sem texto extraído" } as any).eq("id", labFile.batchFileId);
+        }
         return;
       }
       const protocolMatch = text.match(/(?:protocolo|prot\.?)\s*[:\-]?\s*([A-Za-z0-9]+)/i);
@@ -109,26 +116,40 @@ const MentoriaLab = () => {
       const canal = detectCanal(text);
       const hasAudio = detectAudio(text);
 
+      const metadata = {
+        protocolo: protocolMatch?.[1] || undefined,
+        atendente: atendenteMatch?.[1]?.trim() || undefined,
+        data: dataMatch?.[1] || undefined,
+        canal,
+        hasAudio,
+      };
+
       setFiles((prev) =>
         prev.map((f) =>
           f.id === labFile.id
-            ? {
-                ...f,
-                status: "lido",
-                text,
-                protocolo: protocolMatch?.[1] || undefined,
-                atendente: atendenteMatch?.[1]?.trim() || undefined,
-                data: dataMatch?.[1] || undefined,
-                canal,
-                hasAudio,
-              }
+            ? { ...f, status: "lido", text, ...metadata }
             : f
         )
       );
+
+      // Sync to DB
+      if (labFile.batchFileId) {
+        await supabase.from("mentoria_batch_files").update({
+          status: "read",
+          protocolo: metadata.protocolo,
+          atendente: metadata.atendente,
+          data_atendimento: metadata.data,
+          canal: metadata.canal,
+          has_audio: metadata.hasAudio,
+        } as any).eq("id", labFile.batchFileId);
+      }
     } catch {
       setFiles((prev) =>
         prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Falha na leitura" } : f))
       );
+      if (labFile.batchFileId) {
+        await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha na leitura" } as any).eq("id", labFile.batchFileId);
+      }
     } finally {
       setReadingIds((prev) => {
         const next = new Set(prev);
@@ -167,7 +188,16 @@ const MentoriaLab = () => {
     }
   }, []);
 
-  // Multi-file upload + auto-read (PDF + ZIP)
+  // Generate batch code: lote-YYYY-MM-NNN
+  const generateBatchCode = useCallback(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const seq = String(Math.floor(Math.random() * 999) + 1).padStart(3, "0");
+    return `lote-${y}-${m}-${seq}`;
+  }, []);
+
+  // Multi-file upload + auto-read (PDF + ZIP) with cloud storage
   const handleFiles = useCallback(async (newFiles: FileList | File[]) => {
     const fileArray = Array.from(newFiles);
     const allowedExts = [".pdf", ".zip"];
@@ -180,8 +210,18 @@ const MentoriaLab = () => {
       return;
     }
 
+    // Get user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Você precisa estar autenticado para importar arquivos.");
+      return;
+    }
+
     const zipFiles = fileArray.filter((f) => f.name.toLowerCase().endsWith(".zip"));
     const pdfFiles = fileArray.filter((f) => f.name.toLowerCase().endsWith(".pdf"));
+    const isZipSource = zipFiles.length > 0;
+    const batchCode = generateBatchCode();
+    const userPrefix = user.id;
 
     // Process ZIPs with detailed reporting
     let extractedPdfs: File[] = [];
@@ -195,15 +235,9 @@ const MentoriaLab = () => {
       totalIgnored += result.ignored;
     }
 
-    if (zipFiles.length > 0 && extractedPdfs.length === 0 && pdfFiles.length === 0) {
+    if (isZipSource && extractedPdfs.length === 0 && pdfFiles.length === 0) {
       toast.error(`O ZIP contém ${totalZipEntries} arquivo(s), mas nenhum é PDF. Apenas arquivos PDF são aceitos.`);
       return;
-    }
-
-    // Save ZIP to storage for audit trail
-    for (const zf of zipFiles) {
-      const zipStorageName = `mentoria_zip_${Date.now()}_${zf.name}`;
-      await supabase.storage.from("pdfs").upload(zipStorageName, zf, { contentType: "application/zip" }).catch(() => {});
     }
 
     const allPdfs = [...pdfFiles, ...extractedPdfs];
@@ -212,18 +246,87 @@ const MentoriaLab = () => {
       return;
     }
 
-    const entries: LabFile[] = allPdfs.map((f) => ({
-      id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      file: f,
-      name: f.name,
-      size: f.size,
-      addedAt: new Date(),
-      status: "pendente" as FileStatus,
-    }));
+    // 1. Save originals to cloud: uploads/
+    let uploadPath: string | undefined;
+    if (isZipSource) {
+      for (const zf of zipFiles) {
+        const path = `${userPrefix}/uploads/${batchCode}/${zf.name}`;
+        await supabase.storage.from("mentoria-lab").upload(path, zf, { contentType: "application/zip" }).catch(() => {});
+        uploadPath = `${userPrefix}/uploads/${batchCode}`;
+      }
+    } else {
+      for (const pf of pdfFiles) {
+        const path = `${userPrefix}/uploads/${batchCode}/${pf.name}`;
+        await supabase.storage.from("mentoria-lab").upload(path, pf, { contentType: "application/pdf" }).catch(() => {});
+      }
+      uploadPath = `${userPrefix}/uploads/${batchCode}`;
+    }
+
+    // 2. Save extracted PDFs to cloud: extracted/
+    const pdfPaths: Map<string, string> = new Map();
+    for (const pdf of allPdfs) {
+      const storagePath = `${userPrefix}/extracted/${batchCode}/${pdf.name}`;
+      await supabase.storage.from("mentoria-lab").upload(storagePath, pdf, { contentType: "application/pdf" }).catch(() => {});
+      pdfPaths.set(pdf.name, storagePath);
+    }
+
+    // 3. Create batch record in DB
+    const { data: batchRow, error: batchErr } = await supabase.from("mentoria_batches").insert({
+      user_id: user.id,
+      batch_code: batchCode,
+      source_type: isZipSource ? "zip" : "pdf",
+      original_file_name: isZipSource ? zipFiles[0]?.name : null,
+      total_files_in_source: isZipSource ? totalZipEntries : pdfFiles.length,
+      total_pdfs: allPdfs.length,
+      ignored_files: totalIgnored,
+      status: "imported",
+      upload_path: uploadPath,
+    } as any).select("id").single();
+
+    if (batchErr || !batchRow) {
+      console.error("Failed to create batch:", batchErr);
+      toast.error("Erro ao registrar lote. Arquivos foram salvos.");
+    }
+
+    const batchId = batchRow?.id;
+    setCurrentBatchId(batchId || null);
+
+    // 4. Create batch file records + local entries
+    const entries: LabFile[] = [];
+    for (const pdf of allPdfs) {
+      const localId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const storagePath = pdfPaths.get(pdf.name) || "";
+
+      let batchFileId: string | undefined;
+      if (batchId) {
+        const { data: bf } = await supabase.from("mentoria_batch_files").insert({
+          batch_id: batchId,
+          file_name: pdf.name,
+          file_path: `${userPrefix}/uploads/${batchCode}/${pdf.name}`,
+          extracted_path: storagePath,
+          file_size: pdf.size,
+          status: "pending",
+        } as any).select("id").single();
+        batchFileId = bf?.id;
+      }
+
+      entries.push({
+        id: localId,
+        file: pdf,
+        name: pdf.name,
+        size: pdf.size,
+        addedAt: new Date(),
+        status: "pendente",
+        batchId,
+        batchFileId,
+        storagePath,
+      });
+    }
+
     setFiles((prev) => [...prev, ...entries]);
 
     // Detailed toast message
-    if (zipFiles.length > 0) {
+    if (isZipSource) {
       const parts = [`${extractedPdfs.length} PDF(s) extraído(s) do ZIP`];
       if (pdfFiles.length > 0) parts.push(`${pdfFiles.length} PDF(s) avulso(s)`);
       if (totalIgnored > 0) parts.push(`${totalIgnored} arquivo(s) ignorado(s)`);
@@ -233,7 +336,7 @@ const MentoriaLab = () => {
     }
 
     entries.forEach((entry) => readFile(entry));
-  }, [readFile, extractPdfsFromZip]);
+  }, [readFile, extractPdfsFromZip, generateBatchCode]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -282,14 +385,27 @@ const MentoriaLab = () => {
     }
   };
 
-  // Batch analyze
+  // Batch analyze with cloud storage for results
   const analyzeSelected = async () => {
     const toAnalyze = files.filter((f) => selected.has(f.id) && (f.status === "lido" || f.status === "pendente"));
     if (toAnalyze.length === 0) {
       toast.warning("Selecione arquivos lidos ou pendentes para análise.");
       return;
     }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Você precisa estar autenticado.");
+      return;
+    }
+
     setProcessing(true);
+
+    // Update batch status to analyzing
+    if (currentBatchId) {
+      await supabase.from("mentoria_batches").update({ status: "analyzing" } as any).eq("id", currentBatchId);
+    }
+
     let success = 0;
     let errors = 0;
 
@@ -300,29 +416,32 @@ const MentoriaLab = () => {
           text = await extractTextFromPdf(labFile.file);
           if (!text.trim()) {
             setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Sem texto" } : f)));
+            if (labFile.batchFileId) {
+              await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Sem texto" } as any).eq("id", labFile.batchFileId);
+            }
             errors++;
             continue;
           }
         }
 
-        const fileName = `mentoria_${Date.now()}_${labFile.name}`;
-        await supabase.storage.from("pdfs").upload(fileName, labFile.file, { contentType: "application/pdf" });
-        const { data: urlData } = supabase.storage.from("pdfs").getPublicUrl(fileName);
+        // Use the already-stored path in mentoria-lab bucket instead of re-uploading
+        const pdfUrl = labFile.storagePath || "";
 
         const { data, error } = await supabase.functions.invoke("analyze-attendance", { body: { text } });
 
         if (error || data?.error) {
           setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: data?.error || "Erro na análise" } : f)));
+          if (labFile.batchFileId) {
+            await supabase.from("mentoria_batch_files").update({ status: "error", error_message: data?.error || "Erro na análise" } as any).eq("id", labFile.batchFileId);
+          }
           errors++;
           continue;
         }
 
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("Não autenticado");
-
         const notaFinal = typeof data.notaFinal === "number" ? data.notaFinal : 0;
         const bonusQualidade = typeof data.bonusQualidade === "number" ? data.bonusQualidade : 0;
 
+        // Save evaluation
         await supabase.from("evaluations").insert({
           data: data.data || new Date().toLocaleDateString("pt-BR"),
           protocolo: data.protocolo || "Não identificado",
@@ -334,11 +453,33 @@ const MentoriaLab = () => {
           bonus: bonusQualidade >= 70,
           pontos_melhoria: Array.isArray(data.mentoria) ? data.mentoria : [],
           user_id: user.id,
-          pdf_url: urlData.publicUrl,
+          pdf_url: pdfUrl,
           full_report: { ...data },
           prompt_version: data.promptVersion || "auditor_v3",
           resultado_validado: true,
         } as any);
+
+        // Save result JSON to cloud: results/<batchCode>/
+        if (labFile.batchId) {
+          const { data: batchData } = await supabase.from("mentoria_batches").select("batch_code").eq("id", labFile.batchId).single();
+          if (batchData) {
+            const resultPath = `${user.id}/results/${batchData.batch_code}/${labFile.name.replace(".pdf", ".json")}`;
+            const resultBlob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            await supabase.storage.from("mentoria-lab").upload(resultPath, resultBlob, { contentType: "application/json" }).catch(() => {});
+          }
+        }
+
+        // Sync batch file DB
+        if (labFile.batchFileId) {
+          await supabase.from("mentoria_batch_files").update({
+            status: "analyzed",
+            nota: notaFinal,
+            classificacao: data.classificacao || "Fora de Avaliação",
+            atendente: data.atendente || labFile.atendente,
+            protocolo: data.protocolo || labFile.protocolo,
+            result: data,
+          } as any).eq("id", labFile.batchFileId);
+        }
 
         setFiles((prev) =>
           prev.map((f) =>
@@ -350,14 +491,35 @@ const MentoriaLab = () => {
         success++;
       } catch {
         setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Erro inesperado" } : f)));
+        if (labFile.batchFileId) {
+          await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Erro inesperado" } as any).eq("id", labFile.batchFileId);
+        }
         errors++;
+      }
+    }
+
+    // Update batch status + save summary
+    if (currentBatchId) {
+      const analyzed = files.filter((f) => f.status === "analisado" || f.result);
+      const summary = {
+        total_analyzed: success,
+        total_errors: errors,
+        completed_at: new Date().toISOString(),
+      };
+      await supabase.from("mentoria_batches").update({ status: errors === toAnalyze.length ? "error" : "completed", summary } as any).eq("id", currentBatchId);
+
+      // Save summary.json to cloud
+      const { data: batchData } = await supabase.from("mentoria_batches").select("batch_code").eq("id", currentBatchId).single();
+      if (batchData) {
+        const summaryPath = `${user.id}/results/${batchData.batch_code}/summary.json`;
+        const summaryBlob = new Blob([JSON.stringify(summary, null, 2)], { type: "application/json" });
+        await supabase.storage.from("mentoria-lab").upload(summaryPath, summaryBlob, { contentType: "application/json", upsert: true }).catch(() => {});
       }
     }
 
     setProcessing(false);
     setSelected(new Set());
     toast.success(`Análise concluída: ${success} sucesso(s), ${errors} erro(s).`);
-    // Scroll to insights
     setTimeout(() => {
       document.getElementById("mentoria-insights")?.scrollIntoView({ behavior: "smooth" });
     }, 300);
