@@ -42,7 +42,7 @@ function classificarRisco(spc: number, serasa: number, protestos: number, valor:
   return "Médio risco";
 }
 
-function generateMockResult(raw: string, nomeCliente?: string): SpcQueryResult {
+function generateMockResult(raw: string, nomeCliente?: string): Omit<SpcQueryResult, "modoConsulta"> {
   const digits = raw.replace(/\D/g, "");
   const isCnpj = digits.length === 14;
   const seed = digits.split("").reduce((a, b) => a + Number(b), 0);
