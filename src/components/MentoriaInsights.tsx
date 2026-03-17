@@ -40,14 +40,15 @@ function round1(n: number): number {
 }
 
 function formatNota(n: number): string {
-  return round1(n).toFixed(1).replace(".", ",");
+  return notaToScale10(n).toFixed(1).replace(".", ",");
 }
 
 function classificacao(nota: number): string {
-  if (nota >= 9) return "Excelente";
-  if (nota >= 7) return "Bom";
-  if (nota >= 5) return "Regular";
-  if (nota >= 3) return "Ruim";
+  const n10 = notaToScale10(nota);
+  if (n10 >= 9) return "Excelente";
+  if (n10 >= 7) return "Bom";
+  if (n10 >= 5) return "Regular";
+  if (n10 >= 3) return "Ruim";
   return "Crítico";
 }
 
