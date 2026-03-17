@@ -1095,6 +1095,11 @@ const MentoriaLab = () => {
               </div>
             )}
 
+            {/* Charts — evolution graphs */}
+            {files.some((f) => f.status === "analisado") && (
+              <MentoriaCharts files={files} />
+            )}
+
             {/* Insights do lote - seção secundária colapsável */}
             {files.some((f) => f.status === "analisado") && (
               <details id="mentoria-insights" className="scroll-mt-6 group">
