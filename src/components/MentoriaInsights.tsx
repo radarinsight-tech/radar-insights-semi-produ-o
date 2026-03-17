@@ -74,7 +74,6 @@ interface AtendenteStats {
 }
 
 const MIN_MENTORIAS = 6;
-}
 
 function countOccurrences(items: string[]): { text: string; count: number }[] {
   const map = new Map<string, number>();
