@@ -93,7 +93,7 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
   const insights = useMemo(() => {
     if (analyzed.length === 0) return null;
 
-    const notas = analyzed.map((f) => f.result!.notaFinal!);
+    const notas = analyzed.map((f) => notaToScale10(f.result!.notaFinal!));
     const media = round1(notas.reduce((a, b) => a + b, 0) / notas.length);
 
     // Aggregate by atendente
@@ -105,7 +105,7 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
     });
 
     const atendenteStats: AtendenteStats[] = [...atendenteMap.entries()].map(([name, aFiles]) => {
-      const notasAt = aFiles.map((f) => f.result!.notaFinal!);
+      const notasAt = aFiles.map((f) => notaToScale10(f.result!.notaFinal!));
       const mediaAt = round1(notasAt.reduce((a, b) => a + b, 0) / notasAt.length);
       const fortes: string[] = [];
       const fracos: string[] = [];

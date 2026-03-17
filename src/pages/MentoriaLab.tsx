@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { cn, formatDateBR } from "@/lib/utils";
+import { cn, formatDateBR, notaToScale10, formatNota } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import logoSymbol from "@/assets/logo-symbol.png";
@@ -1109,7 +1109,7 @@ const MentoriaLab = () => {
                                 {statusConfig[f.status].label}
                               </Badge>
                             )}
-                            {f.status === "analisado" && f.result?.notaFinal != null && f.result.notaFinal < 7 && (
+                            {f.status === "analisado" && f.result?.notaFinal != null && notaToScale10(f.result.notaFinal) < 7 && (
                               <Badge className="bg-warning/15 text-warning text-[10px] whitespace-nowrap">
                                 Necessita mentoria
                               </Badge>
@@ -1294,7 +1294,7 @@ const MentoriaLab = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
                       <p className="text-xs text-muted-foreground">Nota</p>
-                      <p className="text-xl font-bold text-foreground">{sideFile.result.notaFinal != null ? sideFile.result.notaFinal.toFixed(1).replace(".", ",") : "—"}</p>
+                      <p className="text-xl font-bold text-foreground">{sideFile.result.notaFinal != null ? formatNota(sideFile.result.notaFinal) : "—"}</p>
                     </div>
                     <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
                       <p className="text-xs text-muted-foreground">Classificação</p>
