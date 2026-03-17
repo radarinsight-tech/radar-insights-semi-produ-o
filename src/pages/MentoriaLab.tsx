@@ -222,6 +222,12 @@ const MentoriaLab = () => {
     return `lote-${y}-${m}-${seq}`;
   }, []);
 
+  // Helper to update batch status both locally and in DB
+  const updateBatchStatus = useCallback(async (batchId: string, status: BatchStatus) => {
+    setBatchInfo((prev) => prev ? { ...prev, status } : prev);
+    await supabase.from("mentoria_batches").update({ status } as any).eq("id", batchId);
+  }, []);
+
   // Multi-file upload + auto-read (PDF + ZIP) with cloud storage
   const handleFiles = useCallback(async (newFiles: FileList | File[]) => {
     const fileArray = Array.from(newFiles);
@@ -235,7 +241,6 @@ const MentoriaLab = () => {
       return;
     }
 
-    // Get user
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast.error("Você precisa estar autenticado para importar arquivos.");
@@ -247,29 +252,58 @@ const MentoriaLab = () => {
     const isZipSource = zipFiles.length > 0;
     const batchCode = generateBatchCode();
     const userPrefix = user.id;
+    const totalFilesInSource = isZipSource ? 0 : pdfFiles.length; // will be updated after zip extraction
 
-    // Process ZIPs with detailed reporting
+    // Initialize batch info immediately as "recebido"
+    const tempBatchInfo: BatchInfo = {
+      id: "",
+      batchCode,
+      createdAt: new Date(),
+      sourceType: isZipSource ? "zip" : "pdf",
+      originalFileName: isZipSource ? zipFiles[0]?.name : undefined,
+      totalFilesInSource,
+      totalPdfs: 0,
+      ignoredFiles: 0,
+      status: "recebido",
+    };
+    setBatchInfo(tempBatchInfo);
+
+    // Extract ZIPs
     let extractedPdfs: File[] = [];
     let totalZipEntries = 0;
     let totalIgnored = 0;
 
-    for (const zf of zipFiles) {
-      const result = await extractPdfsFromZip(zf);
-      extractedPdfs = [...extractedPdfs, ...result.pdfs];
-      totalZipEntries += result.totalEntries;
-      totalIgnored += result.ignored;
+    if (isZipSource) {
+      setBatchInfo((prev) => prev ? { ...prev, status: "extraindo_arquivos" } : prev);
+      for (const zf of zipFiles) {
+        const result = await extractPdfsFromZip(zf);
+        extractedPdfs = [...extractedPdfs, ...result.pdfs];
+        totalZipEntries += result.totalEntries;
+        totalIgnored += result.ignored;
+      }
     }
 
     if (isZipSource && extractedPdfs.length === 0 && pdfFiles.length === 0) {
+      setBatchInfo((prev) => prev ? { ...prev, status: "erro", totalFilesInSource: totalZipEntries, ignoredFiles: totalZipEntries } : prev);
       toast.error(`O ZIP contém ${totalZipEntries} arquivo(s), mas nenhum é PDF. Apenas arquivos PDF são aceitos.`);
       return;
     }
 
     const allPdfs = [...pdfFiles, ...extractedPdfs];
     if (allPdfs.length === 0) {
+      setBatchInfo((prev) => prev ? { ...prev, status: "erro" } : prev);
       toast.error("Nenhum arquivo PDF válido encontrado.");
       return;
     }
+
+    // Update counts
+    setBatchInfo((prev) => prev ? {
+      ...prev,
+      status: "organizando_atendimentos",
+      totalFilesInSource: isZipSource ? totalZipEntries : pdfFiles.length,
+      totalPdfs: allPdfs.length,
+      ignoredFiles: totalIgnored,
+    } : prev);
 
     // 1. Save originals to cloud: uploads/
     let uploadPath: string | undefined;
@@ -304,7 +338,7 @@ const MentoriaLab = () => {
       total_files_in_source: isZipSource ? totalZipEntries : pdfFiles.length,
       total_pdfs: allPdfs.length,
       ignored_files: totalIgnored,
-      status: "imported",
+      status: "organizando_atendimentos",
       upload_path: uploadPath,
     } as any).select("id").single();
 
@@ -315,6 +349,7 @@ const MentoriaLab = () => {
 
     const batchId = batchRow?.id;
     setCurrentBatchId(batchId || null);
+    setBatchInfo((prev) => prev ? { ...prev, id: batchId || "" } : prev);
 
     // 4. Create batch file records + local entries
     const entries: LabFile[] = [];
@@ -350,7 +385,14 @@ const MentoriaLab = () => {
 
     setFiles((prev) => [...prev, ...entries]);
 
-    // Detailed toast message
+    // Update to "pronto_para_curadoria"
+    const finalStatus: BatchStatus = "pronto_para_curadoria";
+    setBatchInfo((prev) => prev ? { ...prev, status: finalStatus } : prev);
+    if (batchId) {
+      await supabase.from("mentoria_batches").update({ status: finalStatus } as any).eq("id", batchId);
+    }
+
+    // Toast
     if (isZipSource) {
       const parts = [`${extractedPdfs.length} PDF(s) extraído(s) do ZIP`];
       if (pdfFiles.length > 0) parts.push(`${pdfFiles.length} PDF(s) avulso(s)`);
@@ -361,7 +403,7 @@ const MentoriaLab = () => {
     }
 
     entries.forEach((entry) => readFile(entry));
-  }, [readFile, extractPdfsFromZip, generateBatchCode]);
+  }, [readFile, extractPdfsFromZip, generateBatchCode, updateBatchStatus]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
