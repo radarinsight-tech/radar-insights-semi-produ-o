@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import JSZip from "jszip";
 import {
   ArrowLeft, LogOut, Upload, FileText, Trash2, Eye, Play, Loader2,
-  Search, X, Filter, Volume2, VolumeX, BookOpen, Archive, Package, Clock, CheckCircle2, AlertTriangle
+  Search, X, Filter, Volume2, VolumeX, BookOpen, Archive, Package, Clock, CheckCircle2, AlertTriangle,
+  ChevronLeft, ChevronRight, Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -91,6 +92,11 @@ function detectAudio(text: string): boolean {
   return /\b(áudio|audio|gravação|gravacao|escuta|ligação|ligacao|chamada)\b/.test(lower);
 }
 
+const IMPORT_LIMIT = 1000;
+const IMPORT_RECOMMENDED = 500;
+const ANALYZE_LIMIT = 50;
+const PAGE_SIZE = 30;
+
 const MentoriaLab = () => {
   const navigate = useNavigate();
   const [files, setFiles] = useState<LabFile[]>([]);
@@ -101,6 +107,8 @@ const MentoriaLab = () => {
   const [batchInfo, setBatchInfo] = useState<BatchInfo | null>(null);
   const [sideFile, setSideFile] = useState<LabFile | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showAnalyzeWarning, setShowAnalyzeWarning] = useState(false);
 
   // Filters
   const [filterAtendente, setFilterAtendente] = useState("todos");
@@ -296,6 +304,16 @@ const MentoriaLab = () => {
       return;
     }
 
+    if (allPdfs.length > IMPORT_LIMIT) {
+      setBatchInfo((prev) => prev ? { ...prev, status: "erro" } : prev);
+      toast.error(`O limite máximo é de ${IMPORT_LIMIT} atendimentos por lote. Você tentou importar ${allPdfs.length}.`);
+      return;
+    }
+
+    if (allPdfs.length > IMPORT_RECOMMENDED) {
+      toast.warning(`Você importou ${allPdfs.length} atendimentos. O uso recomendado é de até ${IMPORT_RECOMMENDED} por mês.`);
+    }
+
     // Update counts
     setBatchInfo((prev) => prev ? {
       ...prev,
@@ -444,6 +462,18 @@ const MentoriaLab = () => {
     });
   }, [files, searchTerm, filterAtendente, filterCanal, filterAudio, filterPeriodo]);
 
+  // Reset page on filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterAtendente, filterCanal, filterAudio, filterPeriodo]);
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredFiles.length / PAGE_SIZE));
+  const paginatedFiles = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredFiles.slice(start, start + PAGE_SIZE);
+  }, [filteredFiles, currentPage]);
+
   const toggleSelectAll = () => {
     if (selected.size === filteredFiles.length && filteredFiles.length > 0) {
       setSelected(new Set());
@@ -459,6 +489,23 @@ const MentoriaLab = () => {
       toast.warning("Selecione arquivos lidos ou pendentes para análise.");
       return;
     }
+
+    // Show warning for large selections but allow continuing
+    if (toAnalyze.length > ANALYZE_LIMIT && !showAnalyzeWarning) {
+      setShowAnalyzeWarning(true);
+      toast.warning(`Você selecionou ${toAnalyze.length} atendimentos. Recomendamos analisar em blocos de até ${ANALYZE_LIMIT} para melhor desempenho.`, {
+        duration: 8000,
+        action: {
+          label: "Continuar mesmo assim",
+          onClick: () => {
+            setShowAnalyzeWarning(false);
+            analyzeSelected();
+          },
+        },
+      });
+      return;
+    }
+    setShowAnalyzeWarning(false);
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -654,6 +701,18 @@ const MentoriaLab = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        {/* Limit tags */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge className="bg-blue-100 text-blue-700 border border-blue-200 text-xs font-medium px-3 py-1">
+            <Upload className="h-3 w-3 mr-1.5" />
+            IMPORTAR: até {IMPORT_RECOMMENDED} por mês
+          </Badge>
+          <Badge className="bg-accent/15 text-accent border border-accent/25 text-xs font-medium px-3 py-1">
+            <Play className="h-3 w-3 mr-1.5" />
+            ANALISAR: até {ANALYZE_LIMIT} por vez
+          </Badge>
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
@@ -894,7 +953,7 @@ const MentoriaLab = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredFiles.map((f) => (
+                    {paginatedFiles.map((f) => (
                       <tr key={f.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                         <td className="p-3">
                           <Checkbox checked={selected.has(f.id)} onCheckedChange={() => toggleSelect(f.id)} />
@@ -964,7 +1023,7 @@ const MentoriaLab = () => {
                     ))}
                     {filteredFiles.length === 0 && (
                       <tr>
-                        <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                        <td colSpan={9} className="p-8 text-center text-muted-foreground">
                           Nenhum atendimento encontrado com os filtros aplicados.
                         </td>
                       </tr>
@@ -972,7 +1031,49 @@ const MentoriaLab = () => {
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+                  <span className="text-xs text-muted-foreground">
+                    Página {currentPage} de {totalPages} · {filteredFiles.length} atendimento(s)
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1"
+                      disabled={currentPage <= 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    >
+                      <ChevronLeft className="h-3 w-3" /> Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1"
+                      disabled={currentPage >= totalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    >
+                      Próxima <ChevronRight className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </Card>
+
+            {/* Selection warning */}
+            {selected.size > ANALYZE_LIMIT && (
+              <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
+                <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">Muitos atendimentos selecionados</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Você selecionou {selected.size} atendimentos. Recomendamos analisar em blocos de até {ANALYZE_LIMIT} para melhor desempenho.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Insights da Mentoria - prominent section after analyses */}
             {files.some((f) => f.status === "analisado") && (
