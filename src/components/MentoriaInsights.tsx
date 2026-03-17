@@ -276,10 +276,78 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
         </div>
       </Card>
 
-      {/* 2. Performance por Atendente */}
+      {/* Performance & Bônus Cards */}
+      <Card className="p-5 rounded-xl border-border/60 shadow-sm">
+        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-4">
+          <DollarSign className="h-4 w-4 text-primary" /> 2. Performance & Bônus por Atendente
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {insights.atendenteStats.map((at) => {
+            const bonus = calcularBonus(at.media);
+            const isInsuficiente = at.amostragemInsuficiente;
+            const borderColor = isInsuficiente
+              ? "border-l-muted-foreground"
+              : at.media >= 70 ? "border-l-accent" : at.media >= 50 ? "border-l-warning" : "border-l-destructive";
+            const bgColor = isInsuficiente
+              ? "bg-muted/30"
+              : at.media >= 70 ? "bg-accent/5" : at.media >= 50 ? "bg-warning/5" : "bg-destructive/5";
+
+            return (
+              <div
+                key={at.name}
+                className={`rounded-xl border border-border/60 border-l-4 ${borderColor} ${bgColor} p-4 space-y-3 transition-colors`}
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-foreground truncate">{at.name}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {at.notas.length} mentoria{at.notas.length > 1 ? "s" : ""} realizada{at.notas.length > 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  {isInsuficiente && (
+                    <Badge className="bg-muted text-muted-foreground text-[9px] shrink-0">Amostragem insuficiente</Badge>
+                  )}
+                </div>
+
+                {/* Metrics */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="text-center p-2 rounded-lg bg-background/60">
+                    <p className={`text-lg font-black leading-none ${isInsuficiente ? "text-muted-foreground" : at.media >= 70 ? "text-accent" : at.media >= 50 ? "text-warning" : "text-destructive"}`}>
+                      {formatNota(at.media)}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground mt-1">Nota Média</p>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-background/60">
+                    <p className={`text-lg font-black leading-none ${isInsuficiente ? "text-muted-foreground" : "text-foreground"}`}>
+                      {isInsuficiente ? "—" : `${bonus.percentual}%`}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground mt-1">Bônus</p>
+                  </div>
+                </div>
+
+                {/* Classification + Value */}
+                <div className="flex items-center justify-between pt-2 border-t border-border/40">
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] ${isInsuficiente ? "text-muted-foreground" : ""}`}
+                  >
+                    {isInsuficiente ? "Pendente" : bonus.classificacao}
+                  </Badge>
+                  <span className={`text-sm font-bold ${isInsuficiente ? "text-muted-foreground" : at.media >= 70 ? "text-accent" : at.media >= 50 ? "text-warning" : "text-destructive"}`}>
+                    {isInsuficiente ? "—" : formatBRL(bonus.valor)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* 3. Performance detalhada por Atendente */}
       <Card className="p-5 rounded-xl border-border/60 shadow-sm">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-          <Users className="h-4 w-4 text-primary" /> 2. Performance por Atendente
+          <Users className="h-4 w-4 text-primary" /> 3. Performance Detalhada
         </h3>
         <Accordion type="multiple" className="space-y-2">
           {insights.atendenteStats.map((at) => (
