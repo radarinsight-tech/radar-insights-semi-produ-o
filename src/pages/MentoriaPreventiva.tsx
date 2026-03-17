@@ -216,6 +216,7 @@ const MentoriaPreventiva = () => {
   const readyCount = readyFiles.length;
   const selectedCount = selectedFiles.length;
   const audioCount = useMemo(() => readyFiles.filter((f) => f.hasAudio).length, [readyFiles]);
+  const analyzedCount = useMemo(() => files.filter((f) => f.status === "analisado").length, [files]);
 
   // Atendentes summary
   const atendenteSummary = useMemo(() => {
