@@ -225,7 +225,7 @@ const MentoriaCharts = ({ files }: MentoriaChartsProps) => {
                     fontSize: "12px",
                   }}
                   formatter={(value: number, _name: string, props: any) => [
-                    `${value.toFixed(1)} (${props.payload.total} atend.)`,
+                    `${value.toFixed(1).replace(".", ",")} (${props.payload.total} atend.)`,
                     "Nota média",
                   ]}
                 />

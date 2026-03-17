@@ -1232,7 +1232,7 @@ const MentoriaLab = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
                       <p className="text-xs text-muted-foreground">Nota</p>
-                      <p className="text-xl font-bold text-foreground">{sideFile.result.notaFinal ?? "—"}</p>
+                      <p className="text-xl font-bold text-foreground">{sideFile.result.notaFinal != null ? sideFile.result.notaFinal.toFixed(1).replace(".", ",") : "—"}</p>
                     </div>
                     <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
                       <p className="text-xs text-muted-foreground">Classificação</p>

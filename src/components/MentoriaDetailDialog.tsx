@@ -285,7 +285,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
         </div>
         <div class="score-block">
           <p class="score-label">Nota Final</p>
-          <p class="score-value ${nota >= 90 ? "score-green" : nota >= 70 ? "score-blue" : nota >= 50 ? "score-yellow" : "score-red"}">${nota?.toFixed(1) ?? "—"}</p>
+          <p class="score-value ${nota >= 90 ? "score-green" : nota >= 70 ? "score-blue" : nota >= 50 ? "score-yellow" : "score-red"}">${nota != null ? nota.toFixed(1).replace(".", ",") : "—"}</p>
           <p class="score-pts">${result.pontosObtidos ?? totalObtidos}/${result.pontosPossiveis ?? totalPossiveis} pontos</p>
           <span class="score-class ${badgeClass}">${classificacao}</span>
         </div>
