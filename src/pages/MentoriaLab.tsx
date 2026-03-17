@@ -782,10 +782,6 @@ const MentoriaLab = () => {
           </Card>
         ) : (
           <>
-
-        {/* Filters + Actions */}
-        {files.length > 0 && (
-          <>
             <Card className="p-4">
               <h3 className="text-sm font-semibold text-foreground mb-3">Atendimentos importados</h3>
               <div className="flex flex-wrap items-center gap-3">
