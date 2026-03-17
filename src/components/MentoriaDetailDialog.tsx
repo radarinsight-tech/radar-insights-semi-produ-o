@@ -205,13 +205,14 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
         /* ── HEADER ── */
         .report-header {
           display: flex; justify-content: space-between; align-items: flex-start;
-          padding-bottom: 14px; border-bottom: 3px solid #111; margin-bottom: 18px;
+          padding-bottom: 12px; border-bottom: 3px solid #111; margin-bottom: 14px;
+          gap: 12px;
         }
-        .header-brand { font-size: 7px; text-transform: uppercase; letter-spacing: 0.15em; color: #9ca3af; margin-bottom: 10px; }
-        .header-title { font-size: 16px; font-weight: 800; color: #111; letter-spacing: -0.02em; }
-        .header-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 28px; margin-top: 10px; }
-        .header-grid dt { font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; }
-        .header-grid dd { font-size: 11px; font-weight: 600; color: #1a1a1a; margin-bottom: 2px; }
+        .header-brand { font-size: 7px; text-transform: uppercase; letter-spacing: 0.15em; color: #9ca3af; margin-bottom: 8px; }
+        .header-title { font-size: 14px; font-weight: 800; color: #111; letter-spacing: -0.02em; }
+        .header-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 20px; margin-top: 8px; }
+        .header-grid dt { font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; }
+        .header-grid dd { font-size: 10px; font-weight: 600; color: #1a1a1a; margin-bottom: 2px; word-break: break-word; }
 
         .score-block { text-align: right; min-width: 100px; }
         .score-label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; }
