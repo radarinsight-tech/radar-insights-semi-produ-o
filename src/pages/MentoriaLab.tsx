@@ -1175,13 +1175,13 @@ const MentoriaLab = () => {
               </div>
             )}
 
-            {/* Charts — evolution graphs */}
-            {files.some((f) => f.status === "analisado") && (
-              <MentoriaCharts files={files} />
+            {/* Charts — evolution graphs (filtered) */}
+            {filteredFiles.some((f) => f.status === "analisado") && (
+              <MentoriaCharts files={filteredFiles} />
             )}
 
-            {/* Insights do lote - seção secundária colapsável */}
-            {files.some((f) => f.status === "analisado") && (
+            {/* Insights do lote - seção secundária colapsável (filtered) */}
+            {filteredFiles.some((f) => f.status === "analisado") && (
               <details id="mentoria-insights" className="scroll-mt-6 group">
                 <summary className="flex items-center gap-2 cursor-pointer select-none py-3 px-4 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors">
                   <Info className="h-4 w-4 text-muted-foreground" />
@@ -1189,7 +1189,7 @@ const MentoriaLab = () => {
                   <span className="text-xs text-muted-foreground ml-auto">Clique para expandir</span>
                 </summary>
                 <div className="mt-3">
-                  <MentoriaInsights files={files} />
+                  <MentoriaInsights files={filteredFiles} />
                 </div>
               </details>
             )}
