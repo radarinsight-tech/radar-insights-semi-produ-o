@@ -197,6 +197,20 @@ MENTORIA DE COMUNICAÇÃO
 Sugestões de melhoria: clareza, empatia, orientação ao cliente.
 A mentoria não altera a pontuação.
 
+CLASSIFICAÇÃO DO TIPO DE ATENDIMENTO
+Identifique o tipo principal do atendimento pela demanda do cliente:
+- Suporte Técnico: problemas de conexão, lentidão, configuração, equipamento, sinal
+- Financeiro: faturas, boletos, cobranças, pagamentos, negociação de dívida
+- Vendas: contratação de novos planos, produtos ou serviços
+- Cancelamento: solicitação de cancelamento de serviço ou contrato
+- Retenção: tentativa de reter cliente que deseja cancelar
+- Mudança de Endereço: transferência de serviço para outro endereço
+- Instalação: agendamento ou acompanhamento de instalação
+- Upgrade/Downgrade: alteração de plano existente
+- Informações Gerais: consultas sobre serviços, cobertura, disponibilidade
+- Outro: casos que não se encaixam nas categorias acima
+Se o atendimento envolver mais de um tema, classificar pelo MOTIVO PRINCIPAL que gerou o contato.
+
 ETAPA 12 — CHECAGEM INTERNA FINAL (antes de retornar)
 Gere internamente esta checagem e CORRIJA inconsistências antes de retornar:
 
