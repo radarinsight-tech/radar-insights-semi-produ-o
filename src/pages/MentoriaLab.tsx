@@ -237,7 +237,7 @@ const MentoriaLab = () => {
       return !allowedExts.includes(ext);
     });
     if (invalid.length > 0) {
-      toast.error(`Formato não suportado: ${invalid.map((f) => f.name).join(", ")}. Use apenas PDF ou ZIP.`);
+      toast.error("Este formato não é suportado. Envie PDFs ou um arquivo ZIP.");
       return;
     }
 
