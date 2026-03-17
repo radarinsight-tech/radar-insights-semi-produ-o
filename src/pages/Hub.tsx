@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { LogOut, HeadsetIcon, CreditCard, Loader2, ShieldAlert, Users, FlaskConical, ShieldCheck } from "lucide-react";
+import { LogOut, HeadsetIcon, CreditCard, Loader2, ShieldAlert, Users, FlaskConical, ShieldCheck, ClipboardCheck, Sprout } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,15 +46,15 @@ const Hub = () => {
       </header>
 
       <main className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="max-w-4xl w-full text-center">
+        <div className="max-w-5xl w-full">
           <div className="mb-6 flex justify-center">
             <img src={logoFull} alt="Radar Insight" className="h-28 object-contain" />
           </div>
 
-          <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2 text-center">
             Bem-vindo ao <span className="text-primary">Radar Insight</span>
           </h2>
-          <p className="text-muted-foreground mb-10">
+          <p className="text-muted-foreground mb-10 text-center">
             Selecione o ambiente que deseja acessar
           </p>
 
@@ -69,110 +69,163 @@ const Hub = () => {
               </p>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <div className="space-y-10">
+              {/* ── Avaliação Oficial ── */}
               {showAuditoria && (
-                <Card
-                  className="group relative p-8 cursor-pointer border-2 border-border hover:border-blue-400/50 transition-all hover:shadow-lg"
-                  onClick={() => navigate("/attendance")}
-                >
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="p-4 rounded-xl bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
-                      <HeadsetIcon className="h-10 w-10 text-blue-500" />
+                <section>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 rounded-lg bg-blue-500/10">
+                      <ClipboardCheck className="h-5 w-5 text-blue-500" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-foreground mb-1">Sucesso do Cliente</h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        Avaliação de qualidade de atendimentos com análise detalhada por critérios
-                      </p>
+                      <h3 className="text-base font-bold text-foreground">Avaliação Oficial</h3>
+                      <p className="text-xs text-muted-foreground">Impacta nota, bônus e ranking mensal</p>
                     </div>
+                    <Badge className="bg-blue-500/15 text-blue-600 border-blue-500/30 text-[10px] ml-auto">Oficial</Badge>
                   </div>
-                </Card>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card
+                      className="group relative p-6 cursor-pointer border-2 border-border hover:border-blue-400/50 transition-all hover:shadow-lg"
+                      onClick={() => navigate("/attendance")}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 rounded-xl bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors shrink-0">
+                          <HeadsetIcon className="h-8 w-8 text-blue-500" />
+                        </div>
+                        <div>
+                          <h4 className="text-base font-bold text-foreground mb-1">Sucesso do Cliente</h4>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            Avaliação oficial de qualidade — gera nota, classificação e elegibilidade a bônus
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                    <Card
+                      className="group relative p-6 cursor-pointer border-2 border-border hover:border-teal-400/50 transition-all hover:shadow-lg"
+                      onClick={() => navigate("/mentoria-lab")}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 rounded-xl bg-teal-500/10 group-hover:bg-teal-500/20 transition-colors shrink-0">
+                          <FlaskConical className="h-8 w-8 text-teal-500" />
+                        </div>
+                        <div>
+                          <h4 className="text-base font-bold text-foreground mb-1">Mentoria Lab</h4>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            Análise em lote para preparação de mentorias — resultados compõem a avaliação oficial
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="absolute top-3 right-3 text-[10px]">Beta</Badge>
+                    </Card>
+                  </div>
+                </section>
               )}
 
+              {/* ── Desenvolvimento Preventivo ── */}
               {showAuditoria && (
-                <Card
-                  className="group relative p-8 cursor-pointer border-2 border-border hover:border-teal-400/50 transition-all hover:shadow-lg"
-                  onClick={() => navigate("/mentoria-lab")}
-                >
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="p-4 rounded-xl bg-teal-500/10 group-hover:bg-teal-500/20 transition-colors">
-                      <FlaskConical className="h-10 w-10 text-teal-500" />
+                <section>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 rounded-lg bg-emerald-500/10">
+                      <Sprout className="h-5 w-5 text-emerald-500" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-foreground mb-1">Mentoria Lab</h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        Upload múltiplo, seleção e análise em lote de atendimentos para preparação de mentorias
-                      </p>
+                      <h3 className="text-base font-bold text-foreground">Desenvolvimento Preventivo</h3>
+                      <p className="text-xs text-muted-foreground">Sem impacto em nota, bônus ou ranking — apenas desenvolvimento</p>
                     </div>
+                    <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 text-[10px] ml-auto">Não oficial</Badge>
                   </div>
-                  <Badge variant="outline" className="absolute top-3 right-3 text-xs">Beta</Badge>
-                </Card>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card
+                      className="group relative p-6 cursor-pointer border-2 border-border hover:border-emerald-400/50 transition-all hover:shadow-lg"
+                      onClick={() => navigate("/mentoria-preventiva")}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 rounded-xl bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors shrink-0">
+                          <ShieldCheck className="h-8 w-8 text-emerald-500" />
+                        </div>
+                        <div>
+                          <h4 className="text-base font-bold text-foreground mb-1">Mentoria Preventiva</h4>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            Identifica oportunidades de melhoria antes que virem problemas — sem impacto em indicadores oficiais
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="absolute top-3 right-3 text-[10px]">Beta</Badge>
+                    </Card>
+                  </div>
+                </section>
               )}
 
-              {showAuditoria && (
-                <Card
-                  className="group relative p-8 cursor-pointer border-2 border-border hover:border-emerald-400/50 transition-all hover:shadow-lg"
-                  onClick={() => navigate("/mentoria-preventiva")}
-                >
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="p-4 rounded-xl bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors">
-                      <ShieldCheck className="h-10 w-10 text-emerald-500" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-foreground mb-1">Mentoria Preventiva</h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        Análise de desenvolvimento sem impacto em notas oficiais ou bônus
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="absolute top-3 right-3 text-xs">Beta</Badge>
-                </Card>
-              )}
-
+              {/* ── Crédito ── */}
               {showCredito && (
-                <Card
-                  className="group relative p-8 cursor-pointer border-2 border-border hover:border-purple-400/50 transition-all hover:shadow-lg"
-                  onClick={() => navigate("/credit")}
-                >
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="p-4 rounded-xl bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
-                      <CreditCard className="h-10 w-10 text-purple-500" />
+                <section>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 rounded-lg bg-purple-500/10">
+                      <CreditCard className="h-5 w-5 text-purple-500" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-foreground mb-1">Análise de Crédito</h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        Análise de CPF via consulta SPC/Serasa com parecer técnico automatizado
-                      </p>
+                      <h3 className="text-base font-bold text-foreground">Análise de Crédito</h3>
+                      <p className="text-xs text-muted-foreground">Consultas e pareceres técnicos</p>
                     </div>
                   </div>
-                </Card>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card
+                      className="group relative p-6 cursor-pointer border-2 border-border hover:border-purple-400/50 transition-all hover:shadow-lg"
+                      onClick={() => navigate("/credit")}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 rounded-xl bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors shrink-0">
+                          <CreditCard className="h-8 w-8 text-purple-500" />
+                        </div>
+                        <div>
+                          <h4 className="text-base font-bold text-foreground mb-1">Análise de Crédito</h4>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            Análise de CPF via consulta SPC/Serasa com parecer técnico automatizado
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                </section>
               )}
 
+              {/* ── Admin ── */}
               {showAdmin && (
-                <Card
-                  className="group relative p-8 cursor-pointer border-2 border-border hover:border-primary/50 transition-all hover:shadow-lg"
-                  onClick={() => navigate("/users")}
-                >
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="p-4 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors">
-                      <Users className="h-10 w-10 text-primary" />
+                <section>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Users className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-foreground mb-1">
-                        Administração / Usuários
-                      </h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        Gerencie acessos, usuários e permissões com acesso total de administrador
-                      </p>
+                      <h3 className="text-base font-bold text-foreground">Administração</h3>
+                      <p className="text-xs text-muted-foreground">Gestão de usuários e permissões</p>
                     </div>
                   </div>
-                </Card>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card
+                      className="group relative p-6 cursor-pointer border-2 border-border hover:border-primary/50 transition-all hover:shadow-lg"
+                      onClick={() => navigate("/users")}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors shrink-0">
+                          <Users className="h-8 w-8 text-primary" />
+                        </div>
+                        <div>
+                          <h4 className="text-base font-bold text-foreground mb-1">Usuários e Permissões</h4>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            Gerencie acessos, usuários e permissões com acesso total de administrador
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                </section>
               )}
             </div>
           )}
 
           {isAdmin && (
-            <p className="mt-6 text-sm text-muted-foreground">
+            <p className="mt-6 text-sm text-muted-foreground text-center">
               Seu perfil administrativo libera automaticamente todos os módulos do sistema.
             </p>
           )}
