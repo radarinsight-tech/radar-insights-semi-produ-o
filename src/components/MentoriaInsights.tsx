@@ -286,12 +286,13 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
           {insights.atendenteStats.map((at) => {
             const bonus = calcularBonus(at.media);
             const isInsuficiente = at.amostragemInsuficiente;
+            const media10 = notaToScale10(at.media);
             const borderColor = isInsuficiente
               ? "border-l-muted-foreground"
-              : at.media >= 70 ? "border-l-accent" : at.media >= 50 ? "border-l-warning" : "border-l-destructive";
+              : media10 >= 7 ? "border-l-accent" : media10 >= 5 ? "border-l-warning" : "border-l-destructive";
             const bgColor = isInsuficiente
               ? "bg-muted/30"
-              : at.media >= 70 ? "bg-accent/5" : at.media >= 50 ? "bg-warning/5" : "bg-destructive/5";
+              : media10 >= 7 ? "bg-accent/5" : media10 >= 5 ? "bg-warning/5" : "bg-destructive/5";
 
             return (
               <div
