@@ -303,7 +303,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           <dl class="header-grid">
             <dt>Protocolo</dt><dd>${result.protocolo || "—"}</dd>
             <dt>Atendente</dt><dd>${result.atendente || atendente || "—"}</dd>
-            <dt>Data do Atendimento</dt><dd>${result.data || "—"}</dd>
+            <dt>Data do Atendimento</dt><dd>${formatDateBR(result.data)}</dd>
             <dt>Tipo</dt><dd>${result.tipo || "—"}</dd>
           </dl>
         </div>
