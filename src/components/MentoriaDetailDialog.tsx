@@ -542,8 +542,8 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                               {/* Question + badge + pts */}
                               <div className="flex items-baseline gap-2.5 flex-wrap">
                                 <span className={`text-[13px] font-semibold leading-snug ${
-                                  c.resultado === "SIM" ? "text-accent-foreground" :
-                                  c.resultado === "NÃO" ? "text-destructive-foreground" : "text-foreground"
+                                  c.resultado === "SIM" ? "text-foreground" :
+                                  c.resultado === "NÃO" ? "text-foreground" : "text-foreground"
                                 }`}>
                                   {c.numero}. {c.nome}
                                 </span>
