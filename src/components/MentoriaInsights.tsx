@@ -315,7 +315,7 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
                 {/* Metrics */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="text-center p-2 rounded-lg bg-background/60">
-                    <p className={`text-lg font-black leading-none ${isInsuficiente ? "text-muted-foreground" : at.media >= 70 ? "text-accent" : at.media >= 50 ? "text-warning" : "text-destructive"}`}>
+                    <p className={`text-lg font-black leading-none ${isInsuficiente ? "text-muted-foreground" : media10 >= 7 ? "text-accent" : media10 >= 5 ? "text-warning" : "text-destructive"}`}>
                       {formatNota(at.media)}
                     </p>
                     <p className="text-[9px] text-muted-foreground mt-1">Nota Média</p>
