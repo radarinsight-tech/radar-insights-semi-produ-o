@@ -22,6 +22,7 @@ import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import logoSymbol from "@/assets/logo-symbol.png";
 import { toast } from "sonner";
 import MentoriaInsights from "@/components/MentoriaInsights";
+import MentoriaCharts from "@/components/MentoriaCharts";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import ConversationView from "@/components/ConversationView";
 import MentoriaDetailDialog from "@/components/MentoriaDetailDialog";
@@ -1093,6 +1094,11 @@ const MentoriaLab = () => {
                   </p>
                 </div>
               </div>
+            )}
+
+            {/* Charts — evolution graphs */}
+            {files.some((f) => f.status === "analisado") && (
+              <MentoriaCharts files={files} />
             )}
 
             {/* Insights do lote - seção secundária colapsável */}
