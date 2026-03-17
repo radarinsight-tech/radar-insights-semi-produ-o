@@ -490,6 +490,23 @@ const MentoriaLab = () => {
       return;
     }
 
+    // Show warning for large selections but allow continuing
+    if (toAnalyze.length > ANALYZE_LIMIT && !showAnalyzeWarning) {
+      setShowAnalyzeWarning(true);
+      toast.warning(`Você selecionou ${toAnalyze.length} atendimentos. Recomendamos analisar em blocos de até ${ANALYZE_LIMIT} para melhor desempenho.`, {
+        duration: 8000,
+        action: {
+          label: "Continuar mesmo assim",
+          onClick: () => {
+            setShowAnalyzeWarning(false);
+            analyzeSelected();
+          },
+        },
+      });
+      return;
+    }
+    setShowAnalyzeWarning(false);
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast.error("Você precisa estar autenticado.");
