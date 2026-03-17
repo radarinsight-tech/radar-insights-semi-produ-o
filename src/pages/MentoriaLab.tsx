@@ -108,7 +108,10 @@ const MentoriaLab = () => {
 
   // Filters
   const [filterAtendente, setFilterAtendente] = useState("todos");
-  const [filterPeriodo, setFilterPeriodo] = useState("");
+  const [filterPeriodoFrom, setFilterPeriodoFrom] = useState<Date | undefined>();
+  const [filterPeriodoTo, setFilterPeriodoTo] = useState<Date | undefined>();
+  const [filterAuditoriaFrom, setFilterAuditoriaFrom] = useState<Date | undefined>();
+  const [filterAuditoriaTo, setFilterAuditoriaTo] = useState<Date | undefined>();
   const [filterCanal, setFilterCanal] = useState("todos");
   const [filterAudio, setFilterAudio] = useState("todos");
 
