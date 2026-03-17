@@ -98,6 +98,7 @@ const MentoriaLab = () => {
   const [processing, setProcessing] = useState(false);
   const [readingIds, setReadingIds] = useState<Set<string>>(new Set());
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
+  const [batchInfo, setBatchInfo] = useState<BatchInfo | null>(null);
   const [sideFile, setSideFile] = useState<LabFile | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
