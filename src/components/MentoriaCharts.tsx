@@ -102,7 +102,7 @@ const MentoriaCharts = ({ files }: MentoriaChartsProps) => {
     analyzed.forEach(f => {
       const name = f.result?.atendente || f.atendente || "Não identificado";
       if (!map.has(name)) map.set(name, []);
-      map.get(name)!.push(f.result!.notaFinal!);
+      map.get(name)!.push(notaToScale10(f.result!.notaFinal!));
     });
     return [...map.entries()].map(([name, notas]) => ({
       name: name.length > 15 ? name.slice(0, 14) + "…" : name,
