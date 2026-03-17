@@ -409,7 +409,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
               <div className="text-right pl-8 shrink-0">
                 <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">Nota Final</p>
                 <p className={`text-5xl font-black tracking-tighter leading-none ${notaColor(nota)}`}>
-                  {nota?.toFixed(1) ?? "—"}
+          {nota != null ? nota.toFixed(1).replace(".", ",") : "—"}
                 </p>
                 <p className="text-[10px] text-muted-foreground mt-1">
                   {result.pontosObtidos ?? totalObtidos}/{result.pontosPossiveis ?? totalPossiveis} pts
