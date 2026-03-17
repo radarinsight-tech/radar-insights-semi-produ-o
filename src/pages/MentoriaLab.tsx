@@ -105,6 +105,7 @@ const MentoriaLab = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showAnalyzeWarning, setShowAnalyzeWarning] = useState(false);
   const [mentoriaFile, setMentoriaFile] = useState<LabFile | null>(null);
+  const [showCharts, setShowCharts] = useState(false);
 
   // Filters
   const [filterAtendente, setFilterAtendente] = useState("todos");
