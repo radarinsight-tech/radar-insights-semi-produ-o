@@ -1076,14 +1076,18 @@ const MentoriaLab = () => {
               </div>
             )}
 
-            {/* Insights da Mentoria - prominent section after analyses */}
+            {/* Insights do lote - seção secundária colapsável */}
             {files.some((f) => f.status === "analisado") && (
-              <div id="mentoria-insights" className="scroll-mt-6">
-                <div className="relative">
-                  <div className="absolute -inset-3 bg-primary/[0.03] rounded-2xl -z-10" />
+              <details id="mentoria-insights" className="scroll-mt-6 group">
+                <summary className="flex items-center gap-2 cursor-pointer select-none py-3 px-4 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-muted-foreground">Resumo geral do lote</span>
+                  <span className="text-xs text-muted-foreground ml-auto">Clique para expandir</span>
+                </summary>
+                <div className="mt-3">
                   <MentoriaInsights files={files} />
                 </div>
-              </div>
+              </details>
             )}
           </>
         )}
