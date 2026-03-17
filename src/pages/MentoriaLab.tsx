@@ -573,7 +573,9 @@ const MentoriaLab = () => {
         total_errors: errors,
         completed_at: new Date().toISOString(),
       };
-      await supabase.from("mentoria_batches").update({ status: errors === toAnalyze.length ? "error" : "completed", summary } as any).eq("id", currentBatchId);
+      const finalBatchStatus: BatchStatus = errors === toAnalyze.length ? "erro" : "concluido";
+      await updateBatchStatus(currentBatchId, finalBatchStatus);
+      await supabase.from("mentoria_batches").update({ summary } as any).eq("id", currentBatchId);
 
       // Save summary.json to cloud
       const { data: batchData } = await supabase.from("mentoria_batches").select("batch_code").eq("id", currentBatchId).single();
