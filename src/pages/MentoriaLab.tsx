@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import MentoriaInsights from "@/components/MentoriaInsights";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import ConversationView from "@/components/ConversationView";
+import MentoriaDetailDialog from "@/components/MentoriaDetailDialog";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro";
 
