@@ -54,3 +54,27 @@ export function classColorFromClassificacao(classificacao: string): string {
       return "bg-muted text-muted-foreground";
   }
 }
+
+/**
+ * Calculates bonus tier based on nota (0-100 scale).
+ */
+export interface BonusTier {
+  classificacao: string;
+  percentual: number;
+  valor: number;
+}
+
+export function calcularBonus(nota: number): BonusTier {
+  if (nota >= 95) return { classificacao: "Excelente", percentual: 100, valor: 1200 };
+  if (nota >= 85) return { classificacao: "Muito bom", percentual: 90, valor: 1080 };
+  if (nota >= 70) return { classificacao: "Bom atendimento", percentual: 70, valor: 840 };
+  if (nota >= 50) return { classificacao: "Em desenvolvimento", percentual: 30, valor: 360 };
+  return { classificacao: "Abaixo do esperado", percentual: 0, valor: 0 };
+}
+
+/**
+ * Formats a monetary value in BRL.
+ */
+export function formatBRL(value: number): string {
+  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
