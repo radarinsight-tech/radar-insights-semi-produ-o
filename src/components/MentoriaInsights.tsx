@@ -144,9 +144,9 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
 
     // Recommended files
     const sorted = [...analyzed].sort((a, b) => a.result!.notaFinal! - b.result!.notaFinal!);
-    const piores = sorted.filter((f) => f.result!.notaFinal! < 5).slice(0, 5);
-    const medianos = sorted.filter((f) => f.result!.notaFinal! >= 5 && f.result!.notaFinal! < 7).slice(0, 5);
-    const melhores = [...sorted].reverse().filter((f) => f.result!.notaFinal! >= 7).slice(0, 5);
+    const piores = sorted.filter((f) => notaToScale10(f.result!.notaFinal!) < 5).slice(0, 5);
+    const medianos = sorted.filter((f) => notaToScale10(f.result!.notaFinal!) >= 5 && notaToScale10(f.result!.notaFinal!) < 7).slice(0, 5);
+    const melhores = [...sorted].reverse().filter((f) => notaToScale10(f.result!.notaFinal!) >= 7).slice(0, 5);
 
     // Build mentoria script
     const temaPrincipal = topCriticos[0]?.text || "Qualidade do atendimento";
