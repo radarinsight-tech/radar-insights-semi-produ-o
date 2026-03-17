@@ -304,6 +304,16 @@ const MentoriaLab = () => {
       return;
     }
 
+    if (allPdfs.length > IMPORT_LIMIT) {
+      setBatchInfo((prev) => prev ? { ...prev, status: "erro" } : prev);
+      toast.error(`O limite máximo é de ${IMPORT_LIMIT} atendimentos por lote. Você tentou importar ${allPdfs.length}.`);
+      return;
+    }
+
+    if (allPdfs.length > IMPORT_RECOMMENDED) {
+      toast.warning(`Você importou ${allPdfs.length} atendimentos. O uso recomendado é de até ${IMPORT_RECOMMENDED} por mês.`);
+    }
+
     // Update counts
     setBatchInfo((prev) => prev ? {
       ...prev,
