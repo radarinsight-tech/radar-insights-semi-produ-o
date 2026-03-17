@@ -108,6 +108,7 @@ const MentoriaCharts = ({ files }: MentoriaChartsProps) => {
       fullName: name,
       media: Math.round((notas.reduce((a, b) => a + b, 0) / notas.length) * 10) / 10,
       total: notas.length,
+      insuficiente: notas.length < 6,
     })).sort((a, b) => b.media - a.media);
   }, [analyzed]);
 
