@@ -5,7 +5,7 @@ import {
   ArrowLeft, ShieldCheck, Upload, Loader2, FileText,
   CheckCircle2, AlertTriangle, ThumbsUp, Lightbulb, ChevronDown, ChevronUp,
   Hash, User, Calendar, Tag, Info, Shuffle, Volume2, VolumeX, X, Play,
-  Eye
+  Eye, BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
