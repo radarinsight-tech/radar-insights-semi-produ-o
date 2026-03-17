@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { formatDateTimeBR } from "@/lib/utils";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import UploadSection, { type UploadState } from "@/components/UploadSection";
 import AnalysisResult, { type AnalysisData } from "@/components/AnalysisResult";
@@ -75,7 +76,7 @@ const Index = () => {
           id: row.id,
           data: row.data || "",
           data_avaliacao: row.data_avaliacao
-            ? new Date(row.data_avaliacao).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }) + " " + new Date(row.data_avaliacao).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+            ? formatDateTimeBR(row.data_avaliacao)
             : "",
           protocolo: row.protocolo || "—",
           atendente: row.atendente || "—",
@@ -262,6 +263,7 @@ const Index = () => {
 
       const { data: savedRow, error: insertError } = await supabase.from("evaluations").insert({
         data: data.data || new Date().toLocaleDateString("pt-BR"),
+        data_avaliacao: new Date().toISOString(),
         protocolo: data.protocolo || "Não identificado",
         atendente: data.atendente || "Não identificado",
         tipo: data.tipo || "Não identificado",
