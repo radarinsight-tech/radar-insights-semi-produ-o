@@ -1153,13 +1153,11 @@ const MentoriaLab = () => {
                 </div>
               )}
 
-              {/* Text content */}
+              {/* Conversation content */}
               {sideFile.text && (
                 <div>
-                  <p className="text-xs font-semibold text-muted-foreground mb-2">Conteúdo extraído</p>
-                  <div className="bg-muted/30 rounded-lg p-4 text-xs font-mono whitespace-pre-wrap max-h-[50vh] overflow-y-auto leading-relaxed text-foreground border border-border">
-                    {sideFile.text}
-                  </div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">Conteúdo do atendimento</p>
+                  <ConversationView rawText={sideFile.text} atendente={sideFile.atendente} />
                 </div>
               )}
 
