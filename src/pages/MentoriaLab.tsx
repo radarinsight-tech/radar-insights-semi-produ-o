@@ -24,6 +24,30 @@ import MentoriaInsights from "@/components/MentoriaInsights";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro";
 
+type BatchStatus = "recebido" | "extraindo_arquivos" | "organizando_atendimentos" | "pronto_para_curadoria" | "em_analise" | "concluido" | "erro";
+
+interface BatchInfo {
+  id: string;
+  batchCode: string;
+  createdAt: Date;
+  sourceType: "pdf" | "zip";
+  originalFileName?: string;
+  totalFilesInSource: number;
+  totalPdfs: number;
+  ignoredFiles: number;
+  status: BatchStatus;
+}
+
+const batchStatusConfig: Record<BatchStatus, { label: string; icon: typeof Package; color: string }> = {
+  recebido: { label: "Recebido", icon: Package, color: "text-muted-foreground" },
+  extraindo_arquivos: { label: "Extraindo arquivos", icon: Loader2, color: "text-blue-600" },
+  organizando_atendimentos: { label: "Organizando atendimentos", icon: Clock, color: "text-blue-600" },
+  pronto_para_curadoria: { label: "Pronto para curadoria", icon: CheckCircle2, color: "text-primary" },
+  em_analise: { label: "Em análise", icon: Loader2, color: "text-warning" },
+  concluido: { label: "Concluído", icon: CheckCircle2, color: "text-accent" },
+  erro: { label: "Erro", icon: AlertTriangle, color: "text-destructive" },
+};
+
 interface LabFile {
   id: string;
   file: File;
