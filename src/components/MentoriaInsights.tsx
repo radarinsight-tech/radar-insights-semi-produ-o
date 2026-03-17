@@ -368,9 +368,9 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
 
       {/* 4. Padrões de Comportamento */}
       {insights.atendenteStats.some((a) => a.pontosFracos.length > 0) && (
-        <Card className="p-5">
+        <Card className="p-5 rounded-xl border-border/60 shadow-sm">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-            <MessageSquare className="h-4 w-4 text-primary" /> Padrões de Comportamento Identificados
+            <MessageSquare className="h-4 w-4 text-primary" /> 4. Padrões de Comportamento
           </h3>
           <div className="space-y-3">
             {insights.atendenteStats.filter((a) => a.pontosFracos.length > 0).map((at) => (
