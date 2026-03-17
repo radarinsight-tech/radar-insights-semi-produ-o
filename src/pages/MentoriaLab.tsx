@@ -953,7 +953,7 @@ const MentoriaLab = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredFiles.map((f) => (
+                    {paginatedFiles.map((f) => (
                       <tr key={f.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                         <td className="p-3">
                           <Checkbox checked={selected.has(f.id)} onCheckedChange={() => toggleSelect(f.id)} />
@@ -1023,7 +1023,7 @@ const MentoriaLab = () => {
                     ))}
                     {filteredFiles.length === 0 && (
                       <tr>
-                        <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                        <td colSpan={9} className="p-8 text-center text-muted-foreground">
                           Nenhum atendimento encontrado com os filtros aplicados.
                         </td>
                       </tr>
@@ -1031,7 +1031,49 @@ const MentoriaLab = () => {
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+                  <span className="text-xs text-muted-foreground">
+                    Página {currentPage} de {totalPages} · {filteredFiles.length} atendimento(s)
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1"
+                      disabled={currentPage <= 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    >
+                      <ChevronLeft className="h-3 w-3" /> Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1"
+                      disabled={currentPage >= totalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    >
+                      Próxima <ChevronRight className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </Card>
+
+            {/* Selection warning */}
+            {selected.size > ANALYZE_LIMIT && (
+              <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
+                <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">Muitos atendimentos selecionados</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Você selecionou {selected.size} atendimentos. Recomendamos analisar em blocos de até {ANALYZE_LIMIT} para melhor desempenho.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Insights da Mentoria - prominent section after analyses */}
             {files.some((f) => f.status === "analisado") && (
