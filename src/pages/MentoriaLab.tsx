@@ -775,7 +775,7 @@ const MentoriaLab = () => {
         {files.length === 0 ? (
           <Card className="p-10 text-center">
             <FileText className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-            <h3 className="text-sm font-semibold text-foreground mb-1">Atendimentos importados</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-1">📂 Atendimentos importados</h3>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto">
               Os atendimentos enviados aparecerão aqui para curadoria, seleção e análise.
             </p>
