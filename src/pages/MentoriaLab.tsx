@@ -918,14 +918,71 @@ const MentoriaLab = () => {
                   </SelectContent>
                 </Select>
 
-                {/* Período */}
-                <Input
-                  type="month"
-                  value={filterPeriodo}
-                  onChange={(e) => setFilterPeriodo(e.target.value)}
-                  className="w-[160px]"
-                  placeholder="Período"
-                />
+                {/* Período do atendimento */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-[200px] justify-start text-left text-xs font-normal h-10", !filterPeriodoFrom && "text-muted-foreground")}>
+                      <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+                      {filterPeriodoFrom ? (
+                        filterPeriodoTo
+                          ? `${format(filterPeriodoFrom, "dd/MM")} – ${format(filterPeriodoTo, "dd/MM/yy")}`
+                          : `A partir de ${format(filterPeriodoFrom, "dd/MM/yy")}`
+                      ) : "Período atendimento"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="range"
+                      selected={filterPeriodoFrom && filterPeriodoTo ? { from: filterPeriodoFrom, to: filterPeriodoTo } : filterPeriodoFrom ? { from: filterPeriodoFrom, to: undefined } : undefined}
+                      onSelect={(range) => {
+                        setFilterPeriodoFrom(range?.from);
+                        setFilterPeriodoTo(range?.to);
+                      }}
+                      numberOfMonths={2}
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                    {(filterPeriodoFrom || filterPeriodoTo) && (
+                      <div className="px-3 pb-3">
+                        <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => { setFilterPeriodoFrom(undefined); setFilterPeriodoTo(undefined); }}>
+                          Limpar período
+                        </Button>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
+
+                {/* Data da auditoria */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-[200px] justify-start text-left text-xs font-normal h-10", !filterAuditoriaFrom && "text-muted-foreground")}>
+                      <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+                      {filterAuditoriaFrom ? (
+                        filterAuditoriaTo
+                          ? `${format(filterAuditoriaFrom, "dd/MM")} – ${format(filterAuditoriaTo, "dd/MM/yy")}`
+                          : `A partir de ${format(filterAuditoriaFrom, "dd/MM/yy")}`
+                      ) : "Data da auditoria"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="range"
+                      selected={filterAuditoriaFrom && filterAuditoriaTo ? { from: filterAuditoriaFrom, to: filterAuditoriaTo } : filterAuditoriaFrom ? { from: filterAuditoriaFrom, to: undefined } : undefined}
+                      onSelect={(range) => {
+                        setFilterAuditoriaFrom(range?.from);
+                        setFilterAuditoriaTo(range?.to);
+                      }}
+                      numberOfMonths={2}
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                    {(filterAuditoriaFrom || filterAuditoriaTo) && (
+                      <div className="px-3 pb-3">
+                        <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => { setFilterAuditoriaFrom(undefined); setFilterAuditoriaTo(undefined); }}>
+                          Limpar período
+                        </Button>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
 
                 {/* Áudio */}
                 <Select value={filterAudio} onValueChange={setFilterAudio}>
