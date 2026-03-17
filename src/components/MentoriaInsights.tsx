@@ -393,9 +393,9 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
       )}
 
       {/* 5. Roteiro de Mentoria */}
-      <Card className="p-5 border-primary/20 bg-primary/[0.02]">
+      <Card className="p-5 rounded-xl border-primary/20 bg-primary/[0.02] shadow-sm">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-4">
-          <BookOpen className="h-4 w-4 text-primary" /> Roteiro de Mentoria (sugestão automática)
+          <BookOpen className="h-4 w-4 text-primary" /> 5. Roteiro de Mentoria
         </h3>
         <div className="space-y-4">
           <RoteiroStep step="1" title="Abertura" text={insights.roteiro.abertura} />
