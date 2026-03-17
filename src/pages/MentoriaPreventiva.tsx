@@ -5,7 +5,7 @@ import {
   ArrowLeft, ShieldCheck, Upload, Loader2, FileText,
   CheckCircle2, AlertTriangle, ThumbsUp, Lightbulb, ChevronDown, ChevronUp,
   Hash, User, Calendar, Tag, Info, Shuffle, Volume2, VolumeX, X, Play,
-  Eye
+  Eye, BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { extractAllMetadata, type PdfMetadata } from "@/lib/mentoriaMetadata";
 import logoSymbol from "@/assets/logo-symbol.png";
+import PreventiveInsights from "@/components/PreventiveInsights";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -119,6 +120,7 @@ const MentoriaPreventiva = () => {
   const [activeResult, setActiveResult] = useState<PreventiveResult | null>(null);
   const [showCriterios, setShowCriterios] = useState(false);
   const [sampled, setSampled] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // ── File reading ─────────────────────────────────────────────────────
@@ -214,6 +216,7 @@ const MentoriaPreventiva = () => {
   const readyCount = readyFiles.length;
   const selectedCount = selectedFiles.length;
   const audioCount = useMemo(() => readyFiles.filter((f) => f.hasAudio).length, [readyFiles]);
+  const analyzedCount = useMemo(() => files.filter((f) => f.status === "analisado").length, [files]);
 
   // Atendentes summary
   const atendenteSummary = useMemo(() => {
@@ -386,10 +389,20 @@ const MentoriaPreventiva = () => {
                   </Button>
                 )}
 
+                {analyzedCount > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setShowInsights(!showInsights); setActiveResult(null); }}
+                  >
+                    <BarChart3 className="h-3 w-3 mr-1" /> {showInsights ? "Ocultar Insights" : "Ver Insights"}
+                  </Button>
+                )}
+
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => { setFiles([]); setSampled(false); setActiveResult(null); }}
+                  onClick={() => { setFiles([]); setSampled(false); setActiveResult(null); setShowInsights(false); }}
                 >
                   <X className="h-3 w-3 mr-1" /> Limpar tudo
                 </Button>
@@ -512,6 +525,18 @@ const MentoriaPreventiva = () => {
                 </div>
               </Card>
             </>
+          )}
+
+          {/* Insights panel */}
+          {showInsights && analyzedCount > 0 && !activeResult && (
+            <PreventiveInsights
+              files={files.filter((f) => f.status === "analisado" && f.result).map((f) => ({
+                id: f.id,
+                name: f.name,
+                atendente: f.atendente,
+                result: f.result,
+              }))}
+            />
           )}
 
           {/* Result detail panel */}
