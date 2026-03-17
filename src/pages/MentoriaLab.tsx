@@ -171,7 +171,16 @@ const MentoriaLab = () => {
     }
   }, []);
 
-  // Multi-file upload + auto-read (PDF + ZIP)
+  // Generate batch code: lote-YYYY-MM-NNN
+  const generateBatchCode = useCallback(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const seq = String(Math.floor(Math.random() * 999) + 1).padStart(3, "0");
+    return `lote-${y}-${m}-${seq}`;
+  }, []);
+
+  // Multi-file upload + auto-read (PDF + ZIP) with cloud storage
   const handleFiles = useCallback(async (newFiles: FileList | File[]) => {
     const fileArray = Array.from(newFiles);
     const allowedExts = [".pdf", ".zip"];
@@ -184,8 +193,18 @@ const MentoriaLab = () => {
       return;
     }
 
+    // Get user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Você precisa estar autenticado para importar arquivos.");
+      return;
+    }
+
     const zipFiles = fileArray.filter((f) => f.name.toLowerCase().endsWith(".zip"));
     const pdfFiles = fileArray.filter((f) => f.name.toLowerCase().endsWith(".pdf"));
+    const isZipSource = zipFiles.length > 0;
+    const batchCode = generateBatchCode();
+    const userPrefix = user.id;
 
     // Process ZIPs with detailed reporting
     let extractedPdfs: File[] = [];
@@ -199,15 +218,9 @@ const MentoriaLab = () => {
       totalIgnored += result.ignored;
     }
 
-    if (zipFiles.length > 0 && extractedPdfs.length === 0 && pdfFiles.length === 0) {
+    if (isZipSource && extractedPdfs.length === 0 && pdfFiles.length === 0) {
       toast.error(`O ZIP contém ${totalZipEntries} arquivo(s), mas nenhum é PDF. Apenas arquivos PDF são aceitos.`);
       return;
-    }
-
-    // Save ZIP to storage for audit trail
-    for (const zf of zipFiles) {
-      const zipStorageName = `mentoria_zip_${Date.now()}_${zf.name}`;
-      await supabase.storage.from("pdfs").upload(zipStorageName, zf, { contentType: "application/zip" }).catch(() => {});
     }
 
     const allPdfs = [...pdfFiles, ...extractedPdfs];
@@ -216,18 +229,87 @@ const MentoriaLab = () => {
       return;
     }
 
-    const entries: LabFile[] = allPdfs.map((f) => ({
-      id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      file: f,
-      name: f.name,
-      size: f.size,
-      addedAt: new Date(),
-      status: "pendente" as FileStatus,
-    }));
+    // 1. Save originals to cloud: uploads/
+    let uploadPath: string | undefined;
+    if (isZipSource) {
+      for (const zf of zipFiles) {
+        const path = `${userPrefix}/uploads/${batchCode}/${zf.name}`;
+        await supabase.storage.from("mentoria-lab").upload(path, zf, { contentType: "application/zip" }).catch(() => {});
+        uploadPath = `${userPrefix}/uploads/${batchCode}`;
+      }
+    } else {
+      for (const pf of pdfFiles) {
+        const path = `${userPrefix}/uploads/${batchCode}/${pf.name}`;
+        await supabase.storage.from("mentoria-lab").upload(path, pf, { contentType: "application/pdf" }).catch(() => {});
+      }
+      uploadPath = `${userPrefix}/uploads/${batchCode}`;
+    }
+
+    // 2. Save extracted PDFs to cloud: extracted/
+    const pdfPaths: Map<string, string> = new Map();
+    for (const pdf of allPdfs) {
+      const storagePath = `${userPrefix}/extracted/${batchCode}/${pdf.name}`;
+      await supabase.storage.from("mentoria-lab").upload(storagePath, pdf, { contentType: "application/pdf" }).catch(() => {});
+      pdfPaths.set(pdf.name, storagePath);
+    }
+
+    // 3. Create batch record in DB
+    const { data: batchRow, error: batchErr } = await supabase.from("mentoria_batches").insert({
+      user_id: user.id,
+      batch_code: batchCode,
+      source_type: isZipSource ? "zip" : "pdf",
+      original_file_name: isZipSource ? zipFiles[0]?.name : null,
+      total_files_in_source: isZipSource ? totalZipEntries : pdfFiles.length,
+      total_pdfs: allPdfs.length,
+      ignored_files: totalIgnored,
+      status: "imported",
+      upload_path: uploadPath,
+    } as any).select("id").single();
+
+    if (batchErr || !batchRow) {
+      console.error("Failed to create batch:", batchErr);
+      toast.error("Erro ao registrar lote. Arquivos foram salvos.");
+    }
+
+    const batchId = batchRow?.id;
+    setCurrentBatchId(batchId || null);
+
+    // 4. Create batch file records + local entries
+    const entries: LabFile[] = [];
+    for (const pdf of allPdfs) {
+      const localId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const storagePath = pdfPaths.get(pdf.name) || "";
+
+      let batchFileId: string | undefined;
+      if (batchId) {
+        const { data: bf } = await supabase.from("mentoria_batch_files").insert({
+          batch_id: batchId,
+          file_name: pdf.name,
+          file_path: `${userPrefix}/uploads/${batchCode}/${pdf.name}`,
+          extracted_path: storagePath,
+          file_size: pdf.size,
+          status: "pending",
+        } as any).select("id").single();
+        batchFileId = bf?.id;
+      }
+
+      entries.push({
+        id: localId,
+        file: pdf,
+        name: pdf.name,
+        size: pdf.size,
+        addedAt: new Date(),
+        status: "pendente",
+        batchId,
+        batchFileId,
+        storagePath,
+      });
+    }
+
     setFiles((prev) => [...prev, ...entries]);
 
     // Detailed toast message
-    if (zipFiles.length > 0) {
+    if (isZipSource) {
       const parts = [`${extractedPdfs.length} PDF(s) extraído(s) do ZIP`];
       if (pdfFiles.length > 0) parts.push(`${pdfFiles.length} PDF(s) avulso(s)`);
       if (totalIgnored > 0) parts.push(`${totalIgnored} arquivo(s) ignorado(s)`);
@@ -237,7 +319,7 @@ const MentoriaLab = () => {
     }
 
     entries.forEach((entry) => readFile(entry));
-  }, [readFile, extractPdfsFromZip]);
+  }, [readFile, extractPdfsFromZip, generateBatchCode]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
