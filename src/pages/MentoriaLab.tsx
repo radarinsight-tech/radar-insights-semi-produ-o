@@ -955,9 +955,9 @@ const MentoriaLab = () => {
                       <th className="p-3 text-left font-medium text-muted-foreground">Atendente</th>
                       <th className="p-3 text-left font-medium text-muted-foreground">Data</th>
                       <th className="p-3 text-left font-medium text-muted-foreground">Protocolo</th>
-                      <th className="p-3 text-left font-medium text-muted-foreground">Protocolo</th>
                       <th className="p-3 text-center font-medium text-muted-foreground">Áudio</th>
                       <th className="p-3 text-center font-medium text-muted-foreground">Status</th>
+                      <th className="p-3 text-left font-medium text-muted-foreground">Data da Auditoria</th>
                       <th className="p-3 text-center font-medium text-muted-foreground">Ação</th>
                     </tr>
                   </thead>
@@ -979,9 +979,8 @@ const MentoriaLab = () => {
                         <td className="p-3 text-muted-foreground text-xs">
                           {readingIds.has(f.id) ? <Loader2 className="h-3 w-3 animate-spin inline" /> : (f.atendente || <span className="italic opacity-60">Não identificado</span>)}
                         </td>
-                        <td className="p-3 text-muted-foreground text-xs">{f.data || <span className="italic opacity-60">Não identificado</span>}</td>
-                        
-                        <td className="p-3 text-muted-foreground text-xs">{f.protocolo || <span className="italic opacity-60">Não identificado</span>}</td>
+                        <td className="p-3 text-muted-foreground text-xs">{f.data || <span className="italic opacity-60">—</span>}</td>
+                        <td className="p-3 text-muted-foreground text-xs">{f.protocolo || <span className="italic opacity-60">—</span>}</td>
                         <td className="p-3 text-center">
                           {f.hasAudio === undefined ? (
                             <span className="text-xs italic opacity-60">—</span>
@@ -1006,6 +1005,9 @@ const MentoriaLab = () => {
                               </Badge>
                             )}
                           </div>
+                        </td>
+                        <td className="p-3 text-muted-foreground text-xs">
+                          {f.analyzedAt ? f.analyzedAt.toLocaleDateString("pt-BR") : <span className="italic opacity-60">—</span>}
                         </td>
                         <td className="p-3 text-center">
                           <div className="flex items-center justify-center gap-1">
