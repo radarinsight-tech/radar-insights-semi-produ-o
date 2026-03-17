@@ -192,12 +192,14 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
       <!DOCTYPE html>
       <html><head><title>Mentoria — ${result.protocolo || "Atendimento"}</title>
       <style>
-        @page { size: A4; margin: 20mm 18mm; }
+        @page { size: A4; margin: 15mm 12mm 18mm 12mm; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
-          font-size: 10.5px; color: #1a1a1a; line-height: 1.55;
-          padding: 0;
+          font-size: 10px; color: #1a1a1a; line-height: 1.5;
+          padding: 0; margin: 0;
+          max-width: 100%; overflow-x: hidden;
+          width: 100%;
         }
 
         /* ── HEADER ── */
