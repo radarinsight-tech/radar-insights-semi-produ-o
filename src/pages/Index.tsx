@@ -10,7 +10,7 @@ import { matchesStatusFilter, getStatusLabel } from "@/lib/auditStatus";
 import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Users, Search, ArrowLeft, AlertTriangle, RefreshCw, X } from "lucide-react";
+import { LogOut, Users, Search, ArrowLeft, AlertTriangle, RefreshCw, X, BarChart3 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import logoSymbol from "@/assets/logo-symbol.png";
