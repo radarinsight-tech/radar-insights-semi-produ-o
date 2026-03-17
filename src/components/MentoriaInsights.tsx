@@ -165,7 +165,7 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
       exemploPositivo: exemploPositivo
         ? `Como exemplo positivo, temos "${exemploPositivo.result?.protocolo || exemploPositivo.name}" (${exemploPositivo.result?.atendente || "—"}) com nota ${formatNota(exemploPositivo.result!.notaFinal!)} — um bom modelo a seguir.`
         : null,
-      fechamento: `Próximos passos: ${atendenteStats.filter((a) => a.media < 7).length > 0 ? `acompanhamento individual para ${atendenteStats.filter((a) => a.media < 7).map((a) => a.name).join(", ")}` : "manter o padrão de qualidade"}.`,
+      fechamento: `Próximos passos: ${atendenteStats.filter((a) => notaToScale10(a.media) < 7).length > 0 ? `acompanhamento individual para ${atendenteStats.filter((a) => notaToScale10(a.media) < 7).map((a) => a.name).join(", ")}` : "manter o padrão de qualidade"}.`,
     };
 
     return {
