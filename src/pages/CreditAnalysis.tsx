@@ -76,6 +76,7 @@ const CreditAnalysis = () => {
         faixa: policy.faixa,
         justificativa: policy.justificativa,
         documentacao: policy.documentacao,
+        modoConsulta: r.modoConsulta,
       } as any,
     } as any);
 
