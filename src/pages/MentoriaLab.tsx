@@ -897,6 +897,7 @@ const MentoriaLab = () => {
                       <th className="p-3 text-left font-medium text-muted-foreground">Atendente</th>
                       <th className="p-3 text-left font-medium text-muted-foreground">Data</th>
                       <th className="p-3 text-left font-medium text-muted-foreground">Canal</th>
+                      <th className="p-3 text-left font-medium text-muted-foreground">Protocolo</th>
                       <th className="p-3 text-center font-medium text-muted-foreground">Áudio</th>
                       <th className="p-3 text-center font-medium text-muted-foreground">Status</th>
                       <th className="p-3 text-center font-medium text-muted-foreground">Ação</th>
@@ -917,14 +918,15 @@ const MentoriaLab = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="p-3 text-muted-foreground">
-                          {readingIds.has(f.id) ? <Loader2 className="h-3 w-3 animate-spin inline" /> : (f.atendente || "—")}
+                        <td className="p-3 text-muted-foreground text-xs">
+                          {readingIds.has(f.id) ? <Loader2 className="h-3 w-3 animate-spin inline" /> : (f.atendente || <span className="italic opacity-60">Não identificado</span>)}
                         </td>
-                        <td className="p-3 text-muted-foreground">{f.data || "—"}</td>
-                        <td className="p-3 text-muted-foreground">{f.canal || "—"}</td>
+                        <td className="p-3 text-muted-foreground text-xs">{f.data || <span className="italic opacity-60">Não identificado</span>}</td>
+                        <td className="p-3 text-muted-foreground text-xs">{f.canal && f.canal !== "Não identificado" ? f.canal : <span className="italic opacity-60">Não identificado</span>}</td>
+                        <td className="p-3 text-muted-foreground text-xs">{f.protocolo || <span className="italic opacity-60">Não identificado</span>}</td>
                         <td className="p-3 text-center">
                           {f.hasAudio === undefined ? (
-                            "—"
+                            <span className="text-xs italic opacity-60">Não identificado</span>
                           ) : f.hasAudio ? (
                             <Volume2 className="h-4 w-4 text-accent mx-auto" />
                           ) : (
