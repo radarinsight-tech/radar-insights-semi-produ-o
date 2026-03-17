@@ -179,7 +179,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           </div>`).join("")}
       </div>` : "";
 
-    const badgeClass = nota >= 90 ? "class-excelente" : nota >= 70 ? "class-bom" : nota >= 50 ? "class-medio" : "class-critico";
+    const badgeClass = notaToScale10(nota) >= 9 ? "class-excelente" : notaToScale10(nota) >= 7 ? "class-bom" : notaToScale10(nota) >= 5 ? "class-medio" : "class-critico";
 
     printWindow.document.write(`
       <!DOCTYPE html>
