@@ -130,17 +130,24 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
       const catPct = subtotal ? Math.round((subtotal.obtidos / subtotal.possiveis) * 100) : 0;
       const itemsHtml = items.map(c => {
         const badgeCls = c.resultado === "SIM" ? "badge-sim" : c.resultado === "NÃO" ? "badge-nao" : "badge-fora";
+        const isCritical = c.pesoMaximo >= 10;
+        const rowCls = c.resultado === "SIM"
+          ? (isCritical ? "criterio criterio-sim-critico" : "criterio criterio-sim")
+          : c.resultado === "NÃO"
+          ? (isCritical ? "criterio criterio-nao-critico" : "criterio criterio-nao")
+          : "criterio";
         const excerpt = findRelevantExcerpt(rawText, c.explicacao);
         return `
-          <div class="criterio">
+          <div class="${rowCls}">
             <div class="criterio-row">
               <span class="criterio-num">${c.numero}.</span>
               <span class="criterio-nome">${c.nome}</span>
               <span class="criterio-badge ${badgeCls}">${c.resultado === "FORA DO ESCOPO" ? "N/A" : c.resultado}</span>
+              ${isCritical && c.resultado !== "FORA DO ESCOPO" ? '<span class="criterio-badge badge-critico">CRÍTICO</span>' : ""}
               <span class="criterio-pts">${c.pontosObtidos}/${c.pesoMaximo} pts</span>
             </div>
-            <p class="criterio-explicacao">${c.explicacao}</p>
-            ${excerpt ? `<div class="criterio-trecho">"${excerpt}"</div>` : ""}
+            <p class="criterio-explicacao ${c.resultado === "NÃO" ? "explicacao-nao" : ""}">${c.explicacao}</p>
+            ${excerpt ? `<div class="criterio-trecho ${c.resultado === "SIM" ? "trecho-sim" : "trecho-nao"}">"${excerpt}"</div>` : ""}
           </div>`;
       }).join("");
       return `
@@ -236,11 +243,19 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
         .cat-bar { height: 100%; background: #2563eb; border-radius: 2px; }
 
         .criterio { padding: 6px 0; border-bottom: 1px solid #f3f4f6; }
+        .criterio-sim { background: #f0fdf4; border-radius: 6px; padding: 8px 10px; margin: 4px 0; border-bottom: none; }
+        .criterio-sim-critico { background: #dcfce7; border: 1px solid #86efac; border-radius: 6px; padding: 8px 10px; margin: 4px 0; border-bottom: none; }
+        .criterio-nao { background: #fef2f2; border-radius: 6px; padding: 8px 10px; margin: 4px 0; border-bottom: none; }
+        .criterio-nao-critico { background: #fde2e2; border: 1px solid #fca5a5; border-radius: 6px; padding: 8px 10px; margin: 4px 0; border-bottom: none; }
         .criterio:last-child { border-bottom: none; }
         .criterio-row { display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; }
         .criterio-num { font-weight: 700; color: #6b7280; font-size: 10px; min-width: 18px; }
         .criterio-nome { font-weight: 600; font-size: 10.5px; color: #1a1a1a; flex: 1; }
         .criterio-badge { display: inline-block; font-size: 8px; font-weight: 800; padding: 1px 6px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .badge-critico { background: #eff6ff; color: #1e40af; }
+        .explicacao-nao { color: #991b1b; font-weight: 500; }
+        .trecho-sim { border-left-color: #16a34a; background: #f0fdf4; }
+        .trecho-nao { border-left-color: #dc2626; background: #fef2f2; }
         .badge-sim { background: #dcfce7; color: #166534; }
         .badge-nao { background: #fde2e2; color: #991b1b; }
         .badge-fora { background: #f3f4f6; color: #9ca3af; }
@@ -484,29 +499,46 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                         {items.map((c) => {
                           const badge = resultLabel(c.resultado);
                           const excerpt = findRelevantExcerpt(rawText, c.explicacao);
+                          const isCritical = c.pesoMaximo >= 10;
+                          const rowBg =
+                            c.resultado === "SIM"
+                              ? isCritical ? "bg-accent/10 border border-accent/25 rounded-lg" : "bg-accent/5 rounded-lg"
+                              : c.resultado === "NÃO"
+                              ? isCritical ? "bg-destructive/10 border border-destructive/25 rounded-lg" : "bg-destructive/5 rounded-lg"
+                              : "";
                           return (
-                            <div key={c.numero} className="relative pl-6 py-3 group">
+                            <div key={c.numero} className={`relative pl-6 py-3 group ${rowBg} ${rowBg ? "px-4 my-1" : ""}`}>
                               {/* Dot on timeline */}
-                              <div className={`absolute left-[-5px] top-[18px] w-2 h-2 rounded-full ${
+                              <div className={`absolute ${rowBg ? "left-[11px]" : "left-[-5px]"} top-[18px] w-2.5 h-2.5 rounded-full ring-2 ring-background ${
                                 c.resultado === "SIM" ? "bg-accent" :
                                 c.resultado === "NÃO" ? "bg-destructive" : "bg-muted-foreground/40"
                               }`} />
 
                               {/* Question + badge + pts */}
                               <div className="flex items-baseline gap-2 flex-wrap">
-                                <span className="text-[13px] font-semibold text-foreground leading-snug">
+                                <span className={`text-[13px] font-semibold leading-snug ${
+                                  c.resultado === "SIM" ? "text-accent-foreground" :
+                                  c.resultado === "NÃO" ? "text-destructive-foreground" : "text-foreground"
+                                }`}>
                                   {c.numero}. {c.nome}
                                 </span>
-                                <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${badge.cls}`}>
+                                <Badge variant="outline" className={`text-[10px] px-2 py-0.5 border font-extrabold ${badge.cls}`}>
                                   {badge.text}
                                 </Badge>
+                                {isCritical && c.resultado !== "FORA DO ESCOPO" && (
+                                  <Badge className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-0 font-bold">
+                                    CRÍTICO
+                                  </Badge>
+                                )}
                                 <span className="text-[10px] text-muted-foreground font-semibold ml-auto shrink-0 tabular-nums">
                                   {c.pontosObtidos}/{c.pesoMaximo} pts
                                 </span>
                               </div>
 
                               {/* Justification */}
-                              <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed pl-0.5">
+                              <p className={`text-xs mt-1.5 leading-relaxed pl-0.5 ${
+                                c.resultado === "NÃO" ? "text-destructive/80 font-medium" : "text-muted-foreground"
+                              }`}>
                                 {c.explicacao}
                               </p>
 
@@ -514,8 +546,8 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                               {excerpt && (
                                 <div className={`mt-2 rounded-md px-3 py-2 text-[11px] italic border-l-[3px] ${
                                   c.resultado === "SIM"
-                                    ? "bg-accent/5 border-accent/40 text-foreground/70"
-                                    : "bg-destructive/5 border-destructive/40 text-foreground/70"
+                                    ? "bg-accent/10 border-accent/50 text-accent-foreground/80"
+                                    : "bg-destructive/10 border-destructive/50 text-destructive-foreground/80"
                                 }`}>
                                   <MessageSquareQuote className="h-3 w-3 inline mr-1.5 opacity-50" />
                                   "{excerpt}"
