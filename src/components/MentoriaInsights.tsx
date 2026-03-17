@@ -9,6 +9,7 @@ import {
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
+import { calcularBonus, formatBRL } from "@/lib/utils";
 
 interface AnalyzedFile {
   name: string;
@@ -287,6 +288,14 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
                     {formatNota(at.media)}
                   </Badge>
                   <Badge variant="outline" className="text-xs">{at.classificacao}</Badge>
+                  {(() => {
+                    const bonus = calcularBonus(at.media);
+                    return (
+                      <Badge variant="outline" className="text-[10px] gap-1">
+                        {bonus.percentual}% · {formatBRL(bonus.valor)}
+                      </Badge>
+                    );
+                  })()}
                   {at.media < 7 && (
                     <Badge className="bg-warning/15 text-warning text-[10px]">Necessita mentoria</Badge>
                   )}
