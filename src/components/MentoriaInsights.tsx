@@ -270,9 +270,9 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
       </Card>
 
       {/* 2. Performance por Atendente */}
-      <Card className="p-5">
+      <Card className="p-5 rounded-xl border-border/60 shadow-sm">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-          <Users className="h-4 w-4 text-primary" /> Performance por Atendente
+          <Users className="h-4 w-4 text-primary" /> 2. Performance por Atendente
         </h3>
         <Accordion type="multiple" className="space-y-2">
           {insights.atendenteStats.map((at) => (
