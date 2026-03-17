@@ -1180,6 +1180,15 @@ const MentoriaLab = () => {
           )}
         </SheetContent>
       </Sheet>
+      {/* Mentoria Detail Dialog */}
+      <MentoriaDetailDialog
+        open={!!mentoriaFile}
+        onOpenChange={() => setMentoriaFile(null)}
+        result={mentoriaFile?.result}
+        fileName={mentoriaFile?.name || ""}
+        rawText={mentoriaFile?.text}
+        atendente={mentoriaFile?.atendente}
+      />
     </div>
   );
 };
