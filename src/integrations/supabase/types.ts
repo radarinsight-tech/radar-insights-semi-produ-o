@@ -362,6 +362,122 @@ export type Database = {
           },
         ]
       }
+      mentoria_batch_files: {
+        Row: {
+          atendente: string | null
+          batch_id: string
+          canal: string | null
+          classificacao: string | null
+          created_at: string
+          data_atendimento: string | null
+          error_message: string | null
+          extracted_path: string | null
+          file_name: string
+          file_path: string | null
+          file_size: number | null
+          has_audio: boolean | null
+          id: string
+          nota: number | null
+          protocolo: string | null
+          result: Json | null
+          status: string
+        }
+        Insert: {
+          atendente?: string | null
+          batch_id: string
+          canal?: string | null
+          classificacao?: string | null
+          created_at?: string
+          data_atendimento?: string | null
+          error_message?: string | null
+          extracted_path?: string | null
+          file_name: string
+          file_path?: string | null
+          file_size?: number | null
+          has_audio?: boolean | null
+          id?: string
+          nota?: number | null
+          protocolo?: string | null
+          result?: Json | null
+          status?: string
+        }
+        Update: {
+          atendente?: string | null
+          batch_id?: string
+          canal?: string | null
+          classificacao?: string | null
+          created_at?: string
+          data_atendimento?: string | null
+          error_message?: string | null
+          extracted_path?: string | null
+          file_name?: string
+          file_path?: string | null
+          file_size?: number | null
+          has_audio?: boolean | null
+          id?: string
+          nota?: number | null
+          protocolo?: string | null
+          result?: Json | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentoria_batch_files_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "mentoria_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentoria_batches: {
+        Row: {
+          batch_code: string
+          created_at: string
+          id: string
+          ignored_files: number
+          original_file_name: string | null
+          source_type: string
+          status: string
+          summary: Json | null
+          total_files_in_source: number
+          total_pdfs: number
+          updated_at: string
+          upload_path: string | null
+          user_id: string
+        }
+        Insert: {
+          batch_code: string
+          created_at?: string
+          id?: string
+          ignored_files?: number
+          original_file_name?: string | null
+          source_type?: string
+          status?: string
+          summary?: Json | null
+          total_files_in_source?: number
+          total_pdfs?: number
+          updated_at?: string
+          upload_path?: string | null
+          user_id: string
+        }
+        Update: {
+          batch_code?: string
+          created_at?: string
+          id?: string
+          ignored_files?: number
+          original_file_name?: string | null
+          source_type?: string
+          status?: string
+          summary?: Json | null
+          total_files_in_source?: number
+          total_pdfs?: number
+          updated_at?: string
+          upload_path?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company_id: string | null
