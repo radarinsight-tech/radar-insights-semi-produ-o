@@ -120,6 +120,7 @@ const MentoriaPreventiva = () => {
   const [activeResult, setActiveResult] = useState<PreventiveResult | null>(null);
   const [showCriterios, setShowCriterios] = useState(false);
   const [sampled, setSampled] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // ── File reading ─────────────────────────────────────────────────────
