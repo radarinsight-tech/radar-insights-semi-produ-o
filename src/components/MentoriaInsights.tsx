@@ -290,20 +290,32 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
                     <span className="font-medium text-foreground text-sm">{at.name}</span>
                     <span className="text-xs text-muted-foreground ml-2">({at.notas.length} atendimento{at.notas.length > 1 ? "s" : ""})</span>
                   </div>
-                  <Badge className={`text-xs ${classColor(at.classificacao)} bg-transparent border-0 p-0 font-bold`}>
-                    {formatNota(at.media)}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">{at.classificacao}</Badge>
-                  {(() => {
-                    const bonus = calcularBonus(at.media);
-                    return (
-                      <Badge variant="outline" className="text-[10px] gap-1">
-                        {bonus.percentual}% · {formatBRL(bonus.valor)}
+                  {at.amostragemInsuficiente ? (
+                    <>
+                      <Badge className={`text-xs ${classColor(at.classificacao)} bg-transparent border-0 p-0 font-bold opacity-50`}>
+                        {formatNota(at.media)}
                       </Badge>
-                    );
-                  })()}
-                  {at.media < 7 && (
-                    <Badge className="bg-warning/15 text-warning text-[10px]">Necessita mentoria</Badge>
+                      <Badge className="bg-muted text-muted-foreground text-[10px]">Amostragem insuficiente</Badge>
+                      <span className="text-[10px] text-muted-foreground">mín. {MIN_MENTORIAS}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Badge className={`text-xs ${classColor(at.classificacao)} bg-transparent border-0 p-0 font-bold`}>
+                        {formatNota(at.media)}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">{at.classificacao}</Badge>
+                      {(() => {
+                        const bonus = calcularBonus(at.media);
+                        return (
+                          <Badge variant="outline" className="text-[10px] gap-1">
+                            {bonus.percentual}% · {formatBRL(bonus.valor)}
+                          </Badge>
+                        );
+                      })()}
+                      {at.media < 7 && (
+                        <Badge className="bg-warning/15 text-warning text-[10px]">Necessita mentoria</Badge>
+                      )}
+                    </>
                   )}
                 </div>
               </AccordionTrigger>
