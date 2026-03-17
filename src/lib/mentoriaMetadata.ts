@@ -1,0 +1,180 @@
+/**
+ * Metadata extraction utilities for Mentoria Lab PDFs.
+ * Extracts: protocolo, atendente, data, canal, hasAudio from raw PDF text.
+ */
+
+// ── Protocolo ──────────────────────────────────────────────────────────
+export function extractProtocolo(text: string): string | undefined {
+  // BT-prefixed protocols (e.g. BT202681899)
+  const btMatch = text.match(/\b(BT\d{6,})\b/i);
+  if (btMatch) return btMatch[1].toUpperCase();
+
+  // Generic "protocolo: XYZ"
+  const labelMatch = text.match(/(?:protocolo|prot\.?)\s*[:\-]?\s*([A-Za-z0-9]{5,})/i);
+  if (labelMatch) return labelMatch[1];
+
+  // Fallback: long numeric sequence that could be a protocol
+  const numericMatch = text.match(/\b(\d{8,})\b/);
+  if (numericMatch) return numericMatch[1];
+
+  return undefined;
+}
+
+// ── Canal ──────────────────────────────────────────────────────────────
+export function extractCanal(text: string): string {
+  const lower = text.toLowerCase();
+
+  // Order matters — more specific first
+  if (lower.includes("whatsapp") || lower.includes("wpp") || lower.includes("whats")) return "WhatsApp";
+  if (/\b(telefone|ligação|ligacao|chamada telefônica|chamada telefonica|telefonema)\b/.test(lower)) return "Telefone";
+  if (/\b(e-?mail)\b/.test(lower)) return "E-mail";
+  // "chat" is very generic — require it near service context to avoid false positives
+  if (/\b(chat|webchat|chat online)\b/.test(lower)) return "Chat";
+
+  return "Não identificado";
+}
+
+// ── Áudio ──────────────────────────────────────────────────────────────
+export function detectAudio(text: string): boolean {
+  const lower = text.toLowerCase();
+  return /\b(áudio|audio|gravação|gravacao|escuta|ligação|ligacao|chamada)\b/.test(lower);
+}
+
+// ── Data do atendimento ────────────────────────────────────────────────
+export function extractData(text: string): string | undefined {
+  // Priority 1: explicit labels like "Data do atendimento: 01/06/2025" or "Início: 01/06/2025 14:30"
+  const labelPatterns = [
+    /(?:data\s+(?:do\s+)?atendimento|in[ií]cio|data\s+de\s+abertura|data\s+de\s+in[ií]cio|aberto\s+em|criado\s+em)\s*[:\-]?\s*(\d{2}\/\d{2}\/\d{4})/i,
+    /(?:data\s+(?:do\s+)?atendimento|in[ií]cio|data\s+de\s+abertura|data\s+de\s+in[ií]cio|aberto\s+em|criado\s+em)\s*[:\-]?\s*(\d{4}-\d{2}-\d{2})/i,
+  ];
+
+  for (const pattern of labelPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      return normalizeDate(match[1]);
+    }
+  }
+
+  // Priority 2: timestamp at beginning of conversation lines (e.g. "01/06/2025 14:30 - Nome:")
+  const timestampLine = text.match(/^(\d{2}\/\d{2}\/\d{4})\s+\d{2}:\d{2}/m);
+  if (timestampLine) return timestampLine[1];
+
+  // Priority 3: first date found in the document
+  const firstDate = text.match(/(\d{2}\/\d{2}\/\d{4})/);
+  if (firstDate) return firstDate[1];
+
+  // ISO format fallback
+  const isoDate = text.match(/(\d{4}-\d{2}-\d{2})/);
+  if (isoDate) {
+    const [y, m, d] = isoDate[1].split("-");
+    return `${d}/${m}/${y}`;
+  }
+
+  return undefined;
+}
+
+function normalizeDate(raw: string): string {
+  // If ISO format, convert to dd/mm/yyyy
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const [y, m, d] = raw.split("-");
+    return `${d}/${m}/${y}`;
+  }
+  return raw;
+}
+
+// ── Atendente ──────────────────────────────────────────────────────────
+// Known system/bot names to exclude
+const BOT_NAMES = new Set([
+  "marte", "bot", "sistema", "robô", "robo", "automático", "automatico",
+  "assistente virtual", "atendimento automático", "chatbot",
+]);
+
+function isBot(name: string): boolean {
+  const lower = name.toLowerCase().trim();
+  return BOT_NAMES.has(lower) || /^(bot|sistema|robô|robo)\b/i.test(lower);
+}
+
+function isLikelyPersonName(name: string): boolean {
+  const trimmed = name.trim();
+  // Must have at least 2 words (first + last name) or be a single long word
+  if (trimmed.length < 3) return false;
+  // No URLs, emails, numbers-only
+  if (/[@:\/\d]{3,}/.test(trimmed)) return false;
+  // Should mostly be letters and spaces
+  if (!/^[A-Za-zÀ-ÿ\s'.]+$/.test(trimmed)) return false;
+  return true;
+}
+
+export function extractAtendente(text: string): string | undefined {
+  // Strategy 1: Explicit labels
+  const labelPatterns = [
+    /(?:atendente|agente|operador|analista|consultor|responsável)\s*[:\-]\s*([^\n\r]+)/gi,
+    /(?:transferido\s+para|encaminhado\s+para|atendido\s+por)\s*[:\-]?\s*([^\n\r]+)/gi,
+  ];
+
+  for (const pattern of labelPatterns) {
+    const matches = [...text.matchAll(pattern)];
+    for (const m of matches) {
+      const candidate = m[1].trim().replace(/\s+/g, " ");
+      // Take only the name part (before any extra info like date, id, etc.)
+      const namePart = candidate.split(/[,\-\|\/]/)[0].trim();
+      if (namePart && !isBot(namePart) && isLikelyPersonName(namePart)) {
+        return namePart;
+      }
+    }
+  }
+
+  // Strategy 2: Conversation pattern — find human names sending messages
+  // Patterns like "Nome: mensagem" or "Nome (14:30): mensagem" or "[14:30] Nome: mensagem"
+  const messagePatterns = [
+    /^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]+?)\s*\(\d{2}:\d{2}\)\s*:/gm,
+    /^\[?\d{2}:\d{2}\]?\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]+?)\s*:/gm,
+    /^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]+?)\s*:/gm,
+  ];
+
+  // Extract the "Cliente:" name to exclude it
+  const clienteMatch = text.match(/(?:cliente|solicitante|requerente)\s*[:\-]\s*([^\n\r]+)/i);
+  const clienteName = clienteMatch?.[1]?.trim().toLowerCase().split(/[,\-\|\/]/)[0].trim();
+
+  // Count name occurrences to find the most active participant
+  const nameCounts = new Map<string, number>();
+
+  for (const pattern of messagePatterns) {
+    const matches = [...text.matchAll(pattern)];
+    for (const m of matches) {
+      const name = m[1].trim().replace(/\s+/g, " ");
+      if (!name || !isLikelyPersonName(name) || isBot(name)) continue;
+      // Skip if this matches the client name
+      if (clienteName && name.toLowerCase() === clienteName) continue;
+      const key = name;
+      nameCounts.set(key, (nameCounts.get(key) || 0) + 1);
+    }
+  }
+
+  // Return the most frequent non-bot, non-client name
+  if (nameCounts.size > 0) {
+    const sorted = [...nameCounts.entries()].sort((a, b) => b[1] - a[1]);
+    return sorted[0][0];
+  }
+
+  return undefined;
+}
+
+// ── Combined extraction ────────────────────────────────────────────────
+export interface PdfMetadata {
+  protocolo?: string;
+  atendente?: string;
+  data?: string;
+  canal: string;
+  hasAudio: boolean;
+}
+
+export function extractAllMetadata(text: string): PdfMetadata {
+  return {
+    protocolo: extractProtocolo(text),
+    atendente: extractAtendente(text),
+    data: extractData(text),
+    canal: extractCanal(text),
+    hasAudio: detectAudio(text),
+  };
+}
