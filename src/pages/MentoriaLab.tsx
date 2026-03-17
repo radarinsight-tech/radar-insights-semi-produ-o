@@ -468,9 +468,9 @@ const MentoriaLab = () => {
 
     setProcessing(true);
 
-    // Update batch status to analyzing
+    // Update batch status to em_analise
     if (currentBatchId) {
-      await supabase.from("mentoria_batches").update({ status: "analyzing" } as any).eq("id", currentBatchId);
+      await updateBatchStatus(currentBatchId, "em_analise");
     }
 
     let success = 0;
