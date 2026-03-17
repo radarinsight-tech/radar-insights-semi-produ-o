@@ -666,18 +666,16 @@ const MentoriaLab = () => {
 
         {/* Batch Info Card */}
         {batchInfo && (
-          <Card className="p-5 border-l-4 border-l-primary">
-            <div className="flex items-start justify-between gap-4">
+          <Card className="p-5 border-l-4 border-l-accent bg-accent/5">
+            <div className="flex items-start justify-between gap-4 mb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Package className="h-5 w-5 text-primary" />
+                <div className="p-2.5 rounded-lg bg-accent/10">
+                  <CheckCircle2 className="h-5 w-5 text-accent" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-foreground">Lote: {batchInfo.batchCode}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {batchInfo.createdAt.toLocaleDateString("pt-BR")} às {batchInfo.createdAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                    {" · "}Entrada: <span className="font-medium">{batchInfo.sourceType === "zip" ? "ZIP" : "PDFs avulsos"}</span>
-                    {batchInfo.originalFileName && <> · <span className="font-medium">{batchInfo.originalFileName}</span></>}
+                  <h3 className="text-sm font-bold text-foreground">Lote importado com sucesso</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Importado em {batchInfo.createdAt.toLocaleDateString("pt-BR")} às {batchInfo.createdAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
               </div>
@@ -693,18 +691,31 @@ const MentoriaLab = () => {
                 );
               })()}
             </div>
-            <div className="grid grid-cols-3 gap-4 mt-4 pt-3 border-t border-border">
-              <div className="text-center">
-                <span className="text-lg font-bold text-foreground">{batchInfo.totalFilesInSource}</span>
-                <p className="text-[11px] text-muted-foreground">Arquivos recebidos</p>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm border-t border-border pt-3">
+              <div className="flex justify-between sm:flex-col sm:text-center">
+                <span className="text-muted-foreground text-xs">ID do lote</span>
+                <span className="font-mono font-semibold text-foreground text-xs">{batchInfo.batchCode}</span>
               </div>
-              <div className="text-center">
-                <span className="text-lg font-bold text-primary">{batchInfo.totalPdfs}</span>
-                <p className="text-[11px] text-muted-foreground">PDFs válidos</p>
+              <div className="flex justify-between sm:flex-col sm:text-center">
+                <span className="text-muted-foreground text-xs">Entrada</span>
+                <span className="font-semibold text-foreground text-xs">{batchInfo.sourceType === "zip" ? "ZIP" : "Múltiplos PDFs"}{batchInfo.originalFileName ? ` (${batchInfo.originalFileName})` : ""}</span>
               </div>
-              <div className="text-center">
-                <span className="text-lg font-bold text-muted-foreground">{batchInfo.ignoredFiles}</span>
-                <p className="text-[11px] text-muted-foreground">Ignorados</p>
+              <div className="flex justify-between sm:flex-col sm:text-center">
+                <span className="text-muted-foreground text-xs">Arquivos recebidos</span>
+                <span className="font-bold text-foreground text-xs">{batchInfo.totalFilesInSource}</span>
+              </div>
+              <div className="flex justify-between sm:flex-col sm:text-center">
+                <span className="text-muted-foreground text-xs">PDFs válidos</span>
+                <span className="font-bold text-primary text-xs">{batchInfo.totalPdfs}</span>
+              </div>
+              <div className="flex justify-between sm:flex-col sm:text-center">
+                <span className="text-muted-foreground text-xs">Ignorados</span>
+                <span className="font-bold text-muted-foreground text-xs">{batchInfo.ignoredFiles}</span>
+              </div>
+              <div className="flex justify-between sm:flex-col sm:text-center">
+                <span className="text-muted-foreground text-xs">Status</span>
+                <span className={`font-semibold text-xs ${batchStatusConfig[batchInfo.status].color}`}>{batchStatusConfig[batchInfo.status].label}</span>
               </div>
             </div>
           </Card>
