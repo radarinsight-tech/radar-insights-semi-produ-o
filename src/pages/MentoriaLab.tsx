@@ -783,7 +783,7 @@ const MentoriaLab = () => {
         ) : (
           <>
             <Card className="p-4">
-              <h3 className="text-sm font-semibold text-foreground mb-3">Atendimentos importados</h3>
+              <h3 className="text-sm font-semibold text-foreground mb-3">📂 Atendimentos importados</h3>
               <div className="flex flex-wrap items-center gap-3">
                 {/* Search */}
                 <div className="relative flex-1 min-w-[180px]">
