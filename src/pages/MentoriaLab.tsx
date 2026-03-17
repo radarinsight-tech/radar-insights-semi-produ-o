@@ -92,6 +92,11 @@ function detectAudio(text: string): boolean {
   return /\b(áudio|audio|gravação|gravacao|escuta|ligação|ligacao|chamada)\b/.test(lower);
 }
 
+const IMPORT_LIMIT = 1000;
+const IMPORT_RECOMMENDED = 500;
+const ANALYZE_LIMIT = 50;
+const PAGE_SIZE = 30;
+
 const MentoriaLab = () => {
   const navigate = useNavigate();
   const [files, setFiles] = useState<LabFile[]>([]);
@@ -102,6 +107,8 @@ const MentoriaLab = () => {
   const [batchInfo, setBatchInfo] = useState<BatchInfo | null>(null);
   const [sideFile, setSideFile] = useState<LabFile | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showAnalyzeWarning, setShowAnalyzeWarning] = useState(false);
 
   // Filters
   const [filterAtendente, setFilterAtendente] = useState("todos");
