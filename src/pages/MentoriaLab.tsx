@@ -192,7 +192,7 @@ const MentoriaLab = () => {
       const totalEntries = allEntries.length;
 
       if (totalEntries === 0) {
-        toast.error("O arquivo ZIP está vazio. Nenhum arquivo encontrado.");
+        toast.error("O arquivo ZIP está vazio. Verifique o conteúdo e tente novamente.");
         return { pdfs: [], totalEntries: 0, ignored: 0 };
       }
 
