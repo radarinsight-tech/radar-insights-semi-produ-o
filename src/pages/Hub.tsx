@@ -154,6 +154,8 @@ const Hub = () => {
                       accentClass="hover:border-emerald-400/40"
                       badge="Beta"
                     />
+                    {/* Placeholder to maintain grid alignment */}
+                    <div className="hidden sm:block" aria-hidden="true" />
                   </div>
                 </section>
               )}
