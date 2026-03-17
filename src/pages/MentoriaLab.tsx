@@ -208,7 +208,7 @@ const MentoriaLab = () => {
 
       return { pdfs: pdfFiles, totalEntries, ignored };
     } catch {
-      toast.error("Erro ao processar o arquivo ZIP. O arquivo pode estar corrompido ou em formato inválido.");
+      toast.error("Não foi possível abrir o ZIP enviado. Verifique o arquivo e tente novamente.");
       return { pdfs: [], totalEntries: 0, ignored: 0 };
     }
   }, []);
