@@ -527,6 +527,18 @@ const MentoriaPreventiva = () => {
             </>
           )}
 
+          {/* Insights panel */}
+          {showInsights && analyzedCount > 0 && !activeResult && (
+            <PreventiveInsights
+              files={files.filter((f) => f.status === "analisado" && f.result).map((f) => ({
+                id: f.id,
+                name: f.name,
+                atendente: f.atendente,
+                result: f.result,
+              }))}
+            />
+          )}
+
           {/* Result detail panel */}
           {activeResult && (
             <div className="space-y-4">
