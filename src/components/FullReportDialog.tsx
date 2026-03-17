@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Download, CheckCircle2, XCircle, MinusCircle, ShieldAlert } from "lucide-react";
+import { formatDateBR } from "@/lib/utils";
 import jsPDF from "jspdf";
 
 export interface CriterioAvaliacao {
