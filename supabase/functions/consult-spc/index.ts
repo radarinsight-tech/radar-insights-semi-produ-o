@@ -49,7 +49,7 @@ function normalizarRespostaSPC(raw: Record<string, unknown>, cpf: string, nome: 
   else if (registroSpc > 3 || valorTotalPendencias > 3000) classificacaoRisco = "Alto risco";
 
   return {
-    nome: String(raw.nome ?? nome || "Nome não informado"),
+    nome: String(raw.nome ?? (nome || "Nome não informado")),
     cpf: digits,
     cpfFormatado: formatted,
     tipo: isCnpj ? "CNPJ" : "CPF",
