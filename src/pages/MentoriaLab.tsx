@@ -1,10 +1,11 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import JSZip from "jszip";
+import { format } from "date-fns";
 import {
   ArrowLeft, LogOut, Upload, FileText, Trash2, Eye, Play, Loader2,
   Search, X, Filter, Volume2, VolumeX, BookOpen, Archive, Package, Clock, CheckCircle2, AlertTriangle,
-  ChevronLeft, ChevronRight, Info
+  ChevronLeft, ChevronRight, Info, CalendarIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,6 +18,9 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import logoSymbol from "@/assets/logo-symbol.png";
@@ -104,7 +108,10 @@ const MentoriaLab = () => {
 
   // Filters
   const [filterAtendente, setFilterAtendente] = useState("todos");
-  const [filterPeriodo, setFilterPeriodo] = useState("");
+  const [filterPeriodoFrom, setFilterPeriodoFrom] = useState<Date | undefined>();
+  const [filterPeriodoTo, setFilterPeriodoTo] = useState<Date | undefined>();
+  const [filterAuditoriaFrom, setFilterAuditoriaFrom] = useState<Date | undefined>();
+  const [filterAuditoriaTo, setFilterAuditoriaTo] = useState<Date | undefined>();
   const [filterCanal, setFilterCanal] = useState("todos");
   const [filterAudio, setFilterAudio] = useState("todos");
 
@@ -427,25 +434,40 @@ const MentoriaLab = () => {
       if (filterCanal !== "todos" && f.canal !== filterCanal) return false;
       if (filterAudio === "com" && !f.hasAudio) return false;
       if (filterAudio === "sem" && f.hasAudio) return false;
-      if (filterPeriodo) {
-        if (f.data) {
-          const parts = f.data.split("/");
-          if (parts.length === 3) {
-            const ym = `${parts[2]}-${parts[1]}`;
-            if (ym !== filterPeriodo) return false;
-          }
-        } else {
-          return false;
+
+      // Period filter (attendance date)
+      if (filterPeriodoFrom || filterPeriodoTo) {
+        if (!f.data) return false;
+        const parts = f.data.split("/");
+        if (parts.length !== 3) return false;
+        const fileDate = new Date(+parts[2], +parts[1] - 1, +parts[0]);
+        if (filterPeriodoFrom && fileDate < filterPeriodoFrom) return false;
+        if (filterPeriodoTo) {
+          const endOfDay = new Date(filterPeriodoTo);
+          endOfDay.setHours(23, 59, 59, 999);
+          if (fileDate > endOfDay) return false;
         }
       }
+
+      // Audit date filter
+      if (filterAuditoriaFrom || filterAuditoriaTo) {
+        if (!f.analyzedAt) return false;
+        if (filterAuditoriaFrom && f.analyzedAt < filterAuditoriaFrom) return false;
+        if (filterAuditoriaTo) {
+          const endOfDay = new Date(filterAuditoriaTo);
+          endOfDay.setHours(23, 59, 59, 999);
+          if (f.analyzedAt > endOfDay) return false;
+        }
+      }
+
       return true;
     });
-  }, [files, searchTerm, filterAtendente, filterCanal, filterAudio, filterPeriodo]);
+  }, [files, searchTerm, filterAtendente, filterCanal, filterAudio, filterPeriodoFrom, filterPeriodoTo, filterAuditoriaFrom, filterAuditoriaTo]);
 
   // Reset page on filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterAtendente, filterCanal, filterAudio, filterPeriodo]);
+  }, [searchTerm, filterAtendente, filterCanal, filterAudio, filterPeriodoFrom, filterPeriodoTo, filterAuditoriaFrom, filterAuditoriaTo]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredFiles.length / PAGE_SIZE));
@@ -896,14 +918,71 @@ const MentoriaLab = () => {
                   </SelectContent>
                 </Select>
 
-                {/* Período */}
-                <Input
-                  type="month"
-                  value={filterPeriodo}
-                  onChange={(e) => setFilterPeriodo(e.target.value)}
-                  className="w-[160px]"
-                  placeholder="Período"
-                />
+                {/* Período do atendimento */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-[200px] justify-start text-left text-xs font-normal h-10", !filterPeriodoFrom && "text-muted-foreground")}>
+                      <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+                      {filterPeriodoFrom ? (
+                        filterPeriodoTo
+                          ? `${format(filterPeriodoFrom, "dd/MM")} – ${format(filterPeriodoTo, "dd/MM/yy")}`
+                          : `A partir de ${format(filterPeriodoFrom, "dd/MM/yy")}`
+                      ) : "Período atendimento"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="range"
+                      selected={filterPeriodoFrom && filterPeriodoTo ? { from: filterPeriodoFrom, to: filterPeriodoTo } : filterPeriodoFrom ? { from: filterPeriodoFrom, to: undefined } : undefined}
+                      onSelect={(range) => {
+                        setFilterPeriodoFrom(range?.from);
+                        setFilterPeriodoTo(range?.to);
+                      }}
+                      numberOfMonths={2}
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                    {(filterPeriodoFrom || filterPeriodoTo) && (
+                      <div className="px-3 pb-3">
+                        <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => { setFilterPeriodoFrom(undefined); setFilterPeriodoTo(undefined); }}>
+                          Limpar período
+                        </Button>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
+
+                {/* Data da auditoria */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-[200px] justify-start text-left text-xs font-normal h-10", !filterAuditoriaFrom && "text-muted-foreground")}>
+                      <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+                      {filterAuditoriaFrom ? (
+                        filterAuditoriaTo
+                          ? `${format(filterAuditoriaFrom, "dd/MM")} – ${format(filterAuditoriaTo, "dd/MM/yy")}`
+                          : `A partir de ${format(filterAuditoriaFrom, "dd/MM/yy")}`
+                      ) : "Data da auditoria"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="range"
+                      selected={filterAuditoriaFrom && filterAuditoriaTo ? { from: filterAuditoriaFrom, to: filterAuditoriaTo } : filterAuditoriaFrom ? { from: filterAuditoriaFrom, to: undefined } : undefined}
+                      onSelect={(range) => {
+                        setFilterAuditoriaFrom(range?.from);
+                        setFilterAuditoriaTo(range?.to);
+                      }}
+                      numberOfMonths={2}
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                    {(filterAuditoriaFrom || filterAuditoriaTo) && (
+                      <div className="px-3 pb-3">
+                        <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => { setFilterAuditoriaFrom(undefined); setFilterAuditoriaTo(undefined); }}>
+                          Limpar período
+                        </Button>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
 
                 {/* Áudio */}
                 <Select value={filterAudio} onValueChange={setFilterAudio}>
@@ -1096,13 +1175,13 @@ const MentoriaLab = () => {
               </div>
             )}
 
-            {/* Charts — evolution graphs */}
-            {files.some((f) => f.status === "analisado") && (
-              <MentoriaCharts files={files} />
+            {/* Charts — evolution graphs (filtered) */}
+            {filteredFiles.some((f) => f.status === "analisado") && (
+              <MentoriaCharts files={filteredFiles} />
             )}
 
-            {/* Insights do lote - seção secundária colapsável */}
-            {files.some((f) => f.status === "analisado") && (
+            {/* Insights do lote - seção secundária colapsável (filtered) */}
+            {filteredFiles.some((f) => f.status === "analisado") && (
               <details id="mentoria-insights" className="scroll-mt-6 group">
                 <summary className="flex items-center gap-2 cursor-pointer select-none py-3 px-4 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors">
                   <Info className="h-4 w-4 text-muted-foreground" />
@@ -1110,7 +1189,7 @@ const MentoriaLab = () => {
                   <span className="text-xs text-muted-foreground ml-auto">Clique para expandir</span>
                 </summary>
                 <div className="mt-3">
-                  <MentoriaInsights files={files} />
+                  <MentoriaInsights files={filteredFiles} />
                 </div>
               </details>
             )}
