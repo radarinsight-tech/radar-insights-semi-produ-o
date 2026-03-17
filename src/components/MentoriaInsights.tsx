@@ -122,8 +122,11 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
         pontosFortes: countOccurrences(fortes).slice(0, 5).map((o) => o.text),
         pontosFracos: countOccurrences(fracos).slice(0, 5).map((o) => o.text),
         files: aFiles,
+        amostragemInsuficiente: notasAt.length < MIN_MENTORIAS,
       };
     }).sort((a, b) => b.media - a.media);
+
+    const elegiveisStats = atendenteStats.filter((a) => !a.amostragemInsuficiente);
 
     const melhor = atendenteStats[0];
     const pior = atendenteStats[atendenteStats.length - 1];
