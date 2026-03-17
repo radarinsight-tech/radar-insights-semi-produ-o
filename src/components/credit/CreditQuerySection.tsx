@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+export type ConsultaMode = "simulacao" | "producao";
+
 export interface SpcQueryResult {
   cpfCnpj: string;
   formatted: string;
@@ -22,6 +24,15 @@ export interface SpcQueryResult {
   valorTotalPendencias: number;
   classificacaoRisco: "Baixo risco" | "Médio risco" | "Alto risco";
   dataConsulta: string;
+  modoConsulta: ConsultaMode;
+}
+
+// Placeholder for future real SPC integration
+export async function consultarSPCReal(cpf: string): Promise<SpcQueryResult | null> {
+  // TODO: Implement real SPC 643 API call
+  // This function will be called when mode is "producao"
+  console.warn("[SPC] consultarSPCReal called — integration not yet implemented for:", cpf);
+  return null;
 }
 
 
