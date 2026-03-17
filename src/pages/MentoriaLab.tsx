@@ -954,11 +954,11 @@ const MentoriaLab = () => {
                         <td className="p-3 text-muted-foreground text-xs">{f.protocolo || <span className="italic opacity-60">Não identificado</span>}</td>
                         <td className="p-3 text-center">
                           {f.hasAudio === undefined ? (
-                            <span className="text-xs italic opacity-60">Não identificado</span>
+                            <span className="text-xs italic opacity-60">—</span>
                           ) : f.hasAudio ? (
-                            <Volume2 className="h-4 w-4 text-accent mx-auto" />
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-accent/15 text-accent">Sim</span>
                           ) : (
-                            <VolumeX className="h-4 w-4 text-muted-foreground/40 mx-auto" />
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">Não</span>
                           )}
                         </td>
                         <td className="p-3 text-center">
