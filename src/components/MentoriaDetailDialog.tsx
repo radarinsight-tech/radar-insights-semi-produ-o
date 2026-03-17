@@ -571,8 +571,8 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                               {excerpt && (
                                 <div className={`mt-2.5 rounded-lg px-3.5 py-2.5 text-[11px] italic border-l-[3px] ${
                                   c.resultado === "SIM"
-                                    ? "bg-accent/10 border-accent/50 text-accent-foreground/80"
-                                    : "bg-destructive/10 border-destructive/50 text-destructive-foreground/80"
+                                    ? "bg-accent/10 border-accent/50 text-foreground/80"
+                                    : "bg-destructive/8 border-destructive/50 text-foreground/80"
                                 }`}>
                                   <MessageSquareQuote className="h-3 w-3 inline mr-1.5 opacity-50" />
                                   "{excerpt}"
