@@ -143,7 +143,7 @@ const MentoriaCharts = ({ files }: MentoriaChartsProps) => {
     return null; // Need at least 2 analyses for charts
   }
 
-  const globalMedia = Math.round((analyzed.reduce((s, f) => s + f.result!.notaFinal!, 0) / analyzed.length) * 10) / 10;
+  const globalMedia = Math.round(notaToScale10(analyzed.reduce((s, f) => s + f.result!.notaFinal!, 0) / analyzed.length) * 10) / 10;
 
   return (
     <div className="space-y-4">

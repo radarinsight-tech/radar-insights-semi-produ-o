@@ -478,7 +478,7 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
                     <Badge key={i} variant="outline" className="text-[11px] text-muted-foreground">{p}</Badge>
                   ))}
                 </div>
-                {at.media < 5 && (
+                {notaToScale10(at.media) < 5 && (
                   <p className="text-xs text-destructive mt-2 font-medium">
                     ⚠ Padrão recorrente — necessita acompanhamento próximo
                   </p>
