@@ -130,17 +130,24 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
       const catPct = subtotal ? Math.round((subtotal.obtidos / subtotal.possiveis) * 100) : 0;
       const itemsHtml = items.map(c => {
         const badgeCls = c.resultado === "SIM" ? "badge-sim" : c.resultado === "NÃO" ? "badge-nao" : "badge-fora";
+        const isCritical = c.pesoMaximo >= 10;
+        const rowCls = c.resultado === "SIM"
+          ? (isCritical ? "criterio criterio-sim-critico" : "criterio criterio-sim")
+          : c.resultado === "NÃO"
+          ? (isCritical ? "criterio criterio-nao-critico" : "criterio criterio-nao")
+          : "criterio";
         const excerpt = findRelevantExcerpt(rawText, c.explicacao);
         return `
-          <div class="criterio">
+          <div class="${rowCls}">
             <div class="criterio-row">
               <span class="criterio-num">${c.numero}.</span>
               <span class="criterio-nome">${c.nome}</span>
               <span class="criterio-badge ${badgeCls}">${c.resultado === "FORA DO ESCOPO" ? "N/A" : c.resultado}</span>
+              ${isCritical && c.resultado !== "FORA DO ESCOPO" ? '<span class="criterio-badge badge-critico">CRÍTICO</span>' : ""}
               <span class="criterio-pts">${c.pontosObtidos}/${c.pesoMaximo} pts</span>
             </div>
-            <p class="criterio-explicacao">${c.explicacao}</p>
-            ${excerpt ? `<div class="criterio-trecho">"${excerpt}"</div>` : ""}
+            <p class="criterio-explicacao ${c.resultado === "NÃO" ? "explicacao-nao" : ""}">${c.explicacao}</p>
+            ${excerpt ? `<div class="criterio-trecho ${c.resultado === "SIM" ? "trecho-sim" : "trecho-nao"}">"${excerpt}"</div>` : ""}
           </div>`;
       }).join("");
       return `
