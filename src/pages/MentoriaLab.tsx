@@ -620,9 +620,7 @@ const MentoriaLab = () => {
     } else {
       toast.error("Ocorreu uma falha temporária no processamento do lote. Tente novamente.");
     }
-    setTimeout(() => {
-      document.getElementById("mentoria-insights")?.scrollIntoView({ behavior: "smooth" });
-    }, 300);
+    // Stay on the table so users can click "Ver mentoria" on individual items
   };
 
   const removeFile = (id: string) => {
