@@ -70,6 +70,10 @@ interface AtendenteStats {
   pontosFortes: string[];
   pontosFracos: string[];
   files: AnalyzedFile[];
+  amostragemInsuficiente: boolean;
+}
+
+const MIN_MENTORIAS = 6;
 }
 
 function countOccurrences(items: string[]): { text: string; count: number }[] {
