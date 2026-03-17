@@ -405,6 +405,10 @@ const MentoriaLab = () => {
 
         {/* Upload zone */}
         <Card className="p-6">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Upload className="h-4 w-4 text-primary" />
+            Importar atendimentos
+          </h3>
           <div
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDrop}
@@ -415,12 +419,18 @@ const MentoriaLab = () => {
             <p className="text-sm text-muted-foreground">
               Arraste os PDFs aqui ou clique para selecionar <strong>múltiplos arquivos</strong>
             </p>
-            <p className="text-xs text-muted-foreground mt-1">Upload múltiplo com leitura automática</p>
+            <p className="text-xs text-muted-foreground mt-2 flex items-center justify-center gap-1">
+              <Archive className="h-3.5 w-3.5" />
+              Você também pode importar um arquivo ZIP com vários atendimentos.
+            </p>
           </div>
+          <p className="text-xs text-muted-foreground mt-3 text-center">
+            O sistema organiza os arquivos para curadoria, leitura automática e análise em lote.
+          </p>
           <input
             ref={inputRef}
             type="file"
-            accept=".pdf"
+            accept=".pdf,.zip"
             multiple
             onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ""; }}
             className="hidden"
