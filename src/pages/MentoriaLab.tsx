@@ -70,6 +70,7 @@ interface LabFile {
   batchId?: string;
   batchFileId?: string;
   storagePath?: string;
+  analyzedAt?: Date;
 }
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
