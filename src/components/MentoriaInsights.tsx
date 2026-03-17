@@ -10,7 +10,6 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
 import { calcularBonus, formatBRL } from "@/lib/utils";
-} from "@/components/ui/accordion";
 
 interface AnalyzedFile {
   name: string;
