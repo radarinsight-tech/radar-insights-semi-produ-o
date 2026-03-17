@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { LogOut, HeadsetIcon, CreditCard, Loader2, ShieldAlert, Users, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import logoSymbol from "@/assets/logo-symbol.png";
 import logoFull from "@/assets/logo-full.png";
