@@ -121,51 +121,195 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
     if (!printRef.current) return;
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
+
+    // Build criteria HTML for print
+    const criteriaHtml = criteriosGrouped.map(({ categoria, items, subtotal }, catIdx) => {
+      if (items.length === 0) return "";
+      const catPct = subtotal ? Math.round((subtotal.obtidos / subtotal.possiveis) * 100) : 0;
+      const itemsHtml = items.map(c => {
+        const badgeCls = c.resultado === "SIM" ? "badge-sim" : c.resultado === "NÃO" ? "badge-nao" : "badge-fora";
+        const excerpt = findRelevantExcerpt(rawText, c.explicacao);
+        return `
+          <div class="criterio">
+            <div class="criterio-row">
+              <span class="criterio-num">${c.numero}.</span>
+              <span class="criterio-nome">${c.nome}</span>
+              <span class="criterio-badge ${badgeCls}">${c.resultado === "FORA DO ESCOPO" ? "N/A" : c.resultado}</span>
+              <span class="criterio-pts">${c.pontosObtidos}/${c.pesoMaximo} pts</span>
+            </div>
+            <p class="criterio-explicacao">${c.explicacao}</p>
+            ${excerpt ? `<div class="criterio-trecho">"${excerpt}"</div>` : ""}
+          </div>`;
+      }).join("");
+      return `
+        <div class="secao-cat">
+          <div class="cat-header">
+            <span class="cat-title">${catIdx + 1}. ${categoria}</span>
+            <span class="cat-score">${subtotal ? `${subtotal.obtidos}/${subtotal.possiveis} pts` : ""}</span>
+          </div>
+          <div class="cat-bar-wrapper"><div class="cat-bar" style="width:${catPct}%"></div></div>
+          ${itemsHtml}
+        </div>`;
+    }).join("");
+
+    // Mentoria section
+    const acertoHtml = melhorAcerto ? `
+      <div class="mentoria-card mentoria-positivo">
+        <p class="mentoria-label label-positivo">✓ Principal Acerto</p>
+        <p class="mentoria-nome">${melhorAcerto.nome}</p>
+        <p class="mentoria-desc">${melhorAcerto.explicacao}</p>
+      </div>` : "";
+
+    const melhoriaHtml = principalMelhoria ? `
+      <div class="mentoria-card mentoria-negativo">
+        <p class="mentoria-label label-negativo">✗ Principal Melhoria</p>
+        <p class="mentoria-nome">${principalMelhoria.nome}</p>
+        <p class="mentoria-desc">${principalMelhoria.explicacao}</p>
+      </div>` : "";
+
+    const orientacoesHtml = mentoriaItems.length > 0 ? `
+      <div class="orientacoes">
+        <p class="section-title">Orientações Práticas</p>
+        ${mentoriaItems.map((item, i) => `
+          <div class="orientacao-item">
+            <span class="orientacao-num">${i + 1}</span>
+            <span class="orientacao-text">${item}</span>
+          </div>`).join("")}
+      </div>` : "";
+
+    const badgeClass = nota >= 90 ? "class-excelente" : nota >= 70 ? "class-bom" : nota >= 50 ? "class-medio" : "class-critico";
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html><head><title>Mentoria — ${result.protocolo || "Atendimento"}</title>
       <style>
+        @page { size: A4; margin: 20mm 18mm; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 11px; color: #1a1a1a; padding: 28px 32px; line-height: 1.6; }
-        h1 { font-size: 18px; margin-bottom: 6px; font-weight: 800; }
-        h2 { font-size: 13px; margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 2px solid #e5e7eb; text-transform: uppercase; letter-spacing: 0.05em; color: #374151; }
-        .report-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 16px; border-bottom: 2px solid #111; margin-bottom: 16px; }
-        .header-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; }
-        .header-meta dt { font-size: 9px; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.08em; }
-        .header-meta dd { font-size: 12px; font-weight: 600; margin: 0 0 4px; }
-        .score-block { text-align: right; }
-        .score-value { font-size: 36px; font-weight: 900; line-height: 1; }
-        .score-label { font-size: 9px; text-transform: uppercase; color: #9ca3af; }
-        .badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
-        .badge-excelente { background: #dcfce7; color: #166534; }
-        .badge-bom { background: #dbeafe; color: #1e40af; }
-        .badge-critico { background: #fde2e2; color: #991b1b; }
-        .section-cat { margin: 14px 0 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #6b7280; letter-spacing: 0.06em; display: flex; justify-content: space-between; }
-        .criterio { padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+          font-size: 10.5px; color: #1a1a1a; line-height: 1.55;
+          padding: 0;
+        }
+
+        /* ── HEADER ── */
+        .report-header {
+          display: flex; justify-content: space-between; align-items: flex-start;
+          padding-bottom: 14px; border-bottom: 3px solid #111; margin-bottom: 18px;
+        }
+        .header-brand { font-size: 7px; text-transform: uppercase; letter-spacing: 0.15em; color: #9ca3af; margin-bottom: 10px; }
+        .header-title { font-size: 16px; font-weight: 800; color: #111; letter-spacing: -0.02em; }
+        .header-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 28px; margin-top: 10px; }
+        .header-grid dt { font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; }
+        .header-grid dd { font-size: 11px; font-weight: 600; color: #1a1a1a; margin-bottom: 2px; }
+
+        .score-block { text-align: right; min-width: 100px; }
+        .score-label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; }
+        .score-value { font-size: 40px; font-weight: 900; line-height: 1; letter-spacing: -0.03em; margin: 2px 0 4px; }
+        .score-pts { font-size: 9px; color: #6b7280; }
+        .score-class { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 10px; border-radius: 4px; margin-top: 6px; }
+        .class-excelente { background: #dcfce7; color: #166534; }
+        .class-bom { background: #dbeafe; color: #1e40af; }
+        .class-medio { background: #fef3c7; color: #92400e; }
+        .class-critico { background: #fde2e2; color: #991b1b; }
+
+        .score-green { color: #16a34a; }
+        .score-blue { color: #2563eb; }
+        .score-yellow { color: #d97706; }
+        .score-red { color: #dc2626; }
+
+        /* ── SECTION TITLES ── */
+        .section-title {
+          font-size: 10px; font-weight: 800; text-transform: uppercase;
+          letter-spacing: 0.08em; color: #374151;
+          padding-bottom: 6px; border-bottom: 2px solid #e5e7eb;
+          margin: 22px 0 12px;
+        }
+
+        /* ── CRITERIA ── */
+        .secao-cat { margin-bottom: 16px; page-break-inside: avoid; }
+        .cat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .cat-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #374151; }
+        .cat-score { font-size: 9px; font-weight: 700; color: #6b7280; }
+        .cat-bar-wrapper { height: 3px; background: #f3f4f6; border-radius: 2px; margin-bottom: 8px; }
+        .cat-bar { height: 100%; background: #2563eb; border-radius: 2px; }
+
+        .criterio { padding: 6px 0; border-bottom: 1px solid #f3f4f6; }
         .criterio:last-child { border-bottom: none; }
-        .criterio-q { font-weight: 600; font-size: 11px; }
-        .criterio-badge { display: inline-block; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 3px; margin-left: 6px; }
-        .criterio-badge-sim { background: #dcfce7; color: #166534; }
-        .criterio-badge-nao { background: #fde2e2; color: #991b1b; }
-        .criterio-badge-fora { background: #f3f4f6; color: #6b7280; }
-        .criterio-pts { float: right; font-size: 10px; color: #9ca3af; font-weight: 600; }
-        .explicacao { color: #6b7280; margin-top: 3px; padding-left: 16px; font-size: 10px; }
-        .trecho { margin-top: 4px; margin-left: 16px; padding: 4px 10px; border-left: 2px solid #d1d5db; color: #6b7280; font-style: italic; background: #fafafa; font-size: 10px; }
-        .mentoria-block { margin: 8px 0; padding: 10px 14px; border-radius: 6px; }
+        .criterio-row { display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; }
+        .criterio-num { font-weight: 700; color: #6b7280; font-size: 10px; min-width: 18px; }
+        .criterio-nome { font-weight: 600; font-size: 10.5px; color: #1a1a1a; flex: 1; }
+        .criterio-badge { display: inline-block; font-size: 8px; font-weight: 800; padding: 1px 6px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .badge-sim { background: #dcfce7; color: #166534; }
+        .badge-nao { background: #fde2e2; color: #991b1b; }
+        .badge-fora { background: #f3f4f6; color: #9ca3af; }
+        .criterio-pts { font-size: 9px; color: #9ca3af; font-weight: 600; margin-left: auto; white-space: nowrap; }
+        .criterio-explicacao { color: #6b7280; font-size: 9.5px; margin-top: 2px; padding-left: 22px; }
+        .criterio-trecho { margin: 4px 0 2px 22px; padding: 4px 10px; border-left: 2px solid #d1d5db; color: #6b7280; font-style: italic; background: #fafafa; font-size: 9px; }
+
+        /* ── MENTORIA ── */
+        .mentoria-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+        .mentoria-card { padding: 10px 14px; border-radius: 6px; page-break-inside: avoid; }
         .mentoria-positivo { background: #f0fdf4; border: 1px solid #bbf7d0; }
         .mentoria-negativo { background: #fef2f2; border: 1px solid #fecaca; }
-        .mentoria-orientacao { background: #eff6ff; border: 1px solid #bfdbfe; }
-        .mentoria-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
-        .mentoria-num { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: #dbeafe; color: #1e40af; font-size: 10px; font-weight: 700; margin-right: 6px; }
-        .orientacao-item { padding: 3px 0; font-size: 11px; }
-        @media print { body { padding: 16px; } }
+        .mentoria-label { font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+        .label-positivo { color: #166534; }
+        .label-negativo { color: #991b1b; }
+        .mentoria-nome { font-size: 10.5px; font-weight: 700; color: #1a1a1a; margin-bottom: 3px; }
+        .mentoria-desc { font-size: 9.5px; color: #6b7280; line-height: 1.5; }
+
+        .orientacoes { margin-top: 12px; padding: 12px 14px; border-radius: 6px; background: #eff6ff; border: 1px solid #bfdbfe; page-break-inside: avoid; }
+        .orientacao-item { display: flex; gap: 8px; align-items: flex-start; padding: 3px 0; }
+        .orientacao-num { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #2563eb; color: #fff; font-size: 8px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+        .orientacao-text { font-size: 10px; color: #1a1a1a; line-height: 1.5; }
+
+        /* ── FOOTER ── */
+        .report-footer { margin-top: 24px; padding-top: 10px; border-top: 1px solid #e5e7eb; font-size: 8px; color: #9ca3af; display: flex; justify-content: space-between; }
+
+        @media print {
+          body { padding: 0; }
+          .secao-cat { page-break-inside: avoid; }
+        }
       </style>
       </head><body>
-      ${printRef.current.innerHTML}
+
+      <div class="report-header">
+        <div>
+          <p class="header-brand">Radar Insight</p>
+          <p class="header-title">Relatório de Mentoria</p>
+          <dl class="header-grid">
+            <dt>Protocolo</dt><dd>${result.protocolo || "—"}</dd>
+            <dt>Atendente</dt><dd>${result.atendente || atendente || "—"}</dd>
+            <dt>Data do Atendimento</dt><dd>${result.data || "—"}</dd>
+            <dt>Tipo</dt><dd>${result.tipo || "—"}</dd>
+          </dl>
+        </div>
+        <div class="score-block">
+          <p class="score-label">Nota Final</p>
+          <p class="score-value ${nota >= 90 ? "score-green" : nota >= 70 ? "score-blue" : nota >= 50 ? "score-yellow" : "score-red"}">${nota?.toFixed(1) ?? "—"}</p>
+          <p class="score-pts">${result.pontosObtidos ?? totalObtidos}/${result.pontosPossiveis ?? totalPossiveis} pontos</p>
+          <span class="score-class ${badgeClass}">${classificacao}</span>
+        </div>
+      </div>
+
+      <p class="section-title">Critérios de Avaliação</p>
+      ${criteriaHtml}
+
+      <p class="section-title">Mentoria de Comunicação</p>
+      <div class="mentoria-grid">
+        ${acertoHtml}
+        ${melhoriaHtml}
+      </div>
+      ${orientacoesHtml}
+
+      <div class="report-footer">
+        <span>Radar Insight · Relatório gerado automaticamente</span>
+        <span>${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+      </div>
+
       </body></html>
     `);
     printWindow.document.close();
-    setTimeout(() => { printWindow.print(); printWindow.close(); }, 400);
+    setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
   };
 
   if (result.impeditivo) {
