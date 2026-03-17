@@ -314,7 +314,7 @@ ${text}`,
                   data: { type: "string", description: "DD/MM/AAAA" },
                   protocolo: { type: "string", description: "Protocolo do atendimento. NUNCA 'Não identificado' se existir no PDF." },
                   cliente: { type: "string", description: "Nome do cliente extraído do campo 'Cliente:' ou do histórico." },
-                  tipo: { type: "string", description: "Tipo de atendimento" },
+                  tipo: { type: "string", enum: ["Suporte Técnico", "Financeiro", "Vendas", "Cancelamento", "Retenção", "Mudança de Endereço", "Instalação", "Upgrade/Downgrade", "Informações Gerais", "Outro"], description: "Tipo principal do atendimento, classificado com base no conteúdo da conversa. Identificar pela demanda principal do cliente." },
                   atendente: { type: "string", description: "Nome do atendente. NUNCA 'Não identificado' se existir no histórico." },
                   criterios: {
                     type: "array",
