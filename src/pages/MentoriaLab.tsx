@@ -664,7 +664,52 @@ const MentoriaLab = () => {
           ))}
         </div>
 
-        {/* Upload zone */}
+        {/* Batch Info Card */}
+        {batchInfo && (
+          <Card className="p-5 border-l-4 border-l-primary">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Package className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-foreground">Lote: {batchInfo.batchCode}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {batchInfo.createdAt.toLocaleDateString("pt-BR")} às {batchInfo.createdAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                    {" · "}Entrada: <span className="font-medium">{batchInfo.sourceType === "zip" ? "ZIP" : "PDFs avulsos"}</span>
+                    {batchInfo.originalFileName && <> · <span className="font-medium">{batchInfo.originalFileName}</span></>}
+                  </p>
+                </div>
+              </div>
+              {(() => {
+                const cfg = batchStatusConfig[batchInfo.status];
+                const Icon = cfg.icon;
+                const isAnimated = batchInfo.status === "extraindo_arquivos" || batchInfo.status === "organizando_atendimentos" || batchInfo.status === "em_analise";
+                return (
+                  <Badge variant="outline" className={`gap-1.5 ${cfg.color} border-current/20 shrink-0`}>
+                    <Icon className={`h-3.5 w-3.5 ${isAnimated ? "animate-spin" : ""}`} />
+                    {cfg.label}
+                  </Badge>
+                );
+              })()}
+            </div>
+            <div className="grid grid-cols-3 gap-4 mt-4 pt-3 border-t border-border">
+              <div className="text-center">
+                <span className="text-lg font-bold text-foreground">{batchInfo.totalFilesInSource}</span>
+                <p className="text-[11px] text-muted-foreground">Arquivos recebidos</p>
+              </div>
+              <div className="text-center">
+                <span className="text-lg font-bold text-primary">{batchInfo.totalPdfs}</span>
+                <p className="text-[11px] text-muted-foreground">PDFs válidos</p>
+              </div>
+              <div className="text-center">
+                <span className="text-lg font-bold text-muted-foreground">{batchInfo.ignoredFiles}</span>
+                <p className="text-[11px] text-muted-foreground">Ignorados</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
         <Card className="p-6">
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <Upload className="h-4 w-4 text-primary" />
