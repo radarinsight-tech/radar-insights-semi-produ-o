@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import JSZip from "jszip";
 import {
   ArrowLeft, LogOut, Upload, FileText, Trash2, Eye, Play, Loader2,
-  Search, X, Filter, Volume2, VolumeX, BookOpen, Archive
+  Search, X, Filter, Volume2, VolumeX, BookOpen, Archive, Package, Clock, CheckCircle2, AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -23,6 +23,30 @@ import { toast } from "sonner";
 import MentoriaInsights from "@/components/MentoriaInsights";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro";
+
+type BatchStatus = "recebido" | "extraindo_arquivos" | "organizando_atendimentos" | "pronto_para_curadoria" | "em_analise" | "concluido" | "erro";
+
+interface BatchInfo {
+  id: string;
+  batchCode: string;
+  createdAt: Date;
+  sourceType: "pdf" | "zip";
+  originalFileName?: string;
+  totalFilesInSource: number;
+  totalPdfs: number;
+  ignoredFiles: number;
+  status: BatchStatus;
+}
+
+const batchStatusConfig: Record<BatchStatus, { label: string; icon: typeof Package; color: string }> = {
+  recebido: { label: "Recebido", icon: Package, color: "text-muted-foreground" },
+  extraindo_arquivos: { label: "Extraindo arquivos", icon: Loader2, color: "text-blue-600" },
+  organizando_atendimentos: { label: "Organizando atendimentos", icon: Clock, color: "text-blue-600" },
+  pronto_para_curadoria: { label: "Pronto para curadoria", icon: CheckCircle2, color: "text-primary" },
+  em_analise: { label: "Em análise", icon: Loader2, color: "text-warning" },
+  concluido: { label: "Concluído", icon: CheckCircle2, color: "text-accent" },
+  erro: { label: "Erro", icon: AlertTriangle, color: "text-destructive" },
+};
 
 interface LabFile {
   id: string;
@@ -74,6 +98,7 @@ const MentoriaLab = () => {
   const [processing, setProcessing] = useState(false);
   const [readingIds, setReadingIds] = useState<Set<string>>(new Set());
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
+  const [batchInfo, setBatchInfo] = useState<BatchInfo | null>(null);
   const [sideFile, setSideFile] = useState<LabFile | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -197,6 +222,12 @@ const MentoriaLab = () => {
     return `lote-${y}-${m}-${seq}`;
   }, []);
 
+  // Helper to update batch status both locally and in DB
+  const updateBatchStatus = useCallback(async (batchId: string, status: BatchStatus) => {
+    setBatchInfo((prev) => prev ? { ...prev, status } : prev);
+    await supabase.from("mentoria_batches").update({ status } as any).eq("id", batchId);
+  }, []);
+
   // Multi-file upload + auto-read (PDF + ZIP) with cloud storage
   const handleFiles = useCallback(async (newFiles: FileList | File[]) => {
     const fileArray = Array.from(newFiles);
@@ -210,7 +241,6 @@ const MentoriaLab = () => {
       return;
     }
 
-    // Get user
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast.error("Você precisa estar autenticado para importar arquivos.");
@@ -222,29 +252,58 @@ const MentoriaLab = () => {
     const isZipSource = zipFiles.length > 0;
     const batchCode = generateBatchCode();
     const userPrefix = user.id;
+    const totalFilesInSource = isZipSource ? 0 : pdfFiles.length; // will be updated after zip extraction
 
-    // Process ZIPs with detailed reporting
+    // Initialize batch info immediately as "recebido"
+    const tempBatchInfo: BatchInfo = {
+      id: "",
+      batchCode,
+      createdAt: new Date(),
+      sourceType: isZipSource ? "zip" : "pdf",
+      originalFileName: isZipSource ? zipFiles[0]?.name : undefined,
+      totalFilesInSource,
+      totalPdfs: 0,
+      ignoredFiles: 0,
+      status: "recebido",
+    };
+    setBatchInfo(tempBatchInfo);
+
+    // Extract ZIPs
     let extractedPdfs: File[] = [];
     let totalZipEntries = 0;
     let totalIgnored = 0;
 
-    for (const zf of zipFiles) {
-      const result = await extractPdfsFromZip(zf);
-      extractedPdfs = [...extractedPdfs, ...result.pdfs];
-      totalZipEntries += result.totalEntries;
-      totalIgnored += result.ignored;
+    if (isZipSource) {
+      setBatchInfo((prev) => prev ? { ...prev, status: "extraindo_arquivos" } : prev);
+      for (const zf of zipFiles) {
+        const result = await extractPdfsFromZip(zf);
+        extractedPdfs = [...extractedPdfs, ...result.pdfs];
+        totalZipEntries += result.totalEntries;
+        totalIgnored += result.ignored;
+      }
     }
 
     if (isZipSource && extractedPdfs.length === 0 && pdfFiles.length === 0) {
+      setBatchInfo((prev) => prev ? { ...prev, status: "erro", totalFilesInSource: totalZipEntries, ignoredFiles: totalZipEntries } : prev);
       toast.error(`O ZIP contém ${totalZipEntries} arquivo(s), mas nenhum é PDF. Apenas arquivos PDF são aceitos.`);
       return;
     }
 
     const allPdfs = [...pdfFiles, ...extractedPdfs];
     if (allPdfs.length === 0) {
+      setBatchInfo((prev) => prev ? { ...prev, status: "erro" } : prev);
       toast.error("Nenhum arquivo PDF válido encontrado.");
       return;
     }
+
+    // Update counts
+    setBatchInfo((prev) => prev ? {
+      ...prev,
+      status: "organizando_atendimentos",
+      totalFilesInSource: isZipSource ? totalZipEntries : pdfFiles.length,
+      totalPdfs: allPdfs.length,
+      ignoredFiles: totalIgnored,
+    } : prev);
 
     // 1. Save originals to cloud: uploads/
     let uploadPath: string | undefined;
@@ -279,7 +338,7 @@ const MentoriaLab = () => {
       total_files_in_source: isZipSource ? totalZipEntries : pdfFiles.length,
       total_pdfs: allPdfs.length,
       ignored_files: totalIgnored,
-      status: "imported",
+      status: "organizando_atendimentos",
       upload_path: uploadPath,
     } as any).select("id").single();
 
@@ -290,6 +349,7 @@ const MentoriaLab = () => {
 
     const batchId = batchRow?.id;
     setCurrentBatchId(batchId || null);
+    setBatchInfo((prev) => prev ? { ...prev, id: batchId || "" } : prev);
 
     // 4. Create batch file records + local entries
     const entries: LabFile[] = [];
@@ -325,7 +385,14 @@ const MentoriaLab = () => {
 
     setFiles((prev) => [...prev, ...entries]);
 
-    // Detailed toast message
+    // Update to "pronto_para_curadoria"
+    const finalStatus: BatchStatus = "pronto_para_curadoria";
+    setBatchInfo((prev) => prev ? { ...prev, status: finalStatus } : prev);
+    if (batchId) {
+      await supabase.from("mentoria_batches").update({ status: finalStatus } as any).eq("id", batchId);
+    }
+
+    // Toast
     if (isZipSource) {
       const parts = [`${extractedPdfs.length} PDF(s) extraído(s) do ZIP`];
       if (pdfFiles.length > 0) parts.push(`${pdfFiles.length} PDF(s) avulso(s)`);
@@ -336,7 +403,7 @@ const MentoriaLab = () => {
     }
 
     entries.forEach((entry) => readFile(entry));
-  }, [readFile, extractPdfsFromZip, generateBatchCode]);
+  }, [readFile, extractPdfsFromZip, generateBatchCode, updateBatchStatus]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -401,9 +468,9 @@ const MentoriaLab = () => {
 
     setProcessing(true);
 
-    // Update batch status to analyzing
+    // Update batch status to em_analise
     if (currentBatchId) {
-      await supabase.from("mentoria_batches").update({ status: "analyzing" } as any).eq("id", currentBatchId);
+      await updateBatchStatus(currentBatchId, "em_analise");
     }
 
     let success = 0;
@@ -506,7 +573,9 @@ const MentoriaLab = () => {
         total_errors: errors,
         completed_at: new Date().toISOString(),
       };
-      await supabase.from("mentoria_batches").update({ status: errors === toAnalyze.length ? "error" : "completed", summary } as any).eq("id", currentBatchId);
+      const finalBatchStatus: BatchStatus = errors === toAnalyze.length ? "erro" : "concluido";
+      await updateBatchStatus(currentBatchId, finalBatchStatus);
+      await supabase.from("mentoria_batches").update({ summary } as any).eq("id", currentBatchId);
 
       // Save summary.json to cloud
       const { data: batchData } = await supabase.from("mentoria_batches").select("batch_code").eq("id", currentBatchId).single();
@@ -595,7 +664,52 @@ const MentoriaLab = () => {
           ))}
         </div>
 
-        {/* Upload zone */}
+        {/* Batch Info Card */}
+        {batchInfo && (
+          <Card className="p-5 border-l-4 border-l-primary">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Package className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-foreground">Lote: {batchInfo.batchCode}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {batchInfo.createdAt.toLocaleDateString("pt-BR")} às {batchInfo.createdAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                    {" · "}Entrada: <span className="font-medium">{batchInfo.sourceType === "zip" ? "ZIP" : "PDFs avulsos"}</span>
+                    {batchInfo.originalFileName && <> · <span className="font-medium">{batchInfo.originalFileName}</span></>}
+                  </p>
+                </div>
+              </div>
+              {(() => {
+                const cfg = batchStatusConfig[batchInfo.status];
+                const Icon = cfg.icon;
+                const isAnimated = batchInfo.status === "extraindo_arquivos" || batchInfo.status === "organizando_atendimentos" || batchInfo.status === "em_analise";
+                return (
+                  <Badge variant="outline" className={`gap-1.5 ${cfg.color} border-current/20 shrink-0`}>
+                    <Icon className={`h-3.5 w-3.5 ${isAnimated ? "animate-spin" : ""}`} />
+                    {cfg.label}
+                  </Badge>
+                );
+              })()}
+            </div>
+            <div className="grid grid-cols-3 gap-4 mt-4 pt-3 border-t border-border">
+              <div className="text-center">
+                <span className="text-lg font-bold text-foreground">{batchInfo.totalFilesInSource}</span>
+                <p className="text-[11px] text-muted-foreground">Arquivos recebidos</p>
+              </div>
+              <div className="text-center">
+                <span className="text-lg font-bold text-primary">{batchInfo.totalPdfs}</span>
+                <p className="text-[11px] text-muted-foreground">PDFs válidos</p>
+              </div>
+              <div className="text-center">
+                <span className="text-lg font-bold text-muted-foreground">{batchInfo.ignoredFiles}</span>
+                <p className="text-[11px] text-muted-foreground">Ignorados</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
         <Card className="p-6">
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <Upload className="h-4 w-4 text-primary" />
