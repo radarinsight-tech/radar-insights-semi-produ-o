@@ -205,7 +205,7 @@ const MentoriaCharts = ({ files }: MentoriaChartsProps) => {
   }
 
   const globalMedia = analyzed.length > 0
-    ? Math.round(notaToScale10(analyzed.reduce((s, f) => s + f.result!.notaFinal!, 0) / analyzed.length) * 10) / 10
+    ? Math.round(analyzed.reduce((s, f) => s + notaToScale10(f.result!.notaFinal!), 0) / analyzed.length * 10) / 10
     : 0;
 
   const tooltipStyle = {
