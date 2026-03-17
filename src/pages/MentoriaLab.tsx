@@ -138,23 +138,32 @@ const MentoriaLab = () => {
     }
   }, []);
 
-  // Extract PDFs from a ZIP file
-  const extractPdfsFromZip = useCallback(async (zipFile: File): Promise<File[]> => {
+  // Extract PDFs from a ZIP file with detailed reporting
+  const extractPdfsFromZip = useCallback(async (zipFile: File): Promise<{ pdfs: File[]; totalEntries: number; ignored: number }> => {
     try {
       const zip = await JSZip.loadAsync(zipFile);
+      const allEntries = Object.entries(zip.files).filter(([, entry]) => !entry.dir);
+      const totalEntries = allEntries.length;
+
+      if (totalEntries === 0) {
+        toast.error("O arquivo ZIP está vazio. Nenhum arquivo encontrado.");
+        return { pdfs: [], totalEntries: 0, ignored: 0 };
+      }
+
+      const pdfEntries = allEntries.filter(([name]) => name.toLowerCase().endsWith(".pdf"));
+      const ignored = totalEntries - pdfEntries.length;
+
       const pdfFiles: File[] = [];
-      const entries = Object.entries(zip.files).filter(
-        ([name, entry]) => !entry.dir && name.toLowerCase().endsWith(".pdf")
-      );
-      for (const [name, entry] of entries) {
+      for (const [name, entry] of pdfEntries) {
         const blob = await entry.async("blob");
         const fileName = name.split("/").pop() || name;
         pdfFiles.push(new File([blob], fileName, { type: "application/pdf" }));
       }
-      return pdfFiles;
+
+      return { pdfs: pdfFiles, totalEntries, ignored };
     } catch {
-      toast.error("Erro ao processar o arquivo ZIP. Verifique se o arquivo é válido.");
-      return [];
+      toast.error("Erro ao processar o arquivo ZIP. O arquivo pode estar corrompido ou em formato inválido.");
+      return { pdfs: [], totalEntries: 0, ignored: 0 };
     }
   }, []);
 
@@ -174,15 +183,27 @@ const MentoriaLab = () => {
     const zipFiles = fileArray.filter((f) => f.name.toLowerCase().endsWith(".zip"));
     const pdfFiles = fileArray.filter((f) => f.name.toLowerCase().endsWith(".pdf"));
 
-    // Extract PDFs from ZIPs
+    // Process ZIPs with detailed reporting
     let extractedPdfs: File[] = [];
+    let totalZipEntries = 0;
+    let totalIgnored = 0;
+
     for (const zf of zipFiles) {
-      const pdfs = await extractPdfsFromZip(zf);
-      extractedPdfs = [...extractedPdfs, ...pdfs];
+      const result = await extractPdfsFromZip(zf);
+      extractedPdfs = [...extractedPdfs, ...result.pdfs];
+      totalZipEntries += result.totalEntries;
+      totalIgnored += result.ignored;
     }
+
     if (zipFiles.length > 0 && extractedPdfs.length === 0 && pdfFiles.length === 0) {
-      toast.error("Nenhum PDF encontrado dentro do arquivo ZIP.");
+      toast.error(`O ZIP contém ${totalZipEntries} arquivo(s), mas nenhum é PDF. Apenas arquivos PDF são aceitos.`);
       return;
+    }
+
+    // Save ZIP to storage for audit trail
+    for (const zf of zipFiles) {
+      const zipStorageName = `mentoria_zip_${Date.now()}_${zf.name}`;
+      await supabase.storage.from("pdfs").upload(zipStorageName, zf, { contentType: "application/zip" }).catch(() => {});
     }
 
     const allPdfs = [...pdfFiles, ...extractedPdfs];
@@ -200,8 +221,17 @@ const MentoriaLab = () => {
       status: "pendente" as FileStatus,
     }));
     setFiles((prev) => [...prev, ...entries]);
-    const zipMsg = zipFiles.length > 0 ? ` (${extractedPdfs.length} extraído(s) do ZIP)` : "";
-    toast.success(`${allPdfs.length} arquivo(s) importado(s)${zipMsg}. Leitura automática iniciada.`);
+
+    // Detailed toast message
+    if (zipFiles.length > 0) {
+      const parts = [`${extractedPdfs.length} PDF(s) extraído(s) do ZIP`];
+      if (pdfFiles.length > 0) parts.push(`${pdfFiles.length} PDF(s) avulso(s)`);
+      if (totalIgnored > 0) parts.push(`${totalIgnored} arquivo(s) ignorado(s)`);
+      toast.success(`${allPdfs.length} atendimento(s) importado(s). ${parts.join(" · ")}. Leitura automática iniciada.`);
+    } else {
+      toast.success(`${allPdfs.length} arquivo(s) importado(s). Leitura automática iniciada.`);
+    }
+
     entries.forEach((entry) => readFile(entry));
   }, [readFile, extractPdfsFromZip]);
 
