@@ -874,19 +874,6 @@ const MentoriaLab = () => {
                   placeholder="Período"
                 />
 
-                {/* Canal */}
-                <Select value={filterCanal} onValueChange={setFilterCanal}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Canal" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos canais</SelectItem>
-                    {canais.map((c) => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
                 {/* Áudio */}
                 <Select value={filterAudio} onValueChange={setFilterAudio}>
                   <SelectTrigger className="w-[140px]">
@@ -937,7 +924,7 @@ const MentoriaLab = () => {
                       <th className="p-3 text-left font-medium text-muted-foreground">Arquivo</th>
                       <th className="p-3 text-left font-medium text-muted-foreground">Atendente</th>
                       <th className="p-3 text-left font-medium text-muted-foreground">Data</th>
-                      <th className="p-3 text-left font-medium text-muted-foreground">Canal</th>
+                      <th className="p-3 text-left font-medium text-muted-foreground">Protocolo</th>
                       <th className="p-3 text-left font-medium text-muted-foreground">Protocolo</th>
                       <th className="p-3 text-center font-medium text-muted-foreground">Áudio</th>
                       <th className="p-3 text-center font-medium text-muted-foreground">Status</th>
@@ -963,7 +950,7 @@ const MentoriaLab = () => {
                           {readingIds.has(f.id) ? <Loader2 className="h-3 w-3 animate-spin inline" /> : (f.atendente || <span className="italic opacity-60">Não identificado</span>)}
                         </td>
                         <td className="p-3 text-muted-foreground text-xs">{f.data || <span className="italic opacity-60">Não identificado</span>}</td>
-                        <td className="p-3 text-muted-foreground text-xs">{f.canal && f.canal !== "Não identificado" ? f.canal : <span className="italic opacity-60">Não identificado</span>}</td>
+                        
                         <td className="p-3 text-muted-foreground text-xs">{f.protocolo || <span className="italic opacity-60">Não identificado</span>}</td>
                         <td className="p-3 text-center">
                           {f.hasAudio === undefined ? (
@@ -1110,7 +1097,7 @@ const MentoriaLab = () => {
                 {[
                   { label: "Atendente", value: sideFile.atendente },
                   { label: "Data", value: sideFile.data },
-                  { label: "Canal", value: sideFile.canal },
+                  
                   { label: "Áudio", value: sideFile.hasAudio ? "Sim" : "Não" },
                   { label: "Protocolo", value: sideFile.protocolo },
                   { label: "Status", value: statusConfig[sideFile.status].label },
