@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import logoSymbol from "@/assets/logo-symbol.png";
 import { toast } from "sonner";
+import MentoriaInsights from "@/components/MentoriaInsights";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro";
 
@@ -559,6 +560,11 @@ const MentoriaLab = () => {
                 </table>
               </div>
             </Card>
+
+            {/* Insights da Mentoria - appears after analyses */}
+            {files.some((f) => f.status === "analisado") && (
+              <MentoriaInsights files={files} />
+            )}
           </>
         )}
 
