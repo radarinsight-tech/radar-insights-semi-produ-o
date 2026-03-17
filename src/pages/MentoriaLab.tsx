@@ -1,8 +1,9 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import JSZip from "jszip";
 import {
   ArrowLeft, LogOut, Upload, FileText, Trash2, Eye, Play, Loader2,
-  Search, X, Filter, Volume2, VolumeX, BookOpen
+  Search, X, Filter, Volume2, VolumeX, BookOpen, Archive
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -137,14 +138,60 @@ const MentoriaLab = () => {
     }
   }, []);
 
-  // Multi-file upload + auto-read
-  const handleFiles = useCallback((newFiles: FileList | File[]) => {
-    const pdfs = Array.from(newFiles).filter((f) => f.type === "application/pdf");
-    if (pdfs.length === 0) {
-      toast.error("Selecione apenas arquivos PDF.");
+  // Extract PDFs from a ZIP file
+  const extractPdfsFromZip = useCallback(async (zipFile: File): Promise<File[]> => {
+    try {
+      const zip = await JSZip.loadAsync(zipFile);
+      const pdfFiles: File[] = [];
+      const entries = Object.entries(zip.files).filter(
+        ([name, entry]) => !entry.dir && name.toLowerCase().endsWith(".pdf")
+      );
+      for (const [name, entry] of entries) {
+        const blob = await entry.async("blob");
+        const fileName = name.split("/").pop() || name;
+        pdfFiles.push(new File([blob], fileName, { type: "application/pdf" }));
+      }
+      return pdfFiles;
+    } catch {
+      toast.error("Erro ao processar o arquivo ZIP. Verifique se o arquivo é válido.");
+      return [];
+    }
+  }, []);
+
+  // Multi-file upload + auto-read (PDF + ZIP)
+  const handleFiles = useCallback(async (newFiles: FileList | File[]) => {
+    const fileArray = Array.from(newFiles);
+    const allowedExts = [".pdf", ".zip"];
+    const invalid = fileArray.filter((f) => {
+      const ext = f.name.toLowerCase().slice(f.name.lastIndexOf("."));
+      return !allowedExts.includes(ext);
+    });
+    if (invalid.length > 0) {
+      toast.error(`Formato não suportado: ${invalid.map((f) => f.name).join(", ")}. Use apenas PDF ou ZIP.`);
       return;
     }
-    const entries: LabFile[] = pdfs.map((f) => ({
+
+    const zipFiles = fileArray.filter((f) => f.name.toLowerCase().endsWith(".zip"));
+    const pdfFiles = fileArray.filter((f) => f.name.toLowerCase().endsWith(".pdf"));
+
+    // Extract PDFs from ZIPs
+    let extractedPdfs: File[] = [];
+    for (const zf of zipFiles) {
+      const pdfs = await extractPdfsFromZip(zf);
+      extractedPdfs = [...extractedPdfs, ...pdfs];
+    }
+    if (zipFiles.length > 0 && extractedPdfs.length === 0 && pdfFiles.length === 0) {
+      toast.error("Nenhum PDF encontrado dentro do arquivo ZIP.");
+      return;
+    }
+
+    const allPdfs = [...pdfFiles, ...extractedPdfs];
+    if (allPdfs.length === 0) {
+      toast.error("Nenhum arquivo PDF válido encontrado.");
+      return;
+    }
+
+    const entries: LabFile[] = allPdfs.map((f) => ({
       id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       file: f,
       name: f.name,
@@ -153,10 +200,10 @@ const MentoriaLab = () => {
       status: "pendente" as FileStatus,
     }));
     setFiles((prev) => [...prev, ...entries]);
-    toast.success(`${pdfs.length} arquivo(s) importado(s). Leitura automática iniciada.`);
-    // Auto-read each
+    const zipMsg = zipFiles.length > 0 ? ` (${extractedPdfs.length} extraído(s) do ZIP)` : "";
+    toast.success(`${allPdfs.length} arquivo(s) importado(s)${zipMsg}. Leitura automática iniciada.`);
     entries.forEach((entry) => readFile(entry));
-  }, [readFile]);
+  }, [readFile, extractPdfsFromZip]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -358,6 +405,10 @@ const MentoriaLab = () => {
 
         {/* Upload zone */}
         <Card className="p-6">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Upload className="h-4 w-4 text-primary" />
+            Importar atendimentos
+          </h3>
           <div
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDrop}
@@ -368,12 +419,18 @@ const MentoriaLab = () => {
             <p className="text-sm text-muted-foreground">
               Arraste os PDFs aqui ou clique para selecionar <strong>múltiplos arquivos</strong>
             </p>
-            <p className="text-xs text-muted-foreground mt-1">Upload múltiplo com leitura automática</p>
+            <p className="text-xs text-muted-foreground mt-2 flex items-center justify-center gap-1">
+              <Archive className="h-3.5 w-3.5" />
+              Você também pode importar um arquivo ZIP com vários atendimentos.
+            </p>
           </div>
+          <p className="text-xs text-muted-foreground mt-3 text-center">
+            O sistema organiza os arquivos para curadoria, leitura automática e análise em lote.
+          </p>
           <input
             ref={inputRef}
             type="file"
-            accept=".pdf"
+            accept=".pdf,.zip"
             multiple
             onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ""; }}
             className="hidden"
