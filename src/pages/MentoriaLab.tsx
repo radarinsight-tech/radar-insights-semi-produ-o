@@ -22,6 +22,7 @@ import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import logoSymbol from "@/assets/logo-symbol.png";
 import { toast } from "sonner";
 import MentoriaInsights from "@/components/MentoriaInsights";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro";
 
