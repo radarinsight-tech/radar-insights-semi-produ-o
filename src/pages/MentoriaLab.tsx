@@ -96,7 +96,7 @@ const MentoriaLab = () => {
     return [...set].sort();
   }, [files]);
 
-  // Auto-read a file
+  // Auto-read a file + sync metadata to DB
   const readFile = useCallback(async (labFile: LabFile) => {
     setReadingIds((prev) => new Set(prev).add(labFile.id));
     try {
@@ -105,6 +105,9 @@ const MentoriaLab = () => {
         setFiles((prev) =>
           prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Sem texto extraído" } : f))
         );
+        if (labFile.batchFileId) {
+          await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Sem texto extraído" } as any).eq("id", labFile.batchFileId);
+        }
         return;
       }
       const protocolMatch = text.match(/(?:protocolo|prot\.?)\s*[:\-]?\s*([A-Za-z0-9]+)/i);
@@ -113,26 +116,40 @@ const MentoriaLab = () => {
       const canal = detectCanal(text);
       const hasAudio = detectAudio(text);
 
+      const metadata = {
+        protocolo: protocolMatch?.[1] || undefined,
+        atendente: atendenteMatch?.[1]?.trim() || undefined,
+        data: dataMatch?.[1] || undefined,
+        canal,
+        hasAudio,
+      };
+
       setFiles((prev) =>
         prev.map((f) =>
           f.id === labFile.id
-            ? {
-                ...f,
-                status: "lido",
-                text,
-                protocolo: protocolMatch?.[1] || undefined,
-                atendente: atendenteMatch?.[1]?.trim() || undefined,
-                data: dataMatch?.[1] || undefined,
-                canal,
-                hasAudio,
-              }
+            ? { ...f, status: "lido", text, ...metadata }
             : f
         )
       );
+
+      // Sync to DB
+      if (labFile.batchFileId) {
+        await supabase.from("mentoria_batch_files").update({
+          status: "read",
+          protocolo: metadata.protocolo,
+          atendente: metadata.atendente,
+          data_atendimento: metadata.data,
+          canal: metadata.canal,
+          has_audio: metadata.hasAudio,
+        } as any).eq("id", labFile.batchFileId);
+      }
     } catch {
       setFiles((prev) =>
         prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Falha na leitura" } : f))
       );
+      if (labFile.batchFileId) {
+        await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha na leitura" } as any).eq("id", labFile.batchFileId);
+      }
     } finally {
       setReadingIds((prev) => {
         const next = new Set(prev);
