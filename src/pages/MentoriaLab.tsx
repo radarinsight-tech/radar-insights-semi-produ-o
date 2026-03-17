@@ -77,21 +77,7 @@ const statusConfig: Record<FileStatus, { label: string; color: string }> = {
   erro: { label: "Erro", color: "bg-destructive/15 text-destructive" },
 };
 
-/** Extract channel from text heuristics */
-function detectCanal(text: string): string {
-  const lower = text.toLowerCase();
-  if (lower.includes("whatsapp") || lower.includes("wpp")) return "WhatsApp";
-  if (lower.includes("telefone") || lower.includes("ligação") || lower.includes("chamada")) return "Telefone";
-  if (lower.includes("e-mail") || lower.includes("email")) return "E-mail";
-  if (lower.includes("chat")) return "Chat";
-  return "Não identificado";
-}
-
-/** Detect if audio references exist */
-function detectAudio(text: string): boolean {
-  const lower = text.toLowerCase();
-  return /\b(áudio|audio|gravação|gravacao|escuta|ligação|ligacao|chamada)\b/.test(lower);
-}
+import { extractAllMetadata } from "@/lib/mentoriaMetadata";
 
 const IMPORT_LIMIT = 1000;
 const IMPORT_RECOMMENDED = 500;
@@ -144,19 +130,7 @@ const MentoriaLab = () => {
         }
         return;
       }
-      const protocolMatch = text.match(/(?:protocolo|prot\.?)\s*[:\-]?\s*([A-Za-z0-9]+)/i);
-      const atendenteMatch = text.match(/(?:atendente|agente|operador)\s*[:\-]?\s*([^\n]+)/i);
-      const dataMatch = text.match(/(\d{2}\/\d{2}\/\d{4})/);
-      const canal = detectCanal(text);
-      const hasAudio = detectAudio(text);
-
-      const metadata = {
-        protocolo: protocolMatch?.[1] || undefined,
-        atendente: atendenteMatch?.[1]?.trim() || undefined,
-        data: dataMatch?.[1] || undefined,
-        canal,
-        hasAudio,
-      };
+      const metadata = extractAllMetadata(text);
 
       setFiles((prev) =>
         prev.map((f) =>
