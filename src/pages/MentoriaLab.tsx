@@ -701,6 +701,18 @@ const MentoriaLab = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        {/* Limit tags */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge className="bg-blue-100 text-blue-700 border border-blue-200 text-xs font-medium px-3 py-1">
+            <Upload className="h-3 w-3 mr-1.5" />
+            IMPORTAR: até {IMPORT_RECOMMENDED} por mês
+          </Badge>
+          <Badge className="bg-accent/15 text-accent border border-accent/25 text-xs font-medium px-3 py-1">
+            <Play className="h-3 w-3 mr-1.5" />
+            ANALISAR: até {ANALYZE_LIMIT} por vez
+          </Badge>
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
