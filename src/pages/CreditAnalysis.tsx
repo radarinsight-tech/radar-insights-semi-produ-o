@@ -74,6 +74,7 @@ const CreditAnalysis = () => {
         valorTotalPendencias: r.valorTotalPendencias,
         classificacaoRisco: r.classificacaoRisco,
         faixa: policy.faixa,
+        regra: policy.regra,
         justificativa: policy.justificativa,
         documentacao: policy.documentacao,
         modoConsulta: r.modoConsulta,
