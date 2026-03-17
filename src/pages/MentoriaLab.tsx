@@ -72,6 +72,7 @@ interface LabFile {
   data?: string;
   canal?: string;
   hasAudio?: boolean;
+  tipo?: string;
   batchId?: string;
   batchFileId?: string;
   storagePath?: string;
@@ -602,7 +603,7 @@ const MentoriaLab = () => {
         setFiles((prev) =>
           prev.map((f) =>
             f.id === labFile.id
-              ? { ...f, status: "analisado", result: data, protocolo: data.protocolo || f.protocolo, atendente: data.atendente || f.atendente, data: data.data || f.data, analyzedAt: new Date() }
+              ? { ...f, status: "analisado", result: data, protocolo: data.protocolo || f.protocolo, atendente: data.atendente || f.atendente, data: data.data || f.data, tipo: data.tipo || f.tipo, analyzedAt: new Date() }
               : f
           )
         );
@@ -1063,6 +1064,7 @@ const MentoriaLab = () => {
                       </th>
                       <th className="p-3 text-left font-medium text-muted-foreground">Arquivo</th>
                       <th className="p-3 text-left font-medium text-muted-foreground">Atendente</th>
+                      <th className="p-3 text-left font-medium text-muted-foreground">Tipo</th>
                       <th className="p-3 text-left font-medium text-muted-foreground">Data</th>
                       <th className="p-3 text-left font-medium text-muted-foreground">Protocolo</th>
                       <th className="p-3 text-center font-medium text-muted-foreground">Áudio</th>
@@ -1088,6 +1090,13 @@ const MentoriaLab = () => {
                         </td>
                         <td className="p-3 text-muted-foreground text-xs">
                           {readingIds.has(f.id) ? <Loader2 className="h-3 w-3 animate-spin inline" /> : (f.atendente || <span className="italic opacity-60">Não identificado</span>)}
+                        </td>
+                        <td className="p-3 text-xs">
+                          {(() => {
+                            const tipo = f.result?.tipo || f.tipo;
+                            if (!tipo || tipo === "Outro") return <span className="italic text-muted-foreground opacity-60">—</span>;
+                            return <Badge variant="outline" className="text-[10px] font-medium">{tipo}</Badge>;
+                          })()}
                         </td>
                         <td className="p-3 text-muted-foreground text-xs">{f.data ? formatDateBR(f.data) : <span className="italic opacity-60">—</span>}</td>
                         <td className="p-3 text-muted-foreground text-xs">{f.protocolo || <span className="italic opacity-60">—</span>}</td>
@@ -1153,7 +1162,7 @@ const MentoriaLab = () => {
                     ))}
                     {filteredFiles.length === 0 && (
                       <tr>
-                        <td colSpan={9} className="p-8 text-center text-muted-foreground">
+                        <td colSpan={10} className="p-8 text-center text-muted-foreground">
                           Nenhum atendimento encontrado com os filtros aplicados.
                         </td>
                       </tr>
@@ -1275,8 +1284,8 @@ const MentoriaLab = () => {
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: "Atendente", value: sideFile.atendente },
+                  { label: "Tipo", value: sideFile.result?.tipo || sideFile.tipo || "—" },
                   { label: "Data", value: sideFile.data },
-                  
                   { label: "Áudio", value: sideFile.hasAudio ? "Sim" : "Não" },
                   { label: "Protocolo", value: sideFile.protocolo },
                   { label: "Status", value: statusConfig[sideFile.status].label },
