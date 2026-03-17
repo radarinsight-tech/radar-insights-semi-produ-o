@@ -262,6 +262,7 @@ const Index = () => {
 
       const { data: savedRow, error: insertError } = await supabase.from("evaluations").insert({
         data: data.data || new Date().toLocaleDateString("pt-BR"),
+        data_avaliacao: new Date().toISOString(),
         protocolo: data.protocolo || "Não identificado",
         atendente: data.atendente || "Não identificado",
         tipo: data.tipo || "Não identificado",
