@@ -207,19 +207,13 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
       </div>
 
       {/* 1. Resumo Geral */}
-      <Card className="p-5 space-y-4">
+      <Card className="p-5 space-y-4 rounded-xl border-border/60 shadow-sm">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-primary" /> Resumo Geral
+          <BarChart3 className="h-4 w-4 text-primary" />
+          <span>1. Resumo Geral</span>
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="p-3 rounded-lg bg-muted/50 text-center">
-            <p className="text-2xl font-bold text-foreground">{formatNota(insights.media)}</p>
-            <p className="text-xs text-muted-foreground">Nota média</p>
-            <Badge className={`mt-1 text-xs ${classColor(insights.classificacaoMedia)} bg-transparent border-0 p-0 font-semibold`}>
-              {insights.classificacaoMedia}
-            </Badge>
-          </div>
-          <div className="p-3 rounded-lg bg-accent/5 border border-accent/20 text-center">
+        <div className="grid grid-cols-3 gap-3">
+          <div className="p-3 rounded-xl bg-accent/5 border border-accent/20 text-center">
             <Award className="h-5 w-5 text-accent mx-auto mb-1" />
             <p className="text-sm font-bold text-foreground">{insights.melhor.name}</p>
             <p className="text-xs text-muted-foreground">Melhor — {formatNota(insights.melhor.media)}</p>
