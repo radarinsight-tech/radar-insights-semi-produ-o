@@ -451,10 +451,11 @@ const MentoriaLab = () => {
                 <Button
                   onClick={analyzeSelected}
                   disabled={selected.size === 0 || processing}
-                  className="gap-2"
+                  size="lg"
+                  className="gap-2 font-semibold"
                 >
                   {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                  Analisar selecionados ({selected.size})
+                  {processing ? "Analisando..." : `Analisar ${selected.size} selecionado${selected.size !== 1 ? "s" : ""}`}
                 </Button>
                 {selected.size > 0 && (
                   <Button variant="ghost" size="sm" onClick={removeSelected} className="text-destructive">
