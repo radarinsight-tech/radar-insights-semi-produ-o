@@ -388,10 +388,20 @@ const MentoriaPreventiva = () => {
                   </Button>
                 )}
 
+                {analyzedCount > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setShowInsights(!showInsights); setActiveResult(null); }}
+                  >
+                    <BarChart3 className="h-3 w-3 mr-1" /> {showInsights ? "Ocultar Insights" : "Ver Insights"}
+                  </Button>
+                )}
+
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => { setFiles([]); setSampled(false); setActiveResult(null); }}
+                  onClick={() => { setFiles([]); setSampled(false); setActiveResult(null); setShowInsights(false); }}
                 >
                   <X className="h-3 w-3 mr-1" /> Limpar tudo
                 </Button>
