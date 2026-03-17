@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   TrendingUp, TrendingDown, Award, AlertTriangle, Users,
   Target, BookOpen, Star, BarChart3, MessageSquare, Lightbulb,
-  ChevronRight
+  ChevronRight, DollarSign
 } from "lucide-react";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
