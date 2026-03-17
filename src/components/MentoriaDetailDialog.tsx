@@ -392,75 +392,55 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           <div ref={printRef} className="px-8 py-8 space-y-0">
 
             {/* ═══ 1. HERO — Nota + Classificação + Bônus ═══ */}
-            <div className="rounded-2xl bg-gradient-to-br from-muted/50 via-muted/30 to-background border border-border/60 p-6 mb-8 shadow-sm">
-              <div className="flex items-stretch gap-8">
+            <div className="rounded-2xl bg-gradient-to-br from-muted/50 via-muted/30 to-background border border-border/60 p-5 mb-8 shadow-sm">
+              <div className="flex items-stretch gap-5">
                 {/* Left: metadata */}
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-lg font-extrabold text-foreground tracking-tight mb-4">
+                  <h1 className="text-base font-extrabold text-foreground tracking-tight mb-3">
                     Auditoria de Atendimento
                   </h1>
-                  <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                        <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                    {[
+                      { icon: Hash, label: "Protocolo", value: result.protocolo || "—", mono: true },
+                      { icon: User, label: "Atendente", value: result.atendente || atendente || "—" },
+                      { icon: Calendar, label: "Data", value: formatDateBR(result.data) },
+                      { icon: FileText, label: "Tipo", value: result.tipo || "—" },
+                    ].map((item) => (
+                      <div key={item.label} className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-md bg-muted flex items-center justify-center shrink-0">
+                          <item.icon className="h-3 w-3 text-muted-foreground" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[8px] text-muted-foreground uppercase tracking-[0.1em] font-semibold leading-none mb-0.5">{item.label}</p>
+                          <p className={`text-[13px] font-bold text-foreground truncate leading-tight ${item.mono ? "font-mono" : ""}`}>{item.value}</p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-[9px] text-muted-foreground uppercase tracking-[0.12em] font-semibold">Protocolo</p>
-                        <p className="text-sm font-bold text-foreground font-mono truncate">{result.protocolo || "—"}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                        <User className="h-3.5 w-3.5 text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[9px] text-muted-foreground uppercase tracking-[0.12em] font-semibold">Atendente</p>
-                        <p className="text-sm font-bold text-foreground truncate">{result.atendente || atendente || "—"}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                        <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[9px] text-muted-foreground uppercase tracking-[0.12em] font-semibold">Data</p>
-                        <p className="text-sm font-semibold text-foreground">{formatDateBR(result.data)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                        <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[9px] text-muted-foreground uppercase tracking-[0.12em] font-semibold">Tipo</p>
-                        <p className="text-sm font-semibold text-foreground truncate">{result.tipo || "—"}</p>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
 
                 {/* Right: score hero card */}
-                <div className="shrink-0 w-48 flex flex-col items-center justify-center text-center rounded-2xl bg-background border-2 border-border/80 p-5 shadow-md">
-                  <p className="text-[9px] text-muted-foreground uppercase tracking-[0.15em] font-bold mb-1.5">Nota Final</p>
-                  <p className={`text-5xl font-black tracking-tighter leading-none ${notaColor(nota)}`}>
+                <div className="shrink-0 w-44 flex flex-col items-center justify-center text-center rounded-2xl bg-background border-2 border-border/80 p-4 shadow-md">
+                  <p className="text-[8px] text-muted-foreground uppercase tracking-[0.15em] font-bold mb-1">Nota Final</p>
+                  <p className={`text-4xl font-black tracking-tighter leading-none ${notaColor(nota)}`}>
                     {nota != null ? notaToScale10(nota).toFixed(1).replace(".", ",") : "—"}
                   </p>
-                  <p className="text-[11px] text-muted-foreground mt-1.5 font-medium tabular-nums">
+                  <p className="text-[10px] text-muted-foreground mt-1 font-medium tabular-nums">
                     {result.pontosObtidos ?? totalObtidos}/{result.pontosPossiveis ?? totalPossiveis} pontos
                   </p>
-                  <Badge className={`mt-2.5 text-xs px-3 py-1 font-bold shadow-sm ${classColor(classificacao)}`}>
+                  <Badge className={`mt-2 text-[10px] px-2.5 py-0.5 font-bold shadow-sm ${classColor(classificacao)}`}>
                     {classificacao}
                   </Badge>
                   {nota != null && (() => {
                     const bonus = calcularBonus(nota);
                     return (
-                      <div className="mt-3 pt-3 border-t border-border/60 w-full">
-                        <div className="flex items-center justify-center gap-1.5 mb-1">
-                          <Award className="h-3.5 w-3.5 text-primary" />
-                          <p className="text-[9px] text-muted-foreground uppercase tracking-[0.12em] font-bold">Bônus</p>
+                      <div className="mt-2.5 pt-2.5 border-t border-border/60 w-full">
+                        <div className="flex items-center justify-center gap-1 mb-0.5">
+                          <Award className="h-3 w-3 text-primary" />
+                          <p className="text-[8px] text-muted-foreground uppercase tracking-[0.1em] font-bold">Bônus</p>
                         </div>
                         <p className="text-sm font-extrabold text-foreground">{bonus.percentual}%</p>
-                        <p className="text-xs font-semibold text-primary mt-0.5">{formatBRL(bonus.valor)}</p>
+                        <p className="text-[11px] font-semibold text-primary mt-0.5">{formatBRL(bonus.valor)}</p>
                       </div>
                     );
                   })()}
