@@ -1284,8 +1284,8 @@ const MentoriaLab = () => {
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: "Atendente", value: sideFile.atendente },
+                  { label: "Tipo", value: sideFile.result?.tipo || sideFile.tipo || "—" },
                   { label: "Data", value: sideFile.data },
-                  
                   { label: "Áudio", value: sideFile.hasAudio ? "Sim" : "Não" },
                   { label: "Protocolo", value: sideFile.protocolo },
                   { label: "Status", value: statusConfig[sideFile.status].label },
