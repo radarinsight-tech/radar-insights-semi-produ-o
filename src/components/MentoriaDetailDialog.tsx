@@ -214,11 +214,11 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
         .header-grid dt { font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; }
         .header-grid dd { font-size: 10px; font-weight: 600; color: #1a1a1a; margin-bottom: 2px; word-break: break-word; }
 
-        .score-block { text-align: right; min-width: 100px; }
-        .score-label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; }
-        .score-value { font-size: 40px; font-weight: 900; line-height: 1; letter-spacing: -0.03em; margin: 2px 0 4px; }
-        .score-pts { font-size: 9px; color: #6b7280; }
-        .score-class { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 10px; border-radius: 4px; margin-top: 6px; }
+        .score-block { text-align: right; min-width: 90px; flex-shrink: 0; }
+        .score-label { font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; }
+        .score-value { font-size: 34px; font-weight: 900; line-height: 1; letter-spacing: -0.03em; margin: 2px 0 3px; }
+        .score-pts { font-size: 8.5px; color: #6b7280; }
+        .score-class { display: inline-block; font-size: 8.5px; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-top: 5px; }
         .class-excelente { background: #dcfce7; color: #166534; }
         .class-bom { background: #dbeafe; color: #1e40af; }
         .class-medio { background: #fef3c7; color: #92400e; }
