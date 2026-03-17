@@ -170,10 +170,10 @@ const MentoriaLab = () => {
       }
     } catch {
       setFiles((prev) =>
-        prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Falha na leitura" } : f))
+        prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível ler este arquivo. Verifique se o PDF é válido." } : f))
       );
       if (labFile.batchFileId) {
-        await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha na leitura" } as any).eq("id", labFile.batchFileId);
+        await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha na leitura do PDF" } as any).eq("id", labFile.batchFileId);
       }
     } finally {
       setReadingIds((prev) => {
