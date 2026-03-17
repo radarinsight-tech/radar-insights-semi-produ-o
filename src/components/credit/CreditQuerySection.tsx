@@ -22,18 +22,6 @@ export interface SpcQueryResult {
   dataConsulta: string;
 }
 
-const MOCK_NAMES: Record<string, string> = {
-  "12345678900": "Maria Aparecida da Silva",
-  "98765432100": "José Carlos Ferreira",
-  "11222333000181": "Comércio Souza & Filhos LTDA",
-};
-
-function generateName(digits: string): string {
-  if (MOCK_NAMES[digits]) return MOCK_NAMES[digits];
-  const nomes = ["Ana Paula Oliveira", "Carlos Eduardo Santos", "Fernanda Lima Costa", "Roberto Almeida Neto", "Juliana Pereira Dias"];
-  const seed = digits.split("").reduce((a, b) => a + Number(b), 0);
-  return nomes[seed % nomes.length];
-}
 
 function classificarRisco(spc: number, serasa: number, protestos: number, valor: number): SpcQueryResult["classificacaoRisco"] {
   if (spc === 0 && serasa === 0 && protestos === 0) return "Baixo risco";
