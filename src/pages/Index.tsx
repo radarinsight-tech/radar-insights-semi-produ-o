@@ -53,6 +53,7 @@ const Index = () => {
   });
   const [protocolSearch, setProtocolSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(null);
+  const [showCharts, setShowCharts] = useState(false);
 
   // Re-evaluation confirmation state
   const [pendingFile, setPendingFile] = useState<File | null>(null);
