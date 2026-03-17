@@ -588,7 +588,13 @@ const MentoriaLab = () => {
 
     setProcessing(false);
     setSelected(new Set());
-    toast.success(`Análise concluída: ${success} sucesso(s), ${errors} erro(s).`);
+    if (errors === 0) {
+      toast.success(`Análise concluída com sucesso. ${success} atendimento(s) analisado(s).`);
+    } else if (success > 0) {
+      toast.warning(`Alguns arquivos não puderam ser analisados, mas os demais foram processados. ${success} sucesso(s), ${errors} erro(s).`);
+    } else {
+      toast.error("Ocorreu uma falha temporária no processamento do lote. Tente novamente.");
+    }
     setTimeout(() => {
       document.getElementById("mentoria-insights")?.scrollIntoView({ behavior: "smooth" });
     }, 300);
