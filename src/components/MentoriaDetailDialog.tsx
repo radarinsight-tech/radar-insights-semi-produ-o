@@ -417,12 +417,16 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                 <Badge className={`mt-2 text-xs px-2.5 py-0.5 ${classColor(classificacao)}`}>
                   {classificacao}
                 </Badge>
-                {(result.bonusQualidade != null && result.bonusQualidade > 0) && (
-                  <p className="text-[10px] text-muted-foreground mt-2">
-                    <Award className="h-3 w-3 inline mr-0.5" />
-                    Bônus: {result.bonusQualidade}%
-                  </p>
-                )}
+                {nota != null && (() => {
+                  const bonus = calcularBonus(nota);
+                  return (
+                    <div className="mt-3 p-2.5 rounded-lg bg-muted/40 border border-border text-center">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Bônus</p>
+                      <p className="text-sm font-bold text-foreground">{bonus.percentual}% · {formatBRL(bonus.valor)}</p>
+                      <p className="text-[10px] text-muted-foreground">{bonus.classificacao}</p>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
