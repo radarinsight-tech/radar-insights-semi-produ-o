@@ -428,10 +428,10 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
         </Accordion>
       </Card>
 
-      {/* 3. Atendimentos Recomendados */}
+      {/* 4. Atendimentos Recomendados */}
       <Card className="p-5 rounded-xl border-border/60 shadow-sm">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-          <Target className="h-4 w-4 text-primary" /> 3. Atendimentos Recomendados
+          <Target className="h-4 w-4 text-primary" /> 4. Atendimentos Recomendados
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <RecommendedList
