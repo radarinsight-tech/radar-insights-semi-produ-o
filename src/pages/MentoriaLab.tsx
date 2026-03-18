@@ -558,8 +558,25 @@ const MentoriaLab = () => {
           continue;
         }
 
-        const notaFinal = typeof data.notaFinal === "number" ? data.notaFinal : 0;
-        const bonusQualidade = typeof data.bonusQualidade === "number" ? data.bonusQualidade : 0;
+        // Detect ineligible cases (audio, no interaction, bot-only)
+        const isIneligible = data.statusAtendimento === "fora_de_avaliacao"
+          || data.statusAtendimento === "apenas_bot"
+          || data.statusAuditoria === "impedimento_detectado"
+          || data.statusAuditoria === "auditoria_bloqueada";
+
+        const ineligibleReason = isIneligible
+          ? data.motivo === "sem_interacao_do_cliente" ? "Sem interação do cliente"
+            : data.motivo === "atendimento_apenas_por_bot" ? "Apenas bot"
+            : data.motivo === "envio_de_audio_pelo_atendente" ? "Fora da avaliação (Áudio)"
+            : "Fora de avaliação"
+          : undefined;
+
+        const notaFinal = isIneligible ? 0 : (typeof data.notaFinal === "number" ? data.notaFinal : 0);
+        const bonusQualidade = isIneligible ? 0 : (typeof data.bonusQualidade === "number" ? data.bonusQualidade : 0);
+
+        const classificacaoFinal = isIneligible
+          ? (ineligibleReason || "Fora de Avaliação")
+          : (data.classificacao || "Fora de Avaliação");
 
         // Save evaluation
         await supabase.from("evaluations").insert({
@@ -570,14 +587,14 @@ const MentoriaLab = () => {
           tipo: data.tipo || "Não identificado",
           atualizacao_cadastral: data.bonusOperacional?.atualizacaoCadastral || "NÃO",
           nota: notaFinal,
-          classificacao: data.classificacao || "Fora de Avaliação",
-          bonus: bonusQualidade >= 70,
+          classificacao: classificacaoFinal,
+          bonus: !isIneligible && bonusQualidade >= 70,
           pontos_melhoria: Array.isArray(data.mentoria) ? data.mentoria : [],
           user_id: user.id,
           pdf_url: pdfUrl,
-          full_report: { ...data },
+          full_report: { ...data, _ineligible: isIneligible, _ineligibleReason: ineligibleReason },
           prompt_version: data.promptVersion || "auditor_v3",
-          resultado_validado: true,
+          resultado_validado: !isIneligible,
         } as any);
 
         // Save result JSON to cloud: results/<batchCode>/
