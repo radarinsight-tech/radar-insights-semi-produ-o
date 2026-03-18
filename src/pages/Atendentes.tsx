@@ -23,6 +23,7 @@ import { toast } from "sonner";
 interface Attendant {
   id: string;
   name: string;
+  nickname: string | null;
   sector: string | null;
   active: boolean;
   created_at: string;
@@ -37,6 +38,7 @@ const Atendentes = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formName, setFormName] = useState("");
+  const [formNickname, setFormNickname] = useState("");
   const [formSector, setFormSector] = useState("");
   const [formActive, setFormActive] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -64,7 +66,7 @@ const Atendentes = () => {
     return attendants.filter((a) => {
       if (searchTerm) {
         const q = searchTerm.toLowerCase();
-        if (!a.name.toLowerCase().includes(q) && !(a.sector || "").toLowerCase().includes(q)) return false;
+        if (!a.name.toLowerCase().includes(q) && !(a.nickname || "").toLowerCase().includes(q) && !(a.sector || "").toLowerCase().includes(q)) return false;
       }
       if (filterStatus === "ativo" && !a.active) return false;
       if (filterStatus === "inativo" && a.active) return false;
@@ -75,6 +77,7 @@ const Atendentes = () => {
   const openNew = () => {
     setEditingId(null);
     setFormName("");
+    setFormNickname("");
     setFormSector("");
     setFormActive(true);
     setDialogOpen(true);
@@ -83,6 +86,7 @@ const Atendentes = () => {
   const openEdit = (a: Attendant) => {
     setEditingId(a.id);
     setFormName(a.name);
+    setFormNickname(a.nickname || "");
     setFormSector(a.sector || "");
     setFormActive(a.active);
     setDialogOpen(true);
@@ -116,6 +120,7 @@ const Atendentes = () => {
         .from("attendants")
         .update({
           name: trimmedName,
+          nickname: formNickname.trim() || null,
           sector: formSector.trim() || null,
           active: formActive,
         } as any)
@@ -137,6 +142,7 @@ const Atendentes = () => {
         .from("attendants")
         .insert({
           name: trimmedName,
+          nickname: formNickname.trim() || null,
           sector: formSector.trim() || null,
           active: formActive,
           company_id: companyId,
@@ -264,6 +270,7 @@ const Atendentes = () => {
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
                     <th className="p-3 text-left font-medium text-muted-foreground">Nome</th>
+                    <th className="p-3 text-left font-medium text-muted-foreground">Apelido</th>
                     <th className="p-3 text-left font-medium text-muted-foreground">Setor</th>
                     <th className="p-3 text-center font-medium text-muted-foreground">Status</th>
                     <th className="p-3 text-center font-medium text-muted-foreground">Ações</th>
@@ -274,6 +281,9 @@ const Atendentes = () => {
                     <tr key={a.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="p-3">
                         <p className="font-medium text-foreground">{a.name}</p>
+                      </td>
+                      <td className="p-3 text-muted-foreground">
+                        {a.nickname || <span className="italic opacity-60">—</span>}
                       </td>
                       <td className="p-3 text-muted-foreground">
                         {a.sector || <span className="italic opacity-60">—</span>}
@@ -297,7 +307,7 @@ const Atendentes = () => {
                   ))}
                   {filteredAttendants.length === 0 && !loading && (
                     <tr>
-                      <td colSpan={4} className="p-8 text-center text-muted-foreground">
+                      <td colSpan={5} className="p-8 text-center text-muted-foreground">
                         {attendants.length === 0
                           ? "Nenhum atendente cadastrado. Clique em \"Novo atendente\" para começar."
                           : "Nenhum atendente encontrado com os filtros aplicados."}
@@ -326,6 +336,16 @@ const Atendentes = () => {
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 maxLength={100}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="att-nickname">Apelido / Nome alternativo</Label>
+              <Input
+                id="att-nickname"
+                placeholder="Ex: Bia, Marquinhos"
+                value={formNickname}
+                onChange={(e) => setFormNickname(e.target.value)}
+                maxLength={60}
               />
             </div>
             <div className="space-y-2">

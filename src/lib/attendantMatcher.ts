@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface RegisteredAttendant {
   id: string;
   name: string;
+  nickname: string | null;
   sector: string | null;
   active: boolean;
 }
@@ -24,7 +25,7 @@ export async function getRegisteredAttendants(): Promise<RegisteredAttendant[]> 
 
   const { data, error } = await supabase
     .from("attendants")
-    .select("id, name, sector, active")
+    .select("id, name, nickname, sector, active")
     .eq("active", true)
     .order("name");
 
@@ -77,8 +78,10 @@ export function matchAttendant(
 
   const normalizedExtracted = normalize(extractedName);
 
-  // Exact match
-  const exact = registeredList.find((a) => normalize(a.name) === normalizedExtracted);
+  // Exact match (name or nickname)
+  const exact = registeredList.find(
+    (a) => normalize(a.name) === normalizedExtracted || (a.nickname && normalize(a.nickname) === normalizedExtracted)
+  );
   if (exact) {
     return {
       matched: true,
@@ -90,10 +93,12 @@ export function matchAttendant(
     };
   }
 
-  // Partial match: extracted name contains or is contained in registered name
+  // Partial match: extracted name contains or is contained in registered name or nickname
   const partials = registeredList.filter((a) => {
     const nReg = normalize(a.name);
-    return nReg.includes(normalizedExtracted) || normalizedExtracted.includes(nReg);
+    const nNick = a.nickname ? normalize(a.nickname) : "";
+    return nReg.includes(normalizedExtracted) || normalizedExtracted.includes(nReg) ||
+      (nNick && (nNick.includes(normalizedExtracted) || normalizedExtracted.includes(nNick)));
   });
 
   if (partials.length === 1) {
