@@ -554,6 +554,26 @@ const RankingBonus = () => {
               </div>
             </Card>
 
+            {/* Close Month Action */}
+            {!isClosed && ranking.length > 0 && (
+              <Card className="p-4 border-primary/30 bg-primary/[0.02]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <ClipboardCheck className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Fechar mentoria do mês</p>
+                      <p className="text-xs text-muted-foreground">
+                        Consolida {stats.totalMentorias} mentorias válidas · Média {stats.mediaGeral.toFixed(1).replace(".", ",")} · Bônus total {formatBRL(stats.totalBonus)}
+                      </p>
+                    </div>
+                  </div>
+                  <Button onClick={() => setCloseDialogOpen(true)} className="gap-2">
+                    <Lock className="h-4 w-4" /> Fechar mentoria do mês
+                  </Button>
+                </div>
+              </Card>
+            )}
+
             {/* Ranking Table */}
             {ranking.length === 0 ? (
               <Card className="p-12 text-center">
