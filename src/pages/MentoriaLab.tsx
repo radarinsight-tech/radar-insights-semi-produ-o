@@ -726,7 +726,7 @@ const MentoriaLab = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
           {[
             { label: "Total", value: counts.total, color: "text-foreground" },
             { label: "Pendentes", value: counts.pendente, color: "text-muted-foreground" },
@@ -735,9 +735,9 @@ const MentoriaLab = () => {
             { label: "Atendentes", value: counts.atendentes, color: "text-primary" },
             { label: "Erros", value: counts.erro, color: "text-destructive" },
           ].map((s) => (
-            <Card key={s.label} className="p-3 text-center">
-              <span className={`text-2xl font-bold tracking-tight ${s.color}`}>{s.value}</span>
-              <p className="text-xs text-muted-foreground">{s.label}</p>
+            <Card key={s.label} className="p-2.5 text-center">
+              <span className={`text-xl font-bold tracking-tight ${s.color}`}>{s.value}</span>
+              <p className="text-[10px] text-muted-foreground">{s.label}</p>
             </Card>
           ))}
         </div>

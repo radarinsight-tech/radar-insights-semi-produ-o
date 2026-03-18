@@ -282,11 +282,11 @@ const ConversationView = ({ rawText, atendente }: ConversationViewProps) => {
 
             {/* Message bubble */}
             <div
-              className={`rounded-xl border px-3 py-2 ${config.bubbleClass} ${
+              className={`rounded-xl border px-4 py-2.5 ${config.bubbleClass} ${
                 isClient ? "rounded-tr-sm" : "rounded-tl-sm"
               }`}
             >
-              <p className="text-xs text-foreground leading-relaxed whitespace-pre-wrap break-words">
+              <p className="text-[13px] text-foreground leading-relaxed whitespace-pre-wrap break-words">
                 {msg.text}
               </p>
             </div>
