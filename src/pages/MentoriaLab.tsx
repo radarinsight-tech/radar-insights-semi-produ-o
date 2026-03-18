@@ -82,8 +82,6 @@ interface LabFile {
   attendantMatch?: MatchResult;
   transferred?: boolean;
 }
-  ineligibleReason?: string;
-}
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
   pendente: { label: "Pendente", color: "bg-muted text-muted-foreground" },
