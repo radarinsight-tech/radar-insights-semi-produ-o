@@ -184,15 +184,15 @@ export function extractAtendente(text: string): string | undefined {
 
 // ── Tipo de Atendimento ────────────────────────────────────────────────
 const TIPO_PATTERNS: [RegExp, string][] = [
-  [/\b(financeiro|fatura|boleto|cobran[cç]a|pagamento|d[ée]bito|cr[eé]dito|negocia[çc][aã]o|segunda\s+via|reembolso)\b/i, "Financeiro"],
-  [/\b(suporte\s+t[eé]cnico|problema\s+t[eé]cnico|conex[aã]o|internet\s+lenta|sem\s+conex[aã]o|queda|instabilidade|configura[çc][aã]o|roteador|modem|wi-?fi|sinal|velocidade|lentid[aã]o|ping|latência|lat[eê]ncia)\b/i, "Suporte Técnico"],
-  [/\b(venda|contrata[çc][aã]o|novo\s+plano|ades[aã]o|oferta|promo[çc][aã]o|combo|pacote|assinar|contratar)\b/i, "Vendas"],
-  [/\b(cancelamento|cancelar|desistência|desist[eê]ncia|encerrar\s+contrato|rescis[aã]o)\b/i, "Cancelamento"],
+  [/\b(financeiro|fatura|boleto|cobran[cç]a|pagamento|d[ée]bito|cr[eé]dito|negocia[çc][aã]o|segunda\s+via|reembolso|inadimpl[eê]ncia|d[ií]vida|parcelamento|refinanciamento|taxa|juros|multa)\b/i, "Financeiro"],
+  [/\b(suporte\s+t[eé]cnico|problema\s+t[eé]cnico|conex[aã]o|internet\s+lenta|sem\s+conex[aã]o|queda|instabilidade|configura[çc][aã]o|roteador|modem|wi-?fi|sinal|velocidade|lentid[aã]o|ping|lat[eê]ncia|erro|falha|n[aã]o\s+funciona|defeito|travando|reiniciar|reset|suporte|assist[eê]ncia\s+t[eé]cnica|manuten[çc][aã]o)\b/i, "Suporte Técnico"],
+  [/\b(venda|contrata[çc][aã]o|novo\s+plano|ades[aã]o|oferta|promo[çc][aã]o|combo|pacote|assinar|contratar|plano|upgrade|downgrade|migra[çc][aã]o\s+de\s+plano|trocar\s+plano|mudar\s+plano|altera[çc][aã]o\s+de\s+plano|comercial|proposta)\b/i, "Comercial"],
+  [/\b(cancelamento|cancelar|desist[eê]ncia|encerrar\s+contrato|rescis[aã]o)\b/i, "Cancelamento"],
   [/\b(reten[çc][aã]o|manter|fideliza[çc][aã]o|contraproposta|desconto\s+para\s+ficar|n[aã]o\s+cancelar)\b/i, "Retenção"],
   [/\b(mudan[çc]a\s+de\s+endere[çc]o|transfer[eê]ncia\s+de\s+endere[çc]o|altera[çc][aã]o\s+de\s+endere[çc]o|novo\s+endere[çc]o)\b/i, "Mudança de Endereço"],
   [/\b(instala[çc][aã]o|agendar\s+instala|visita\s+t[eé]cnica|t[eé]cnico\s+ir|agendar\s+visita)\b/i, "Instalação"],
-  [/\b(upgrade|downgrade|migra[çc][aã]o\s+de\s+plano|trocar\s+plano|mudar\s+plano|altera[çc][aã]o\s+de\s+plano)\b/i, "Upgrade/Downgrade"],
-  [/\b(informa[çc][oõ]es|d[uú]vida|consulta|como\s+funciona|gostaria\s+de\s+saber)\b/i, "Informações Gerais"],
+  [/\b(informa[çc][oõ]es|d[uú]vida|consulta|como\s+funciona|gostaria\s+de\s+saber|orienta[çc][aã]o|esclarecimento|pergunta|ajuda|auxilio|aux[ií]lio)\b/i, "Informações Gerais"],
+  [/\b(reclama[çc][aã]o|reclamar|insatisfa[çc][aã]o|insatisfeito|ouvidoria|registro\s+de\s+reclama)\b/i, "Reclamação"],
 ];
 
 export function extractTipoAtendimento(text: string): string {
@@ -201,7 +201,7 @@ export function extractTipoAtendimento(text: string): string {
     const matches = text.match(new RegExp(pattern, "gi"));
     if (matches) counts.set(tipo, (counts.get(tipo) || 0) + matches.length);
   }
-  if (counts.size === 0) return "Outro";
+  if (counts.size === 0) return "Não identificado";
   // Return the type with most keyword hits
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
 }
