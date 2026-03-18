@@ -77,6 +77,7 @@ const Atendentes = () => {
   const openNew = () => {
     setEditingId(null);
     setFormName("");
+    setFormNickname("");
     setFormSector("");
     setFormActive(true);
     setDialogOpen(true);
@@ -85,6 +86,7 @@ const Atendentes = () => {
   const openEdit = (a: Attendant) => {
     setEditingId(a.id);
     setFormName(a.name);
+    setFormNickname(a.nickname || "");
     setFormSector(a.sector || "");
     setFormActive(a.active);
     setDialogOpen(true);
