@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { LogOut, HeadsetIcon, CreditCard, Loader2, ShieldAlert, Users, FlaskConical, ShieldCheck, ClipboardCheck, Sprout } from "lucide-react";
+import { LogOut, HeadsetIcon, CreditCard, Loader2, ShieldAlert, Users, FlaskConical, ShieldCheck, ClipboardCheck, Sprout, Users2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -131,6 +131,13 @@ const Hub = () => {
                       onClick={() => navigate("/mentoria-lab")}
                       accentClass="hover:border-teal-400/40"
                       badge="Beta"
+                    />
+                    <ModuleCard
+                      title="Atendentes"
+                      description="Cadastro e gestão dos atendentes para padronização de análises"
+                      icon={<div className="p-2 rounded-lg bg-cyan-500/10 group-hover:bg-cyan-500/20 transition-colors shrink-0"><Users2 className="h-5 w-5 text-cyan-500" /></div>}
+                      onClick={() => navigate("/atendentes")}
+                      accentClass="hover:border-cyan-400/40"
                     />
                   </div>
                 </section>

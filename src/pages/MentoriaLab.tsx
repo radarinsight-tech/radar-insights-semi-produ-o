@@ -79,6 +79,8 @@ interface LabFile {
   analyzedAt?: Date;
   ineligible?: boolean;
   ineligibleReason?: string;
+  attendantMatch?: MatchResult;
+  transferred?: boolean;
 }
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
@@ -89,6 +91,7 @@ const statusConfig: Record<FileStatus, { label: string; color: string }> = {
 };
 
 import { extractAllMetadata } from "@/lib/mentoriaMetadata";
+import { getRegisteredAttendants, matchAttendant, type MatchResult } from "@/lib/attendantMatcher";
 
 const IMPORT_LIMIT = 1000;
 const IMPORT_RECOMMENDED = 500;
@@ -148,10 +151,22 @@ const MentoriaLab = () => {
       }
       const metadata = extractAllMetadata(text);
 
+      // Match attendant against registered list
+      let attendantMatchResult: MatchResult | undefined;
+      try {
+        const registeredList = await getRegisteredAttendants();
+        if (registeredList.length > 0 && metadata.atendente) {
+          attendantMatchResult = matchAttendant(metadata.atendente, registeredList);
+          if (attendantMatchResult.matched && attendantMatchResult.matchedName) {
+            metadata.atendente = attendantMatchResult.matchedName;
+          }
+        }
+      } catch { /* non-blocking */ }
+
       setFiles((prev) =>
         prev.map((f) =>
           f.id === labFile.id
-            ? { ...f, status: "lido", text, ...metadata }
+            ? { ...f, status: "lido", text, ...metadata, attendantMatch: attendantMatchResult, transferred: attendantMatchResult?.transferred }
             : f
         )
       );
@@ -1086,7 +1101,15 @@ const MentoriaLab = () => {
                               {readingIds.has(f.id) ? <Loader2 className="h-3 w-3 animate-spin inline mr-1" /> : null}
                               {f.atendente || <span className="italic text-muted-foreground opacity-60">Não identificado</span>}
                             </p>
-                            <p className="text-[10px] text-muted-foreground truncate max-w-[180px]">{f.name}</p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">{f.name}</p>
+                              {f.transferred && (
+                                <Badge className="bg-blue-100 text-blue-700 text-[9px] px-1 py-0 shrink-0">Transferido</Badge>
+                              )}
+                              {f.attendantMatch && !f.attendantMatch.matched && f.atendente && (
+                                <Badge className="bg-warning/15 text-warning text-[9px] px-1 py-0 shrink-0">Não cadastrado</Badge>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="p-3 text-muted-foreground text-xs">{f.data ? formatDateBR(f.data) : <span className="italic opacity-60">—</span>}</td>
