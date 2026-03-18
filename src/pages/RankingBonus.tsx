@@ -845,6 +845,8 @@ const RankingBonus = () => {
             </Button>
           </DialogFooter>
         </DialogContent>
+      </Dialog>
+
       {/* Close Month Confirmation Dialog */}
       <Dialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
         <DialogContent className="max-w-md">
