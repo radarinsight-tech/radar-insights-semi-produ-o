@@ -4,7 +4,7 @@ import {
   ArrowLeft, LogOut, Trophy, Medal, TrendingUp, Users2,
   ChevronLeft, ChevronRight, Loader2, AlertTriangle, DollarSign,
   CheckCircle2, XCircle, Crown, Award, Star, Ban, RotateCcw,
-  Lock, Unlock, ClipboardCheck,
+  Lock, Unlock, ClipboardCheck, History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -138,6 +138,7 @@ const RankingBonus = () => {
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [closingSaving, setClosingSaving] = useState(false);
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
+  const [allClosings, setAllClosings] = useState<MonthlyClosing[]>([]);
 
   const isClosed = monthClosing?.status === "fechado";
 
@@ -163,7 +164,16 @@ const RankingBonus = () => {
     setMonthClosing((data as MonthlyClosing | null) || null);
   };
 
-  useEffect(() => { fetchData(); }, []);
+  const fetchAllClosings = async () => {
+    const { data } = await supabase
+      .from("monthly_closings")
+      .select("*")
+      .order("year", { ascending: false })
+      .order("month", { ascending: false });
+    setAllClosings((data as MonthlyClosing[]) || []);
+  };
+
+  useEffect(() => { fetchData(); fetchAllClosings(); }, []);
   useEffect(() => { fetchClosing(); }, [year, month]);
 
   // Filter by selected month
@@ -348,15 +358,18 @@ const RankingBonus = () => {
     const { data: companyData } = await supabase.rpc("get_my_company_id");
     const closedByName = profile?.full_name || user?.email || "Desconhecido";
 
-    const snapshot = ranking.map((r) => ({
-      name: r.name,
-      totalMentorias: r.totalMentorias,
-      notaMedia: r.notaMedia10,
-      classificacao: r.classificacao,
-      elegivel: r.elegivel,
-      percentualBonus: r.percentualBonus,
-      valorBonus: r.valorBonus,
-    }));
+    const snapshot = {
+      attendants: ranking.map((r) => ({
+        name: r.name,
+        totalMentorias: r.totalMentorias,
+        notaMedia: r.notaMedia10,
+        classificacao: r.classificacao,
+        elegivel: r.elegivel,
+        percentualBonus: r.percentualBonus,
+        valorBonus: r.valorBonus,
+      })),
+      excludedCount: stats.excludedCount,
+    };
 
     if (monthClosing) {
       // Update existing
@@ -400,6 +413,7 @@ const RankingBonus = () => {
     setCloseDialogOpen(false);
     setClosingSaving(false);
     fetchClosing();
+    fetchAllClosings();
   };
 
   // Reopen month
@@ -424,6 +438,7 @@ const RankingBonus = () => {
     setReopenDialogOpen(false);
     setClosingSaving(false);
     fetchClosing();
+    fetchAllClosings();
   };
 
   function bonusColor(cls: string): string {
@@ -770,6 +785,91 @@ const RankingBonus = () => {
               </Card>
             )}
           </>
+        )}
+
+        {/* Histórico de Fechamentos Mensais */}
+        {allClosings.length > 0 && (
+          <Card className="overflow-hidden">
+            <div className="p-4 border-b border-border flex items-center gap-2">
+              <History className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-bold text-foreground">Histórico de Fechamentos</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="p-3 text-left font-medium text-muted-foreground">Período</th>
+                    <th className="p-3 text-center font-medium text-muted-foreground">Mentorias Válidas</th>
+                    <th className="p-3 text-center font-medium text-muted-foreground">Excluídas</th>
+                    <th className="p-3 text-center font-medium text-muted-foreground">Nota Média</th>
+                    <th className="p-3 text-center font-medium text-muted-foreground">Classificação</th>
+                    <th className="p-3 text-center font-medium text-muted-foreground">Bônus Total</th>
+                    <th className="p-3 text-center font-medium text-muted-foreground">Status</th>
+                    <th className="p-3 text-left font-medium text-muted-foreground">Fechado por</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allClosings.map((c) => {
+                    const snap = c.snapshot && typeof c.snapshot === "object" ? c.snapshot as any : {};
+                    // Support both old (array) and new (object with excludedCount) snapshot formats
+                    const excludedCount = snap.excludedCount ?? (Array.isArray(snap) ? "—" : "—");
+                    const notaMedia = typeof c.nota_media === "number" ? c.nota_media : 0;
+                    const classificacaoGeral = calcularBonus(notaMedia > 10 ? notaMedia : notaMedia * 10).classificacao;
+
+                    return (
+                      <tr
+                        key={c.id}
+                        className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
+                        onClick={() => {
+                          setYear(c.year);
+                          setMonth(c.month - 1);
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                      >
+                        <td className="p-3 font-medium text-foreground">
+                          {getMonthLabel(c.year, c.month - 1)}
+                        </td>
+                        <td className="p-3 text-center font-bold text-foreground">{c.total_mentorias}</td>
+                        <td className="p-3 text-center text-muted-foreground">{typeof excludedCount === "number" ? excludedCount : "—"}</td>
+                        <td className="p-3 text-center">
+                          <span className={`font-bold ${notaMedia >= 7 ? "text-accent" : notaMedia >= 5 ? "text-warning" : "text-destructive"}`}>
+                            {notaMedia.toFixed(1).replace(".", ",")}
+                          </span>
+                        </td>
+                        <td className="p-3 text-center">
+                          <Badge variant="outline" className={`text-xs ${bonusColor(classificacaoGeral)}`}>
+                            {classificacaoGeral}
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-center font-bold text-accent">
+                          {formatBRL(typeof c.total_bonus === "number" ? c.total_bonus : 0)}
+                        </td>
+                        <td className="p-3 text-center">
+                          {c.status === "fechado" ? (
+                            <Badge className="bg-accent/15 text-accent text-xs gap-1">
+                              <Lock className="h-3 w-3" /> Fechado
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-muted text-muted-foreground text-xs gap-1">
+                              <Unlock className="h-3 w-3" /> Em aberto
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="p-3 text-xs text-muted-foreground">
+                          {c.closed_by ? (
+                            <div>
+                              <p className="text-foreground font-medium">{c.closed_by}</p>
+                              <p>{c.closed_at ? formatDateBR(c.closed_at) : ""}</p>
+                            </div>
+                          ) : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         )}
       </main>
 
