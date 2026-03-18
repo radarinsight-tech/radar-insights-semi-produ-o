@@ -845,6 +845,59 @@ const RankingBonus = () => {
             </Button>
           </DialogFooter>
         </DialogContent>
+      {/* Close Month Confirmation Dialog */}
+      <Dialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5 text-primary" />
+              Fechar mentoria do mês
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              Deseja fechar a apuração de <strong>{getMonthLabel(year, month)}</strong>? Após o fechamento, não será possível excluir ou restaurar mentorias sem reabrir o mês.
+            </p>
+            <div className="rounded-lg bg-muted/50 p-3 space-y-1 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Mentorias válidas</span><strong>{stats.totalMentorias}</strong></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Nota média</span><strong>{stats.mediaGeral.toFixed(1).replace(".", ",")}</strong></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Atendentes elegíveis</span><strong>{stats.elegiveis}</strong></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Total bônus</span><strong className="text-accent">{formatBRL(stats.totalBonus)}</strong></div>
+              {stats.excludedCount > 0 && (
+                <div className="flex justify-between"><span className="text-muted-foreground">Mentorias excluídas</span><strong>{stats.excludedCount}</strong></div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCloseDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleCloseMonth} disabled={closingSaving} className="gap-2">
+              {closingSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+              Confirmar fechamento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reopen Month Confirmation Dialog */}
+      <Dialog open={reopenDialogOpen} onOpenChange={setReopenDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Unlock className="h-5 w-5 text-warning" />
+              Reabrir mês
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Deseja reabrir a apuração de <strong>{getMonthLabel(year, month)}</strong>? Será possível excluir e restaurar mentorias novamente.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReopenDialogOpen(false)}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleReopenMonth} disabled={closingSaving} className="gap-2">
+              {closingSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlock className="h-4 w-4" />}
+              Reabrir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </div>
   );
