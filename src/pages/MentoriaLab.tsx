@@ -1101,7 +1101,15 @@ const MentoriaLab = () => {
                               {readingIds.has(f.id) ? <Loader2 className="h-3 w-3 animate-spin inline mr-1" /> : null}
                               {f.atendente || <span className="italic text-muted-foreground opacity-60">Não identificado</span>}
                             </p>
-                            <p className="text-[10px] text-muted-foreground truncate max-w-[180px]">{f.name}</p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">{f.name}</p>
+                              {f.transferred && (
+                                <Badge className="bg-blue-100 text-blue-700 text-[9px] px-1 py-0 shrink-0">Transferido</Badge>
+                              )}
+                              {f.attendantMatch && !f.attendantMatch.matched && f.atendente && (
+                                <Badge className="bg-warning/15 text-warning text-[9px] px-1 py-0 shrink-0">Não cadastrado</Badge>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="p-3 text-muted-foreground text-xs">{f.data ? formatDateBR(f.data) : <span className="italic opacity-60">—</span>}</td>
