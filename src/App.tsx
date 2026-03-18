@@ -110,6 +110,16 @@ const App = () => (
             }
           />
           <Route
+            path="/atendentes"
+            element={
+              <ProtectedRoute>
+                <ModuleGuard module="auditoria">
+                  <Atendentes />
+                </ModuleGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/users"
             element={
               <ProtectedRoute>
