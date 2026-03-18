@@ -174,7 +174,22 @@ const RankingBonus = () => {
     setAllClosings((data as MonthlyClosing[]) || []);
   };
 
-  useEffect(() => { fetchData(); fetchAllClosings(); }, []);
+  useEffect(() => {
+    fetchData();
+    fetchAllClosings();
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      setIsAdmin(!!data);
+    };
+    checkAdmin();
+  }, []);
   useEffect(() => { fetchClosing(); }, [year, month]);
 
   // Filter by selected month
