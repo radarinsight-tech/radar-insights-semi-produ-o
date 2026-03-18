@@ -93,10 +93,12 @@ export function matchAttendant(
     };
   }
 
-  // Partial match: extracted name contains or is contained in registered name
+  // Partial match: extracted name contains or is contained in registered name or nickname
   const partials = registeredList.filter((a) => {
     const nReg = normalize(a.name);
-    return nReg.includes(normalizedExtracted) || normalizedExtracted.includes(nReg);
+    const nNick = a.nickname ? normalize(a.nickname) : "";
+    return nReg.includes(normalizedExtracted) || normalizedExtracted.includes(nReg) ||
+      (nNick && (nNick.includes(normalizedExtracted) || normalizedExtracted.includes(nNick)));
   });
 
   if (partials.length === 1) {
