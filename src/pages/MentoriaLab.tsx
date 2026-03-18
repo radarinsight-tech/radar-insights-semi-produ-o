@@ -1202,54 +1202,14 @@ const MentoriaLab = () => {
               </div>
             )}
 
-            {/* Charts card */}
-            {filteredFiles.some((f) => f.status === "analisado") && !showCharts && (
-              <Card
-                className="p-6 cursor-pointer hover:shadow-lg hover:border-primary/40 border-border/60 transition-all group"
-                onClick={() => setShowCharts(true)}
-              >
-                <div className="flex items-center gap-5">
-                  <div className="p-3.5 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors shrink-0">
-                    <BarChart3 className="h-7 w-7 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-bold text-foreground tracking-tight">Gráficos de Evolução</h3>
-                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                      Evolução de notas, performance por atendente e volume de auditorias
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="text-[10px] font-semibold shrink-0 mr-1">
-                    {filteredFiles.filter(f => f.status === "analisado").length} análises
-                  </Badge>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
-                </div>
-              </Card>
-            )}
-
-            {/* Charts section (expandable) */}
-            {showCharts && filteredFiles.some((f) => f.status === "analisado") && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-end">
-                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => setShowCharts(false)}>
-                    <X className="h-3 w-3" /> Fechar
-                  </Button>
-                </div>
-                <MentoriaCharts files={filteredFiles} />
-              </div>
-            )}
-
-            {/* Insights do lote - seção secundária colapsável (filtered) */}
+            {/* Charts section */}
             {filteredFiles.some((f) => f.status === "analisado") && (
-              <details id="mentoria-insights" className="scroll-mt-6 group">
-                <summary className="flex items-center gap-2 cursor-pointer select-none py-3 px-4 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <Info className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-muted-foreground">Resumo geral do lote</span>
-                  
-                </summary>
-                <div className="mt-3">
-                  <MentoriaInsights files={filteredFiles} />
-                </div>
-              </details>
+              <MentoriaCharts files={filteredFiles} />
+            )}
+
+            {/* Insights do lote */}
+            {filteredFiles.some((f) => f.status === "analisado") && (
+              <MentoriaInsights files={filteredFiles} />
             )}
           </>
         )}
