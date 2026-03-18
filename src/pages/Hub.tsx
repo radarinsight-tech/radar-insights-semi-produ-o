@@ -139,6 +139,13 @@ const Hub = () => {
                       onClick={() => navigate("/atendentes")}
                       accentClass="hover:border-cyan-400/40"
                     />
+                    <ModuleCard
+                      title="Ranking & Bônus"
+                      description="Desempenho mensal da equipe com classificação e cálculo automático de bônus"
+                      icon={<div className="p-2 rounded-lg bg-yellow-500/10 group-hover:bg-yellow-500/20 transition-colors shrink-0"><Trophy className="h-5 w-5 text-yellow-500" /></div>}
+                      onClick={() => navigate("/ranking")}
+                      accentClass="hover:border-yellow-400/40"
+                    />
                   </div>
                 </section>
               )}

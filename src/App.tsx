@@ -121,6 +121,16 @@ const App = () => (
             }
           />
           <Route
+            path="/ranking"
+            element={
+              <ProtectedRoute>
+                <ModuleGuard module="auditoria">
+                  <RankingBonus />
+                </ModuleGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/users"
             element={
               <ProtectedRoute>
