@@ -712,7 +712,7 @@ const MentoriaLab = () => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-4">
         {/* Limit tags */}
         <div className="flex items-center gap-2 flex-wrap text-[10px]">
           <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 border border-blue-200 font-semibold px-2.5 py-0.5">
