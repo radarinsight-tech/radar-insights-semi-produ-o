@@ -4,6 +4,7 @@ import {
   ArrowLeft, LogOut, Trophy, Medal, TrendingUp, Users2,
   ChevronLeft, ChevronRight, Loader2, AlertTriangle, DollarSign,
   CheckCircle2, XCircle, Crown, Award, Star, Ban, RotateCcw,
+  Lock, Unlock, ClipboardCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -66,6 +67,21 @@ interface AttendantRanking {
   evals: EvalRow[];
 }
 
+interface MonthlyClosing {
+  id: string;
+  year: number;
+  month: number;
+  status: string;
+  total_mentorias: number;
+  nota_media: number;
+  total_bonus: number;
+  snapshot: any;
+  closed_by: string | null;
+  closed_at: string | null;
+  reopened_by: string | null;
+  reopened_at: string | null;
+}
+
 /* ─── Helpers ─── */
 function getMonthLabel(year: number, month: number): string {
   const d = new Date(year, month);
@@ -117,6 +133,14 @@ const RankingBonus = () => {
   const [restoreEvalId, setRestoreEvalId] = useState<string | null>(null);
   const [restoreSaving, setRestoreSaving] = useState(false);
 
+  // Monthly closing state
+  const [monthClosing, setMonthClosing] = useState<MonthlyClosing | null>(null);
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [closingSaving, setClosingSaving] = useState(false);
+  const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
+
+  const isClosed = monthClosing?.status === "fechado";
+
   const fetchData = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -129,7 +153,18 @@ const RankingBonus = () => {
     setLoading(false);
   };
 
+  const fetchClosing = async () => {
+    const { data } = await supabase
+      .from("monthly_closings")
+      .select("*")
+      .eq("year", year)
+      .eq("month", month + 1)
+      .maybeSingle();
+    setMonthClosing((data as MonthlyClosing | null) || null);
+  };
+
   useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchClosing(); }, [year, month]);
 
   // Filter by selected month
   const monthEvals = useMemo(() => {
@@ -305,6 +340,92 @@ const RankingBonus = () => {
     setRestoreSaving(false);
   };
 
+  // Close month
+  const handleCloseMonth = async () => {
+    setClosingSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user?.id || "").single();
+    const { data: companyData } = await supabase.rpc("get_my_company_id");
+    const closedByName = profile?.full_name || user?.email || "Desconhecido";
+
+    const snapshot = ranking.map((r) => ({
+      name: r.name,
+      totalMentorias: r.totalMentorias,
+      notaMedia: r.notaMedia10,
+      classificacao: r.classificacao,
+      elegivel: r.elegivel,
+      percentualBonus: r.percentualBonus,
+      valorBonus: r.valorBonus,
+    }));
+
+    if (monthClosing) {
+      // Update existing
+      const { error } = await supabase
+        .from("monthly_closings")
+        .update({
+          status: "fechado",
+          total_mentorias: stats.totalMentorias,
+          nota_media: stats.mediaGeral,
+          total_bonus: stats.totalBonus,
+          snapshot,
+          closed_by: closedByName,
+          closed_at: new Date().toISOString(),
+          reopened_by: null,
+          reopened_at: null,
+        } as any)
+        .eq("id", monthClosing.id);
+      if (error) { toast.error("Erro ao fechar o mês."); console.error(error); }
+      else { toast.success(`Mentoria de ${getMonthLabel(year, month)} fechada com sucesso.`); }
+    } else {
+      // Insert new
+      const { error } = await supabase
+        .from("monthly_closings")
+        .insert({
+          year,
+          month: month + 1,
+          status: "fechado",
+          total_mentorias: stats.totalMentorias,
+          nota_media: stats.mediaGeral,
+          total_bonus: stats.totalBonus,
+          snapshot,
+          closed_by: closedByName,
+          closed_at: new Date().toISOString(),
+          user_id: user?.id,
+          company_id: companyData || null,
+        } as any);
+      if (error) { toast.error("Erro ao fechar o mês."); console.error(error); }
+      else { toast.success(`Mentoria de ${getMonthLabel(year, month)} fechada com sucesso.`); }
+    }
+
+    setCloseDialogOpen(false);
+    setClosingSaving(false);
+    fetchClosing();
+  };
+
+  // Reopen month
+  const handleReopenMonth = async () => {
+    if (!monthClosing) return;
+    setClosingSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user?.id || "").single();
+
+    const { error } = await supabase
+      .from("monthly_closings")
+      .update({
+        status: "aberto",
+        reopened_by: profile?.full_name || user?.email || "Desconhecido",
+        reopened_at: new Date().toISOString(),
+      } as any)
+      .eq("id", monthClosing.id);
+
+    if (error) { toast.error("Erro ao reabrir o mês."); }
+    else { toast.success(`Mentoria de ${getMonthLabel(year, month)} reaberta.`); }
+
+    setReopenDialogOpen(false);
+    setClosingSaving(false);
+    fetchClosing();
+  };
+
   function bonusColor(cls: string): string {
     switch (cls) {
       case "Excelente": return "text-accent";
@@ -340,17 +461,38 @@ const RankingBonus = () => {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-5">
-        {/* Month Selector */}
+        {/* Month Selector + Status */}
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="icon" onClick={prevMonth}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <h2 className="text-lg font-bold text-foreground">{getMonthLabel(year, month)}</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-bold text-foreground">{getMonthLabel(year, month)}</h2>
+              {isClosed ? (
+                <Badge className="bg-accent/15 text-accent text-xs gap-1">
+                  <Lock className="h-3 w-3" /> Fechado
+                </Badge>
+              ) : (
+                <Badge className="bg-muted text-muted-foreground text-xs gap-1">
+                  <Unlock className="h-3 w-3" /> Em aberto
+                </Badge>
+              )}
+            </div>
             <Button variant="ghost" size="icon" onClick={nextMonth}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
+          {isClosed && monthClosing && (
+            <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                Fechado por <strong className="text-foreground">{monthClosing.closed_by}</strong> em {formatDateBR(monthClosing.closed_at)}
+              </span>
+              <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setReopenDialogOpen(true)}>
+                <Unlock className="h-3 w-3" /> Reabrir mês
+              </Button>
+            </div>
+          )}
         </Card>
 
         {loading ? (
@@ -411,6 +553,26 @@ const RankingBonus = () => {
                 </div>
               </div>
             </Card>
+
+            {/* Close Month Action */}
+            {!isClosed && ranking.length > 0 && (
+              <Card className="p-4 border-primary/30 bg-primary/[0.02]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <ClipboardCheck className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Fechar mentoria do mês</p>
+                      <p className="text-xs text-muted-foreground">
+                        Consolida {stats.totalMentorias} mentorias válidas · Média {stats.mediaGeral.toFixed(1).replace(".", ",")} · Bônus total {formatBRL(stats.totalBonus)}
+                      </p>
+                    </div>
+                  </div>
+                  <Button onClick={() => setCloseDialogOpen(true)} className="gap-2">
+                    <Lock className="h-4 w-4" /> Fechar mentoria do mês
+                  </Button>
+                </div>
+              </Card>
+            )}
 
             {/* Ranking Table */}
             {ranking.length === 0 ? (
@@ -557,7 +719,9 @@ const RankingBonus = () => {
                                                 )}
                                               </td>
                                               <td className="p-2 text-center">
-                                                {isExcluded ? (
+                                                {isClosed ? (
+                                                  <span className="text-[10px] text-muted-foreground italic">Mês fechado</span>
+                                                ) : isExcluded ? (
                                                   <Button
                                                     variant="ghost"
                                                     size="sm"
@@ -678,6 +842,61 @@ const RankingBonus = () => {
             <Button onClick={handleRestore} disabled={restoreSaving}>
               {restoreSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RotateCcw className="h-4 w-4 mr-1" />}
               Restaurar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Close Month Confirmation Dialog */}
+      <Dialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5 text-primary" />
+              Fechar mentoria do mês
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              Deseja fechar a apuração de <strong>{getMonthLabel(year, month)}</strong>? Após o fechamento, não será possível excluir ou restaurar mentorias sem reabrir o mês.
+            </p>
+            <div className="rounded-lg bg-muted/50 p-3 space-y-1 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Mentorias válidas</span><strong>{stats.totalMentorias}</strong></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Nota média</span><strong>{stats.mediaGeral.toFixed(1).replace(".", ",")}</strong></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Atendentes elegíveis</span><strong>{stats.elegiveis}</strong></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Total bônus</span><strong className="text-accent">{formatBRL(stats.totalBonus)}</strong></div>
+              {stats.excludedCount > 0 && (
+                <div className="flex justify-between"><span className="text-muted-foreground">Mentorias excluídas</span><strong>{stats.excludedCount}</strong></div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCloseDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleCloseMonth} disabled={closingSaving} className="gap-2">
+              {closingSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+              Confirmar fechamento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reopen Month Confirmation Dialog */}
+      <Dialog open={reopenDialogOpen} onOpenChange={setReopenDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Unlock className="h-5 w-5 text-warning" />
+              Reabrir mês
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Deseja reabrir a apuração de <strong>{getMonthLabel(year, month)}</strong>? Será possível excluir e restaurar mentorias novamente.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReopenDialogOpen(false)}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleReopenMonth} disabled={closingSaving} className="gap-2">
+              {closingSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlock className="h-4 w-4" />}
+              Reabrir
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -531,6 +531,68 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_closings: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          company_id: string | null
+          created_at: string
+          id: string
+          month: number
+          nota_media: number
+          reopened_at: string | null
+          reopened_by: string | null
+          snapshot: Json | null
+          status: string
+          total_bonus: number
+          total_mentorias: number
+          user_id: string
+          year: number
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          month: number
+          nota_media?: number
+          reopened_at?: string | null
+          reopened_by?: string | null
+          snapshot?: Json | null
+          status?: string
+          total_bonus?: number
+          total_mentorias?: number
+          user_id: string
+          year: number
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          month?: number
+          nota_media?: number
+          reopened_at?: string | null
+          reopened_by?: string | null
+          snapshot?: Json | null
+          status?: string
+          total_bonus?: number
+          total_mentorias?: number
+          user_id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_closings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       preventive_mentorings: {
         Row: {
           atendente: string | null
