@@ -92,7 +92,8 @@ function countOccurrences(items: string[]): { text: string; count: number }[] {
 }
 
 const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
-  const analyzed = useMemo(() => files.filter((f) => f.result && typeof f.result.notaFinal === "number"), [files]);
+  const analyzed = useMemo(() => files.filter((f) => f.result && typeof f.result.notaFinal === "number" && !f.ineligible && !f.result._ineligible), [files]);
+  const ineligibleFiles = useMemo(() => files.filter((f) => f.result && (f.ineligible || f.result._ineligible)), [files]);
 
   const insights = useMemo(() => {
     if (analyzed.length === 0) return null;
