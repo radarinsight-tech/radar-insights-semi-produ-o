@@ -714,31 +714,15 @@ const MentoriaLab = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Limit tags */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <TooltipProvider delayDuration={100}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 border border-blue-200 text-xs font-medium px-3 py-1 cursor-help">
-                  <Upload className="h-3 w-3 mr-1.5" />
-                  IMPORTAR: até {IMPORT_RECOMMENDED} por mês
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs">
-                <p className="text-xs">Volume recomendado de atendimentos por período mensal.</p>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex items-center rounded-full bg-accent/15 text-accent border border-accent/25 text-xs font-medium px-3 py-1 cursor-help">
-                  <Play className="h-3 w-3 mr-1.5" />
-                  ANALISAR: até {ANALYZE_LIMIT} por vez
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs">
-                <p className="text-xs">Para melhor desempenho, analise em blocos de até 50 atendimentos.</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+        <div className="flex items-center gap-2 flex-wrap text-[10px]">
+          <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 border border-blue-200 font-semibold px-2.5 py-0.5">
+            <Upload className="h-3 w-3 mr-1" />
+            Importar: até {IMPORT_RECOMMENDED}/mês
+          </span>
+          <span className="inline-flex items-center rounded-full bg-accent/15 text-accent border border-accent/25 font-semibold px-2.5 py-0.5">
+            <Play className="h-3 w-3 mr-1" />
+            Analisar: até {ANALYZE_LIMIT}/vez
+          </span>
         </div>
 
         {/* Stats */}
