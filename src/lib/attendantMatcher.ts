@@ -25,7 +25,7 @@ export async function getRegisteredAttendants(): Promise<RegisteredAttendant[]> 
 
   const { data, error } = await supabase
     .from("attendants")
-    .select("id, name, sector, active")
+    .select("id, name, nickname, sector, active")
     .eq("active", true)
     .order("name");
 
