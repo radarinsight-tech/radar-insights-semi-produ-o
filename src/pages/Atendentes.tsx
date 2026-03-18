@@ -270,6 +270,7 @@ const Atendentes = () => {
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
                     <th className="p-3 text-left font-medium text-muted-foreground">Nome</th>
+                    <th className="p-3 text-left font-medium text-muted-foreground">Apelido</th>
                     <th className="p-3 text-left font-medium text-muted-foreground">Setor</th>
                     <th className="p-3 text-center font-medium text-muted-foreground">Status</th>
                     <th className="p-3 text-center font-medium text-muted-foreground">Ações</th>
