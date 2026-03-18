@@ -339,6 +339,16 @@ const Atendentes = () => {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="att-nickname">Apelido / Nome alternativo</Label>
+              <Input
+                id="att-nickname"
+                placeholder="Ex: Bia, Marquinhos"
+                value={formNickname}
+                onChange={(e) => setFormNickname(e.target.value)}
+                maxLength={60}
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="att-sector">Setor</Label>
               <Input
                 id="att-sector"
