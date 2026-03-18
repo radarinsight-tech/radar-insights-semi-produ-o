@@ -78,8 +78,10 @@ export function matchAttendant(
 
   const normalizedExtracted = normalize(extractedName);
 
-  // Exact match
-  const exact = registeredList.find((a) => normalize(a.name) === normalizedExtracted);
+  // Exact match (name or nickname)
+  const exact = registeredList.find(
+    (a) => normalize(a.name) === normalizedExtracted || (a.nickname && normalize(a.nickname) === normalizedExtracted)
+  );
   if (exact) {
     return {
       matched: true,
