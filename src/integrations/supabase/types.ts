@@ -330,6 +330,10 @@ export type Database = {
           created_at: string
           data: string
           data_avaliacao: string
+          excluded_at: string | null
+          excluded_by: string | null
+          excluded_from_ranking: boolean
+          exclusion_reason: string | null
           full_report: Json | null
           id: string
           nota: number
@@ -352,6 +356,10 @@ export type Database = {
           created_at?: string
           data: string
           data_avaliacao?: string
+          excluded_at?: string | null
+          excluded_by?: string | null
+          excluded_from_ranking?: boolean
+          exclusion_reason?: string | null
           full_report?: Json | null
           id?: string
           nota: number
@@ -374,6 +382,10 @@ export type Database = {
           created_at?: string
           data?: string
           data_avaliacao?: string
+          excluded_at?: string | null
+          excluded_by?: string | null
+          excluded_from_ranking?: boolean
+          exclusion_reason?: string | null
           full_report?: Json | null
           id?: string
           nota?: number
