@@ -1111,13 +1111,20 @@ const MentoriaLab = () => {
                               <Eye className="h-3 w-3" /> Abrir
                             </Button>
                             {f.status === "analisado" && f.result && (
-                              <Button
-                                size="sm"
-                                className="h-7 text-xs gap-1"
-                                onClick={() => setMentoriaFile(f)}
-                              >
-                                <BookOpen className="h-3 w-3" /> Ver mentoria
-                              </Button>
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      onClick={() => setMentoriaFile(f)}
+                                    >
+                                      <BookOpen className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent><p className="text-xs">Ver mentoria</p></TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             )}
                             <Button
                               variant="ghost"
