@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface RegisteredAttendant {
   id: string;
   name: string;
+  nickname: string | null;
   sector: string | null;
   active: boolean;
 }
