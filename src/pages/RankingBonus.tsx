@@ -435,6 +435,7 @@ const RankingBonus = () => {
     setReopenDialogOpen(false);
     setClosingSaving(false);
     fetchClosing();
+    fetchAllClosings();
   };
 
   function bonusColor(cls: string): string {
