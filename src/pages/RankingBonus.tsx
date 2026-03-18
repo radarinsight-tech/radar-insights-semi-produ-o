@@ -810,11 +810,9 @@ const RankingBonus = () => {
                 </thead>
                 <tbody>
                   {allClosings.map((c) => {
-                    const snap = Array.isArray(c.snapshot) ? c.snapshot : [];
-                    const excludedCount = snap.reduce((acc: number, s: any) => {
-                      // If snapshot doesn't have excluded info, we show "—"
-                      return acc;
-                    }, 0);
+                    const snap = c.snapshot && typeof c.snapshot === "object" ? c.snapshot as any : {};
+                    // Support both old (array) and new (object with excludedCount) snapshot formats
+                    const excludedCount = snap.excludedCount ?? (Array.isArray(snap) ? "—" : "—");
                     const notaMedia = typeof c.nota_media === "number" ? c.nota_media : 0;
                     const classificacaoGeral = calcularBonus(notaMedia > 10 ? notaMedia : notaMedia * 10).classificacao;
 
