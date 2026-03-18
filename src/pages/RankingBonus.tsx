@@ -4,6 +4,7 @@ import {
   ArrowLeft, LogOut, Trophy, Medal, TrendingUp, Users2,
   ChevronLeft, ChevronRight, Loader2, AlertTriangle, DollarSign,
   CheckCircle2, XCircle, Crown, Award, Star, Ban, RotateCcw,
+  Lock, Unlock, ClipboardCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
