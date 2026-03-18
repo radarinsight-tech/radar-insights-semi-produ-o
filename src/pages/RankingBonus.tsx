@@ -164,7 +164,16 @@ const RankingBonus = () => {
     setMonthClosing((data as MonthlyClosing | null) || null);
   };
 
-  useEffect(() => { fetchData(); }, []);
+  const fetchAllClosings = async () => {
+    const { data } = await supabase
+      .from("monthly_closings")
+      .select("*")
+      .order("year", { ascending: false })
+      .order("month", { ascending: false });
+    setAllClosings((data as MonthlyClosing[]) || []);
+  };
+
+  useEffect(() => { fetchData(); fetchAllClosings(); }, []);
   useEffect(() => { fetchClosing(); }, [year, month]);
 
   // Filter by selected month
