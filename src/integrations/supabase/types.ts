@@ -21,6 +21,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          nickname: string | null
           sector: string | null
           updated_at: string
         }
@@ -30,6 +31,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          nickname?: string | null
           sector?: string | null
           updated_at?: string
         }
@@ -39,6 +41,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          nickname?: string | null
           sector?: string | null
           updated_at?: string
         }
