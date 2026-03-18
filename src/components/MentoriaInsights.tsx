@@ -207,7 +207,10 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
         </div>
         <div>
           <h2 className="text-lg font-bold text-foreground">Insights da Mentoria</h2>
-          <p className="text-xs text-muted-foreground">{insights.total} atendimentos analisados • {insights.atendenteStats.length} atendente{insights.atendenteStats.length > 1 ? "s" : ""}</p>
+          <p className="text-xs text-muted-foreground">
+            {insights.total} atendimentos analisados • {insights.atendenteStats.length} atendente{insights.atendenteStats.length > 1 ? "s" : ""}
+            {ineligibleFiles.length > 0 && <span className="text-muted-foreground/70"> • {ineligibleFiles.length} fora de avaliação</span>}
+          </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <div className="text-right">
