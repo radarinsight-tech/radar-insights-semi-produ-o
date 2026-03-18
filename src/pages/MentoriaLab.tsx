@@ -77,6 +77,8 @@ interface LabFile {
   batchFileId?: string;
   storagePath?: string;
   analyzedAt?: Date;
+  ineligible?: boolean;
+  ineligibleReason?: string;
 }
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
@@ -556,8 +558,25 @@ const MentoriaLab = () => {
           continue;
         }
 
-        const notaFinal = typeof data.notaFinal === "number" ? data.notaFinal : 0;
-        const bonusQualidade = typeof data.bonusQualidade === "number" ? data.bonusQualidade : 0;
+        // Detect ineligible cases (audio, no interaction, bot-only)
+        const isIneligible = data.statusAtendimento === "fora_de_avaliacao"
+          || data.statusAtendimento === "apenas_bot"
+          || data.statusAuditoria === "impedimento_detectado"
+          || data.statusAuditoria === "auditoria_bloqueada";
+
+        const ineligibleReason = isIneligible
+          ? data.motivo === "sem_interacao_do_cliente" ? "Sem interação do cliente"
+            : data.motivo === "atendimento_apenas_por_bot" ? "Apenas bot"
+            : data.motivo === "envio_de_audio_pelo_atendente" ? "Fora da avaliação (Áudio)"
+            : "Fora de avaliação"
+          : undefined;
+
+        const notaFinal = isIneligible ? 0 : (typeof data.notaFinal === "number" ? data.notaFinal : 0);
+        const bonusQualidade = isIneligible ? 0 : (typeof data.bonusQualidade === "number" ? data.bonusQualidade : 0);
+
+        const classificacaoFinal = isIneligible
+          ? (ineligibleReason || "Fora de Avaliação")
+          : (data.classificacao || "Fora de Avaliação");
 
         // Save evaluation
         await supabase.from("evaluations").insert({
@@ -568,14 +587,14 @@ const MentoriaLab = () => {
           tipo: data.tipo || "Não identificado",
           atualizacao_cadastral: data.bonusOperacional?.atualizacaoCadastral || "NÃO",
           nota: notaFinal,
-          classificacao: data.classificacao || "Fora de Avaliação",
-          bonus: bonusQualidade >= 70,
+          classificacao: classificacaoFinal,
+          bonus: !isIneligible && bonusQualidade >= 70,
           pontos_melhoria: Array.isArray(data.mentoria) ? data.mentoria : [],
           user_id: user.id,
           pdf_url: pdfUrl,
-          full_report: { ...data },
+          full_report: { ...data, _ineligible: isIneligible, _ineligibleReason: ineligibleReason },
           prompt_version: data.promptVersion || "auditor_v3",
-          resultado_validado: true,
+          resultado_validado: !isIneligible,
         } as any);
 
         // Save result JSON to cloud: results/<batchCode>/
@@ -593,7 +612,7 @@ const MentoriaLab = () => {
           await supabase.from("mentoria_batch_files").update({
             status: "analyzed",
             nota: notaFinal,
-            classificacao: data.classificacao || "Fora de Avaliação",
+            classificacao: classificacaoFinal,
             atendente: data.atendente || labFile.atendente,
             protocolo: data.protocolo || labFile.protocolo,
             result: data,
@@ -603,7 +622,7 @@ const MentoriaLab = () => {
         setFiles((prev) =>
           prev.map((f) =>
             f.id === labFile.id
-              ? { ...f, status: "analisado", result: data, protocolo: data.protocolo || f.protocolo, atendente: data.atendente || f.atendente, data: data.data || f.data, tipo: data.tipo || f.tipo, analyzedAt: new Date() }
+              ? { ...f, status: "analisado", result: { ...data, _ineligible: isIneligible, _ineligibleReason: ineligibleReason }, protocolo: data.protocolo || f.protocolo, atendente: data.atendente || f.atendente, data: data.data || f.data, tipo: data.tipo || f.tipo, analyzedAt: new Date(), ineligible: isIneligible, ineligibleReason }
               : f
           )
         );
@@ -1085,12 +1104,16 @@ const MentoriaLab = () => {
                           <div className="flex flex-col items-center gap-1">
                             {readingIds.has(f.id) ? (
                               <Badge className="bg-primary/10 text-primary text-xs">Lendo...</Badge>
+                            ) : f.status === "analisado" && f.ineligible ? (
+                              <Badge className="bg-muted text-muted-foreground text-xs">
+                                {f.ineligibleReason || "Fora de avaliação"}
+                              </Badge>
                             ) : (
                               <Badge className={`${statusConfig[f.status].color} text-xs`}>
                                 {statusConfig[f.status].label}
                               </Badge>
                             )}
-                            {f.status === "analisado" && f.result?.notaFinal != null && notaToScale10(f.result.notaFinal) < 7 && (
+                            {f.status === "analisado" && !f.ineligible && f.result?.notaFinal != null && notaToScale10(f.result.notaFinal) < 7 && (
                               <Badge className="bg-warning/15 text-warning text-[10px] whitespace-nowrap">
                                 Necessita mentoria
                               </Badge>

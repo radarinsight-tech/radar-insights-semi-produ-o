@@ -16,6 +16,8 @@ interface AnalyzedFile {
   atendente?: string;
   data?: string;
   canal?: string;
+  ineligible?: boolean;
+  ineligibleReason?: string;
   result?: {
     notaFinal?: number;
     classificacao?: string;
@@ -28,6 +30,8 @@ interface AnalyzedFile {
     pontosFortes?: string[];
     pontosMelhoria?: string[];
     bonusQualidade?: number;
+    _ineligible?: boolean;
+    _ineligibleReason?: string;
   };
 }
 
@@ -88,7 +92,8 @@ function countOccurrences(items: string[]): { text: string; count: number }[] {
 }
 
 const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
-  const analyzed = useMemo(() => files.filter((f) => f.result && typeof f.result.notaFinal === "number"), [files]);
+  const analyzed = useMemo(() => files.filter((f) => f.result && typeof f.result.notaFinal === "number" && !f.ineligible && !f.result._ineligible), [files]);
+  const ineligibleFiles = useMemo(() => files.filter((f) => f.result && (f.ineligible || f.result._ineligible)), [files]);
 
   const insights = useMemo(() => {
     if (analyzed.length === 0) return null;
@@ -202,7 +207,10 @@ const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
         </div>
         <div>
           <h2 className="text-lg font-bold text-foreground">Insights da Mentoria</h2>
-          <p className="text-xs text-muted-foreground">{insights.total} atendimentos analisados • {insights.atendenteStats.length} atendente{insights.atendenteStats.length > 1 ? "s" : ""}</p>
+          <p className="text-xs text-muted-foreground">
+            {insights.total} atendimentos analisados • {insights.atendenteStats.length} atendente{insights.atendenteStats.length > 1 ? "s" : ""}
+            {ineligibleFiles.length > 0 && <span className="text-muted-foreground/70"> • {ineligibleFiles.length} fora de avaliação</span>}
+          </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <div className="text-right">
