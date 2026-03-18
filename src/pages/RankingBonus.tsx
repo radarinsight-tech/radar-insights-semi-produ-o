@@ -67,6 +67,21 @@ interface AttendantRanking {
   evals: EvalRow[];
 }
 
+interface MonthlyClosing {
+  id: string;
+  year: number;
+  month: number;
+  status: string;
+  total_mentorias: number;
+  nota_media: number;
+  total_bonus: number;
+  snapshot: any;
+  closed_by: string | null;
+  closed_at: string | null;
+  reopened_by: string | null;
+  reopened_at: string | null;
+}
+
 /* ─── Helpers ─── */
 function getMonthLabel(year: number, month: number): string {
   const d = new Date(year, month);
