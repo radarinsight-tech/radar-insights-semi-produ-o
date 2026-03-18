@@ -300,6 +300,7 @@ const RankingBonus = () => {
   };
 
   const handleExclude = async () => {
+    if (isClosed) { toast.error("Mês fechado. Reabra para fazer alterações."); return; }
     if (!excludeEvalId) return;
     const finalReason = excludeReason === "Outro" ? excludeCustomReason.trim() : excludeReason;
     if (!finalReason) {
