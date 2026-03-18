@@ -540,6 +540,7 @@ export type Database = {
           id: string
           month: number
           nota_media: number
+          reopen_history: Json | null
           reopened_at: string | null
           reopened_by: string | null
           snapshot: Json | null
@@ -557,6 +558,7 @@ export type Database = {
           id?: string
           month: number
           nota_media?: number
+          reopen_history?: Json | null
           reopened_at?: string | null
           reopened_by?: string | null
           snapshot?: Json | null
@@ -574,6 +576,7 @@ export type Database = {
           id?: string
           month?: number
           nota_media?: number
+          reopen_history?: Json | null
           reopened_at?: string | null
           reopened_by?: string | null
           snapshot?: Json | null
