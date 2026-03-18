@@ -79,6 +79,10 @@ interface LabFile {
   analyzedAt?: Date;
   ineligible?: boolean;
   ineligibleReason?: string;
+  attendantMatch?: MatchResult;
+  transferred?: boolean;
+}
+  ineligibleReason?: string;
 }
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
