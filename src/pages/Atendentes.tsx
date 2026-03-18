@@ -120,6 +120,7 @@ const Atendentes = () => {
         .from("attendants")
         .update({
           name: trimmedName,
+          nickname: formNickname.trim() || null,
           sector: formSector.trim() || null,
           active: formActive,
         } as any)
