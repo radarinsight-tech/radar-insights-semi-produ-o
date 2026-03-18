@@ -612,7 +612,7 @@ const MentoriaLab = () => {
           await supabase.from("mentoria_batch_files").update({
             status: "analyzed",
             nota: notaFinal,
-            classificacao: data.classificacao || "Fora de Avaliação",
+            classificacao: classificacaoFinal,
             atendente: data.atendente || labFile.atendente,
             protocolo: data.protocolo || labFile.protocolo,
             result: data,
