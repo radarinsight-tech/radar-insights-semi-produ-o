@@ -142,6 +142,7 @@ const Atendentes = () => {
         .from("attendants")
         .insert({
           name: trimmedName,
+          nickname: formNickname.trim() || null,
           sector: formSector.trim() || null,
           active: formActive,
           company_id: companyId,
