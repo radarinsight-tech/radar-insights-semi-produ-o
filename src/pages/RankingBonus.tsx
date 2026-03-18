@@ -830,7 +830,7 @@ const RankingBonus = () => {
                           {getMonthLabel(c.year, c.month - 1)}
                         </td>
                         <td className="p-3 text-center font-bold text-foreground">{c.total_mentorias}</td>
-                        <td className="p-3 text-center text-muted-foreground">—</td>
+                        <td className="p-3 text-center text-muted-foreground">{typeof excludedCount === "number" ? excludedCount : "—"}</td>
                         <td className="p-3 text-center">
                           <span className={`font-bold ${notaMedia >= 7 ? "text-accent" : notaMedia >= 5 ? "text-warning" : "text-destructive"}`}>
                             {notaMedia.toFixed(1).replace(".", ",")}
