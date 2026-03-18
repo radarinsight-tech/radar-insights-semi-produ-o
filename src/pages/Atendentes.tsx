@@ -66,7 +66,7 @@ const Atendentes = () => {
     return attendants.filter((a) => {
       if (searchTerm) {
         const q = searchTerm.toLowerCase();
-        if (!a.name.toLowerCase().includes(q) && !(a.sector || "").toLowerCase().includes(q)) return false;
+        if (!a.name.toLowerCase().includes(q) && !(a.nickname || "").toLowerCase().includes(q) && !(a.sector || "").toLowerCase().includes(q)) return false;
       }
       if (filterStatus === "ativo" && !a.active) return false;
       if (filterStatus === "inativo" && a.active) return false;
