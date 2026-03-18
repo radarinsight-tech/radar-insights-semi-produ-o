@@ -229,9 +229,9 @@ const ConversationView = ({ rawText, atendente }: ConversationViewProps) => {
     // Improved fallback: break text into paragraphs and add visual separation
     const paragraphs = rawText.split(/\n{2,}/).filter(Boolean);
     return (
-      <div className="max-h-[55vh] overflow-y-auto rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+      <div className="max-h-[55vh] overflow-y-auto rounded-xl border border-border bg-muted/20 p-5 space-y-3">
         {paragraphs.map((p, i) => (
-          <p key={i} className="text-xs text-foreground leading-relaxed whitespace-pre-wrap">
+          <p key={i} className="text-[13px] text-foreground leading-relaxed whitespace-pre-wrap font-mono break-words">
             {p.trim()}
           </p>
         ))}
@@ -282,11 +282,11 @@ const ConversationView = ({ rawText, atendente }: ConversationViewProps) => {
 
             {/* Message bubble */}
             <div
-              className={`rounded-xl border px-3 py-2 ${config.bubbleClass} ${
+              className={`rounded-xl border px-4 py-2.5 ${config.bubbleClass} ${
                 isClient ? "rounded-tr-sm" : "rounded-tl-sm"
               }`}
             >
-              <p className="text-xs text-foreground leading-relaxed whitespace-pre-wrap break-words">
+              <p className="text-[13px] text-foreground leading-relaxed whitespace-pre-wrap break-words">
                 {msg.text}
               </p>
             </div>

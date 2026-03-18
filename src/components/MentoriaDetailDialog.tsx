@@ -77,8 +77,8 @@ const notaColor = (nota: number | null | undefined) => {
 };
 
 const resultLabel = (r: string) => {
-  if (r === "SIM") return { text: "SIM", cls: "bg-accent/15 text-accent border-accent/30 font-bold" };
-  if (r === "NÃO") return { text: "NÃO", cls: "bg-destructive/15 text-destructive border-destructive/30 font-bold" };
+  if (r === "SIM") return { text: "SIM", cls: "bg-green-600 text-white border-green-700 font-extrabold" };
+  if (r === "NÃO") return { text: "NÃO", cls: "bg-red-600 text-white border-red-700 font-extrabold" };
   return { text: "N/A", cls: "bg-muted text-muted-foreground border-border" };
 };
 
@@ -259,8 +259,8 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
         .explicacao-nao { color: #991b1b; font-weight: 500; }
         .trecho-sim { border-left-color: #16a34a; background: #f0fdf4; }
         .trecho-nao { border-left-color: #dc2626; background: #fef2f2; }
-        .badge-sim { background: #dcfce7; color: #166534; }
-        .badge-nao { background: #fde2e2; color: #991b1b; }
+        .badge-sim { background: #16a34a; color: #fff; font-weight: 800; }
+        .badge-nao { background: #dc2626; color: #fff; font-weight: 800; }
         .badge-fora { background: #f3f4f6; color: #9ca3af; }
         .criterio-pts { font-size: 8.5px; color: #9ca3af; font-weight: 600; margin-left: auto; white-space: nowrap; flex-shrink: 0; }
         .criterio-explicacao { color: #6b7280; font-size: 9px; margin-top: 2px; padding-left: 20px; word-break: break-word; overflow-wrap: break-word; }

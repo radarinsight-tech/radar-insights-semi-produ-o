@@ -712,37 +712,21 @@ const MentoriaLab = () => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-4">
         {/* Limit tags */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <TooltipProvider delayDuration={100}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 border border-blue-200 text-xs font-medium px-3 py-1 cursor-help">
-                  <Upload className="h-3 w-3 mr-1.5" />
-                  IMPORTAR: até {IMPORT_RECOMMENDED} por mês
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs">
-                <p className="text-xs">Volume recomendado de atendimentos por período mensal.</p>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex items-center rounded-full bg-accent/15 text-accent border border-accent/25 text-xs font-medium px-3 py-1 cursor-help">
-                  <Play className="h-3 w-3 mr-1.5" />
-                  ANALISAR: até {ANALYZE_LIMIT} por vez
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs">
-                <p className="text-xs">Para melhor desempenho, analise em blocos de até 50 atendimentos.</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+        <div className="flex items-center gap-2 flex-wrap text-[10px]">
+          <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 border border-blue-200 font-semibold px-2.5 py-0.5">
+            <Upload className="h-3 w-3 mr-1" />
+            Importar: até {IMPORT_RECOMMENDED}/mês
+          </span>
+          <span className="inline-flex items-center rounded-full bg-accent/15 text-accent border border-accent/25 font-semibold px-2.5 py-0.5">
+            <Play className="h-3 w-3 mr-1" />
+            Analisar: até {ANALYZE_LIMIT}/vez
+          </span>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
           {[
             { label: "Total", value: counts.total, color: "text-foreground" },
             { label: "Pendentes", value: counts.pendente, color: "text-muted-foreground" },
@@ -751,9 +735,9 @@ const MentoriaLab = () => {
             { label: "Atendentes", value: counts.atendentes, color: "text-primary" },
             { label: "Erros", value: counts.erro, color: "text-destructive" },
           ].map((s) => (
-            <Card key={s.label} className="p-3 text-center">
-              <span className={`text-2xl font-bold tracking-tight ${s.color}`}>{s.value}</span>
-              <p className="text-xs text-muted-foreground">{s.label}</p>
+            <Card key={s.label} className="p-2.5 text-center">
+              <span className={`text-xl font-bold tracking-tight ${s.color}`}>{s.value}</span>
+              <p className="text-[10px] text-muted-foreground">{s.label}</p>
             </Card>
           ))}
         </div>
@@ -1062,9 +1046,7 @@ const MentoriaLab = () => {
                           onCheckedChange={toggleSelectAll}
                         />
                       </th>
-                      <th className="p-3 text-left font-medium text-muted-foreground">Arquivo</th>
                       <th className="p-3 text-left font-medium text-muted-foreground">Atendente</th>
-                      <th className="p-3 text-left font-medium text-muted-foreground">Tipo</th>
                       <th className="p-3 text-left font-medium text-muted-foreground">Data</th>
                       <th className="p-3 text-left font-medium text-muted-foreground">Protocolo</th>
                       <th className="p-3 text-center font-medium text-muted-foreground">Áudio</th>
@@ -1080,26 +1062,16 @@ const MentoriaLab = () => {
                           <Checkbox checked={selected.has(f.id)} onCheckedChange={() => toggleSelect(f.id)} />
                         </td>
                         <td className="p-3">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-primary shrink-0" />
-                            <div className="min-w-0">
-                              <p className="font-medium text-foreground truncate max-w-[220px]">{f.name}</p>
-                              <p className="text-xs text-muted-foreground">{formatSize(f.size)}</p>
-                            </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate max-w-[180px]">
+                              {readingIds.has(f.id) ? <Loader2 className="h-3 w-3 animate-spin inline mr-1" /> : null}
+                              {f.atendente || <span className="italic text-muted-foreground opacity-60">Não identificado</span>}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground truncate max-w-[180px]">{f.name}</p>
                           </div>
                         </td>
-                        <td className="p-3 text-muted-foreground text-xs">
-                          {readingIds.has(f.id) ? <Loader2 className="h-3 w-3 animate-spin inline" /> : (f.atendente || <span className="italic opacity-60">Não identificado</span>)}
-                        </td>
-                        <td className="p-3 text-xs">
-                          {(() => {
-                            const tipo = f.result?.tipo || f.tipo;
-                            if (!tipo || tipo === "Outro") return <span className="italic text-muted-foreground opacity-60">—</span>;
-                            return <Badge variant="outline" className="text-[10px] font-medium">{tipo}</Badge>;
-                          })()}
-                        </td>
                         <td className="p-3 text-muted-foreground text-xs">{f.data ? formatDateBR(f.data) : <span className="italic opacity-60">—</span>}</td>
-                        <td className="p-3 text-muted-foreground text-xs">{f.protocolo || <span className="italic opacity-60">—</span>}</td>
+                        <td className="p-3 text-muted-foreground text-xs font-mono">{f.protocolo || <span className="italic opacity-60 font-sans">—</span>}</td>
                         <td className="p-3 text-center">
                           {f.hasAudio === undefined ? (
                             <span className="text-xs italic opacity-60">—</span>
@@ -1214,54 +1186,14 @@ const MentoriaLab = () => {
               </div>
             )}
 
-            {/* Charts card */}
-            {filteredFiles.some((f) => f.status === "analisado") && !showCharts && (
-              <Card
-                className="p-6 cursor-pointer hover:shadow-lg hover:border-primary/40 border-border/60 transition-all group"
-                onClick={() => setShowCharts(true)}
-              >
-                <div className="flex items-center gap-5">
-                  <div className="p-3.5 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors shrink-0">
-                    <BarChart3 className="h-7 w-7 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-bold text-foreground tracking-tight">Gráficos de Evolução</h3>
-                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                      Evolução de notas, performance por atendente e volume de auditorias
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="text-[10px] font-semibold shrink-0 mr-1">
-                    {filteredFiles.filter(f => f.status === "analisado").length} análises
-                  </Badge>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
-                </div>
-              </Card>
-            )}
-
-            {/* Charts section (expandable) */}
-            {showCharts && filteredFiles.some((f) => f.status === "analisado") && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-end">
-                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => setShowCharts(false)}>
-                    <X className="h-3 w-3" /> Fechar
-                  </Button>
-                </div>
-                <MentoriaCharts files={filteredFiles} />
-              </div>
-            )}
-
-            {/* Insights do lote - seção secundária colapsável (filtered) */}
+            {/* Charts section */}
             {filteredFiles.some((f) => f.status === "analisado") && (
-              <details id="mentoria-insights" className="scroll-mt-6 group">
-                <summary className="flex items-center gap-2 cursor-pointer select-none py-3 px-4 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <Info className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-muted-foreground">Resumo geral do lote</span>
-                  
-                </summary>
-                <div className="mt-3">
-                  <MentoriaInsights files={filteredFiles} />
-                </div>
-              </details>
+              <MentoriaCharts files={filteredFiles} />
+            )}
+
+            {/* Insights do lote */}
+            {filteredFiles.some((f) => f.status === "analisado") && (
+              <MentoriaInsights files={filteredFiles} />
             )}
           </>
         )}
