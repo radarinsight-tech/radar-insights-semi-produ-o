@@ -1,0 +1,1 @@
+ALTER TABLE public.monthly_closings ADD COLUMN IF NOT EXISTS reopen_history jsonb DEFAULT '[]'::jsonb;

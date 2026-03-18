@@ -139,6 +139,7 @@ const RankingBonus = () => {
   const [closingSaving, setClosingSaving] = useState(false);
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
   const [allClosings, setAllClosings] = useState<MonthlyClosing[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const isClosed = monthClosing?.status === "fechado";
 
@@ -173,7 +174,22 @@ const RankingBonus = () => {
     setAllClosings((data as MonthlyClosing[]) || []);
   };
 
-  useEffect(() => { fetchData(); fetchAllClosings(); }, []);
+  useEffect(() => {
+    fetchData();
+    fetchAllClosings();
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      setIsAdmin(!!data);
+    };
+    checkAdmin();
+  }, []);
   useEffect(() => { fetchClosing(); }, [year, month]);
 
   // Filter by selected month
@@ -284,6 +300,7 @@ const RankingBonus = () => {
   };
 
   const handleExclude = async () => {
+    if (isClosed) { toast.error("Mês fechado. Reabra para fazer alterações."); return; }
     if (!excludeEvalId) return;
     const finalReason = excludeReason === "Outro" ? excludeCustomReason.trim() : excludeReason;
     if (!finalReason) {
@@ -324,6 +341,7 @@ const RankingBonus = () => {
   // Restore evaluation
   const handleRestore = async () => {
     if (!restoreEvalId) return;
+    if (isClosed) { toast.error("Mês fechado. Reabra para fazer alterações."); setRestoreEvalId(null); return; }
     setRestoreSaving(true);
 
     const { error } = await supabase
@@ -418,17 +436,24 @@ const RankingBonus = () => {
 
   // Reopen month
   const handleReopenMonth = async () => {
-    if (!monthClosing) return;
+    if (!monthClosing || !isAdmin) return;
     setClosingSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user?.id || "").single();
+    const reopenedByName = profile?.full_name || user?.email || "Desconhecido";
+    const reopenedAtDate = new Date().toISOString();
+
+    // Append to reopen history
+    const currentHistory = Array.isArray((monthClosing as any).reopen_history) ? (monthClosing as any).reopen_history : [];
+    const newHistory = [...currentHistory, { by: reopenedByName, at: reopenedAtDate }];
 
     const { error } = await supabase
       .from("monthly_closings")
       .update({
         status: "aberto",
-        reopened_by: profile?.full_name || user?.email || "Desconhecido",
-        reopened_at: new Date().toISOString(),
+        reopened_by: reopenedByName,
+        reopened_at: reopenedAtDate,
+        reopen_history: newHistory,
       } as any)
       .eq("id", monthClosing.id);
 
@@ -503,9 +528,11 @@ const RankingBonus = () => {
               <span>
                 Fechado por <strong className="text-foreground">{monthClosing.closed_by}</strong> em {formatDateBR(monthClosing.closed_at)}
               </span>
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setReopenDialogOpen(true)}>
-                <Unlock className="h-3 w-3" /> Reabrir mês
-              </Button>
+              {isAdmin && (
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setReopenDialogOpen(true)}>
+                  <Unlock className="h-3 w-3" /> Reabrir mês
+                </Button>
+              )}
             </div>
           )}
         </Card>
@@ -860,6 +887,20 @@ const RankingBonus = () => {
                             <div>
                               <p className="text-foreground font-medium">{c.closed_by}</p>
                               <p>{c.closed_at ? formatDateBR(c.closed_at) : ""}</p>
+                              {(() => {
+                                const history = Array.isArray((c as any).reopen_history) ? (c as any).reopen_history : [];
+                                if (history.length === 0) return null;
+                                return (
+                                  <div className="mt-1 pt-1 border-t border-border/50">
+                                    <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Reaberturas ({history.length}):</p>
+                                    {history.map((h: any, i: number) => (
+                                      <p key={i} className="text-[10px] text-muted-foreground">
+                                        {h.by} — {formatDateBR(h.at)}
+                                      </p>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           ) : "—"}
                         </td>
