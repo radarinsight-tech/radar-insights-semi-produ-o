@@ -139,6 +139,7 @@ const RankingBonus = () => {
   const [closingSaving, setClosingSaving] = useState(false);
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
   const [allClosings, setAllClosings] = useState<MonthlyClosing[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const isClosed = monthClosing?.status === "fechado";
 
