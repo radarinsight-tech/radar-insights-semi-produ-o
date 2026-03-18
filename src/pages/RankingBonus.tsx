@@ -340,6 +340,92 @@ const RankingBonus = () => {
     setRestoreSaving(false);
   };
 
+  // Close month
+  const handleCloseMonth = async () => {
+    setClosingSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user?.id || "").single();
+    const { data: companyData } = await supabase.rpc("get_my_company_id");
+    const closedByName = profile?.full_name || user?.email || "Desconhecido";
+
+    const snapshot = ranking.map((r) => ({
+      name: r.name,
+      totalMentorias: r.totalMentorias,
+      notaMedia: r.notaMedia10,
+      classificacao: r.classificacao,
+      elegivel: r.elegivel,
+      percentualBonus: r.percentualBonus,
+      valorBonus: r.valorBonus,
+    }));
+
+    if (monthClosing) {
+      // Update existing
+      const { error } = await supabase
+        .from("monthly_closings")
+        .update({
+          status: "fechado",
+          total_mentorias: stats.totalMentorias,
+          nota_media: stats.mediaGeral,
+          total_bonus: stats.totalBonus,
+          snapshot,
+          closed_by: closedByName,
+          closed_at: new Date().toISOString(),
+          reopened_by: null,
+          reopened_at: null,
+        } as any)
+        .eq("id", monthClosing.id);
+      if (error) { toast.error("Erro ao fechar o mês."); console.error(error); }
+      else { toast.success(`Mentoria de ${getMonthLabel(year, month)} fechada com sucesso.`); }
+    } else {
+      // Insert new
+      const { error } = await supabase
+        .from("monthly_closings")
+        .insert({
+          year,
+          month: month + 1,
+          status: "fechado",
+          total_mentorias: stats.totalMentorias,
+          nota_media: stats.mediaGeral,
+          total_bonus: stats.totalBonus,
+          snapshot,
+          closed_by: closedByName,
+          closed_at: new Date().toISOString(),
+          user_id: user?.id,
+          company_id: companyData || null,
+        } as any);
+      if (error) { toast.error("Erro ao fechar o mês."); console.error(error); }
+      else { toast.success(`Mentoria de ${getMonthLabel(year, month)} fechada com sucesso.`); }
+    }
+
+    setCloseDialogOpen(false);
+    setClosingSaving(false);
+    fetchClosing();
+  };
+
+  // Reopen month
+  const handleReopenMonth = async () => {
+    if (!monthClosing) return;
+    setClosingSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user?.id || "").single();
+
+    const { error } = await supabase
+      .from("monthly_closings")
+      .update({
+        status: "aberto",
+        reopened_by: profile?.full_name || user?.email || "Desconhecido",
+        reopened_at: new Date().toISOString(),
+      } as any)
+      .eq("id", monthClosing.id);
+
+    if (error) { toast.error("Erro ao reabrir o mês."); }
+    else { toast.success(`Mentoria de ${getMonthLabel(year, month)} reaberta.`); }
+
+    setReopenDialogOpen(false);
+    setClosingSaving(false);
+    fetchClosing();
+  };
+
   function bonusColor(cls: string): string {
     switch (cls) {
       case "Excelente": return "text-accent";
@@ -375,17 +461,38 @@ const RankingBonus = () => {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-5">
-        {/* Month Selector */}
+        {/* Month Selector + Status */}
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="icon" onClick={prevMonth}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <h2 className="text-lg font-bold text-foreground">{getMonthLabel(year, month)}</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-bold text-foreground">{getMonthLabel(year, month)}</h2>
+              {isClosed ? (
+                <Badge className="bg-accent/15 text-accent text-xs gap-1">
+                  <Lock className="h-3 w-3" /> Fechado
+                </Badge>
+              ) : (
+                <Badge className="bg-muted text-muted-foreground text-xs gap-1">
+                  <Unlock className="h-3 w-3" /> Em aberto
+                </Badge>
+              )}
+            </div>
             <Button variant="ghost" size="icon" onClick={nextMonth}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
+          {isClosed && monthClosing && (
+            <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                Fechado por <strong className="text-foreground">{monthClosing.closed_by}</strong> em {formatDateBR(monthClosing.closed_at)}
+              </span>
+              <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setReopenDialogOpen(true)}>
+                <Unlock className="h-3 w-3" /> Reabrir mês
+              </Button>
+            </div>
+          )}
         </Card>
 
         {loading ? (
