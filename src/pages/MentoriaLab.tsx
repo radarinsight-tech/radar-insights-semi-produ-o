@@ -1078,26 +1078,16 @@ const MentoriaLab = () => {
                           <Checkbox checked={selected.has(f.id)} onCheckedChange={() => toggleSelect(f.id)} />
                         </td>
                         <td className="p-3">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-primary shrink-0" />
-                            <div className="min-w-0">
-                              <p className="font-medium text-foreground truncate max-w-[220px]">{f.name}</p>
-                              <p className="text-xs text-muted-foreground">{formatSize(f.size)}</p>
-                            </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate max-w-[180px]">
+                              {readingIds.has(f.id) ? <Loader2 className="h-3 w-3 animate-spin inline mr-1" /> : null}
+                              {f.atendente || <span className="italic text-muted-foreground opacity-60">Não identificado</span>}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground truncate max-w-[180px]">{f.name}</p>
                           </div>
                         </td>
-                        <td className="p-3 text-muted-foreground text-xs">
-                          {readingIds.has(f.id) ? <Loader2 className="h-3 w-3 animate-spin inline" /> : (f.atendente || <span className="italic opacity-60">Não identificado</span>)}
-                        </td>
-                        <td className="p-3 text-xs">
-                          {(() => {
-                            const tipo = f.result?.tipo || f.tipo;
-                            if (!tipo || tipo === "Outro") return <span className="italic text-muted-foreground opacity-60">—</span>;
-                            return <Badge variant="outline" className="text-[10px] font-medium">{tipo}</Badge>;
-                          })()}
-                        </td>
                         <td className="p-3 text-muted-foreground text-xs">{f.data ? formatDateBR(f.data) : <span className="italic opacity-60">—</span>}</td>
-                        <td className="p-3 text-muted-foreground text-xs">{f.protocolo || <span className="italic opacity-60">—</span>}</td>
+                        <td className="p-3 text-muted-foreground text-xs font-mono">{f.protocolo || <span className="italic opacity-60 font-sans">—</span>}</td>
                         <td className="p-3 text-center">
                           {f.hasAudio === undefined ? (
                             <span className="text-xs italic opacity-60">—</span>
