@@ -89,6 +89,7 @@ const statusConfig: Record<FileStatus, { label: string; color: string }> = {
 };
 
 import { extractAllMetadata } from "@/lib/mentoriaMetadata";
+import { getRegisteredAttendants, matchAttendant, type MatchResult } from "@/lib/attendantMatcher";
 
 const IMPORT_LIMIT = 1000;
 const IMPORT_RECOMMENDED = 500;
