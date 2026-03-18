@@ -283,6 +283,9 @@ const Atendentes = () => {
                         <p className="font-medium text-foreground">{a.name}</p>
                       </td>
                       <td className="p-3 text-muted-foreground">
+                        {a.nickname || <span className="italic opacity-60">—</span>}
+                      </td>
+                      <td className="p-3 text-muted-foreground">
                         {a.sector || <span className="italic opacity-60">—</span>}
                       </td>
                       <td className="p-3 text-center">
