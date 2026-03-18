@@ -133,6 +133,14 @@ const RankingBonus = () => {
   const [restoreEvalId, setRestoreEvalId] = useState<string | null>(null);
   const [restoreSaving, setRestoreSaving] = useState(false);
 
+  // Monthly closing state
+  const [monthClosing, setMonthClosing] = useState<MonthlyClosing | null>(null);
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [closingSaving, setClosingSaving] = useState(false);
+  const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
+
+  const isClosed = monthClosing?.status === "fechado";
+
   const fetchData = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -145,7 +153,18 @@ const RankingBonus = () => {
     setLoading(false);
   };
 
+  const fetchClosing = async () => {
+    const { data } = await supabase
+      .from("monthly_closings")
+      .select("*")
+      .eq("year", year)
+      .eq("month", month + 1)
+      .maybeSingle();
+    setMonthClosing((data as MonthlyClosing | null) || null);
+  };
+
   useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchClosing(); }, [year, month]);
 
   // Filter by selected month
   const monthEvals = useMemo(() => {
