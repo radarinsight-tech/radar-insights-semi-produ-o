@@ -77,8 +77,8 @@ const notaColor = (nota: number | null | undefined) => {
 };
 
 const resultLabel = (r: string) => {
-  if (r === "SIM") return { text: "SIM", cls: "bg-accent/15 text-accent border-accent/30 font-bold" };
-  if (r === "NÃO") return { text: "NÃO", cls: "bg-destructive/15 text-destructive border-destructive/30 font-bold" };
+  if (r === "SIM") return { text: "SIM", cls: "bg-green-600 text-white border-green-700 font-extrabold" };
+  if (r === "NÃO") return { text: "NÃO", cls: "bg-red-600 text-white border-red-700 font-extrabold" };
   return { text: "N/A", cls: "bg-muted text-muted-foreground border-border" };
 };
 
