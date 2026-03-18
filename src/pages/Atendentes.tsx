@@ -307,7 +307,7 @@ const Atendentes = () => {
                   ))}
                   {filteredAttendants.length === 0 && !loading && (
                     <tr>
-                      <td colSpan={4} className="p-8 text-center text-muted-foreground">
+                      <td colSpan={5} className="p-8 text-center text-muted-foreground">
                         {attendants.length === 0
                           ? "Nenhum atendente cadastrado. Clique em \"Novo atendente\" para começar."
                           : "Nenhum atendente encontrado com os filtros aplicados."}
