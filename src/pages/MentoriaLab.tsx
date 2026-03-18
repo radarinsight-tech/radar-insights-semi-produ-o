@@ -151,10 +151,22 @@ const MentoriaLab = () => {
       }
       const metadata = extractAllMetadata(text);
 
+      // Match attendant against registered list
+      let attendantMatchResult: MatchResult | undefined;
+      try {
+        const registeredList = await getRegisteredAttendants();
+        if (registeredList.length > 0 && metadata.atendente) {
+          attendantMatchResult = matchAttendant(metadata.atendente, registeredList);
+          if (attendantMatchResult.matched && attendantMatchResult.matchedName) {
+            metadata.atendente = attendantMatchResult.matchedName;
+          }
+        }
+      } catch { /* non-blocking */ }
+
       setFiles((prev) =>
         prev.map((f) =>
           f.id === labFile.id
-            ? { ...f, status: "lido", text, ...metadata }
+            ? { ...f, status: "lido", text, ...metadata, attendantMatch: attendantMatchResult, transferred: attendantMatchResult?.transferred }
             : f
         )
       );
