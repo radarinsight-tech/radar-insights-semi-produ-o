@@ -23,6 +23,7 @@ import { toast } from "sonner";
 interface Attendant {
   id: string;
   name: string;
+  nickname: string | null;
   sector: string | null;
   active: boolean;
   created_at: string;
