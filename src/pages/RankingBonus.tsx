@@ -3,18 +3,36 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, LogOut, Trophy, Medal, TrendingUp, Users2,
   ChevronLeft, ChevronRight, Loader2, AlertTriangle, DollarSign,
-  CheckCircle2, XCircle, Crown, Award, Star,
+  CheckCircle2, XCircle, Crown, Award, Star, Ban, RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
-import { calcularBonus, formatBRL, notaToScale10, formatNota } from "@/lib/utils";
+import { calcularBonus, formatBRL, notaToScale10, formatNota, formatDateBR } from "@/lib/utils";
 import logoSymbol from "@/assets/logo-symbol.png";
+import { toast } from "sonner";
 
 /* ─── Constants ─── */
-const MIN_ATENDIMENTOS = 400;
 const MIN_MENTORIAS = 6;
+
+const EXCLUSION_REASONS = [
+  "Áudio no atendimento",
+  "Sem interação do cliente",
+  "Atendimento transferido",
+  "Duplicidade",
+  "Amostra inválida",
+  "Outro",
+];
 
 /* ─── Types ─── */
 interface EvalRow {
@@ -22,10 +40,16 @@ interface EvalRow {
   atendente: string;
   nota: number;
   data: string;
+  protocolo: string;
   classificacao: string;
   tipo: string;
   bonus: boolean;
   full_report: any;
+  excluded_from_ranking: boolean;
+  exclusion_reason: string | null;
+  excluded_at: string | null;
+  excluded_by: string | null;
+  data_avaliacao: string;
 }
 
 interface AttendantRanking {
@@ -39,6 +63,7 @@ interface AttendantRanking {
   percentualBonus: number;
   valorBonus: number;
   notas: number[];
+  evals: EvalRow[];
 }
 
 /* ─── Helpers ─── */
@@ -48,10 +73,8 @@ function getMonthLabel(year: number, month: number): string {
 }
 
 function parseEvalDate(data: string): Date | null {
-  // Try DD/MM/YYYY
   const br = data.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
   if (br) return new Date(+br[3], +br[2] - 1, +br[1]);
-  // Try YYYY-MM-DD
   const iso = data.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (iso) return new Date(+iso[1], +iso[2] - 1, +iso[3]);
   const d = new Date(data);
@@ -59,7 +82,6 @@ function parseEvalDate(data: string): Date | null {
 }
 
 function isIneligibleEval(row: EvalRow): boolean {
-  // Check full_report for ineligibility markers
   const fr = row.full_report;
   if (fr && typeof fr === "object") {
     if (fr._ineligible) return true;
@@ -82,24 +104,32 @@ const RankingBonus = () => {
   const [evals, setEvals] = useState<EvalRow[]>([]);
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [month, setMonth] = useState(() => new Date().getMonth());
+  const [expandedAttendant, setExpandedAttendant] = useState<string | null>(null);
 
-  // Fetch evaluations
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("evaluations")
-        .select("id, atendente, nota, data, classificacao, tipo, bonus, full_report")
-        .order("data", { ascending: false });
+  // Exclusion modal state
+  const [excludeDialogOpen, setExcludeDialogOpen] = useState(false);
+  const [excludeEvalId, setExcludeEvalId] = useState<string | null>(null);
+  const [excludeReason, setExcludeReason] = useState("");
+  const [excludeCustomReason, setExcludeCustomReason] = useState("");
+  const [excludeSaving, setExcludeSaving] = useState(false);
 
-      if (error) {
-        console.error("Error fetching evaluations:", error);
-      }
-      setEvals((data as EvalRow[]) || []);
-      setLoading(false);
-    };
-    fetchData();
-  }, []);
+  // Restore modal state
+  const [restoreEvalId, setRestoreEvalId] = useState<string | null>(null);
+  const [restoreSaving, setRestoreSaving] = useState(false);
+
+  const fetchData = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("evaluations")
+      .select("id, atendente, nota, data, protocolo, classificacao, tipo, bonus, full_report, excluded_from_ranking, exclusion_reason, excluded_at, excluded_by, data_avaliacao")
+      .order("data", { ascending: false });
+
+    if (error) console.error("Error fetching evaluations:", error);
+    setEvals((data as EvalRow[]) || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   // Filter by selected month
   const monthEvals = useMemo(() => {
@@ -112,10 +142,9 @@ const RankingBonus = () => {
 
   // Build ranking
   const ranking = useMemo((): AttendantRanking[] => {
-    // Filter out ineligible evals (audio, no interaction)
-    const validEvals = monthEvals.filter((e) => !isIneligibleEval(e));
+    // Only count non-excluded, non-ineligible evals
+    const validEvals = monthEvals.filter((e) => !e.excluded_from_ranking && !isIneligibleEval(e));
 
-    // Group by atendente
     const grouped = new Map<string, EvalRow[]>();
     validEvals.forEach((e) => {
       const name = e.atendente || "Não identificado";
@@ -123,22 +152,31 @@ const RankingBonus = () => {
       grouped.get(name)!.push(e);
     });
 
-    return [...grouped.entries()].map(([name, evs]) => {
-      const notas = evs.map((e) => e.nota);
-      const media = notas.reduce((a, b) => a + b, 0) / notas.length;
+    // Also include all evals (including excluded) for detail view
+    const allGrouped = new Map<string, EvalRow[]>();
+    monthEvals.forEach((e) => {
+      const name = e.atendente || "Não identificado";
+      if (!allGrouped.has(name)) allGrouped.set(name, []);
+      allGrouped.get(name)!.push(e);
+    });
+
+    return [...allGrouped.keys()].map((name) => {
+      const validEvs = grouped.get(name) || [];
+      const allEvs = allGrouped.get(name) || [];
+      const notas = validEvs.map((e) => e.nota);
+      const media = notas.length > 0 ? notas.reduce((a, b) => a + b, 0) / notas.length : 0;
       const media10 = notaToScale10(media);
       const bonus = calcularBonus(media);
 
-      const mentoriasValidas = evs.length;
-      const elegivel = mentoriasValidas >= MIN_MENTORIAS;
+      const elegivel = notas.length >= MIN_MENTORIAS;
       let motivoInelegivel: string | undefined;
       if (!elegivel) {
-        motivoInelegivel = `Mínimo de ${MIN_MENTORIAS} mentorias não atingido (${mentoriasValidas})`;
+        motivoInelegivel = `Mínimo de ${MIN_MENTORIAS} mentorias não atingido (${notas.length})`;
       }
 
       return {
         name,
-        totalMentorias: mentoriasValidas,
+        totalMentorias: notas.length,
         notaMedia: media,
         notaMedia10: media10,
         classificacao: elegivel ? bonus.classificacao : "Pendente",
@@ -147,9 +185,13 @@ const RankingBonus = () => {
         percentualBonus: elegivel ? bonus.percentual : 0,
         valorBonus: elegivel ? bonus.valor : 0,
         notas,
+        evals: allEvs.sort((a, b) => {
+          const da = parseEvalDate(a.data);
+          const db = parseEvalDate(b.data);
+          return (db?.getTime() || 0) - (da?.getTime() || 0);
+        }),
       };
     }).sort((a, b) => {
-      // Eligible first, then by nota
       if (a.elegivel !== b.elegivel) return a.elegivel ? -1 : 1;
       return b.notaMedia - a.notaMedia;
     });
@@ -162,13 +204,15 @@ const RankingBonus = () => {
     const mediaGeral = elegiveis.length > 0
       ? elegiveis.reduce((s, r) => s + r.notaMedia10, 0) / elegiveis.length
       : 0;
+    const excludedCount = monthEvals.filter((e) => e.excluded_from_ranking).length;
     return {
       totalAtendentes: ranking.length,
       elegiveis: elegiveis.length,
       inelegiveis: ranking.length - elegiveis.length,
       mediaGeral: Math.round(mediaGeral * 10) / 10,
       totalBonus,
-      totalMentorias: monthEvals.filter((e) => !isIneligibleEval(e)).length,
+      totalMentorias: monthEvals.filter((e) => !e.excluded_from_ranking && !isIneligibleEval(e)).length,
+      excludedCount,
     };
   }, [ranking, monthEvals]);
 
@@ -184,6 +228,81 @@ const RankingBonus = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
+  };
+
+  // Exclude evaluation
+  const openExcludeDialog = (evalId: string) => {
+    setExcludeEvalId(evalId);
+    setExcludeReason("");
+    setExcludeCustomReason("");
+    setExcludeDialogOpen(true);
+  };
+
+  const handleExclude = async () => {
+    if (!excludeEvalId) return;
+    const finalReason = excludeReason === "Outro" ? excludeCustomReason.trim() : excludeReason;
+    if (!finalReason) {
+      toast.error("Selecione ou informe o motivo da exclusão.");
+      return;
+    }
+
+    setExcludeSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user?.id || "").single();
+
+    const { error } = await supabase
+      .from("evaluations")
+      .update({
+        excluded_from_ranking: true,
+        exclusion_reason: finalReason,
+        excluded_at: new Date().toISOString(),
+        excluded_by: profile?.full_name || user?.email || "Desconhecido",
+      } as any)
+      .eq("id", excludeEvalId);
+
+    if (error) {
+      toast.error("Erro ao excluir mentoria da apuração.");
+      console.error(error);
+    } else {
+      toast.success("Mentoria excluída da apuração.");
+      setExcludeDialogOpen(false);
+      // Update local state
+      setEvals((prev) => prev.map((e) =>
+        e.id === excludeEvalId
+          ? { ...e, excluded_from_ranking: true, exclusion_reason: finalReason, excluded_at: new Date().toISOString(), excluded_by: profile?.full_name || user?.email || "" }
+          : e
+      ));
+    }
+    setExcludeSaving(false);
+  };
+
+  // Restore evaluation
+  const handleRestore = async () => {
+    if (!restoreEvalId) return;
+    setRestoreSaving(true);
+
+    const { error } = await supabase
+      .from("evaluations")
+      .update({
+        excluded_from_ranking: false,
+        exclusion_reason: null,
+        excluded_at: null,
+        excluded_by: null,
+      } as any)
+      .eq("id", restoreEvalId);
+
+    if (error) {
+      toast.error("Erro ao restaurar mentoria.");
+    } else {
+      toast.success("Mentoria restaurada à apuração.");
+      setEvals((prev) => prev.map((e) =>
+        e.id === restoreEvalId
+          ? { ...e, excluded_from_ranking: false, exclusion_reason: null, excluded_at: null, excluded_by: null }
+          : e
+      ));
+    }
+    setRestoreEvalId(null);
+    setRestoreSaving(false);
   };
 
   function bonusColor(cls: string): string {
@@ -242,7 +361,7 @@ const RankingBonus = () => {
         ) : (
           <>
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
               <Card className="p-4 text-center">
                 <Users2 className="h-5 w-5 mx-auto text-primary mb-1" />
                 <p className="text-2xl font-bold text-foreground">{stats.totalAtendentes}</p>
@@ -269,6 +388,11 @@ const RankingBonus = () => {
                 <p className="text-[10px] text-muted-foreground">Mentorias válidas</p>
               </Card>
               <Card className="p-4 text-center">
+                <Ban className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
+                <p className="text-2xl font-bold text-muted-foreground">{stats.excludedCount}</p>
+                <p className="text-[10px] text-muted-foreground">Excluídas</p>
+              </Card>
+              <Card className="p-4 text-center">
                 <DollarSign className="h-5 w-5 mx-auto text-accent mb-1" />
                 <p className="text-2xl font-bold text-accent">{formatBRL(stats.totalBonus)}</p>
                 <p className="text-[10px] text-muted-foreground">Total bônus</p>
@@ -282,6 +406,7 @@ const RankingBonus = () => {
                 <div className="text-xs text-muted-foreground space-y-1">
                   <p><strong>Regras de elegibilidade:</strong> mínimo de <strong>{MIN_MENTORIAS} mentorias válidas</strong> no mês.</p>
                   <p><strong>Exclusões automáticas:</strong> atendimentos com áudio, sem interação do cliente e mentorias preventivas não entram no cálculo.</p>
+                  <p><strong>Exclusões manuais:</strong> clique no ícone <Ban className="h-3 w-3 inline" /> para excluir uma mentoria da apuração com justificativa. Mentorias excluídas podem ser restauradas.</p>
                   <p><strong>Régua:</strong> 95–100 Excelente (100% / R$ 1.200) · 85–94 Muito bom (90% / R$ 1.080) · 70–84 Bom (70% / R$ 840) · 50–69 Em desenvolvimento (30% / R$ 360) · 0–49 Abaixo do esperado (0% / R$ 0)</p>
                 </div>
               </div>
@@ -315,58 +440,151 @@ const RankingBonus = () => {
                         const bgRow = r.elegivel
                           ? idx === 0 ? "bg-yellow-50/50 dark:bg-yellow-900/10" : ""
                           : "bg-muted/20 opacity-70";
+                        const isExpanded = expandedAttendant === r.name;
+                        const excludedInThisAttendant = r.evals.filter((e) => e.excluded_from_ranking);
 
                         return (
-                          <tr key={r.name} className={`border-b border-border last:border-0 transition-colors hover:bg-muted/30 ${bgRow}`}>
-                            <td className="p-3 text-center">
-                              {r.elegivel ? getRankIcon(idx) : <span className="text-xs text-muted-foreground">—</span>}
-                            </td>
-                            <td className="p-3">
-                              <p className="font-medium text-foreground">{r.name}</p>
-                              {r.motivoInelegivel && (
-                                <p className="text-[10px] text-muted-foreground mt-0.5">{r.motivoInelegivel}</p>
-                              )}
-                            </td>
-                            <td className="p-3 text-center">
-                              <span className={`font-bold ${r.totalMentorias >= MIN_MENTORIAS ? "text-foreground" : "text-destructive"}`}>
-                                {r.totalMentorias}
-                              </span>
-                              <span className="text-muted-foreground text-xs">/{MIN_MENTORIAS}</span>
-                            </td>
-                            <td className="p-3 text-center">
-                              <span className={`text-lg font-black ${r.elegivel ? (r.notaMedia10 >= 7 ? "text-accent" : r.notaMedia10 >= 5 ? "text-warning" : "text-destructive") : "text-muted-foreground"}`}>
-                                {formatNota(r.notaMedia)}
-                              </span>
-                            </td>
-                            <td className="p-3 text-center">
-                              <Badge
-                                variant="outline"
-                                className={`text-xs ${r.elegivel ? bonusColor(r.classificacao) : "text-muted-foreground"}`}
-                              >
-                                {r.classificacao}
-                              </Badge>
-                            </td>
-                            <td className="p-3 text-center">
-                              {r.elegivel ? (
-                                <Badge className="bg-accent/15 text-accent text-xs gap-1">
-                                  <CheckCircle2 className="h-3 w-3" /> Sim
+                          <tr key={`group-${r.name}`} className="contents">
+                            {/* Summary row */}
+                            <tr
+                              className={`border-b border-border last:border-0 transition-colors hover:bg-muted/30 cursor-pointer ${bgRow}`}
+                              onClick={() => setExpandedAttendant(isExpanded ? null : r.name)}
+                            >
+                              <td className="p-3 text-center">
+                                {r.elegivel ? getRankIcon(idx) : <span className="text-xs text-muted-foreground">—</span>}
+                              </td>
+                              <td className="p-3">
+                                <div className="flex items-center gap-2">
+                                  <div>
+                                    <p className="font-medium text-foreground">{r.name}</p>
+                                    {r.motivoInelegivel && (
+                                      <p className="text-[10px] text-muted-foreground mt-0.5">{r.motivoInelegivel}</p>
+                                    )}
+                                  </div>
+                                  {excludedInThisAttendant.length > 0 && (
+                                    <Badge className="bg-muted text-muted-foreground text-[9px] shrink-0">
+                                      {excludedInThisAttendant.length} excluída{excludedInThisAttendant.length > 1 ? "s" : ""}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="p-3 text-center">
+                                <span className={`font-bold ${r.totalMentorias >= MIN_MENTORIAS ? "text-foreground" : "text-destructive"}`}>
+                                  {r.totalMentorias}
+                                </span>
+                                <span className="text-muted-foreground text-xs">/{MIN_MENTORIAS}</span>
+                              </td>
+                              <td className="p-3 text-center">
+                                <span className={`text-lg font-black ${r.elegivel ? (r.notaMedia10 >= 7 ? "text-accent" : r.notaMedia10 >= 5 ? "text-warning" : "text-destructive") : "text-muted-foreground"}`}>
+                                  {r.totalMentorias > 0 ? formatNota(r.notaMedia) : "—"}
+                                </span>
+                              </td>
+                              <td className="p-3 text-center">
+                                <Badge variant="outline" className={`text-xs ${r.elegivel ? bonusColor(r.classificacao) : "text-muted-foreground"}`}>
+                                  {r.classificacao}
                                 </Badge>
-                              ) : (
-                                <Badge className="bg-muted text-muted-foreground text-xs gap-1">
-                                  <XCircle className="h-3 w-3" /> Não
-                                </Badge>
-                              )}
-                            </td>
-                            <td className="p-3 text-center">
-                              <span className={`font-bold ${r.elegivel ? bonusColor(r.classificacao) : "text-muted-foreground"}`}>
-                                {r.elegivel ? `${r.percentualBonus}%` : "—"}
-                              </span>
-                            </td>
-                            <td className="p-3 text-right">
-                              <span className={`font-bold text-base ${r.elegivel ? (r.valorBonus > 0 ? "text-accent" : "text-destructive") : "text-muted-foreground"}`}>
-                                {r.elegivel ? formatBRL(r.valorBonus) : "—"}
-                              </span>
-                            </td>
+                              </td>
+                              <td className="p-3 text-center">
+                                {r.elegivel ? (
+                                  <Badge className="bg-accent/15 text-accent text-xs gap-1">
+                                    <CheckCircle2 className="h-3 w-3" /> Sim
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-muted text-muted-foreground text-xs gap-1">
+                                    <XCircle className="h-3 w-3" /> Não
+                                  </Badge>
+                                )}
+                              </td>
+                              <td className="p-3 text-center">
+                                <span className={`font-bold ${r.elegivel ? bonusColor(r.classificacao) : "text-muted-foreground"}`}>
+                                  {r.elegivel ? `${r.percentualBonus}%` : "—"}
+                                </span>
+                              </td>
+                              <td className="p-3 text-right">
+                                <span className={`font-bold text-base ${r.elegivel ? (r.valorBonus > 0 ? "text-accent" : "text-destructive") : "text-muted-foreground"}`}>
+                                  {r.elegivel ? formatBRL(r.valorBonus) : "—"}
+                                </span>
+                              </td>
+                            </tr>
+
+                            {/* Expanded detail rows */}
+                            {isExpanded && (
+                              <tr>
+                                <td colSpan={8} className="p-0">
+                                  <div className="bg-muted/20 border-y border-border">
+                                    <table className="w-full text-xs">
+                                      <thead>
+                                        <tr className="border-b border-border/50">
+                                          <th className="p-2 pl-12 text-left font-medium text-muted-foreground">Protocolo</th>
+                                          <th className="p-2 text-left font-medium text-muted-foreground">Data</th>
+                                          <th className="p-2 text-center font-medium text-muted-foreground">Nota</th>
+                                          <th className="p-2 text-center font-medium text-muted-foreground">Status</th>
+                                          <th className="p-2 text-center font-medium text-muted-foreground">Ação</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {r.evals.map((ev) => {
+                                          const isExcluded = ev.excluded_from_ranking;
+                                          const isAutoIneligible = isIneligibleEval(ev);
+                                          return (
+                                            <tr key={ev.id} className={`border-b border-border/30 last:border-0 ${isExcluded ? "opacity-50 bg-muted/30" : ""}`}>
+                                              <td className="p-2 pl-12 font-mono">{ev.protocolo || "—"}</td>
+                                              <td className="p-2">{formatDateBR(ev.data)}</td>
+                                              <td className="p-2 text-center font-bold">
+                                                {isAutoIneligible ? "—" : formatNota(ev.nota)}
+                                              </td>
+                                              <td className="p-2 text-center">
+                                                {isExcluded ? (
+                                                  <TooltipProvider delayDuration={200}>
+                                                    <Tooltip>
+                                                      <TooltipTrigger>
+                                                        <Badge className="bg-destructive/10 text-destructive text-[10px] gap-1">
+                                                          <Ban className="h-2.5 w-2.5" /> Excluída
+                                                        </Badge>
+                                                      </TooltipTrigger>
+                                                      <TooltipContent className="max-w-xs">
+                                                        <p className="text-xs"><strong>Motivo:</strong> {ev.exclusion_reason}</p>
+                                                        <p className="text-xs"><strong>Por:</strong> {ev.excluded_by}</p>
+                                                        <p className="text-xs"><strong>Em:</strong> {formatDateBR(ev.excluded_at)}</p>
+                                                      </TooltipContent>
+                                                    </Tooltip>
+                                                  </TooltipProvider>
+                                                ) : isAutoIneligible ? (
+                                                  <Badge className="bg-muted text-muted-foreground text-[10px]">Inelegível (auto)</Badge>
+                                                ) : (
+                                                  <Badge className="bg-accent/15 text-accent text-[10px]">Válida</Badge>
+                                                )}
+                                              </td>
+                                              <td className="p-2 text-center">
+                                                {isExcluded ? (
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-6 text-[10px] gap-1 text-primary"
+                                                    onClick={(e) => { e.stopPropagation(); setRestoreEvalId(ev.id); }}
+                                                  >
+                                                    <RotateCcw className="h-3 w-3" /> Restaurar
+                                                  </Button>
+                                                ) : !isAutoIneligible ? (
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-6 text-[10px] gap-1 text-destructive"
+                                                    onClick={(e) => { e.stopPropagation(); openExcludeDialog(ev.id); }}
+                                                  >
+                                                    <Ban className="h-3 w-3" /> Excluir
+                                                  </Button>
+                                                ) : null}
+                                              </td>
+                                            </tr>
+                                          );
+                                        })}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
                           </tr>
                         );
                       })}
@@ -378,6 +596,7 @@ const RankingBonus = () => {
                 <div className="border-t border-border bg-muted/30 px-4 py-3 flex items-center justify-between">
                   <p className="text-xs text-muted-foreground">
                     {stats.elegiveis} atendente{stats.elegiveis !== 1 ? "s" : ""} elegível{stats.elegiveis !== 1 ? "is" : ""} de {stats.totalAtendentes}
+                    {stats.excludedCount > 0 && <span> · {stats.excludedCount} mentoria{stats.excludedCount !== 1 ? "s" : ""} excluída{stats.excludedCount !== 1 ? "s" : ""}</span>}
                   </p>
                   <p className="text-sm font-bold text-foreground">
                     Total: <span className="text-accent">{formatBRL(stats.totalBonus)}</span>
@@ -388,6 +607,80 @@ const RankingBonus = () => {
           </>
         )}
       </main>
+
+      {/* Exclude Dialog */}
+      <Dialog open={excludeDialogOpen} onOpenChange={setExcludeDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Ban className="h-5 w-5 text-destructive" />
+              Excluir mentoria da apuração
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              A mentoria será marcada como "Excluída da apuração" e não entrará no cálculo de nota, classificação e bônus. O registro será mantido no histórico.
+            </p>
+            <div className="space-y-2">
+              <Label>Motivo da exclusão *</Label>
+              <Select value={excludeReason} onValueChange={setExcludeReason}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o motivo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {EXCLUSION_REASONS.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {excludeReason === "Outro" && (
+              <div className="space-y-2">
+                <Label>Especifique o motivo *</Label>
+                <Input
+                  placeholder="Descreva o motivo..."
+                  value={excludeCustomReason}
+                  onChange={(e) => setExcludeCustomReason(e.target.value)}
+                  maxLength={200}
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExcludeDialogOpen(false)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              onClick={handleExclude}
+              disabled={excludeSaving || (!excludeReason || (excludeReason === "Outro" && !excludeCustomReason.trim()))}
+            >
+              {excludeSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Ban className="h-4 w-4 mr-1" />}
+              Confirmar exclusão
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Restore Confirmation Dialog */}
+      <Dialog open={!!restoreEvalId} onOpenChange={() => setRestoreEvalId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5 text-primary" />
+              Restaurar mentoria
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Deseja restaurar esta mentoria à apuração? Ela voltará a impactar a nota, classificação e bônus do atendente.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRestoreEvalId(null)}>Cancelar</Button>
+            <Button onClick={handleRestore} disabled={restoreSaving}>
+              {restoreSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RotateCcw className="h-4 w-4 mr-1" />}
+              Restaurar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
