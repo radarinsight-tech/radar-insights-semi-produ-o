@@ -358,15 +358,18 @@ const RankingBonus = () => {
     const { data: companyData } = await supabase.rpc("get_my_company_id");
     const closedByName = profile?.full_name || user?.email || "Desconhecido";
 
-    const snapshot = ranking.map((r) => ({
-      name: r.name,
-      totalMentorias: r.totalMentorias,
-      notaMedia: r.notaMedia10,
-      classificacao: r.classificacao,
-      elegivel: r.elegivel,
-      percentualBonus: r.percentualBonus,
-      valorBonus: r.valorBonus,
-    }));
+    const snapshot = {
+      attendants: ranking.map((r) => ({
+        name: r.name,
+        totalMentorias: r.totalMentorias,
+        notaMedia: r.notaMedia10,
+        classificacao: r.classificacao,
+        elegivel: r.elegivel,
+        percentualBonus: r.percentualBonus,
+        valorBonus: r.valorBonus,
+      })),
+      excludedCount: stats.excludedCount,
+    };
 
     if (monthClosing) {
       // Update existing
