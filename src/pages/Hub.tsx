@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { LogOut, HeadsetIcon, CreditCard, Loader2, ShieldAlert, Users, FlaskConical, ShieldCheck, ClipboardCheck, Sprout, Users2 } from "lucide-react";
+import { LogOut, HeadsetIcon, CreditCard, Loader2, ShieldAlert, Users, FlaskConical, ShieldCheck, ClipboardCheck, Sprout, Users2, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -138,6 +138,13 @@ const Hub = () => {
                       icon={<div className="p-2 rounded-lg bg-cyan-500/10 group-hover:bg-cyan-500/20 transition-colors shrink-0"><Users2 className="h-5 w-5 text-cyan-500" /></div>}
                       onClick={() => navigate("/atendentes")}
                       accentClass="hover:border-cyan-400/40"
+                    />
+                    <ModuleCard
+                      title="Ranking & Bônus"
+                      description="Desempenho mensal da equipe com classificação e cálculo automático de bônus"
+                      icon={<div className="p-2 rounded-lg bg-yellow-500/10 group-hover:bg-yellow-500/20 transition-colors shrink-0"><Trophy className="h-5 w-5 text-yellow-500" /></div>}
+                      onClick={() => navigate("/ranking")}
+                      accentClass="hover:border-yellow-400/40"
                     />
                   </div>
                 </section>

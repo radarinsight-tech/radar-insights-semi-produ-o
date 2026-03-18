@@ -17,6 +17,7 @@ import SpcConsulta from "./pages/SpcConsulta.tsx";
 import MentoriaLab from "./pages/MentoriaLab.tsx";
 import MentoriaPreventiva from "./pages/MentoriaPreventiva.tsx";
 import Atendentes from "./pages/Atendentes.tsx";
+import RankingBonus from "./pages/RankingBonus.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AppModeBanner from "./components/AppModeBanner.tsx";
 
@@ -115,6 +116,16 @@ const App = () => (
               <ProtectedRoute>
                 <ModuleGuard module="auditoria">
                   <Atendentes />
+                </ModuleGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ranking"
+            element={
+              <ProtectedRoute>
+                <ModuleGuard module="auditoria">
+                  <RankingBonus />
                 </ModuleGuard>
               </ProtectedRoute>
             }
