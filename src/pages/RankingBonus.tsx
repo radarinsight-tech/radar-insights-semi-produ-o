@@ -341,6 +341,7 @@ const RankingBonus = () => {
   // Restore evaluation
   const handleRestore = async () => {
     if (!restoreEvalId) return;
+    if (isClosed) { toast.error("Mês fechado. Reabra para fazer alterações."); setRestoreEvalId(null); return; }
     setRestoreSaving(true);
 
     const { error } = await supabase
