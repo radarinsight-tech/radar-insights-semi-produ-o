@@ -410,6 +410,7 @@ const RankingBonus = () => {
     setCloseDialogOpen(false);
     setClosingSaving(false);
     fetchClosing();
+    fetchAllClosings();
   };
 
   // Reopen month
