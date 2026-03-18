@@ -434,17 +434,24 @@ const RankingBonus = () => {
 
   // Reopen month
   const handleReopenMonth = async () => {
-    if (!monthClosing) return;
+    if (!monthClosing || !isAdmin) return;
     setClosingSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user?.id || "").single();
+    const reopenedByName = profile?.full_name || user?.email || "Desconhecido";
+    const reopenedAtDate = new Date().toISOString();
+
+    // Append to reopen history
+    const currentHistory = Array.isArray((monthClosing as any).reopen_history) ? (monthClosing as any).reopen_history : [];
+    const newHistory = [...currentHistory, { by: reopenedByName, at: reopenedAtDate }];
 
     const { error } = await supabase
       .from("monthly_closings")
       .update({
         status: "aberto",
-        reopened_by: profile?.full_name || user?.email || "Desconhecido",
-        reopened_at: new Date().toISOString(),
+        reopened_by: reopenedByName,
+        reopened_at: reopenedAtDate,
+        reopen_history: newHistory,
       } as any)
       .eq("id", monthClosing.id);
 
