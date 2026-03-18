@@ -201,7 +201,7 @@ export function extractTipoAtendimento(text: string): string {
     const matches = text.match(new RegExp(pattern, "gi"));
     if (matches) counts.set(tipo, (counts.get(tipo) || 0) + matches.length);
   }
-  if (counts.size === 0) return "Outro";
+  if (counts.size === 0) return "Não identificado";
   // Return the type with most keyword hits
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
 }
