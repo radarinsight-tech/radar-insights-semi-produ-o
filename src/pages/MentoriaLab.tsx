@@ -1104,12 +1104,16 @@ const MentoriaLab = () => {
                           <div className="flex flex-col items-center gap-1">
                             {readingIds.has(f.id) ? (
                               <Badge className="bg-primary/10 text-primary text-xs">Lendo...</Badge>
+                            ) : f.status === "analisado" && f.ineligible ? (
+                              <Badge className="bg-muted text-muted-foreground text-xs">
+                                {f.ineligibleReason || "Fora de avaliação"}
+                              </Badge>
                             ) : (
                               <Badge className={`${statusConfig[f.status].color} text-xs`}>
                                 {statusConfig[f.status].label}
                               </Badge>
                             )}
-                            {f.status === "analisado" && f.result?.notaFinal != null && notaToScale10(f.result.notaFinal) < 7 && (
+                            {f.status === "analisado" && !f.ineligible && f.result?.notaFinal != null && notaToScale10(f.result.notaFinal) < 7 && (
                               <Badge className="bg-warning/15 text-warning text-[10px] whitespace-nowrap">
                                 Necessita mentoria
                               </Badge>
