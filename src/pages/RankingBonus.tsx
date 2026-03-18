@@ -526,9 +526,11 @@ const RankingBonus = () => {
               <span>
                 Fechado por <strong className="text-foreground">{monthClosing.closed_by}</strong> em {formatDateBR(monthClosing.closed_at)}
               </span>
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setReopenDialogOpen(true)}>
-                <Unlock className="h-3 w-3" /> Reabrir mês
-              </Button>
+              {isAdmin && (
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setReopenDialogOpen(true)}>
+                  <Unlock className="h-3 w-3" /> Reabrir mês
+                </Button>
+              )}
             </div>
           )}
         </Card>
