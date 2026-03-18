@@ -586,7 +586,7 @@ const RankingBonus = () => {
                                 </td>
                               </tr>
                             )}
-                          </tr>
+                          </>
                         );
                       })}
                     </tbody>
