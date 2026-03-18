@@ -719,7 +719,9 @@ const RankingBonus = () => {
                                                 )}
                                               </td>
                                               <td className="p-2 text-center">
-                                                {isExcluded ? (
+                                                {isClosed ? (
+                                                  <span className="text-[10px] text-muted-foreground italic">Mês fechado</span>
+                                                ) : isExcluded ? (
                                                   <Button
                                                     variant="ghost"
                                                     size="sm"
