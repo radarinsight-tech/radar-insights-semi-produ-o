@@ -444,9 +444,10 @@ const RankingBonus = () => {
                         const excludedInThisAttendant = r.evals.filter((e) => e.excluded_from_ranking);
 
                         return (
-                          <tr key={`group-${r.name}`} className="contents">
+                          <>
                             {/* Summary row */}
                             <tr
+                              key={`summary-${r.name}`}
                               className={`border-b border-border last:border-0 transition-colors hover:bg-muted/30 cursor-pointer ${bgRow}`}
                               onClick={() => setExpandedAttendant(isExpanded ? null : r.name)}
                             >
