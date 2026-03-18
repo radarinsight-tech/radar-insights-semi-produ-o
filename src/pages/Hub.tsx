@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { LogOut, HeadsetIcon, CreditCard, Loader2, ShieldAlert, Users, FlaskConical, ShieldCheck, ClipboardCheck, Sprout, Users2 } from "lucide-react";
+import { LogOut, HeadsetIcon, CreditCard, Loader2, ShieldAlert, Users, FlaskConical, ShieldCheck, ClipboardCheck, Sprout, Users2, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
