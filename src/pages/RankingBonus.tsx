@@ -887,6 +887,20 @@ const RankingBonus = () => {
                             <div>
                               <p className="text-foreground font-medium">{c.closed_by}</p>
                               <p>{c.closed_at ? formatDateBR(c.closed_at) : ""}</p>
+                              {(() => {
+                                const history = Array.isArray((c as any).reopen_history) ? (c as any).reopen_history : [];
+                                if (history.length === 0) return null;
+                                return (
+                                  <div className="mt-1 pt-1 border-t border-border/50">
+                                    <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Reaberturas ({history.length}):</p>
+                                    {history.map((h: any, i: number) => (
+                                      <p key={i} className="text-[10px] text-muted-foreground">
+                                        {h.by} — {formatDateBR(h.at)}
+                                      </p>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           ) : "—"}
                         </td>
