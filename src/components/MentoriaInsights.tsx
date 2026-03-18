@@ -16,6 +16,8 @@ interface AnalyzedFile {
   atendente?: string;
   data?: string;
   canal?: string;
+  ineligible?: boolean;
+  ineligibleReason?: string;
   result?: {
     notaFinal?: number;
     classificacao?: string;
@@ -28,6 +30,8 @@ interface AnalyzedFile {
     pontosFortes?: string[];
     pontosMelhoria?: string[];
     bonusQualidade?: number;
+    _ineligible?: boolean;
+    _ineligibleReason?: string;
   };
 }
 
