@@ -27,15 +27,22 @@ interface RadarInsightSpcResult {
   modoConsulta: "simulacao" | "producao";
 }
 
-// ── Normaliser: converts any raw SPC response into our internal model ──
+function formatCpfCnpj(digits: string): string {
+  if (digits.length === 14) {
+    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+  }
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+}
+
+function maskOperator(op: string): string {
+  if (op.length <= 4) return "****";
+  return op.slice(0, 2) + "***" + op.slice(-2);
+}
+
+// ── Normaliser ──
 function normalizarRespostaSPC(raw: Record<string, unknown>, cpf: string, nome: string): RadarInsightSpcResult {
-  // When the real SPC 643 integration arrives, map raw fields here.
-  // For now this is a pass-through for simulated data.
   const digits = String(raw.cpf ?? cpf).replace(/\D/g, "");
   const isCnpj = digits.length === 14;
-  const formatted = isCnpj
-    ? `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`
-    : `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
 
   const registroSpc = Number(raw.registroSpc ?? 0);
   const pendenciasSerasa = Number(raw.pendenciasSerasa ?? 0);
@@ -51,7 +58,7 @@ function normalizarRespostaSPC(raw: Record<string, unknown>, cpf: string, nome: 
   return {
     nome: String(raw.nome ?? (nome || "Nome não informado")),
     cpf: digits,
-    cpfFormatado: formatted,
+    cpfFormatado: formatCpfCnpj(digits),
     tipo: isCnpj ? "CNPJ" : "CPF",
     situacaoCpf: String(raw.situacaoCpf ?? (registroSpc === 0 && pendenciasSerasa === 0 ? "Regular" : "Com restrições")),
     registroSpc,
@@ -69,11 +76,10 @@ function normalizarRespostaSPC(raw: Record<string, unknown>, cpf: string, nome: 
   };
 }
 
-// ── Simulated data generator ──
+// ── Simulated data ──
 function gerarDadosSimulados(digits: string, nome: string): Record<string, unknown> {
   const seed = digits.split("").reduce((a, b) => a + Number(b), 0);
 
-  // Known demo CPFs
   if (digits === "12345678900") {
     return {
       cpf: digits, nome: nome || "Nome não informado",
@@ -111,21 +117,60 @@ function gerarDadosSimulados(digits: string, nome: string): Record<string, unkno
   };
 }
 
-// ── Real SPC 643 placeholder ──
+// ── Real SPC 643 call ──
 async function consultarSPCReal(
   cpf: string,
-  _operator: string,
-  _password: string,
-  _endpoint: string,
-): Promise<Record<string, unknown>> {
-  // TODO: Implement real SPC 643 API call when technical documentation is available.
-  // Expected flow:
-  // 1. Build SOAP/REST request per SPC 643 spec
-  // 2. POST to _endpoint with operator/password auth
-  // 3. Parse response XML/JSON
-  // 4. Return raw fields for normalizarRespostaSPC()
-  console.warn("[SPC] consultarSPCReal called — integration not yet implemented for:", cpf);
-  throw new Error("SPC_INTEGRATION_NOT_AVAILABLE");
+  nome: string,
+  operator: string,
+  password: string,
+  endpoint: string,
+): Promise<{ success: boolean; status: number; data: Record<string, unknown> | null; raw_response: string; elapsed_ms: number }> {
+  const payload = {
+    operador: operator,
+    senha: password,
+    documento: cpf,
+    nome: nome,
+    opcao: "643",
+  };
+
+  const ts = new Date().toISOString();
+  console.log(`[SPC] Request at ${ts}`);
+  console.log(`[SPC] Endpoint: ${endpoint}`);
+  console.log(`[SPC] Operator: ${maskOperator(operator)}`);
+  console.log(`[SPC] Document: ${cpf.slice(0, 3)}***${cpf.slice(-2)}`);
+
+  const start = performance.now();
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const elapsed_ms = Math.round(performance.now() - start);
+  const rawText = await response.text();
+
+  console.log(`[SPC] Response status: ${response.status}`);
+  console.log(`[SPC] Response time: ${elapsed_ms}ms`);
+  console.log(`[SPC] Response body: ${rawText.slice(0, 500)}`);
+
+  let parsed: Record<string, unknown> | null = null;
+  try {
+    parsed = JSON.parse(rawText);
+  } catch {
+    // Response is not JSON – keep raw text
+  }
+
+  return {
+    success: response.ok,
+    status: response.status,
+    data: parsed,
+    raw_response: rawText,
+    elapsed_ms,
+  };
 }
 
 // ── Main handler ──
@@ -135,10 +180,12 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Auth check
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const supabase = createClient(
@@ -147,12 +194,14 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } },
     );
 
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(authHeader.replace("Bearer ", ""));
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Parse body
     const body = await req.json();
     const { cpfCnpj, nome, mode } = body as { cpfCnpj: string; nome?: string; mode?: string };
 
@@ -164,57 +213,60 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Determine mode: env var overrides, then request param
     const spcMode = Deno.env.get("SPC_MODE") || mode || "simulation";
     const clientName = nome?.trim() || "Nome não informado";
 
-    let rawResponse: Record<string, unknown>;
-    let finalMode: "simulacao" | "producao";
-
-    if (spcMode === "production") {
-      // Validate required secrets
-      const operator = Deno.env.get("SPC_OPERATOR");
-      const password = Deno.env.get("SPC_PASSWORD");
-      const endpoint = Deno.env.get("SPC_ENDPOINT");
-
-      if (!operator || !password || !endpoint) {
-        return new Response(
-          JSON.stringify({
-            error: "Integração SPC não configurada. Credenciais ausentes (SPC_OPERATOR, SPC_PASSWORD ou SPC_ENDPOINT).",
-            code: "SPC_CREDENTIALS_MISSING",
-          }),
-          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-
-      try {
-        rawResponse = await consultarSPCReal(digits, operator, password, endpoint);
-        finalMode = "producao";
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "Erro desconhecido";
-        if (message === "SPC_INTEGRATION_NOT_AVAILABLE") {
-          return new Response(
-            JSON.stringify({
-              error: "Integração SPC real ainda não disponível. A documentação técnica da opção 643 ainda não foi implementada.",
-              code: "SPC_INTEGRATION_NOT_AVAILABLE",
-            }),
-            { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-          );
-        }
-        return new Response(
-          JSON.stringify({ error: `Erro na consulta SPC: ${message}`, code: "SPC_REQUEST_ERROR" }),
-          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-    } else {
-      // Simulation mode
-      rawResponse = gerarDadosSimulados(digits, clientName);
-      finalMode = "simulacao";
+    // ── SIMULATION MODE ──
+    if (spcMode !== "production") {
+      const rawResponse = gerarDadosSimulados(digits, clientName);
+      const result = normalizarRespostaSPC(rawResponse, digits, clientName);
+      result.modoConsulta = "simulacao";
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Normalise into Radar Insight internal model
-    const result = normalizarRespostaSPC(rawResponse, digits, clientName);
-    result.modoConsulta = finalMode;
+    // ── PRODUCTION MODE ──
+    const operator = Deno.env.get("SPC_OPERATOR");
+    const password = Deno.env.get("SPC_PASSWORD");
+    const endpoint = Deno.env.get("SPC_ENDPOINT");
+
+    if (!operator || !password || !endpoint) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "SPC_CREDENTIALS_MISSING",
+          message: "Credenciais SPC não configuradas (SPC_OPERATOR, SPC_PASSWORD ou SPC_ENDPOINT).",
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Execute real call
+    const spcResult = await consultarSPCReal(digits, clientName, operator, password, endpoint);
+
+    // If API returned an error (403, 401, 500, etc), return raw details
+    if (!spcResult.success) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          status: spcResult.status,
+          error: `SPC_API_ERROR_${spcResult.status}`,
+          message: `API SPC retornou status ${spcResult.status}`,
+          raw_response: spcResult.data ?? spcResult.raw_response,
+          elapsed_ms: spcResult.elapsed_ms,
+          endpoint_used: endpoint,
+          operator_used: maskOperator(operator),
+          timestamp: new Date().toISOString(),
+        }),
+        { status: spcResult.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Success – normalize into internal model
+    const result = normalizarRespostaSPC(spcResult.data ?? {}, digits, clientName);
+    result.modoConsulta = "producao";
 
     return new Response(JSON.stringify(result), {
       status: 200,
@@ -222,8 +274,14 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("[consult-spc] Unhandled error:", err);
+    const message = err instanceof Error ? err.message : "Erro desconhecido";
     return new Response(
-      JSON.stringify({ error: "Erro interno no servidor.", code: "INTERNAL_ERROR" }),
+      JSON.stringify({
+        success: false,
+        error: "INTERNAL_ERROR",
+        message,
+        timestamp: new Date().toISOString(),
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
