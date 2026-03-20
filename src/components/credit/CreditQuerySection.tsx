@@ -66,14 +66,25 @@ const CreditQuerySection = ({ onResult, isLoading, setIsLoading, isAdmin }: Prop
       });
 
       if (error) {
-        // Edge function returned an error
-        const msg = data?.error || error.message || "Erro na consulta.";
-        const code = data?.code;
+        let msg = "Erro na consulta.";
+        let code = "";
+        try {
+          if (data && typeof data === "object") {
+            msg = data.error || error.message || msg;
+            code = data.code || "";
+          } else if (typeof data === "string") {
+            const parsed = JSON.parse(data);
+            msg = parsed.error || msg;
+            code = parsed.code || "";
+          }
+        } catch {
+          msg = error.message || msg;
+        }
 
         if (code === "SPC_INTEGRATION_NOT_AVAILABLE") {
           toast.error("Integração SPC real ainda não disponível. Use o modo simulação.");
         } else if (code === "SPC_CREDENTIALS_MISSING") {
-          toast.error("Credenciais SPC não configuradas. Contate o administrador.");
+          toast.error("Credenciais SPC não configuradas. Use o modo simulação ou contate o administrador.");
         } else {
           toast.error(msg);
         }
