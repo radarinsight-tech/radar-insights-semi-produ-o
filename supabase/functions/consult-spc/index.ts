@@ -120,25 +120,28 @@ function gerarDadosSimulados(digits: string, nome: string): Record<string, unkno
 // ── Real SPC 643 call ──
 async function consultarSPCReal(
   cpf: string,
-  nome: string,
+  _nome: string,
   operator: string,
   password: string,
   endpoint: string,
 ): Promise<{ success: boolean; status: number; data: Record<string, unknown> | null; raw_response: string; elapsed_ms: number }> {
+  const digits = cpf.replace(/\D/g, "");
+  const tipoConsumidor = digits.length === 14 ? "J" : "F";
+
   const payload = {
-    operador: operator,
-    senha: password,
-    documento: cpf,
-    nome: nome,
-    opcao: "643",
+    codigoProduto: "643",
+    tipoConsumidor,
+    documentoConsumidor: digits,
   };
 
   const ts = new Date().toISOString();
   console.log(`[SPC] Request at ${ts}`);
   console.log(`[SPC] Endpoint: ${endpoint}`);
   console.log(`[SPC] Operator: ${maskOperator(operator)}`);
-  console.log(`[SPC] Document: ${cpf.slice(0, 3)}***${cpf.slice(-2)}`);
+  console.log(`[SPC] Document: ${digits.slice(0, 3)}***${digits.slice(-2)}`);
+  console.log(`[SPC] Payload: ${JSON.stringify(payload)}`);
 
+  const authToken = btoa(`${operator}:${password}`);
   const start = performance.now();
 
   const response = await fetch(endpoint, {
@@ -146,6 +149,8 @@ async function consultarSPCReal(
     headers: {
       "Content-Type": "application/json",
       "Accept": "application/json",
+      "Authorization": `Basic ${authToken}`,
+      "User-Agent": "RadarInsight/1.0",
     },
     body: JSON.stringify(payload),
   });
