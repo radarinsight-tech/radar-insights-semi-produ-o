@@ -66,27 +66,48 @@ const CreditQuerySection = ({ onResult, isLoading, setIsLoading, isAdmin }: Prop
       });
 
       if (error) {
-        let msg = "Erro na consulta.";
-        let code = "";
+        // Try to extract structured error from response
+        let errorData: Record<string, unknown> = {};
         try {
           if (data && typeof data === "object") {
-            msg = data.error || error.message || msg;
-            code = data.code || "";
+            errorData = data;
           } else if (typeof data === "string") {
-            const parsed = JSON.parse(data);
-            msg = parsed.error || msg;
-            code = parsed.code || "";
+            errorData = JSON.parse(data);
           }
         } catch {
-          msg = error.message || msg;
+          // not parseable
         }
 
-        if (code === "SPC_INTEGRATION_NOT_AVAILABLE") {
-          toast.error("Integração SPC real ainda não disponível. Use o modo simulação.");
-        } else if (code === "SPC_CREDENTIALS_MISSING") {
+        const code = String(errorData.error || "");
+        const message = String(errorData.message || error.message || "Erro na consulta.");
+
+        if (code === "SPC_CREDENTIALS_MISSING") {
           toast.error("Credenciais SPC não configuradas. Use o modo simulação ou contate o administrador.");
+        } else if (code.startsWith("SPC_API_ERROR_")) {
+          // Real SPC API error — show status and raw details
+          const status = errorData.status || "";
+          toast.error(`API SPC retornou erro ${status}: ${message}`, { duration: 8000 });
+          console.error("[SPC Diagnóstico]", JSON.stringify(errorData, null, 2));
+          // Pass error data to parent for diagnostic display
+          onResult({
+            cpfCnpj: digits,
+            formatted: digits,
+            tipo: digits.length === 14 ? "CNPJ" : "CPF",
+            nome: nomeCliente || "—",
+            situacaoCpf: `Erro API (${errorData.status})`,
+            registroSpc: 0,
+            pendenciasSerasa: 0,
+            protestos: 0,
+            chequesSemFundo: 0,
+            totalOcorrencias: 0,
+            valorTotalPendencias: 0,
+            classificacaoRisco: "Alto risco",
+            dataConsulta: String(errorData.timestamp || new Date().toLocaleString("pt-BR")),
+            modoConsulta: "producao",
+            _spcError: errorData as Record<string, unknown>,
+          } as SpcQueryResult & { _spcError: Record<string, unknown> });
         } else {
-          toast.error(msg);
+          toast.error(message);
         }
         setIsLoading(false);
         return;
