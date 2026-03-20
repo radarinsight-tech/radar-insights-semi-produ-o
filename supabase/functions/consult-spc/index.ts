@@ -286,16 +286,31 @@ Deno.serve(async (req) => {
 
     // If API returned an error (403, 401, 500, etc), return raw details
     if (!spcResult.success) {
+      const errorCategory = spcResult.status === 401 ? "AUTH_ERROR"
+        : spcResult.status === 403 ? "FORBIDDEN_WAF"
+        : spcResult.status >= 400 && spcResult.status < 500 ? "CLIENT_ERROR"
+        : "SERVER_ERROR";
+
       return new Response(
         JSON.stringify({
           success: false,
           status: spcResult.status,
           error: `SPC_API_ERROR_${spcResult.status}`,
+          error_category: errorCategory,
           message: `API SPC retornou status ${spcResult.status}`,
+          diagnostico: {
+            endpoint_usado: endpoint,
+            metodo: "POST",
+            autenticacao: "Basic (operator:password)",
+            operador: maskOperator(operator),
+            payload_enviado: {
+              codigoProduto: "643",
+              tipoConsumidor: digits.length === 14 ? "J" : "F",
+              documentoConsumidor: `${digits.slice(0, 3)}***${digits.slice(-2)}`,
+            },
+          },
           raw_response: spcResult.data ?? spcResult.raw_response,
           elapsed_ms: spcResult.elapsed_ms,
-          endpoint_used: endpoint,
-          operator_used: maskOperator(operator),
           timestamp: new Date().toISOString(),
         }),
         { status: spcResult.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
