@@ -135,32 +135,51 @@ async function consultarSPCReal(
   };
 
   const ts = new Date().toISOString();
-  console.log(`[SPC] Request at ${ts}`);
-  console.log(`[SPC] Endpoint: ${endpoint}`);
-  console.log(`[SPC] Operator: ${maskOperator(operator)}`);
-  console.log(`[SPC] Document: ${digits.slice(0, 3)}***${digits.slice(-2)}`);
-  console.log(`[SPC] Payload: ${JSON.stringify(payload)}`);
-
   const authToken = btoa(`${operator}:${password}`);
+  const maskedPassword = password.length > 2 ? password.slice(0, 1) + "***" + password.slice(-1) : "***";
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+    "Authorization": `Basic ${authToken}`,
+    "User-Agent": "RadarInsight/1.0",
+  };
+
+  // ── Diagnostic log: REQUEST ──
+  console.log(`[SPC] ════════════ REQUEST ════════════`);
+  console.log(`[SPC] Timestamp: ${ts}`);
+  console.log(`[SPC] Method: POST`);
+  console.log(`[SPC] Endpoint: ${endpoint}`);
+  console.log(`[SPC] Auth type: Basic (operator:password base64)`);
+  console.log(`[SPC] Operator: ${maskOperator(operator)}`);
+  console.log(`[SPC] Password: ${maskedPassword}`);
+  console.log(`[SPC] Document: ${digits.slice(0, 3)}***${digits.slice(-2)}`);
+  console.log(`[SPC] Headers: ${JSON.stringify({ ...headers, Authorization: "Basic <masked>" })}`);
+  console.log(`[SPC] Body: ${JSON.stringify(payload)}`);
+
   const start = performance.now();
 
   const response = await fetch(endpoint, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-      "Authorization": `Basic ${authToken}`,
-      "User-Agent": "RadarInsight/1.0",
-    },
+    headers,
     body: JSON.stringify(payload),
   });
 
   const elapsed_ms = Math.round(performance.now() - start);
   const rawText = await response.text();
 
-  console.log(`[SPC] Response status: ${response.status}`);
-  console.log(`[SPC] Response time: ${elapsed_ms}ms`);
-  console.log(`[SPC] Response body: ${rawText.slice(0, 500)}`);
+  // ── Diagnostic log: RESPONSE ──
+  const errorCategory = response.status === 401 ? "AUTH_ERROR"
+    : response.status === 403 ? "FORBIDDEN/WAF"
+    : response.status >= 400 && response.status < 500 ? "CLIENT_ERROR"
+    : response.status >= 500 ? "SERVER_ERROR"
+    : "SUCCESS";
+
+  console.log(`[SPC] ════════════ RESPONSE ════════════`);
+  console.log(`[SPC] Status: ${response.status} (${errorCategory})`);
+  console.log(`[SPC] Elapsed: ${elapsed_ms}ms`);
+  console.log(`[SPC] Body (first 800 chars): ${rawText.slice(0, 800)}`);
+  console.log(`[SPC] ════════════ END ════════════`);
 
   let parsed: Record<string, unknown> | null = null;
   try {
