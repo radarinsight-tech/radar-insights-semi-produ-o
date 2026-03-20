@@ -243,6 +243,20 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Validate that SPC_ENDPOINT is a proper URL
+    if (!endpoint.startsWith("http://") && !endpoint.startsWith("https://")) {
+      console.error(`[SPC] SPC_ENDPOINT inválido: "${endpoint}" — deve começar com https://`);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "SPC_ENDPOINT_INVALID",
+          message: `SPC_ENDPOINT não é uma URL válida. Valor atual não começa com http(s)://. Corrija a variável de ambiente SPC_ENDPOINT com a URL completa da API do SPC (ex: https://api.spcbrasil.org.br/...).`,
+          current_value_hint: endpoint.slice(0, 6) + "***",
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // Execute real call
     const spcResult = await consultarSPCReal(digits, clientName, operator, password, endpoint);
 
