@@ -473,6 +473,15 @@ const UsersPage = () => {
           )}
         </DialogContent>
       </Dialog>
+      {/* Reset Password Dialog */}
+      {resetPwUser && (
+        <ResetPasswordDialog
+          open={resetPwOpen}
+          onOpenChange={setResetPwOpen}
+          userId={resetPwUser.id}
+          userName={resetPwUser.full_name || "Sem nome"}
+        />
+      )}
     </div>
   );
 };
