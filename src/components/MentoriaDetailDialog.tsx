@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { calcularBonus, formatBRL, notaToScale10, formatDateBR } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -7,8 +7,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   CheckCircle2, XCircle, MinusCircle, ShieldAlert,
   MessageSquareQuote, Printer, X, Award, TrendingUp, AlertTriangle, Lightbulb,
-  User, Calendar, FileText, Hash
+  User, Calendar, FileText, Hash, Radio
 } from "lucide-react";
+import UraContextDialog from "@/components/UraContextDialog";
 
 interface CriterioAvaliacao {
   numero: number;
