@@ -1,0 +1,1 @@
+ALTER TABLE public.attendants ADD COLUMN role_type text NOT NULL DEFAULT 'sucesso_cliente';

@@ -22,6 +22,7 @@ export type Database = {
           id: string
           name: string
           nickname: string | null
+          role_type: string
           sector: string | null
           updated_at: string
         }
@@ -32,6 +33,7 @@ export type Database = {
           id?: string
           name: string
           nickname?: string | null
+          role_type?: string
           sector?: string | null
           updated_at?: string
         }
@@ -42,6 +44,7 @@ export type Database = {
           id?: string
           name?: string
           nickname?: string | null
+          role_type?: string
           sector?: string | null
           updated_at?: string
         }
