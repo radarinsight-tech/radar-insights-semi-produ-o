@@ -9,7 +9,7 @@ import AdminGuard from "@/components/AdminGuard";
 import Hub from "./pages/Hub.tsx";
 import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
-import ResetPassword from "./pages/ResetPassword.tsx";
+
 import Users from "./pages/Users.tsx";
 import CreditAnalysis from "./pages/CreditAnalysis.tsx";
 import CreditDashboard from "./pages/CreditDashboard.tsx";
