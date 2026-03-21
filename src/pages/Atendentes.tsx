@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import logoSymbol from "@/assets/logo-symbol.png";
 import { toast } from "sonner";
+import SectorManager from "@/components/SectorManager";
 
 interface Attendant {
   id: string;
