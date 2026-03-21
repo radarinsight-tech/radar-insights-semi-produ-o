@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { formatDateTimeBR } from "@/lib/utils";
+import { useUserSectors } from "@/hooks/useUserSectors";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import UploadSection, { type UploadState } from "@/components/UploadSection";
 import AnalysisResult, { type AnalysisData } from "@/components/AnalysisResult";
@@ -40,6 +41,7 @@ const parseDateBR = (str: string): Date | null => {
 
 const Index = () => {
   const navigate = useNavigate();
+  const { sectors, isAdmin: isSectorAdmin, loading: sectorsLoading } = useUserSectors();
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [uploadState, setUploadState] = useState<UploadState>("empty");
@@ -59,6 +61,8 @@ const Index = () => {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [duplicateProtocol, setDuplicateProtocol] = useState<string | null>(null);
 
+  const sectorIds = useMemo(() => sectors.map(s => s.id), [sectors]);
+
   const loadHistory = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -72,8 +76,15 @@ const Index = () => {
         return;
       }
 
+      // Filter by sector client-side: admins see all, others see own sectors + records without sector
+      const rows = (data || []).filter((row: any) => {
+        if (isSectorAdmin) return true;
+        if (!row.sector_id) return true; // fallback: records without sector are visible
+        return sectorIds.includes(row.sector_id);
+      });
+
       setHistory(
-        (data || []).map((row: any) => ({
+        rows.map((row: any) => ({
           id: row.id,
           data: row.data || "",
           data_avaliacao: row.data_avaliacao
@@ -94,7 +105,7 @@ const Index = () => {
     } catch (err) {
       console.error("Error loading history (uncaught):", err);
     }
-  }, []);
+  }, [isSectorAdmin, sectorIds]);
 
   useEffect(() => {
     loadHistory();
