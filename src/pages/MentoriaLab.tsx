@@ -982,7 +982,14 @@ const MentoriaLab = () => {
         )}
 
         {/* 3 Main Action Cards */}
-        {files.length === 0 && (
+        {loadingFromDb && files.length === 0 && (
+          <Card className="p-12 text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">Carregando atendimentos salvos...</p>
+          </Card>
+        )}
+
+        {!loadingFromDb && files.length === 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card
               className="p-6 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group"
