@@ -4,6 +4,8 @@
 
 import type { ClassifiedMessage } from "./messageClassifier";
 
+export type UraStatus = "with_ura" | "no_ura" | "ura_only" | "ura_ambiguous";
+
 export interface UraContext {
   protocolo?: string;
   entradaCliente?: string;
@@ -14,10 +16,32 @@ export interface UraContext {
   pesquisaSatisfacao?: string;
   audioDetectado?: boolean;
   items: { label: string; value: string }[];
+  status: UraStatus;
 }
 
-export function summarizeUraContext(uraMessages: ClassifiedMessage[], allMessages: ClassifiedMessage[]): UraContext | null {
-  if (uraMessages.length === 0) return null;
+export function summarizeUraContext(uraMessages: ClassifiedMessage[], allMessages: ClassifiedMessage[]): UraContext {
+  // Determine URA status
+  const hasUra = uraMessages.length > 0;
+  const humanMessages = allMessages.filter(m => m.category === "HUMANO" && m.role === "atendente");
+  const hasHuman = humanMessages.length > 0;
+
+  let status: UraStatus;
+  if (!hasUra) {
+    status = "no_ura";
+  } else if (hasUra && !hasHuman) {
+    status = "ura_only";
+  } else if (hasUra && hasHuman) {
+    status = "with_ura";
+  } else {
+    status = "ura_ambiguous";
+  }
+
+  if (!hasUra) {
+    return {
+      items: [],
+      status,
+    };
+  }
 
   const items: { label: string; value: string }[] = [];
   let protocolo: string | undefined;
@@ -42,7 +66,6 @@ export function summarizeUraContext(uraMessages: ClassifiedMessage[], allMessage
     // Menu option chosen (look at client responses around this message)
     if (/menu|opção|escolha|digite/i.test(t) && !opcaoMenu) {
       const idx = allMessages.indexOf(msg);
-      // Look for client response right after
       for (let i = idx + 1; i < Math.min(idx + 3, allMessages.length); i++) {
         if (allMessages[i]?.role === "cliente") {
           opcaoMenu = allMessages[i].text.trim();
@@ -114,6 +137,11 @@ export function summarizeUraContext(uraMessages: ClassifiedMessage[], allMessage
     items.push({ label: "URA", value: `${uraMessages.length} mensagem(ns) automática(s) detectada(s)` });
   }
 
+  // If we have URA but items are very sparse, it might be ambiguous
+  if (hasUra && items.length <= 1 && !protocolo && !opcaoMenu && !autenticacao) {
+    status = "ura_ambiguous";
+  }
+
   return {
     protocolo,
     entradaCliente,
@@ -124,5 +152,6 @@ export function summarizeUraContext(uraMessages: ClassifiedMessage[], allMessage
     pesquisaSatisfacao,
     audioDetectado,
     items,
+    status,
   };
 }
