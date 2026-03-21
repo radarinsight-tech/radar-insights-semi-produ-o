@@ -255,6 +255,9 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
               <p className="text-[11px] text-muted-foreground mt-1 truncate max-w-lg font-medium">{fileName}</p>
             </div>
             <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setUraOpen(true)} className="gap-1.5 text-xs h-8 font-semibold">
+                <Radio className="h-3.5 w-3.5" /> Contexto URA
+              </Button>
               <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5 text-xs h-8 font-semibold">
                 <Printer className="h-3.5 w-3.5" /> Imprimir
               </Button>
