@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 import { Loader2, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import ForcePasswordChange from "@/pages/ForcePasswordChange";
 
 interface Props {
   children: React.ReactNode;
@@ -14,6 +14,7 @@ const ProtectedRoute = ({ children }: Props) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [timedOut, setTimedOut] = useState(false);
+  const [forceChange, setForceChange] = useState<boolean | null>(null);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -38,6 +39,23 @@ const ProtectedRoute = ({ children }: Props) => {
       clearTimeout(timeout);
     };
   }, []);
+
+  // Check force_password_change flag
+  useEffect(() => {
+    if (!session?.user?.id) {
+      setForceChange(null);
+      return;
+    }
+
+    supabase
+      .from("profiles")
+      .select("force_password_change")
+      .eq("id", session.user.id)
+      .single()
+      .then(({ data }) => {
+        setForceChange((data as any)?.force_password_change === true);
+      });
+  }, [session?.user?.id]);
 
   if (loading && !timedOut) {
     return (
@@ -67,6 +85,20 @@ const ProtectedRoute = ({ children }: Props) => {
             <LogIn className="h-4 w-4 mr-2" /> Fazer login
           </Button>
         </Card>
+      </div>
+    );
+  }
+
+  // Block access if force password change is required
+  if (forceChange === true) {
+    return <ForcePasswordChange onComplete={() => setForceChange(false)} />;
+  }
+
+  // Still loading flag
+  if (forceChange === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }

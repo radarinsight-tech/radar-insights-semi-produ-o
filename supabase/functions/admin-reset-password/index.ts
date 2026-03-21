@@ -16,7 +16,6 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verify the caller is authenticated and is admin
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Não autorizado" }), {
@@ -40,7 +39,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check admin role
     const { data: roleData } = await anonClient
       .from("user_roles")
       .select("role")
@@ -60,7 +58,7 @@ Deno.serve(async (req) => {
 
     const { targetUserId, mode, newPassword } = await req.json();
 
-    if (!targetUserId || !mode) {
+    if (!targetUserId || mode !== "manual") {
       return new Response(
         JSON.stringify({ error: "Parâmetros inválidos" }),
         {
@@ -70,88 +68,49 @@ Deno.serve(async (req) => {
       );
     }
 
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
-
-    if (mode === "email") {
-      // Get user email
-      const { data: userData, error: userError } =
-        await adminClient.auth.admin.getUserById(targetUserId);
-
-      if (userError || !userData?.user?.email) {
-        return new Response(
-          JSON.stringify({ error: "Usuário não encontrado" }),
-          {
-            status: 404,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-
-      // Send password reset email
-      const { error: resetError } = await adminClient.auth.admin.generateLink({
-        type: "recovery",
-        email: userData.user.email,
-        options: {
-          redirectTo: `${supabaseUrl.replace('.supabase.co', '.lovable.app')}/reset-password`,
-        },
-      });
-
-      if (resetError) {
-        console.error("Reset email error:", resetError);
-        return new Response(
-          JSON.stringify({ error: "Erro ao enviar e-mail de redefinição" }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-
+    if (!newPassword || newPassword.length < 6) {
       return new Response(
-        JSON.stringify({ success: true, message: "E-mail de redefinição enviado com sucesso" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "A senha deve ter no mínimo 6 caracteres" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
       );
     }
 
-    if (mode === "manual") {
-      if (!newPassword || newPassword.length < 6) {
-        return new Response(
-          JSON.stringify({ error: "A senha deve ter no mínimo 6 caracteres" }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-      const { error: updateError } =
-        await adminClient.auth.admin.updateUserById(targetUserId, {
-          password: newPassword,
-        });
+    // Update password
+    const { error: updateError } =
+      await adminClient.auth.admin.updateUserById(targetUserId, {
+        password: newPassword,
+      });
 
-      if (updateError) {
-        console.error("Password update error:", updateError);
-        return new Response(
-          JSON.stringify({ error: "Erro ao redefinir senha" }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-
+    if (updateError) {
+      console.error("Password update error:", updateError);
       return new Response(
-        JSON.stringify({ success: true, message: "Senha redefinida com sucesso" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Erro ao redefinir senha" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
       );
+    }
+
+    // Set force_password_change flag
+    const { error: flagError } = await adminClient
+      .from("profiles")
+      .update({ force_password_change: true })
+      .eq("id", targetUserId);
+
+    if (flagError) {
+      console.error("Flag update error:", flagError);
+      // Password was changed but flag failed - log but don't fail
     }
 
     return new Response(
-      JSON.stringify({ error: "Modo inválido. Use 'email' ou 'manual'" }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ success: true, message: "Senha provisória definida com sucesso" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
     console.error("Unexpected error:", err);

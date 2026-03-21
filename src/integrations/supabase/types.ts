@@ -680,18 +680,21 @@ export type Database = {
         Row: {
           company_id: string | null
           created_at: string
+          force_password_change: boolean
           full_name: string | null
           id: string
         }
         Insert: {
           company_id?: string | null
           created_at?: string
+          force_password_change?: boolean
           full_name?: string | null
           id: string
         }
         Update: {
           company_id?: string | null
           created_at?: string
+          force_password_change?: boolean
           full_name?: string | null
           id?: string
         }
