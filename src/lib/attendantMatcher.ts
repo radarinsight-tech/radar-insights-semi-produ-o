@@ -11,6 +11,7 @@ export interface RegisteredAttendant {
   nickname: string | null;
   sector: string | null;
   active: boolean;
+  role_type: string;
 }
 
 let cachedAttendants: RegisteredAttendant[] | null = null;
@@ -25,7 +26,7 @@ export async function getRegisteredAttendants(): Promise<RegisteredAttendant[]> 
 
   const { data, error } = await supabase
     .from("attendants")
-    .select("id, name, nickname, sector, active")
+    .select("id, name, nickname, sector, active, role_type")
     .eq("active", true)
     .order("name");
 
@@ -55,11 +56,16 @@ function normalize(name: string): string {
     .trim();
 }
 
+export type EvaluationStatus = "evaluable" | "outside_main_ruler" | "not_identified";
+
 export interface MatchResult {
   matched: boolean;
   attendantId?: string;
   matchedName?: string;
   sector?: string | null;
+  roleType?: string;
+  /** Evaluation status based on role_type */
+  evaluationStatus: EvaluationStatus;
   /** True if multiple attendants were found (transfer scenario) */
   transferred: boolean;
   allMatches: RegisteredAttendant[];
@@ -73,7 +79,7 @@ export function matchAttendant(
   extractedName: string | undefined,
   registeredList: RegisteredAttendant[]
 ): MatchResult {
-  const empty: MatchResult = { matched: false, transferred: false, allMatches: [] };
+  const empty: MatchResult = { matched: false, transferred: false, allMatches: [], evaluationStatus: "not_identified" };
   if (!extractedName || !extractedName.trim()) return empty;
 
   const normalizedExtracted = normalize(extractedName);
@@ -83,14 +89,7 @@ export function matchAttendant(
     (a) => normalize(a.name) === normalizedExtracted || (a.nickname && normalize(a.nickname) === normalizedExtracted)
   );
   if (exact) {
-    return {
-      matched: true,
-      attendantId: exact.id,
-      matchedName: exact.name,
-      sector: exact.sector,
-      transferred: false,
-      allMatches: [exact],
-    };
+    return buildResult(exact, false, [exact]);
   }
 
   // Partial match: extracted name contains or is contained in registered name or nickname
@@ -102,26 +101,11 @@ export function matchAttendant(
   });
 
   if (partials.length === 1) {
-    return {
-      matched: true,
-      attendantId: partials[0].id,
-      matchedName: partials[0].name,
-      sector: partials[0].sector,
-      transferred: false,
-      allMatches: partials,
-    };
+    return buildResult(partials[0], false, partials);
   }
 
   if (partials.length > 1) {
-    // Multiple matches — possible transfer
-    return {
-      matched: true,
-      attendantId: partials[0].id,
-      matchedName: partials[0].name,
-      sector: partials[0].sector,
-      transferred: true,
-      allMatches: partials,
-    };
+    return buildResult(partials[0], true, partials);
   }
 
   // Fuzzy: try matching just the first name
@@ -133,18 +117,24 @@ export function matchAttendant(
     });
 
     if (firstNameMatches.length === 1) {
-      return {
-        matched: true,
-        attendantId: firstNameMatches[0].id,
-        matchedName: firstNameMatches[0].name,
-        sector: firstNameMatches[0].sector,
-        transferred: false,
-        allMatches: firstNameMatches,
-      };
+      return buildResult(firstNameMatches[0], false, firstNameMatches);
     }
   }
 
   return empty;
+}
+
+function buildResult(primary: RegisteredAttendant, transferred: boolean, allMatches: RegisteredAttendant[]): MatchResult {
+  return {
+    matched: true,
+    attendantId: primary.id,
+    matchedName: primary.name,
+    sector: primary.sector,
+    roleType: primary.role_type,
+    evaluationStatus: primary.role_type === "sucesso_cliente" ? "evaluable" : "outside_main_ruler",
+    transferred,
+    allMatches,
+  };
 }
 
 /**
@@ -168,16 +158,9 @@ export function matchMultipleAttendants(
   }
 
   if (allMatches.length === 0) {
-    return { matched: false, transferred: false, allMatches: [] };
+    return { matched: false, transferred: false, allMatches: [], evaluationStatus: "not_identified" };
   }
 
   const primary = allMatches[allMatches.length - 1]; // Last attendant = who handled the case
-  return {
-    matched: true,
-    attendantId: primary.id,
-    matchedName: primary.name,
-    sector: primary.sector,
-    transferred: allMatches.length > 1,
-    allMatches,
-  };
+  return buildResult(primary, allMatches.length > 1, allMatches);
 }

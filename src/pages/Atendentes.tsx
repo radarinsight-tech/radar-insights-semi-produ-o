@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, LogOut, Plus, Search, X, Pencil, Trash2, Users2,
-  UserCheck, UserX, Loader2,
+  UserCheck, UserX, Loader2, Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -21,12 +21,44 @@ import logoSymbol from "@/assets/logo-symbol.png";
 import { toast } from "sonner";
 import SectorManager from "@/components/SectorManager";
 
+export const ROLE_TYPE_OPTIONS = [
+  { value: "sucesso_cliente", label: "Sucesso do Cliente" },
+  { value: "suporte_tecnico", label: "Suporte Técnico" },
+  { value: "vendas", label: "Vendas" },
+  { value: "outro", label: "Outro" },
+] as const;
+
+export type RoleType = typeof ROLE_TYPE_OPTIONS[number]["value"];
+
+export function getRoleTypeLabel(value: string): string {
+  return ROLE_TYPE_OPTIONS.find((o) => o.value === value)?.label ?? value;
+}
+
+export function getRoleTypeBadgeClass(value: string): string {
+  switch (value) {
+    case "sucesso_cliente":
+      return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
+    case "suporte_tecnico":
+      return "bg-blue-500/10 text-blue-600 border-blue-500/20";
+    case "vendas":
+      return "bg-amber-500/10 text-amber-600 border-amber-500/20";
+    default:
+      return "bg-muted text-muted-foreground";
+  }
+}
+
+/** Returns true if this role_type is evaluable in the standard mentoria */
+export function isEvaluableRoleType(roleType: string): boolean {
+  return roleType === "sucesso_cliente";
+}
+
 interface Attendant {
   id: string;
   name: string;
   nickname: string | null;
   sector: string | null;
   active: boolean;
+  role_type: string;
   created_at: string;
 }
 
@@ -36,11 +68,13 @@ const Atendentes = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("todos");
+  const [filterRoleType, setFilterRoleType] = useState("todos");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formName, setFormName] = useState("");
   const [formNickname, setFormNickname] = useState("");
   const [formSector, setFormSector] = useState("");
+  const [formRoleType, setFormRoleType] = useState<string>("sucesso_cliente");
   const [formActive, setFormActive] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -71,15 +105,17 @@ const Atendentes = () => {
       }
       if (filterStatus === "ativo" && !a.active) return false;
       if (filterStatus === "inativo" && a.active) return false;
+      if (filterRoleType !== "todos" && a.role_type !== filterRoleType) return false;
       return true;
     });
-  }, [attendants, searchTerm, filterStatus]);
+  }, [attendants, searchTerm, filterStatus, filterRoleType]);
 
   const openNew = () => {
     setEditingId(null);
     setFormName("");
     setFormNickname("");
     setFormSector("");
+    setFormRoleType("sucesso_cliente");
     setFormActive(true);
     setDialogOpen(true);
   };
@@ -89,6 +125,7 @@ const Atendentes = () => {
     setFormName(a.name);
     setFormNickname(a.nickname || "");
     setFormSector(a.sector || "");
+    setFormRoleType(a.role_type || "sucesso_cliente");
     setFormActive(a.active);
     setDialogOpen(true);
   };
@@ -106,7 +143,6 @@ const Atendentes = () => {
 
     setSaving(true);
 
-    // Get company_id
     const { data: companyData } = await supabase.rpc("get_my_company_id");
     const companyId = companyData;
 
@@ -123,16 +159,13 @@ const Atendentes = () => {
           name: trimmedName,
           nickname: formNickname.trim() || null,
           sector: formSector.trim() || null,
+          role_type: formRoleType,
           active: formActive,
         } as any)
         .eq("id", editingId);
 
       if (error) {
-        if (error.code === "23505") {
-          toast.error("Já existe um atendente com este nome.");
-        } else {
-          toast.error("Erro ao atualizar atendente.");
-        }
+        toast.error(error.code === "23505" ? "Já existe um atendente com este nome." : "Erro ao atualizar atendente.");
       } else {
         toast.success("Atendente atualizado.");
         setDialogOpen(false);
@@ -145,16 +178,13 @@ const Atendentes = () => {
           name: trimmedName,
           nickname: formNickname.trim() || null,
           sector: formSector.trim() || null,
+          role_type: formRoleType,
           active: formActive,
           company_id: companyId,
         } as any);
 
       if (error) {
-        if (error.code === "23505") {
-          toast.error("Já existe um atendente com este nome.");
-        } else {
-          toast.error("Erro ao cadastrar atendente.");
-        }
+        toast.error(error.code === "23505" ? "Já existe um atendente com este nome." : "Erro ao cadastrar atendente.");
       } else {
         toast.success("Atendente cadastrado.");
         setDialogOpen(false);
@@ -255,6 +285,18 @@ const Atendentes = () => {
                 <SelectItem value="inativo">Inativos</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={filterRoleType} onValueChange={setFilterRoleType}>
+              <SelectTrigger className="w-[180px]">
+                <Filter className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                <SelectValue placeholder="Tipo de atuação" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os tipos</SelectItem>
+                {ROLE_TYPE_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button onClick={openNew} className="gap-1.5">
               <Plus className="h-4 w-4" /> Novo atendente
             </Button>
@@ -276,6 +318,7 @@ const Atendentes = () => {
                     <th className="p-3 text-left font-medium text-muted-foreground">Nome</th>
                     <th className="p-3 text-left font-medium text-muted-foreground">Apelido</th>
                     <th className="p-3 text-left font-medium text-muted-foreground">Setor</th>
+                    <th className="p-3 text-left font-medium text-muted-foreground">Tipo de Atuação</th>
                     <th className="p-3 text-center font-medium text-muted-foreground">Status</th>
                     <th className="p-3 text-center font-medium text-muted-foreground">Ações</th>
                   </tr>
@@ -291,6 +334,11 @@ const Atendentes = () => {
                       </td>
                       <td className="p-3 text-muted-foreground">
                         {a.sector || <span className="italic opacity-60">—</span>}
+                      </td>
+                      <td className="p-3">
+                        <Badge className={getRoleTypeBadgeClass(a.role_type)}>
+                          {getRoleTypeLabel(a.role_type)}
+                        </Badge>
                       </td>
                       <td className="p-3 text-center">
                         <Badge className={a.active ? "bg-accent/15 text-accent" : "bg-muted text-muted-foreground"}>
@@ -311,7 +359,7 @@ const Atendentes = () => {
                   ))}
                   {filteredAttendants.length === 0 && !loading && (
                     <tr>
-                      <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                      <td colSpan={6} className="p-8 text-center text-muted-foreground">
                         {attendants.length === 0
                           ? "Nenhum atendente cadastrado. Clique em \"Novo atendente\" para começar."
                           : "Nenhum atendente encontrado com os filtros aplicados."}
@@ -367,6 +415,25 @@ const Atendentes = () => {
                   {sectors.map((s) => <option key={s} value={s} />)}
                 </datalist>
               )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="att-role-type">Tipo de Atuação *</Label>
+              <Select value={formRoleType} onValueChange={setFormRoleType}>
+                <SelectTrigger id="att-role-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_TYPE_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {formRoleType === "sucesso_cliente" && "Será avaliado na régua principal de mentoria."}
+                {formRoleType === "suporte_tecnico" && "Não será avaliado na régua de Sucesso do Cliente."}
+                {formRoleType === "vendas" && "Preparado para uso futuro em avaliações comerciais."}
+                {formRoleType === "outro" && "Fora da régua principal de avaliação por enquanto."}
+              </p>
             </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="att-active">Ativo</Label>
