@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserSectors, type Sector } from "@/hooks/useUserSectors";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Radar, ArrowLeft, UserPlus, Users, Loader2, Pencil, Shield } from "lucide-react";
+import { Radar, ArrowLeft, UserPlus, Users, Loader2, Pencil, Shield, MapPin } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -50,10 +52,12 @@ interface ProfileWithRole {
   full_name: string | null;
   created_at: string;
   role: AppRole | null;
+  sectorIds: string[];
 }
 
 const UsersPage = () => {
   const navigate = useNavigate();
+  const { allSectors, refresh: refreshSectors } = useUserSectors();
   const [profiles, setProfiles] = useState<ProfileWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -65,6 +69,7 @@ const UsersPage = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editUser, setEditUser] = useState<ProfileWithRole | null>(null);
   const [editRole, setEditRole] = useState<AppRole | "none">("none");
+  const [editSectorIds, setEditSectorIds] = useState<string[]>([]);
   const [editLoading, setEditLoading] = useState(false);
 
   const loadProfiles = async () => {
@@ -90,9 +95,22 @@ const UsersPage = () => {
       roleMap.set(r.user_id, r.role as AppRole);
     });
 
+    // Load user_sectors for all users
+    const { data: userSectorsData } = await supabase
+      .from("user_sectors")
+      .select("user_id, sector_id");
+
+    const sectorMap = new Map<string, string[]>();
+    (userSectorsData ?? []).forEach((us: any) => {
+      const existing = sectorMap.get(us.user_id) ?? [];
+      existing.push(us.sector_id);
+      sectorMap.set(us.user_id, existing);
+    });
+
     const merged: ProfileWithRole[] = (profilesData || []).map((p) => ({
       ...p,
       role: roleMap.get(p.id) ?? null,
+      sectorIds: sectorMap.get(p.id) ?? [],
     }));
 
     setProfiles(merged);
@@ -137,7 +155,14 @@ const UsersPage = () => {
   const openEditDialog = (profile: ProfileWithRole) => {
     setEditUser(profile);
     setEditRole(profile.role ?? "none");
+    setEditSectorIds(profile.sectorIds ?? []);
     setEditOpen(true);
+  };
+
+  const toggleEditSector = (sectorId: string) => {
+    setEditSectorIds((prev) =>
+      prev.includes(sectorId) ? prev.filter((id) => id !== sectorId) : [...prev, sectorId]
+    );
   };
 
   const handleSaveRole = async () => {
@@ -145,15 +170,14 @@ const UsersPage = () => {
     setEditLoading(true);
 
     try {
+      // Save role
       if (editRole === "none") {
-        // Remove any existing role
         const { error } = await supabase
           .from("user_roles")
           .delete()
           .eq("user_id", editUser.id);
         if (error) throw error;
       } else {
-        // Upsert: delete existing then insert new
         await supabase
           .from("user_roles")
           .delete()
@@ -165,13 +189,31 @@ const UsersPage = () => {
         if (error) throw error;
       }
 
-      toast.success("Permissão atualizada com sucesso.");
+      // Save sectors: delete all then insert selected
+      await supabase
+        .from("user_sectors")
+        .delete()
+        .eq("user_id", editUser.id);
+
+      if (editSectorIds.length > 0) {
+        const rows = editSectorIds.map((sid) => ({
+          user_id: editUser.id,
+          sector_id: sid,
+        }));
+        const { error: secError } = await supabase
+          .from("user_sectors")
+          .insert(rows as any);
+        if (secError) throw secError;
+      }
+
+      toast.success("Permissões e setores atualizados.");
       setEditOpen(false);
       setEditUser(null);
       await loadProfiles();
+      await refreshSectors();
     } catch (err: any) {
       console.error("Error saving role:", err);
-      toast.error("Erro ao salvar permissão: " + (err.message || "erro desconhecido"));
+      toast.error("Erro ao salvar: " + (err.message || "erro desconhecido"));
     } finally {
       setEditLoading(false);
     }
@@ -282,6 +324,7 @@ const UsersPage = () => {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Permissão</TableHead>
+                  <TableHead>Setores</TableHead>
                   <TableHead>Membro desde</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -301,6 +344,23 @@ const UsersPage = () => {
                       ) : (
                         <span className="text-sm text-muted-foreground">Sem permissão</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {profile.sectorIds.length > 0 ? (
+                          profile.sectorIds.map((sid) => {
+                            const sec = allSectors.find((s) => s.id === sid);
+                            return sec ? (
+                              <Badge key={sid} variant="outline" className="text-xs bg-muted/50">
+                                <MapPin className="h-3 w-3 mr-1" />
+                                {sec.name}
+                              </Badge>
+                            ) : null;
+                          })
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Nenhum setor</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {new Date(profile.created_at).toLocaleDateString("pt-BR")}
@@ -357,13 +417,35 @@ const UsersPage = () => {
                   Define qual módulo o usuário pode acessar no sistema.
                 </p>
               </div>
+              {allSectors.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Setores</Label>
+                  <div className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-3">
+                    {allSectors.map((sec) => (
+                      <div key={sec.id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`sec-${sec.id}`}
+                          checked={editSectorIds.includes(sec.id)}
+                          onCheckedChange={() => toggleEditSector(sec.id)}
+                        />
+                        <label htmlFor={`sec-${sec.id}`} className="text-sm cursor-pointer">
+                          {sec.name}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Setores definem quais dados o usuário pode visualizar.
+                  </p>
+                </div>
+              )}
               <Button
                 className="w-full"
                 onClick={handleSaveRole}
                 disabled={editLoading}
               >
                 {editLoading && <Loader2 className="animate-spin" />}
-                Salvar permissão
+                Salvar permissões
               </Button>
             </div>
           )}

@@ -90,6 +90,7 @@ export type Database = {
           observacoes: string | null
           regra_aplicada: string | null
           resultado: Json | null
+          sector_id: string | null
           status: string
           user_id: string
           user_name: string | null
@@ -111,6 +112,7 @@ export type Database = {
           observacoes?: string | null
           regra_aplicada?: string | null
           resultado?: Json | null
+          sector_id?: string | null
           status?: string
           user_id: string
           user_name?: string | null
@@ -132,6 +134,7 @@ export type Database = {
           observacoes?: string | null
           regra_aplicada?: string | null
           resultado?: Json | null
+          sector_id?: string | null
           status?: string
           user_id?: string
           user_name?: string | null
@@ -143,6 +146,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_analyses_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
             referencedColumns: ["id"]
           },
         ]
@@ -343,6 +353,7 @@ export type Database = {
           prompt_version: string
           protocolo: string
           resultado_validado: boolean
+          sector_id: string | null
           tipo: string
           user_id: string | null
         }
@@ -369,6 +380,7 @@ export type Database = {
           prompt_version?: string
           protocolo: string
           resultado_validado?: boolean
+          sector_id?: string | null
           tipo: string
           user_id?: string | null
         }
@@ -395,6 +407,7 @@ export type Database = {
           prompt_version?: string
           protocolo?: string
           resultado_validado?: boolean
+          sector_id?: string | null
           tipo?: string
           user_id?: string | null
         }
@@ -411,6 +424,13 @@ export type Database = {
             columns: ["parent_evaluation_id"]
             isOneToOne: false
             referencedRelation: "evaluations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluations_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
             referencedColumns: ["id"]
           },
         ]
@@ -685,6 +705,35 @@ export type Database = {
           },
         ]
       }
+      sectors: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sectors_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -703,12 +752,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sectors: {
+        Row: {
+          created_at: string
+          id: string
+          sector_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sector_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sector_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sectors_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       get_my_company_id: { Args: never; Returns: string }
+      get_my_sector_ids: { Args: never; Returns: string[] }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
