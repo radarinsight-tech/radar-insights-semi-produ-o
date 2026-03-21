@@ -12,6 +12,7 @@ export interface RegisteredAttendant {
   sector: string | null;
   active: boolean;
   role_type: string;
+  participates_evaluation: boolean;
 }
 
 let cachedAttendants: RegisteredAttendant[] | null = null;
@@ -26,7 +27,7 @@ export async function getRegisteredAttendants(): Promise<RegisteredAttendant[]> 
 
   const { data, error } = await supabase
     .from("attendants")
-    .select("id, name, nickname, sector, active, role_type")
+    .select("id, name, nickname, sector, active, role_type, participates_evaluation")
     .eq("active", true)
     .order("name");
 
@@ -131,7 +132,7 @@ function buildResult(primary: RegisteredAttendant, transferred: boolean, allMatc
     matchedName: primary.name,
     sector: primary.sector,
     roleType: primary.role_type,
-    evaluationStatus: primary.role_type === "sucesso_cliente" ? "evaluable" : "outside_main_ruler",
+    evaluationStatus: primary.participates_evaluation ? "evaluable" : "outside_main_ruler",
     transferred,
     allMatches,
   };

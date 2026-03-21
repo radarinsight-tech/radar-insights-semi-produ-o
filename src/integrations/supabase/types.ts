@@ -17,33 +17,45 @@ export type Database = {
       attendants: {
         Row: {
           active: boolean
+          base: string | null
           company_id: string | null
           created_at: string
+          departamento: string | null
+          empresa: string | null
           id: string
           name: string
           nickname: string | null
+          participates_evaluation: boolean
           role_type: string
           sector: string | null
           updated_at: string
         }
         Insert: {
           active?: boolean
+          base?: string | null
           company_id?: string | null
           created_at?: string
+          departamento?: string | null
+          empresa?: string | null
           id?: string
           name: string
           nickname?: string | null
+          participates_evaluation?: boolean
           role_type?: string
           sector?: string | null
           updated_at?: string
         }
         Update: {
           active?: boolean
+          base?: string | null
           company_id?: string | null
           created_at?: string
+          departamento?: string | null
+          empresa?: string | null
           id?: string
           name?: string
           nickname?: string | null
+          participates_evaluation?: boolean
           role_type?: string
           sector?: string | null
           updated_at?: string
