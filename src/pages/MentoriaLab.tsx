@@ -698,7 +698,29 @@ const MentoriaLab = () => {
     setSelected(new Set());
   };
 
-  const handleLogout = async () => {
+  const approveAsOfficial = async (labFile: LabFile) => {
+    if (!labFile.evaluationId || labFile.approvedAsOfficial) return;
+    setApprovingIds((prev) => new Set(prev).add(labFile.id));
+    try {
+      const { error } = await supabase.from("evaluations").update({
+        resultado_validado: true,
+      } as any).eq("id", labFile.evaluationId);
+      if (error) {
+        toast.error("Erro ao aprovar avaliação: " + error.message);
+        return;
+      }
+      setFiles((prev) =>
+        prev.map((f) => f.id === labFile.id ? { ...f, approvedAsOfficial: true } : f)
+      );
+      toast.success("Avaliação aprovada como oficial! Agora aparece no ranking e histórico.");
+    } catch {
+      toast.error("Erro inesperado ao aprovar avaliação.");
+    } finally {
+      setApprovingIds((prev) => { const n = new Set(prev); n.delete(labFile.id); return n; });
+    }
+  };
+
+
     await supabase.auth.signOut();
     navigate("/auth");
   };
