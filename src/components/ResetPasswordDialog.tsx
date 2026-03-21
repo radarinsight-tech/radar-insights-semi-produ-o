@@ -17,6 +17,7 @@ interface ResetPasswordDialogProps {
   onOpenChange: (open: boolean) => void;
   userId: string;
   userName: string;
+  onSuccess?: () => void;
 }
 
 export function ResetPasswordDialog({
@@ -24,6 +25,7 @@ export function ResetPasswordDialog({
   onOpenChange,
   userId,
   userName,
+  onSuccess,
 }: ResetPasswordDialogProps) {
   const [loading, setLoading] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -59,6 +61,7 @@ export function ResetPasswordDialog({
       if (data?.error) throw new Error(data.error);
       toast.success("Senha provisória definida. O usuário será obrigado a trocar no próximo login.");
       handleOpenChange(false);
+      onSuccess?.();
     } catch (err: any) {
       toast.error(err.message || "Erro ao redefinir senha");
     } finally {

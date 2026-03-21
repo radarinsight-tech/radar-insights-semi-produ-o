@@ -502,6 +502,7 @@ const UsersPage = () => {
           onOpenChange={setResetPwOpen}
           userId={resetPwUser.id}
           userName={resetPwUser.full_name || "Sem nome"}
+          onSuccess={loadProfiles}
         />
       )}
     </div>
