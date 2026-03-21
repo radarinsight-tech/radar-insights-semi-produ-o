@@ -86,8 +86,8 @@ const ResetPassword = () => {
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <Card className="w-full max-w-md p-8 space-y-6 text-center">
           <div className="flex flex-col items-center gap-2">
-            <div className="p-3 rounded-xl bg-green-500/10">
-              <CheckCircle2 className="h-7 w-7 text-green-600" />
+            <div className="p-3 rounded-xl bg-primary/10">
+              <CheckCircle2 className="h-7 w-7 text-primary" />
             </div>
             <h1 className="text-2xl font-bold text-foreground">Senha redefinida!</h1>
             <p className="text-sm text-muted-foreground">
