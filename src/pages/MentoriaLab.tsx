@@ -121,7 +121,9 @@ const MentoriaLab = () => {
   const [showCharts, setShowCharts] = useState(false);
   const [highlightedFileId, setHighlightedFileId] = useState<string | null>(null);
   const [approvingIds, setApprovingIds] = useState<Set<string>>(new Set());
-
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const { isAdmin } = useUserPermissions();
   // Filters
   const [filterAtendente, setFilterAtendente] = useState("todos");
   const [filterPeriodoFrom, setFilterPeriodoFrom] = useState<Date | undefined>();
