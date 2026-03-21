@@ -225,6 +225,9 @@ const Atendentes = () => {
           </Card>
         </div>
 
+        {/* Sector Management */}
+        <SectorManager />
+
         {/* Filters + Actions */}
         <Card className="p-4">
           <div className="flex flex-wrap items-center gap-3">
