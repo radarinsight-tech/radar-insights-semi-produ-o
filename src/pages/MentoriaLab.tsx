@@ -114,6 +114,8 @@ const MentoriaLab = () => {
   const [showAnalyzeWarning, setShowAnalyzeWarning] = useState(false);
   const [mentoriaFile, setMentoriaFile] = useState<LabFile | null>(null);
   const [showCharts, setShowCharts] = useState(false);
+  const [highlightedFileId, setHighlightedFileId] = useState<string | null>(null);
+  const [approvingIds, setApprovingIds] = useState<Set<string>>(new Set());
 
   // Filters
   const [filterAtendente, setFilterAtendente] = useState("todos");
