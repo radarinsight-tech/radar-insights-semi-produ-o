@@ -1117,7 +1117,18 @@ const MentoriaLab = () => {
                   </thead>
                   <tbody>
                     {paginatedFiles.map((f) => (
-                      <tr key={f.id} className={cn("border-b border-border last:border-0 hover:bg-muted/30 transition-colors", f.status === "analisado" && "bg-accent/8 border-l-[3px] border-l-accent")}>
+                      <tr
+                        key={f.id}
+                        className={cn(
+                          "border-b border-border last:border-0 transition-colors",
+                          highlightedFileId === f.id
+                            ? "bg-primary/8 ring-1 ring-inset ring-primary/20"
+                            : f.status === "analisado"
+                            ? "bg-accent/5"
+                            : "hover:bg-muted/30",
+                          f.approvedAsOfficial && "border-l-[3px] border-l-accent"
+                        )}
+                      >
                         <td className="p-3">
                           <Checkbox checked={selected.has(f.id)} onCheckedChange={() => toggleSelect(f.id)} />
                         </td>
@@ -1159,6 +1170,10 @@ const MentoriaLab = () => {
                           <div className="flex flex-col items-center gap-1">
                             {readingIds.has(f.id) ? (
                               <Badge className="bg-primary/10 text-primary text-xs">Lendo...</Badge>
+                            ) : f.approvedAsOfficial ? (
+                              <Badge className="bg-accent/15 text-accent text-xs gap-1">
+                                <ShieldCheck className="h-3 w-3" /> Oficial
+                              </Badge>
                             ) : f.status === "analisado" && f.ineligible ? (
                               <Badge className="bg-muted text-muted-foreground text-xs">
                                 {f.ineligibleReason || "Fora de avaliação"}
@@ -1168,7 +1183,7 @@ const MentoriaLab = () => {
                                 {statusConfig[f.status].label}
                               </Badge>
                             )}
-                            {f.status === "analisado" && !f.ineligible && f.result?.notaFinal != null && notaToScale10(f.result.notaFinal) < 7 && (
+                            {f.status === "analisado" && !f.ineligible && !f.approvedAsOfficial && f.result?.notaFinal != null && notaToScale10(f.result.notaFinal) < 7 && (
                               <Badge className="bg-warning/15 text-warning text-[10px] whitespace-nowrap">
                                 Necessita mentoria
                               </Badge>
@@ -1184,7 +1199,7 @@ const MentoriaLab = () => {
                               variant="outline"
                               size="sm"
                               className="h-7 text-xs gap-1"
-                              onClick={() => setSideFile(f)}
+                              onClick={() => { setSideFile(f); setHighlightedFileId(f.id); }}
                             >
                               <Eye className="h-3 w-3" /> Abrir
                             </Button>
@@ -1195,12 +1210,30 @@ const MentoriaLab = () => {
                                     <Button
                                       size="icon"
                                       className="h-7 w-7"
-                                      onClick={() => setMentoriaFile(f)}
+                                      onClick={() => { setMentoriaFile(f); setHighlightedFileId(f.id); }}
                                     >
                                       <BookOpen className="h-3.5 w-3.5" />
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent><p className="text-xs">Ver mentoria</p></TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                            {f.status === "analisado" && !f.ineligible && !f.approvedAsOfficial && f.evaluationId && (
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-7 w-7 text-accent border-accent/30 hover:bg-accent/10"
+                                      onClick={() => approveAsOfficial(f)}
+                                      disabled={approvingIds.has(f.id)}
+                                    >
+                                      {approvingIds.has(f.id) ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent><p className="text-xs">Aprovar como Avaliação Oficial</p></TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
                             )}
