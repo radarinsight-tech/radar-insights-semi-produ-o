@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useUserSectors } from "@/hooks/useUserSectors";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -170,6 +171,9 @@ const CreditHistoryTable = ({ refreshTrigger }: Props) => {
   const [deleting, setDeleting] = useState(false);
   const [adjustTarget, setAdjustTarget] = useState<CreditHistoryEntry | null>(null);
 
+  const { sectors, isAdmin: isSectorAdmin, loading: sectorsLoading } = useUserSectors();
+  const sectorIds = useMemo(() => sectors.map(s => s.id), [sectors]);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -181,14 +185,20 @@ const CreditHistoryTable = ({ refreshTrigger }: Props) => {
       console.error("Error fetching credit history:", error);
       setEntries([]);
     } else {
-      setEntries(data || []);
-      const names = [...new Set((data || []).map((e: any) => e.user_name).filter(Boolean))] as string[];
+      // Filter by sector: admins see all, others see own sectors + records without sector
+      const rows = (data || []).filter((row: any) => {
+        if (isSectorAdmin) return true;
+        if (!row.sector_id) return true;
+        return sectorIds.includes(row.sector_id);
+      });
+      setEntries(rows);
+      const names = [...new Set(rows.map((e: any) => e.user_name).filter(Boolean))] as string[];
       setUsuarios(names);
     }
     setLoading(false);
-  }, []);
+  }, [isSectorAdmin, sectorIds]);
 
-  useEffect(() => { fetchData(); }, [fetchData, refreshTrigger]);
+  useEffect(() => { if (!sectorsLoading) fetchData(); }, [fetchData, refreshTrigger, sectorsLoading]);
 
   useEffect(() => {
     const checkAdmin = async () => {

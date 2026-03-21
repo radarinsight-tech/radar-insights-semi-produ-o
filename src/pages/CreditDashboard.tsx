@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useUserSectors } from "@/hooks/useUserSectors";
 import { ArrowLeft, LogOut, BarChart3, ShieldAlert, DollarSign, Users, Scale, FileText, PenLine, TrendingUp, Filter, Download } from "lucide-react";
 import logoSymbol from "@/assets/logo-symbol.png";
 import { Button } from "@/components/ui/button";
@@ -121,6 +122,8 @@ const CreditDashboard = () => {
   const navigate = useNavigate();
   const [entries, setEntries] = useState<CreditEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const { sectors, isAdmin: isSectorAdmin, loading: sectorsLoading } = useUserSectors();
+  const sectorIds = useMemo(() => sectors.map(s => s.id), [sectors]);
 
   // Filters
   const [period, setPeriod] = useState<PeriodPreset>("30dias");
@@ -139,11 +142,19 @@ const CreditDashboard = () => {
         .from("credit_analyses" as any)
         .select("*")
         .order("created_at", { ascending: false }) as any;
-      if (!error) setEntries(data || []);
+      if (!error) {
+        // Filter by sector: admins see all, others see own sectors + records without sector
+        const rows = (data || []).filter((row: any) => {
+          if (isSectorAdmin) return true;
+          if (!row.sector_id) return true;
+          return sectorIds.includes(row.sector_id);
+        });
+        setEntries(rows);
+      }
       setLoading(false);
     };
-    fetch();
-  }, []);
+    if (!sectorsLoading) fetch();
+  }, [isSectorAdmin, sectorIds, sectorsLoading]);
 
   // Filter logic
   const filtered = useMemo(() => {
