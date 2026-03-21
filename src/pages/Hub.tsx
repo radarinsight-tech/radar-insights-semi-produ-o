@@ -71,13 +71,12 @@ const Hub = () => {
               {/* ═══ HERO — Avaliação Oficial ═══ */}
               {showAuditoria && (
                 <section>
-                  <button
-                    type="button"
-                    onClick={() => navigate("/attendance")}
-                    className="w-full text-left group relative rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-primary/[0.04] to-primary/[0.08] p-6 sm:p-8 shadow-sm hover:shadow-lg hover:border-primary/40 transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  <p className="text-[11px] font-semibold text-primary tracking-wide uppercase mb-2 px-1">▸ Comece por aqui</p>
+                  <div
+                    className="w-full relative rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-primary/[0.04] to-primary/[0.10] p-6 sm:p-8 shadow-sm"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-                      <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors shrink-0 w-fit">
+                      <div className="p-3 rounded-xl bg-primary/10 shrink-0 w-fit">
                         <HeadsetIcon className="h-7 w-7 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -86,15 +85,19 @@ const Hub = () => {
                           <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px] px-1.5 py-0 font-semibold">Oficial</Badge>
                         </div>
                         <p className="text-sm text-muted-foreground leading-relaxed">
-                          Avalie a qualidade dos atendimentos com notas, classificação e elegibilidade a bônus da equipe.
+                          Notas, classificação e elegibilidade a bônus da equipe.
                         </p>
                       </div>
-                      <div className="shrink-0 hidden sm:flex items-center gap-1.5 text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                        Acessar avaliações
+                      <Button
+                        size="sm"
+                        className="shrink-0 gap-1.5 text-xs font-semibold shadow-sm"
+                        onClick={() => navigate("/attendance")}
+                      >
+                        Acessar Avaliações
                         <ArrowRight className="h-3.5 w-3.5" />
-                      </div>
+                      </Button>
                     </div>
-                  </button>
+                  </div>
                 </section>
               )}
 
