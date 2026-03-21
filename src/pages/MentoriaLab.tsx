@@ -81,6 +81,8 @@ interface LabFile {
   ineligibleReason?: string;
   attendantMatch?: MatchResult;
   transferred?: boolean;
+  approvedAsOfficial?: boolean;
+  evaluationId?: string;
 }
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
@@ -593,8 +595,8 @@ const MentoriaLab = () => {
           ? (ineligibleReason || "Fora de Avaliação")
           : (data.classificacao || "Fora de Avaliação");
 
-        // Save evaluation
-        await supabase.from("evaluations").insert({
+        // Save evaluation as draft (NOT official yet — resultado_validado = false)
+        const { data: savedEval } = await supabase.from("evaluations").insert({
           data: data.data || new Date().toLocaleDateString("pt-BR"),
           data_avaliacao: new Date().toISOString(),
           protocolo: data.protocolo || "Não identificado",
@@ -609,8 +611,8 @@ const MentoriaLab = () => {
           pdf_url: pdfUrl,
           full_report: { ...data, _ineligible: isIneligible, _ineligibleReason: ineligibleReason },
           prompt_version: data.promptVersion || "auditor_v3",
-          resultado_validado: !isIneligible,
-        } as any);
+          resultado_validado: false,
+        } as any).select("id").single();
 
         // Save result JSON to cloud: results/<batchCode>/
         if (labFile.batchId) {
@@ -637,7 +639,7 @@ const MentoriaLab = () => {
         setFiles((prev) =>
           prev.map((f) =>
             f.id === labFile.id
-              ? { ...f, status: "analisado", result: { ...data, _ineligible: isIneligible, _ineligibleReason: ineligibleReason }, protocolo: data.protocolo || f.protocolo, atendente: data.atendente || f.atendente, data: data.data || f.data, tipo: data.tipo || f.tipo, analyzedAt: new Date(), ineligible: isIneligible, ineligibleReason }
+              ? { ...f, status: "analisado", result: { ...data, _ineligible: isIneligible, _ineligibleReason: ineligibleReason }, protocolo: data.protocolo || f.protocolo, atendente: data.atendente || f.atendente, data: data.data || f.data, tipo: data.tipo || f.tipo, analyzedAt: new Date(), ineligible: isIneligible, ineligibleReason, evaluationId: savedEval?.id }
               : f
           )
         );
