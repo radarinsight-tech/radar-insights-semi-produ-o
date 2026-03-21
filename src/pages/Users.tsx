@@ -27,11 +27,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Radar, ArrowLeft, UserPlus, Users, Loader2, Pencil, Shield, MapPin } from "lucide-react";
+import { Radar, ArrowLeft, UserPlus, Users, Loader2, Pencil, Shield, MapPin, KeyRound } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { ResetPasswordDialog } from "@/components/ResetPasswordDialog";
 
 type AppRole = "admin" | "auditoria" | "credito";
 
