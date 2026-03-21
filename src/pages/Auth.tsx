@@ -59,7 +59,6 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Check for existing user via signup response
     const { data, error } = await supabase.auth.signUp({
       email: signupEmail.trim(),
       password: signupPassword,
@@ -75,7 +74,6 @@ const Auth = () => {
       return;
     }
 
-    // Supabase returns a fake user with no identities for existing emails
     if (data.user && data.user.identities && data.user.identities.length === 0) {
       toast.error("Já existe um usuário cadastrado com este e-mail.");
       return;
@@ -83,70 +81,6 @@ const Auth = () => {
 
     toast.success("Cadastro realizado! Verifique seu e-mail para confirmar a conta.");
   };
-
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!forgotEmail.trim()) {
-      toast.error("Informe seu e-mail.");
-      return;
-    }
-    setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(
-      forgotEmail.trim(),
-      { redirectTo: `${window.location.origin}/reset-password` }
-    );
-    setLoading(false);
-    if (error) {
-      toast.error(translateAuthError(error.message));
-    } else {
-      toast.success("E-mail de redefinição enviado! Verifique sua caixa de entrada.");
-      setShowForgotPassword(false);
-    }
-  };
-
-  if (showForgotPassword) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <Card className="w-full max-w-md p-8 space-y-6">
-          <div className="flex flex-col items-center gap-2">
-            <div className="p-3 rounded-xl bg-primary/10">
-              <Radar className="h-7 w-7 text-primary" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">Recuperar senha</h1>
-            <p className="text-sm text-muted-foreground">
-              Informe seu e-mail para receber o link de redefinição.
-            </p>
-          </div>
-
-          <form onSubmit={handleForgotPassword} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="forgot-email">E-mail</Label>
-              <Input
-                id="forgot-email"
-                type="email"
-                required
-                value={forgotEmail}
-                onChange={(e) => setForgotEmail(e.target.value)}
-                placeholder="seu@email.com"
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="animate-spin" />}
-              Enviar link de redefinição
-            </Button>
-          </form>
-
-          <button
-            type="button"
-            onClick={() => setShowForgotPassword(false)}
-            className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors text-center"
-          >
-            Voltar ao login
-          </button>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
