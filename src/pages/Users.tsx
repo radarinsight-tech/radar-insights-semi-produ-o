@@ -27,7 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Radar, ArrowLeft, UserPlus, Users, Loader2, Pencil, Shield } from "lucide-react";
+import { Radar, ArrowLeft, UserPlus, Users, Loader2, Pencil, Shield, MapPin } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -323,6 +324,7 @@ const UsersPage = () => {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Permissão</TableHead>
+                  <TableHead>Setores</TableHead>
                   <TableHead>Membro desde</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -342,6 +344,23 @@ const UsersPage = () => {
                       ) : (
                         <span className="text-sm text-muted-foreground">Sem permissão</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {profile.sectorIds.length > 0 ? (
+                          profile.sectorIds.map((sid) => {
+                            const sec = allSectors.find((s) => s.id === sid);
+                            return sec ? (
+                              <Badge key={sid} variant="outline" className="text-xs bg-muted/50">
+                                <MapPin className="h-3 w-3 mr-1" />
+                                {sec.name}
+                              </Badge>
+                            ) : null;
+                          })
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Nenhum setor</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {new Date(profile.created_at).toLocaleDateString("pt-BR")}
