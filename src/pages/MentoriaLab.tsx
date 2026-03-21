@@ -1107,7 +1107,13 @@ const MentoriaLab = () => {
                                 <Badge className="bg-blue-100 text-blue-700 text-[9px] px-1 py-0 shrink-0">Transferido</Badge>
                               )}
                               {f.attendantMatch && !f.attendantMatch.matched && f.atendente && (
-                                <Badge className="bg-warning/15 text-warning text-[9px] px-1 py-0 shrink-0">Não cadastrado</Badge>
+                                <Badge className="bg-warning/15 text-warning text-[9px] px-1 py-0 shrink-0">Não identificado</Badge>
+                              )}
+                              {f.attendantMatch?.matched && f.attendantMatch.evaluationStatus === "evaluable" && (
+                                <Badge className="bg-emerald-500/10 text-emerald-600 text-[9px] px-1 py-0 shrink-0">Avaliável</Badge>
+                              )}
+                              {f.attendantMatch?.matched && f.attendantMatch.evaluationStatus === "outside_main_ruler" && (
+                                <Badge className="bg-amber-500/10 text-amber-600 text-[9px] px-1 py-0 shrink-0">Fora da régua</Badge>
                               )}
                             </div>
                           </div>
