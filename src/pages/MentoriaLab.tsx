@@ -127,6 +127,110 @@ const MentoriaLab = () => {
   const [filterAudio, setFilterAudio] = useState("todos");
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const [loadingFromDb, setLoadingFromDb] = useState(true);
+
+  // Load persisted batches and files from database on mount
+  useEffect(() => {
+    const loadPersistedData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setLoadingFromDb(false); return; }
+
+        const { data: batches } = await supabase
+          .from("mentoria_batches")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(5);
+
+        if (!batches || batches.length === 0) { setLoadingFromDb(false); return; }
+
+        const batchIds = batches.map(b => b.id);
+        const { data: batchFiles } = await supabase
+          .from("mentoria_batch_files")
+          .select("*")
+          .in("batch_id", batchIds)
+          .order("created_at", { ascending: true });
+
+        if (!batchFiles || batchFiles.length === 0) { setLoadingFromDb(false); return; }
+
+        const { data: evaluations } = await supabase
+          .from("evaluations")
+          .select("id, protocolo, atendente, resultado_validado, full_report, nota, classificacao")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1000);
+
+        const evalMap = new Map<string, any>();
+        if (evaluations) {
+          for (const ev of evaluations) {
+            if (ev.protocolo && !evalMap.has(ev.protocolo)) {
+              evalMap.set(ev.protocolo, ev);
+            }
+          }
+        }
+
+        const latestBatch = batches[0];
+        setBatchInfo({
+          id: latestBatch.id,
+          batchCode: latestBatch.batch_code,
+          createdAt: new Date(latestBatch.created_at),
+          sourceType: latestBatch.source_type as "pdf" | "zip",
+          originalFileName: latestBatch.original_file_name || undefined,
+          totalFilesInSource: latestBatch.total_files_in_source,
+          totalPdfs: latestBatch.total_pdfs,
+          ignoredFiles: latestBatch.ignored_files,
+          status: latestBatch.status as BatchStatus,
+        });
+        setCurrentBatchId(latestBatch.id);
+
+        const restoredFiles: LabFile[] = batchFiles.map((bf) => {
+          const matchedEval = bf.protocolo ? evalMap.get(bf.protocolo) : undefined;
+          const isAnalyzed = bf.status === "analyzed" && (bf.result || matchedEval);
+          const result = bf.result || matchedEval?.full_report;
+          const isIneligible = result?._ineligible || false;
+          const ineligibleReason = result?._ineligibleReason;
+
+          let fileStatus: FileStatus = "pendente";
+          if (bf.status === "analyzed") fileStatus = "analisado";
+          else if (bf.status === "read") fileStatus = "lido";
+          else if (bf.status === "error") fileStatus = "erro";
+
+          return {
+            id: bf.id,
+            file: new File([], bf.file_name, { type: "application/pdf" }),
+            name: bf.file_name,
+            size: bf.file_size || 0,
+            addedAt: new Date(bf.created_at),
+            status: fileStatus,
+            atendente: bf.atendente || undefined,
+            protocolo: bf.protocolo || undefined,
+            data: bf.data_atendimento || undefined,
+            canal: bf.canal || undefined,
+            hasAudio: bf.has_audio || false,
+            tipo: result?.tipo || undefined,
+            batchId: bf.batch_id,
+            batchFileId: bf.id,
+            storagePath: bf.extracted_path || undefined,
+            result: isAnalyzed ? result : undefined,
+            error: bf.error_message || undefined,
+            analyzedAt: isAnalyzed ? new Date(bf.created_at) : undefined,
+            ineligible: isIneligible,
+            ineligibleReason,
+            approvedAsOfficial: matchedEval?.resultado_validado === true,
+            evaluationId: matchedEval?.id,
+          } as LabFile;
+        });
+
+        setFiles(restoredFiles);
+      } catch (err) {
+        console.error("Failed to load persisted data:", err);
+      } finally {
+        setLoadingFromDb(false);
+      }
+    };
+    loadPersistedData();
+  }, []);
 
   // Derived unique values for filter dropdowns
   const atendentes = useMemo(() => {
