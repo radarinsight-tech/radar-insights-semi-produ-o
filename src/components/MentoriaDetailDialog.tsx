@@ -533,6 +533,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           </div>
         </ScrollArea>
       </DialogContent>
+      <UraContextDialog open={uraOpen} onOpenChange={setUraOpen} rawText={rawText} atendente={atendente} />
     </Dialog>
   );
 };
