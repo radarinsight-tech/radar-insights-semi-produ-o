@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import {
   ArrowLeft, LogOut, Upload, FileText, Trash2, Eye, Play, Loader2,
   Search, X, Filter, Volume2, VolumeX, BookOpen, Archive, Package, Clock, CheckCircle2, AlertTriangle,
-  ChevronLeft, ChevronRight, Info, CalendarIcon, BarChart3
+  ChevronLeft, ChevronRight, Info, CalendarIcon, BarChart3, ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -81,6 +81,8 @@ interface LabFile {
   ineligibleReason?: string;
   attendantMatch?: MatchResult;
   transferred?: boolean;
+  approvedAsOfficial?: boolean;
+  evaluationId?: string;
 }
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
@@ -112,6 +114,8 @@ const MentoriaLab = () => {
   const [showAnalyzeWarning, setShowAnalyzeWarning] = useState(false);
   const [mentoriaFile, setMentoriaFile] = useState<LabFile | null>(null);
   const [showCharts, setShowCharts] = useState(false);
+  const [highlightedFileId, setHighlightedFileId] = useState<string | null>(null);
+  const [approvingIds, setApprovingIds] = useState<Set<string>>(new Set());
 
   // Filters
   const [filterAtendente, setFilterAtendente] = useState("todos");
@@ -593,8 +597,8 @@ const MentoriaLab = () => {
           ? (ineligibleReason || "Fora de Avaliação")
           : (data.classificacao || "Fora de Avaliação");
 
-        // Save evaluation
-        await supabase.from("evaluations").insert({
+        // Save evaluation as draft (NOT official yet — resultado_validado = false)
+        const { data: savedEval } = await supabase.from("evaluations").insert({
           data: data.data || new Date().toLocaleDateString("pt-BR"),
           data_avaliacao: new Date().toISOString(),
           protocolo: data.protocolo || "Não identificado",
@@ -609,8 +613,8 @@ const MentoriaLab = () => {
           pdf_url: pdfUrl,
           full_report: { ...data, _ineligible: isIneligible, _ineligibleReason: ineligibleReason },
           prompt_version: data.promptVersion || "auditor_v3",
-          resultado_validado: !isIneligible,
-        } as any);
+          resultado_validado: false,
+        } as any).select("id").single();
 
         // Save result JSON to cloud: results/<batchCode>/
         if (labFile.batchId) {
@@ -637,7 +641,7 @@ const MentoriaLab = () => {
         setFiles((prev) =>
           prev.map((f) =>
             f.id === labFile.id
-              ? { ...f, status: "analisado", result: { ...data, _ineligible: isIneligible, _ineligibleReason: ineligibleReason }, protocolo: data.protocolo || f.protocolo, atendente: data.atendente || f.atendente, data: data.data || f.data, tipo: data.tipo || f.tipo, analyzedAt: new Date(), ineligible: isIneligible, ineligibleReason }
+              ? { ...f, status: "analisado", result: { ...data, _ineligible: isIneligible, _ineligibleReason: ineligibleReason }, protocolo: data.protocolo || f.protocolo, atendente: data.atendente || f.atendente, data: data.data || f.data, tipo: data.tipo || f.tipo, analyzedAt: new Date(), ineligible: isIneligible, ineligibleReason, evaluationId: savedEval?.id }
               : f
           )
         );
@@ -694,7 +698,29 @@ const MentoriaLab = () => {
     setSelected(new Set());
   };
 
-  const handleLogout = async () => {
+  const approveAsOfficial = async (labFile: LabFile) => {
+    if (!labFile.evaluationId || labFile.approvedAsOfficial) return;
+    setApprovingIds((prev) => new Set(prev).add(labFile.id));
+    try {
+      const { error } = await supabase.from("evaluations").update({
+        resultado_validado: true,
+      } as any).eq("id", labFile.evaluationId);
+      if (error) {
+        toast.error("Erro ao aprovar avaliação: " + error.message);
+        return;
+      }
+      setFiles((prev) =>
+        prev.map((f) => f.id === labFile.id ? { ...f, approvedAsOfficial: true } : f)
+      );
+      toast.success("Avaliação aprovada como oficial! Agora aparece no ranking e histórico.");
+    } catch {
+      toast.error("Erro inesperado ao aprovar avaliação.");
+    } finally {
+      setApprovingIds((prev) => { const n = new Set(prev); n.delete(labFile.id); return n; });
+    }
+  };
+
+
     await supabase.auth.signOut();
     navigate("/auth");
   };
@@ -1091,7 +1117,18 @@ const MentoriaLab = () => {
                   </thead>
                   <tbody>
                     {paginatedFiles.map((f) => (
-                      <tr key={f.id} className={cn("border-b border-border last:border-0 hover:bg-muted/30 transition-colors", f.status === "analisado" && "bg-accent/8 border-l-[3px] border-l-accent")}>
+                      <tr
+                        key={f.id}
+                        className={cn(
+                          "border-b border-border last:border-0 transition-colors",
+                          highlightedFileId === f.id
+                            ? "bg-primary/8 ring-1 ring-inset ring-primary/20"
+                            : f.status === "analisado"
+                            ? "bg-accent/5"
+                            : "hover:bg-muted/30",
+                          f.approvedAsOfficial && "border-l-[3px] border-l-accent"
+                        )}
+                      >
                         <td className="p-3">
                           <Checkbox checked={selected.has(f.id)} onCheckedChange={() => toggleSelect(f.id)} />
                         </td>
@@ -1133,6 +1170,10 @@ const MentoriaLab = () => {
                           <div className="flex flex-col items-center gap-1">
                             {readingIds.has(f.id) ? (
                               <Badge className="bg-primary/10 text-primary text-xs">Lendo...</Badge>
+                            ) : f.approvedAsOfficial ? (
+                              <Badge className="bg-accent/15 text-accent text-xs gap-1">
+                                <ShieldCheck className="h-3 w-3" /> Oficial
+                              </Badge>
                             ) : f.status === "analisado" && f.ineligible ? (
                               <Badge className="bg-muted text-muted-foreground text-xs">
                                 {f.ineligibleReason || "Fora de avaliação"}
@@ -1142,7 +1183,7 @@ const MentoriaLab = () => {
                                 {statusConfig[f.status].label}
                               </Badge>
                             )}
-                            {f.status === "analisado" && !f.ineligible && f.result?.notaFinal != null && notaToScale10(f.result.notaFinal) < 7 && (
+                            {f.status === "analisado" && !f.ineligible && !f.approvedAsOfficial && f.result?.notaFinal != null && notaToScale10(f.result.notaFinal) < 7 && (
                               <Badge className="bg-warning/15 text-warning text-[10px] whitespace-nowrap">
                                 Necessita mentoria
                               </Badge>
@@ -1158,7 +1199,7 @@ const MentoriaLab = () => {
                               variant="outline"
                               size="sm"
                               className="h-7 text-xs gap-1"
-                              onClick={() => setSideFile(f)}
+                              onClick={() => { setSideFile(f); setHighlightedFileId(f.id); }}
                             >
                               <Eye className="h-3 w-3" /> Abrir
                             </Button>
@@ -1169,12 +1210,30 @@ const MentoriaLab = () => {
                                     <Button
                                       size="icon"
                                       className="h-7 w-7"
-                                      onClick={() => setMentoriaFile(f)}
+                                      onClick={() => { setMentoriaFile(f); setHighlightedFileId(f.id); }}
                                     >
                                       <BookOpen className="h-3.5 w-3.5" />
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent><p className="text-xs">Ver mentoria</p></TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                            {f.status === "analisado" && !f.ineligible && !f.approvedAsOfficial && f.evaluationId && (
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-7 w-7 text-accent border-accent/30 hover:bg-accent/10"
+                                      onClick={() => approveAsOfficial(f)}
+                                      disabled={approvingIds.has(f.id)}
+                                    >
+                                      {approvingIds.has(f.id) ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent><p className="text-xs">Aprovar como Avaliação Oficial</p></TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
                             )}

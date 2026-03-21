@@ -5,11 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Radio, X, ChevronDown, ChevronRight, Phone, ShieldCheck, Route, MessageSquare,
-  ArrowRightLeft, Clock, AlertTriangle
+  Radio, X, ChevronDown, ChevronRight, Phone, ShieldCheck, Route,
+  MessageSquare, ArrowRightLeft, Clock, AlertTriangle, Bot, UserX
 } from "lucide-react";
 import { classifyMessages } from "@/lib/messageClassifier";
-import { summarizeUraContext, type UraContext } from "@/lib/uraContextSummarizer";
+import { summarizeUraContext, type UraContext, type UraStatus } from "@/lib/uraContextSummarizer";
 
 interface UraContextDialogProps {
   open: boolean;
@@ -24,13 +24,19 @@ interface SectionConfig {
   items: { label: string; value: string }[];
 }
 
+const STATUS_CONFIG: Record<UraStatus, { title: string; description: string; icon: typeof Radio }> = {
+  with_ura: { title: "Contexto URA", description: "Informações pré-atendimento identificadas", icon: Radio },
+  no_ura: { title: "Sem dados de URA", description: "Atendimento humano direto — sem interação automática detectada", icon: Phone },
+  ura_only: { title: "URA sem atendente", description: "Atendimento puramente automático — nenhum atendente humano identificado", icon: Bot },
+  ura_ambiguous: { title: "URA não identificada com segurança", description: "Não foi possível classificar o fluxo da URA com precisão", icon: AlertTriangle },
+};
+
 const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContextDialogProps) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["fluxo", "jornada", "eventos"]));
 
   const uraContext = useMemo(() => {
     if (!rawText) return null;
 
-    // Parse raw text into messages
     const lines = rawText.split("\n");
     const messages: { speaker: string; role: "atendente" | "cliente" | "bot" | "sistema"; text: string; time?: string; date?: string }[] = [];
 
@@ -69,7 +75,7 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
   }, [rawText, atendente]);
 
   const sections: SectionConfig[] = useMemo(() => {
-    if (!uraContext) return [];
+    if (!uraContext || uraContext.status === "no_ura") return [];
 
     const fluxoItems: { label: string; value: string }[] = [];
     const jornadaItems: { label: string; value: string }[] = [];
@@ -102,7 +108,9 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
   };
 
   const sectionKeys = ["fluxo", "jornada", "eventos"];
-
+  const status = uraContext?.status || "no_ura";
+  const cfg = STATUS_CONFIG[status];
+  const StatusIcon = cfg.icon;
   const hasData = sections.length > 0;
 
   return (
@@ -112,13 +120,13 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                <Radio className="h-4 w-4 text-muted-foreground" />
+                <StatusIcon className="h-4 w-4 text-muted-foreground" />
               </div>
               <div>
                 <DialogTitle className="text-xs font-extrabold text-foreground uppercase tracking-[0.1em]">
-                  Contexto URA
+                  {cfg.title}
                 </DialogTitle>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Informações pré-atendimento</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{cfg.description}</p>
               </div>
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOpenChange(false)}>
@@ -129,17 +137,47 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
 
         <ScrollArea className="max-h-[calc(80vh-72px)]">
           <div className="p-6 space-y-3">
-            {!hasData ? (
+            {/* No URA — human-only */}
+            {status === "no_ura" && (
               <div className="flex flex-col items-center text-center py-10">
-                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
-                  <Radio className="h-5 w-5 text-muted-foreground/60" />
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                  <Phone className="h-5 w-5 text-primary/60" />
                 </div>
-                <p className="text-sm font-semibold text-muted-foreground">Sem dados de URA</p>
+                <p className="text-sm font-semibold text-foreground">Sem dados de URA</p>
                 <p className="text-xs text-muted-foreground/70 mt-1 max-w-xs">
-                  Nenhuma interação automática (URA) foi identificada neste atendimento.
+                  Este atendimento foi identificado como humano direto, sem interação automática prévia.
                 </p>
               </div>
-            ) : (
+            )}
+
+            {/* URA only — no human agent */}
+            {status === "ura_only" && (
+              <div className="flex flex-col items-center text-center py-6 mb-3">
+                <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center mb-3">
+                  <Bot className="h-5 w-5 text-warning" />
+                </div>
+                <p className="text-sm font-semibold text-foreground">URA sem atendente</p>
+                <p className="text-xs text-muted-foreground/70 mt-1 max-w-xs">
+                  Este atendimento foi composto apenas por mensagens automáticas. Nenhum atendente humano foi identificado.
+                </p>
+              </div>
+            )}
+
+            {/* Ambiguous URA */}
+            {status === "ura_ambiguous" && (
+              <div className="flex flex-col items-center text-center py-6 mb-3">
+                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                  <AlertTriangle className="h-5 w-5 text-muted-foreground/60" />
+                </div>
+                <p className="text-sm font-semibold text-foreground">URA não identificada com segurança</p>
+                <p className="text-xs text-muted-foreground/70 mt-1 max-w-xs">
+                  Foram detectadas mensagens automáticas, mas não foi possível classificar o fluxo da URA com precisão.
+                </p>
+              </div>
+            )}
+
+            {/* Data sections — for with_ura, ura_only, ura_ambiguous with items */}
+            {(status === "with_ura" || ((status === "ura_only" || status === "ura_ambiguous") && hasData)) && (
               <>
                 {/* Summary badges */}
                 <div className="flex flex-wrap gap-2 mb-2">
@@ -204,6 +242,19 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
                   );
                 })}
               </>
+            )}
+
+            {/* with_ura but no extracted data */}
+            {status === "with_ura" && !hasData && (
+              <div className="flex flex-col items-center text-center py-10">
+                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                  <Radio className="h-5 w-5 text-muted-foreground/60" />
+                </div>
+                <p className="text-sm font-semibold text-muted-foreground">Sem dados de URA</p>
+                <p className="text-xs text-muted-foreground/70 mt-1 max-w-xs">
+                  Nenhuma interação automática (URA) foi identificada neste atendimento.
+                </p>
+              </div>
             )}
           </div>
         </ScrollArea>
