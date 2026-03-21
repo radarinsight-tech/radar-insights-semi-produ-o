@@ -123,6 +123,7 @@ const Hub = () => {
                       icon={<Users2 className="h-4.5 w-4.5 text-cyan-500" />}
                       iconBg="bg-cyan-500/10 group-hover:bg-cyan-500/15"
                       onClick={() => navigate("/atendentes")}
+                      highlight
                     />
                     <ModuleCard
                       title="Ranking & Bônus"
