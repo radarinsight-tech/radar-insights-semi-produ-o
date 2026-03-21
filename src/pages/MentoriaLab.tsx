@@ -7,6 +7,11 @@ import {
   Search, X, Filter, Volume2, VolumeX, BookOpen, Archive, Package, Clock, CheckCircle2, AlertTriangle,
   ChevronLeft, ChevronRight, Info, CalendarIcon, BarChart3, ShieldCheck
 } from "lucide-react";
+import { useUserPermissions } from "@/hooks/useUserPermissions";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
