@@ -193,13 +193,9 @@ const Auth = () => {
                 {loading && <Loader2 className="animate-spin" />}
                 Entrar
               </Button>
-              <button
-                type="button"
-                onClick={() => setShowForgotPassword(true)}
-                className="w-full text-sm text-muted-foreground hover:text-primary transition-colors text-center"
-              >
-                Esqueci minha senha
-              </button>
+              <p className="w-full text-sm text-muted-foreground text-center">
+                Esqueceu sua senha? Solicite ao administrador.
+              </p>
             </form>
           </TabsContent>
 
