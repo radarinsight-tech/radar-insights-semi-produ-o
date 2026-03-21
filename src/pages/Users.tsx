@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserSectors, type Sector } from "@/hooks/useUserSectors";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,10 +51,12 @@ interface ProfileWithRole {
   full_name: string | null;
   created_at: string;
   role: AppRole | null;
+  sectorIds: string[];
 }
 
 const UsersPage = () => {
   const navigate = useNavigate();
+  const { allSectors, refresh: refreshSectors } = useUserSectors();
   const [profiles, setProfiles] = useState<ProfileWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -65,6 +68,7 @@ const UsersPage = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editUser, setEditUser] = useState<ProfileWithRole | null>(null);
   const [editRole, setEditRole] = useState<AppRole | "none">("none");
+  const [editSectorIds, setEditSectorIds] = useState<string[]>([]);
   const [editLoading, setEditLoading] = useState(false);
 
   const loadProfiles = async () => {
@@ -90,9 +94,22 @@ const UsersPage = () => {
       roleMap.set(r.user_id, r.role as AppRole);
     });
 
+    // Load user_sectors for all users
+    const { data: userSectorsData } = await supabase
+      .from("user_sectors")
+      .select("user_id, sector_id");
+
+    const sectorMap = new Map<string, string[]>();
+    (userSectorsData ?? []).forEach((us: any) => {
+      const existing = sectorMap.get(us.user_id) ?? [];
+      existing.push(us.sector_id);
+      sectorMap.set(us.user_id, existing);
+    });
+
     const merged: ProfileWithRole[] = (profilesData || []).map((p) => ({
       ...p,
       role: roleMap.get(p.id) ?? null,
+      sectorIds: sectorMap.get(p.id) ?? [],
     }));
 
     setProfiles(merged);
@@ -137,7 +154,14 @@ const UsersPage = () => {
   const openEditDialog = (profile: ProfileWithRole) => {
     setEditUser(profile);
     setEditRole(profile.role ?? "none");
+    setEditSectorIds(profile.sectorIds ?? []);
     setEditOpen(true);
+  };
+
+  const toggleEditSector = (sectorId: string) => {
+    setEditSectorIds((prev) =>
+      prev.includes(sectorId) ? prev.filter((id) => id !== sectorId) : [...prev, sectorId]
+    );
   };
 
   const handleSaveRole = async () => {
@@ -145,15 +169,14 @@ const UsersPage = () => {
     setEditLoading(true);
 
     try {
+      // Save role
       if (editRole === "none") {
-        // Remove any existing role
         const { error } = await supabase
           .from("user_roles")
           .delete()
           .eq("user_id", editUser.id);
         if (error) throw error;
       } else {
-        // Upsert: delete existing then insert new
         await supabase
           .from("user_roles")
           .delete()
@@ -165,13 +188,31 @@ const UsersPage = () => {
         if (error) throw error;
       }
 
-      toast.success("Permissão atualizada com sucesso.");
+      // Save sectors: delete all then insert selected
+      await supabase
+        .from("user_sectors")
+        .delete()
+        .eq("user_id", editUser.id);
+
+      if (editSectorIds.length > 0) {
+        const rows = editSectorIds.map((sid) => ({
+          user_id: editUser.id,
+          sector_id: sid,
+        }));
+        const { error: secError } = await supabase
+          .from("user_sectors")
+          .insert(rows as any);
+        if (secError) throw secError;
+      }
+
+      toast.success("Permissões e setores atualizados.");
       setEditOpen(false);
       setEditUser(null);
       await loadProfiles();
+      await refreshSectors();
     } catch (err: any) {
       console.error("Error saving role:", err);
-      toast.error("Erro ao salvar permissão: " + (err.message || "erro desconhecido"));
+      toast.error("Erro ao salvar: " + (err.message || "erro desconhecido"));
     } finally {
       setEditLoading(false);
     }
