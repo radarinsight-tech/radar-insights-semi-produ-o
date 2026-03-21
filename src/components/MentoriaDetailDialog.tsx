@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { calcularBonus, formatBRL, notaToScale10, formatDateBR } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -7,8 +7,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   CheckCircle2, XCircle, MinusCircle, ShieldAlert,
   MessageSquareQuote, Printer, X, Award, TrendingUp, AlertTriangle, Lightbulb,
-  User, Calendar, FileText, Hash
+  User, Calendar, FileText, Hash, Radio
 } from "lucide-react";
+import UraContextDialog from "@/components/UraContextDialog";
 
 interface CriterioAvaliacao {
   numero: number;
@@ -96,6 +97,7 @@ const findRelevantExcerpt = (rawText: string | undefined, explicacao: string): s
 };
 
 const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente }: MentoriaDetailDialogProps) => {
+  const [uraOpen, setUraOpen] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   if (!result) return null;
@@ -253,6 +255,9 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
               <p className="text-[11px] text-muted-foreground mt-1 truncate max-w-lg font-medium">{fileName}</p>
             </div>
             <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setUraOpen(true)} className="gap-1.5 text-xs h-8 font-semibold">
+                <Radio className="h-3.5 w-3.5" /> Contexto URA
+              </Button>
               <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5 text-xs h-8 font-semibold">
                 <Printer className="h-3.5 w-3.5" /> Imprimir
               </Button>
@@ -528,6 +533,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           </div>
         </ScrollArea>
       </DialogContent>
+      <UraContextDialog open={uraOpen} onOpenChange={setUraOpen} rawText={rawText} atendente={atendente} />
     </Dialog>
   );
 };
