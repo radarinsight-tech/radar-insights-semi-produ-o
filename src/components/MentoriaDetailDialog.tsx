@@ -97,6 +97,7 @@ const findRelevantExcerpt = (rawText: string | undefined, explicacao: string): s
 };
 
 const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente }: MentoriaDetailDialogProps) => {
+  const [uraOpen, setUraOpen] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   if (!result) return null;
