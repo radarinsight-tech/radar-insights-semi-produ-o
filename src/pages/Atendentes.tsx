@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import logoSymbol from "@/assets/logo-symbol.png";
 import { toast } from "sonner";
+import SectorManager from "@/components/SectorManager";
 
 interface Attendant {
   id: string;
@@ -223,6 +224,9 @@ const Atendentes = () => {
             <p className="text-xs text-muted-foreground">Inativos</p>
           </Card>
         </div>
+
+        {/* Sector Management */}
+        <SectorManager />
 
         {/* Filters + Actions */}
         <Card className="p-4">
