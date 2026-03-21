@@ -24,8 +24,12 @@ import SectorManager from "@/components/SectorManager";
 export const ROLE_TYPE_OPTIONS = [
   { value: "sucesso_cliente", label: "Sucesso do Cliente" },
   { value: "suporte_tecnico", label: "Suporte Técnico" },
-  { value: "vendas", label: "Vendas" },
-  { value: "outro", label: "Outro" },
+] as const;
+
+export const BASE_OPTIONS = [
+  { value: "matriz", label: "Matriz" },
+  { value: "filial", label: "Filial" },
+  { value: "externo", label: "Externo" },
 ] as const;
 
 export type RoleType = typeof ROLE_TYPE_OPTIONS[number]["value"];
@@ -40,14 +44,21 @@ export function getRoleTypeBadgeClass(value: string): string {
       return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
     case "suporte_tecnico":
       return "bg-blue-500/10 text-blue-600 border-blue-500/20";
-    case "vendas":
-      return "bg-amber-500/10 text-amber-600 border-amber-500/20";
     default:
       return "bg-muted text-muted-foreground";
   }
 }
 
-/** Returns true if this role_type is evaluable in the standard mentoria */
+export function getBaseLabel(value: string): string {
+  return BASE_OPTIONS.find((o) => o.value === value)?.label ?? value;
+}
+
+/** Returns true if this attendant is evaluable in the mentoria */
+export function isEvaluableAttendant(participatesEvaluation: boolean): boolean {
+  return participatesEvaluation;
+}
+
+/** Legacy compat */
 export function isEvaluableRoleType(roleType: string): boolean {
   return roleType === "sucesso_cliente";
 }
@@ -59,6 +70,10 @@ interface Attendant {
   sector: string | null;
   active: boolean;
   role_type: string;
+  empresa: string | null;
+  departamento: string | null;
+  base: string | null;
+  participates_evaluation: boolean;
   created_at: string;
 }
 
@@ -69,6 +84,8 @@ const Atendentes = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("todos");
   const [filterRoleType, setFilterRoleType] = useState("todos");
+  const [filterBase, setFilterBase] = useState("todos");
+  const [filterEvaluation, setFilterEvaluation] = useState("todos");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formName, setFormName] = useState("");
@@ -76,6 +93,10 @@ const Atendentes = () => {
   const [formSector, setFormSector] = useState("");
   const [formRoleType, setFormRoleType] = useState<string>("sucesso_cliente");
   const [formActive, setFormActive] = useState(true);
+  const [formEmpresa, setFormEmpresa] = useState("");
+  const [formDepartamento, setFormDepartamento] = useState("");
+  const [formBase, setFormBase] = useState("matriz");
+  const [formParticipatesEvaluation, setFormParticipatesEvaluation] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
@@ -101,14 +122,23 @@ const Atendentes = () => {
     return attendants.filter((a) => {
       if (searchTerm) {
         const q = searchTerm.toLowerCase();
-        if (!a.name.toLowerCase().includes(q) && !(a.nickname || "").toLowerCase().includes(q) && !(a.sector || "").toLowerCase().includes(q)) return false;
+        if (
+          !a.name.toLowerCase().includes(q) &&
+          !(a.nickname || "").toLowerCase().includes(q) &&
+          !(a.sector || "").toLowerCase().includes(q) &&
+          !(a.empresa || "").toLowerCase().includes(q) &&
+          !(a.departamento || "").toLowerCase().includes(q)
+        ) return false;
       }
       if (filterStatus === "ativo" && !a.active) return false;
       if (filterStatus === "inativo" && a.active) return false;
       if (filterRoleType !== "todos" && a.role_type !== filterRoleType) return false;
+      if (filterBase !== "todos" && a.base !== filterBase) return false;
+      if (filterEvaluation === "sim" && !a.participates_evaluation) return false;
+      if (filterEvaluation === "nao" && a.participates_evaluation) return false;
       return true;
     });
-  }, [attendants, searchTerm, filterStatus, filterRoleType]);
+  }, [attendants, searchTerm, filterStatus, filterRoleType, filterBase, filterEvaluation]);
 
   const openNew = () => {
     setEditingId(null);
@@ -117,6 +147,10 @@ const Atendentes = () => {
     setFormSector("");
     setFormRoleType("sucesso_cliente");
     setFormActive(true);
+    setFormEmpresa("");
+    setFormDepartamento("");
+    setFormBase("matriz");
+    setFormParticipatesEvaluation(true);
     setDialogOpen(true);
   };
 
@@ -127,6 +161,10 @@ const Atendentes = () => {
     setFormSector(a.sector || "");
     setFormRoleType(a.role_type || "sucesso_cliente");
     setFormActive(a.active);
+    setFormEmpresa(a.empresa || "");
+    setFormDepartamento(a.departamento || "");
+    setFormBase(a.base || "matriz");
+    setFormParticipatesEvaluation(a.participates_evaluation ?? true);
     setDialogOpen(true);
   };
 
@@ -152,16 +190,22 @@ const Atendentes = () => {
       return;
     }
 
+    const payload = {
+      name: trimmedName,
+      nickname: formNickname.trim() || null,
+      sector: formSector.trim() || null,
+      role_type: formRoleType,
+      active: formActive,
+      empresa: formEmpresa.trim() || null,
+      departamento: formDepartamento.trim() || null,
+      base: formBase,
+      participates_evaluation: formParticipatesEvaluation,
+    };
+
     if (editingId) {
       const { error } = await supabase
         .from("attendants")
-        .update({
-          name: trimmedName,
-          nickname: formNickname.trim() || null,
-          sector: formSector.trim() || null,
-          role_type: formRoleType,
-          active: formActive,
-        } as any)
+        .update(payload as any)
         .eq("id", editingId);
 
       if (error) {
@@ -174,14 +218,7 @@ const Atendentes = () => {
     } else {
       const { error } = await supabase
         .from("attendants")
-        .insert({
-          name: trimmedName,
-          nickname: formNickname.trim() || null,
-          sector: formSector.trim() || null,
-          role_type: formRoleType,
-          active: formActive,
-          company_id: companyId,
-        } as any);
+        .insert({ ...payload, company_id: companyId } as any);
 
       if (error) {
         toast.error(error.code === "23505" ? "Já existe um atendente com este nome." : "Erro ao cadastrar atendente.");
@@ -215,13 +252,23 @@ const Atendentes = () => {
     return [...set].sort();
   }, [attendants]);
 
+  const empresas = useMemo(() => {
+    const set = new Set(attendants.map((a) => a.empresa).filter(Boolean) as string[]);
+    return [...set].sort();
+  }, [attendants]);
+
+  const departamentos = useMemo(() => {
+    const set = new Set(attendants.map((a) => a.departamento).filter(Boolean) as string[]);
+    return [...set].sort();
+  }, [attendants]);
+
   const activeCount = attendants.filter((a) => a.active).length;
   const inactiveCount = attendants.filter((a) => !a.active).length;
 
   return (
     <div className="min-h-screen bg-background" data-module="attendance">
       <header className="border-b border-border bg-card">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
           <img src={logoSymbol} alt="Radar Insight" className="h-8 w-8 rounded-lg object-contain" />
           <h1 className="text-xl font-bold text-foreground">Atendentes</h1>
           <div className="ml-auto flex items-center gap-2">
@@ -235,7 +282,7 @@ const Atendentes = () => {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-5">
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           <Card className="p-4 text-center">
@@ -264,7 +311,7 @@ const Atendentes = () => {
             <div className="relative flex-1 min-w-[180px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nome ou setor..."
+                placeholder="Buscar por nome, empresa ou departamento..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
@@ -276,7 +323,7 @@ const Atendentes = () => {
               )}
             </div>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[130px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -286,15 +333,36 @@ const Atendentes = () => {
               </SelectContent>
             </Select>
             <Select value={filterRoleType} onValueChange={setFilterRoleType}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[170px]">
                 <Filter className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                <SelectValue placeholder="Tipo de atuação" />
+                <SelectValue placeholder="Tipo" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os tipos</SelectItem>
                 {ROLE_TYPE_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterBase} onValueChange={setFilterBase}>
+              <SelectTrigger className="w-[130px]">
+                <SelectValue placeholder="Base" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todas bases</SelectItem>
+                {BASE_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterEvaluation} onValueChange={setFilterEvaluation}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Avaliação" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="sim">Participa</SelectItem>
+                <SelectItem value="nao">Não participa</SelectItem>
               </SelectContent>
             </Select>
             <Button onClick={openNew} className="gap-1.5">
@@ -316,9 +384,11 @@ const Atendentes = () => {
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
                     <th className="p-3 text-left font-medium text-muted-foreground">Nome</th>
-                    <th className="p-3 text-left font-medium text-muted-foreground">Apelido</th>
-                    <th className="p-3 text-left font-medium text-muted-foreground">Setor</th>
+                    <th className="p-3 text-left font-medium text-muted-foreground">Empresa</th>
+                    <th className="p-3 text-left font-medium text-muted-foreground">Departamento</th>
+                    <th className="p-3 text-left font-medium text-muted-foreground">Base</th>
                     <th className="p-3 text-left font-medium text-muted-foreground">Tipo de Atuação</th>
+                    <th className="p-3 text-center font-medium text-muted-foreground">Avaliação</th>
                     <th className="p-3 text-center font-medium text-muted-foreground">Status</th>
                     <th className="p-3 text-center font-medium text-muted-foreground">Ações</th>
                   </tr>
@@ -328,16 +398,28 @@ const Atendentes = () => {
                     <tr key={a.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="p-3">
                         <p className="font-medium text-foreground">{a.name}</p>
+                        {a.nickname && <p className="text-xs text-muted-foreground">{a.nickname}</p>}
                       </td>
                       <td className="p-3 text-muted-foreground">
-                        {a.nickname || <span className="italic opacity-60">—</span>}
+                        {a.empresa || <span className="italic opacity-60">—</span>}
                       </td>
                       <td className="p-3 text-muted-foreground">
-                        {a.sector || <span className="italic opacity-60">—</span>}
+                        {a.departamento || <span className="italic opacity-60">—</span>}
+                      </td>
+                      <td className="p-3 text-muted-foreground">
+                        {a.base ? getBaseLabel(a.base) : <span className="italic opacity-60">—</span>}
                       </td>
                       <td className="p-3">
                         <Badge className={getRoleTypeBadgeClass(a.role_type)}>
                           {getRoleTypeLabel(a.role_type)}
+                        </Badge>
+                      </td>
+                      <td className="p-3 text-center">
+                        <Badge className={a.participates_evaluation
+                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                          : "bg-muted text-muted-foreground"
+                        }>
+                          {a.participates_evaluation ? "Sim" : "Não"}
                         </Badge>
                       </td>
                       <td className="p-3 text-center">
@@ -359,7 +441,7 @@ const Atendentes = () => {
                   ))}
                   {filteredAttendants.length === 0 && !loading && (
                     <tr>
-                      <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                      <td colSpan={8} className="p-8 text-center text-muted-foreground">
                         {attendants.length === 0
                           ? "Nenhum atendente cadastrado. Clique em \"Novo atendente\" para começar."
                           : "Nenhum atendente encontrado com os filtros aplicados."}
@@ -375,46 +457,62 @@ const Atendentes = () => {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId ? "Editar Atendente" : "Novo Atendente"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label htmlFor="att-name">Nome *</Label>
-              <Input
-                id="att-name"
-                placeholder="Nome completo do atendente"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                maxLength={100}
-              />
+              <Input id="att-name" placeholder="Nome completo do atendente" value={formName} onChange={(e) => setFormName(e.target.value)} maxLength={100} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="att-nickname">Apelido / Nome alternativo</Label>
-              <Input
-                id="att-nickname"
-                placeholder="Ex: Bia, Marquinhos"
-                value={formNickname}
-                onChange={(e) => setFormNickname(e.target.value)}
-                maxLength={60}
-              />
+              <Label htmlFor="att-nickname">Apelido</Label>
+              <Input id="att-nickname" placeholder="Ex: Bia, Marquinhos" value={formNickname} onChange={(e) => setFormNickname(e.target.value)} maxLength={60} />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="att-sector">Setor</Label>
-              <Input
-                id="att-sector"
-                placeholder="Ex: Suporte, Financeiro, Comercial"
-                value={formSector}
-                onChange={(e) => setFormSector(e.target.value)}
-                maxLength={60}
-                list="sector-suggestions"
-              />
-              {sectors.length > 0 && (
-                <datalist id="sector-suggestions">
-                  {sectors.map((s) => <option key={s} value={s} />)}
-                </datalist>
-              )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="att-empresa">Empresa</Label>
+                <Input id="att-empresa" placeholder="Ex: Banda Turbo" value={formEmpresa} onChange={(e) => setFormEmpresa(e.target.value)} maxLength={100} list="empresa-suggestions" />
+                {empresas.length > 0 && (
+                  <datalist id="empresa-suggestions">
+                    {empresas.map((s) => <option key={s} value={s} />)}
+                  </datalist>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="att-departamento">Departamento</Label>
+                <Input id="att-departamento" placeholder="Ex: Comercial" value={formDepartamento} onChange={(e) => setFormDepartamento(e.target.value)} maxLength={60} list="departamento-suggestions" />
+                {departamentos.length > 0 && (
+                  <datalist id="departamento-suggestions">
+                    {departamentos.map((s) => <option key={s} value={s} />)}
+                  </datalist>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="att-sector">Setor</Label>
+                <Input id="att-sector" placeholder="Ex: Suporte" value={formSector} onChange={(e) => setFormSector(e.target.value)} maxLength={60} list="sector-suggestions" />
+                {sectors.length > 0 && (
+                  <datalist id="sector-suggestions">
+                    {sectors.map((s) => <option key={s} value={s} />)}
+                  </datalist>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="att-base">Base *</Label>
+                <Select value={formBase} onValueChange={setFormBase}>
+                  <SelectTrigger id="att-base">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BASE_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="att-role-type">Tipo de Atuação *</Label>
@@ -428,12 +526,15 @@ const Atendentes = () => {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                {formRoleType === "sucesso_cliente" && "Será avaliado na régua principal de mentoria."}
-                {formRoleType === "suporte_tecnico" && "Não será avaliado na régua de Sucesso do Cliente."}
-                {formRoleType === "vendas" && "Preparado para uso futuro em avaliações comerciais."}
-                {formRoleType === "outro" && "Fora da régua principal de avaliação por enquanto."}
-              </p>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="att-evaluation">Participa da avaliação?</Label>
+                <p className="text-xs text-muted-foreground">
+                  {formParticipatesEvaluation ? "Este atendente será incluído na mentoria." : "Este atendente não será avaliado na mentoria."}
+                </p>
+              </div>
+              <Switch id="att-evaluation" checked={formParticipatesEvaluation} onCheckedChange={setFormParticipatesEvaluation} />
             </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="att-active">Ativo</Label>
