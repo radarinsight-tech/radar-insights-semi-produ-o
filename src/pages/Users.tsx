@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Radar, ArrowLeft, UserPlus, Users, Loader2, Pencil, Shield, MapPin, KeyRound } from "lucide-react";
+import { Radar, ArrowLeft, UserPlus, Users, Loader2, Pencil, Shield, MapPin, KeyRound, CheckCircle2, Clock } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -54,6 +54,7 @@ interface ProfileWithRole {
   created_at: string;
   role: AppRole | null;
   sectorIds: string[];
+  force_password_change: boolean;
 }
 
 const UsersPage = () => {
@@ -78,7 +79,7 @@ const UsersPage = () => {
   const loadProfiles = async () => {
     const { data: profilesData, error } = await supabase
       .from("profiles")
-      .select("id, full_name, created_at")
+      .select("id, full_name, created_at, force_password_change")
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -114,6 +115,7 @@ const UsersPage = () => {
       ...p,
       role: roleMap.get(p.id) ?? null,
       sectorIds: sectorMap.get(p.id) ?? [],
+      force_password_change: (p as any).force_password_change ?? false,
     }));
 
     setProfiles(merged);
@@ -332,6 +334,7 @@ const UsersPage = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Permissão</TableHead>
                   <TableHead>Setores</TableHead>
                   <TableHead>Membro desde</TableHead>
@@ -343,6 +346,19 @@ const UsersPage = () => {
                   <TableRow key={profile.id}>
                     <TableCell className="font-medium">
                       {profile.full_name || "Sem nome"}
+                    </TableCell>
+                    <TableCell>
+                      {profile.force_password_change ? (
+                        <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+                          <Clock className="h-3 w-3 mr-1" />
+                          Senha pendente
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Ativo
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       {profile.role ? (
@@ -418,6 +434,12 @@ const UsersPage = () => {
                 <p className="font-medium text-foreground">
                   {editUser.full_name || "Sem nome"}
                 </p>
+                {editUser.force_password_change && (
+                  <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
+                    <Clock className="h-3 w-3" />
+                    Este usuário ainda precisa redefinir a senha
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Módulo de acesso</Label>
