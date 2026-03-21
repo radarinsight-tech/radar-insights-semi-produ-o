@@ -417,13 +417,35 @@ const UsersPage = () => {
                   Define qual módulo o usuário pode acessar no sistema.
                 </p>
               </div>
+              {allSectors.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Setores</Label>
+                  <div className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-3">
+                    {allSectors.map((sec) => (
+                      <div key={sec.id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`sec-${sec.id}`}
+                          checked={editSectorIds.includes(sec.id)}
+                          onCheckedChange={() => toggleEditSector(sec.id)}
+                        />
+                        <label htmlFor={`sec-${sec.id}`} className="text-sm cursor-pointer">
+                          {sec.name}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Setores definem quais dados o usuário pode visualizar.
+                  </p>
+                </div>
+              )}
               <Button
                 className="w-full"
                 onClick={handleSaveRole}
                 disabled={editLoading}
               >
                 {editLoading && <Loader2 className="animate-spin" />}
-                Salvar permissão
+                Salvar permissões
               </Button>
             </div>
           )}
