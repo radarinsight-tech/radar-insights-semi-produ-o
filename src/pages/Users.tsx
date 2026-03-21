@@ -27,11 +27,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Radar, ArrowLeft, UserPlus, Users, Loader2, Pencil, Shield, MapPin } from "lucide-react";
+import { Radar, ArrowLeft, UserPlus, Users, Loader2, Pencil, Shield, MapPin, KeyRound } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { ResetPasswordDialog } from "@/components/ResetPasswordDialog";
 
 type AppRole = "admin" | "auditoria" | "credito";
 
@@ -71,6 +72,8 @@ const UsersPage = () => {
   const [editRole, setEditRole] = useState<AppRole | "none">("none");
   const [editSectorIds, setEditSectorIds] = useState<string[]>([]);
   const [editLoading, setEditLoading] = useState(false);
+  const [resetPwOpen, setResetPwOpen] = useState(false);
+  const [resetPwUser, setResetPwUser] = useState<ProfileWithRole | null>(null);
 
   const loadProfiles = async () => {
     const { data: profilesData, error } = await supabase
@@ -372,14 +375,27 @@ const UsersPage = () => {
                       {new Date(profile.created_at).toLocaleDateString("pt-BR")}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditDialog(profile)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                        Editar
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(profile)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                          Editar
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setResetPwUser(profile);
+                            setResetPwOpen(true);
+                          }}
+                        >
+                          <KeyRound className="h-4 w-4" />
+                          Senha
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -457,6 +473,15 @@ const UsersPage = () => {
           )}
         </DialogContent>
       </Dialog>
+      {/* Reset Password Dialog */}
+      {resetPwUser && (
+        <ResetPasswordDialog
+          open={resetPwOpen}
+          onOpenChange={setResetPwOpen}
+          userId={resetPwUser.id}
+          userName={resetPwUser.full_name || "Sem nome"}
+        />
+      )}
     </div>
   );
 };
