@@ -170,23 +170,29 @@ const UsersPage = () => {
     setEditLoading(true);
 
     try {
-      // Save role
-      if (editRole === "none") {
-        const { error } = await supabase
-          .from("user_roles")
-          .delete()
-          .eq("user_id", editUser.id);
-        if (error) throw error;
-      } else {
-        await supabase
-          .from("user_roles")
-          .delete()
-          .eq("user_id", editUser.id);
-
-        const { error } = await supabase
-          .from("user_roles")
-          .insert({ user_id: editUser.id, role: editRole });
-        if (error) throw error;
+      // Only update role if it changed
+      const currentRole = editUser.role ?? "none";
+      if (editRole !== currentRole) {
+        if (editRole === "none") {
+          const { error } = await supabase
+            .from("user_roles")
+            .delete()
+            .eq("user_id", editUser.id);
+          if (error) throw error;
+        } else if (currentRole === "none") {
+          // No existing role, just insert
+          const { error } = await supabase
+            .from("user_roles")
+            .insert({ user_id: editUser.id, role: editRole });
+          if (error) throw error;
+        } else {
+          // Update existing role in place
+          const { error } = await supabase
+            .from("user_roles")
+            .update({ role: editRole })
+            .eq("user_id", editUser.id);
+          if (error) throw error;
+        }
       }
 
       // Save sectors: delete all then insert selected
