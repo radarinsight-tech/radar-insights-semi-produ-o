@@ -2,34 +2,20 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { formatDateTimeBR } from "@/lib/utils";
 import { useUserSectors } from "@/hooks/useUserSectors";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import UploadSection, { type UploadState } from "@/components/UploadSection";
-import AnalysisResult, { type AnalysisData } from "@/components/AnalysisResult";
 import HistoryTable from "@/components/HistoryTable";
 import Filters, { type FilterValues } from "@/components/Filters";
 import StatsWidgets, { type StatusFilter } from "@/components/StatsWidgets";
 import { matchesStatusFilter, getStatusLabel } from "@/lib/auditStatus";
 import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
-import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Users, Search, ArrowLeft, AlertTriangle, RefreshCw, X, BarChart3 } from "lucide-react";
+import { LogOut, Users, Search, ArrowLeft, X, BarChart3, Info } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import logoSymbol from "@/assets/logo-symbol.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import type { HistoryEntry } from "@/lib/mockData";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 /** Parse dd/MM/yyyy to a Date object */
 const parseDateBR = (str: string): Date | null => {
@@ -42,12 +28,7 @@ const parseDateBR = (str: string): Date | null => {
 const Index = () => {
   const navigate = useNavigate();
   const { sectors, isAdmin: isSectorAdmin, loading: sectorsLoading } = useUserSectors();
-  const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [uploadState, setUploadState] = useState<UploadState>("empty");
-  const [analyzedFileName, setAnalyzedFileName] = useState<string>("");
   const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterValues>({
     atendente: "todos",
     periodo: "",
@@ -56,10 +37,6 @@ const Index = () => {
   const [protocolSearch, setProtocolSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(null);
   const [showCharts, setShowCharts] = useState(false);
-
-  // Re-evaluation confirmation state
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const [duplicateProtocol, setDuplicateProtocol] = useState<string | null>(null);
 
   const sectorIds = useMemo(() => sectors.map(s => s.id), [sectors]);
 
@@ -76,10 +53,9 @@ const Index = () => {
         return;
       }
 
-      // Filter by sector client-side: admins see all, others see own sectors + records without sector
       const rows = (data || []).filter((row: any) => {
         if (isSectorAdmin) return true;
-        if (!row.sector_id) return true; // fallback: records without sector are visible
+        if (!row.sector_id) return true;
         return sectorIds.includes(row.sector_id);
       });
 
@@ -114,239 +90,6 @@ const Index = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
-  };
-
-  const handleNewAnalysis = () => {
-    setAnalysis(null);
-    setAnalysisError(null);
-    setUploadState("empty");
-    setAnalyzedFileName("");
-  };
-
-  const runAnalysis = async (file: File) => {
-    setIsAnalyzing(true);
-    setAnalysisError(null);
-    setAnalyzedFileName(file.name);
-    console.log("[Radar] Etapa 1: PDF carregado —", file.name, `(${(file.size / 1024).toFixed(1)} KB)`);
-    try {
-      console.log("[Radar] Etapa 2: Extraindo texto do PDF...");
-      const text = await extractTextFromPdf(file);
-      if (!text.trim()) {
-        console.error("[Radar] Erro na Etapa 2: Texto extraído está vazio");
-        toast.error("Não foi possível extrair texto do PDF.");
-        setIsAnalyzing(false);
-        setUploadState("empty");
-        return;
-      }
-      console.log("[Radar] Etapa 2: Texto extraído com sucesso —", text.length, "caracteres");
-
-      // Check for duplicate protocol before running analysis
-      const protocolMatch = text.match(/(?:protocolo|prot\.?)\s*[:\-]?\s*([A-Za-z0-9]+)/i);
-      const extractedProtocol = protocolMatch?.[1];
-
-      if (extractedProtocol) {
-        const { data: existing } = await supabase
-          .from("evaluations")
-          .select("id")
-          .eq("protocolo", extractedProtocol)
-          .limit(1);
-
-        if (existing && existing.length > 0) {
-          setPendingFile(file);
-          setDuplicateProtocol(extractedProtocol);
-          setIsAnalyzing(false);
-          return;
-        }
-      }
-
-      await executeAnalysis(file, text);
-    } catch (err) {
-      console.error("[Radar] Erro crítico no pipeline:", err);
-      const msg = err instanceof Error ? err.message : "Erro desconhecido";
-      setAnalysisError(`Falha ao processar PDF: ${msg}`);
-      toast.error("Erro inesperado ao processar o PDF.");
-      setIsAnalyzing(false);
-      setUploadState("completed");
-    }
-  };
-
-  const executeAnalysis = async (file: File, text?: string) => {
-    setIsAnalyzing(true);
-    setAnalysisError(null);
-    setAnalyzedFileName(file.name);
-    try {
-      if (!text) {
-        console.log("[Radar] Etapa 2 (retry): Extraindo texto do PDF...");
-        text = await extractTextFromPdf(file);
-        if (!text.trim()) {
-          console.error("[Radar] Erro na Etapa 2: Texto extraído está vazio");
-          toast.error("Não foi possível extrair texto do PDF.");
-          setIsAnalyzing(false);
-          setUploadState("empty");
-          return;
-        }
-      }
-
-      // Upload PDF to storage
-      console.log("[Radar] Etapa 3: Upload do PDF para storage...");
-      const fileName = `${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from("pdfs")
-        .upload(fileName, file, { contentType: "application/pdf" });
-
-      let pdfUrl: string | null = null;
-      if (uploadError) {
-        console.error("[Radar] Erro na Etapa 3 (não crítico):", uploadError);
-        toast.warning("Erro ao armazenar o PDF, mas a análise continuará.");
-      } else {
-        const { data: urlData } = supabase.storage.from("pdfs").getPublicUrl(fileName);
-        pdfUrl = urlData.publicUrl;
-        console.log("[Radar] Etapa 3: PDF armazenado com sucesso");
-      }
-
-      console.log("[Radar] Etapa 4: Enviando para análise IA...");
-      const { data, error } = await supabase.functions.invoke("analyze-attendance", {
-        body: { text },
-      });
-
-      if (error) {
-        console.error("[Radar] Erro na Etapa 4 (edge function):", error);
-        setAnalysisError("Erro ao analisar atendimento. A função de análise retornou erro.");
-        toast.error("Erro ao analisar atendimento. Tente novamente.");
-        setIsAnalyzing(false);
-        setUploadState("completed");
-        return;
-      }
-
-      if (data?.error) {
-        console.error("[Radar] Erro na Etapa 4 (resposta IA):", data.error);
-        setAnalysisError(data.error);
-        toast.error(data.error);
-        setIsAnalyzing(false);
-        setUploadState("completed");
-        return;
-      }
-
-      console.log("[Radar] Etapa 4: Análise IA concluída —", data?.statusAuditoria, data?.classificacao);
-
-      const fullReport = { ...data };
-
-      // ═══ CLIENT-SIDE CONSISTENCY VALIDATION ═══
-      const isAudited = data.statusAuditoria === "auditoria_realizada";
-      
-      // Block: audited but no score
-      if (isAudited && (!data.pontosPossiveis || data.pontosPossiveis === 0)) {
-        console.error("[Radar] Erro na Etapa 5 (consistência): auditoria sem pontuação");
-        setAnalysisError("Erro de consistência: auditoria realizada mas sem pontuação.");
-        toast.error("Erro de consistência: auditoria realizada mas sem pontuação. Reprocessar atendimento.");
-        setUploadState("completed");
-        setIsAnalyzing(false);
-        return;
-      }
-
-      // Block: positive classification with zero score
-      if (data.notaFinal === 0 && ["Excelente", "Bom atendimento", "Regular"].includes(data.classificacao) && isAudited) {
-        console.error("[Radar] Erro na Etapa 5 (consistência): classificação positiva com nota 0");
-        setAnalysisError("Erro de consistência: classificação positiva com nota zero.");
-        toast.error("Erro de consistência: classificação positiva com nota zero. Reprocessar atendimento.");
-        setUploadState("completed");
-        setIsAnalyzing(false);
-        return;
-      }
-
-      console.log("[Radar] Etapa 5: Validação de consistência OK");
-
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user?.id) {
-        console.error("[Radar] Erro na Etapa 6: Usuário não autenticado");
-        setAnalysisError("Usuário não autenticado. Faça login novamente.");
-        toast.error("Usuário não autenticado. Faça login novamente.");
-        setIsAnalyzing(false);
-        setUploadState("completed");
-        return;
-      }
-
-      // Map new audit fields to DB columns
-      console.log("[Radar] Etapa 6: Salvando avaliação no banco...");
-      const atualizacaoCadastral = data.bonusOperacional?.atualizacaoCadastral || "NÃO";
-      const notaFinal = typeof data.notaFinal === "number" ? data.notaFinal : 0;
-      const bonusQualidade = typeof data.bonusQualidade === "number" ? data.bonusQualidade : 0;
-
-      const { data: savedRow, error: insertError } = await supabase.from("evaluations").insert({
-        data: data.data || new Date().toLocaleDateString("pt-BR"),
-        data_avaliacao: new Date().toISOString(),
-        protocolo: data.protocolo || "Não identificado",
-        atendente: data.atendente || "Não identificado",
-        tipo: data.tipo || "Não identificado",
-        atualizacao_cadastral: atualizacaoCadastral,
-        nota: notaFinal,
-        classificacao: data.classificacao || "Fora de Avaliação",
-        bonus: bonusQualidade >= 70,
-        pontos_melhoria: Array.isArray(data.mentoria) ? data.mentoria : [],
-        user_id: user.id,
-        pdf_url: pdfUrl,
-        full_report: fullReport as unknown as import("@/integrations/supabase/types").Json,
-        prompt_version: data.promptVersion || "auditor_v3",
-        resultado_validado: true,
-        audit_log: (data.auditLog || null) as unknown as import("@/integrations/supabase/types").Json,
-        parent_evaluation_id: null,
-      } as any).select().single();
-
-      if (insertError || !savedRow) {
-        console.error("[Radar] Erro na Etapa 6 (insert):", insertError);
-        setAnalysisError("Erro ao salvar avaliação: " + (insertError?.message || "Erro desconhecido"));
-        toast.error("Erro ao salvar avaliação no histórico: " + (insertError?.message || "Erro desconhecido"));
-        setUploadState("completed");
-      } else {
-        console.log("[Radar] Etapa 6: Avaliação salva com sucesso — ID:", savedRow.id);
-        console.log("[Radar] Etapa 7: Renderizando resultado...");
-        const isNoInteraction = data.motivo === "sem_interacao_do_cliente";
-        setAnalysis({
-          protocolo: savedRow.protocolo || "—",
-          atendente: savedRow.atendente || "—",
-          tipo: savedRow.tipo || "—",
-          atualizacaoCadastral: savedRow.atualizacao_cadastral || "NÃO",
-          notaFinal: Number(savedRow.nota) || 0,
-          classificacao: savedRow.classificacao || "Fora de Avaliação",
-          bonus: savedRow.bonus ?? false,
-          bonusQualidade: bonusQualidade,
-          pontosMelhoria: Array.isArray(savedRow.pontos_melhoria) ? savedRow.pontos_melhoria : [],
-          impeditivo: data.impeditivo === true,
-          motivoImpeditivo: data.motivoImpeditivo || undefined,
-          pontosObtidos: data.pontosObtidos ?? undefined,
-          pontosPossiveis: data.pontosPossiveis ?? undefined,
-          noInteraction: isNoInteraction,
-        });
-        setUploadState(isNoInteraction ? "no-interaction" : "completed");
-        toast.success(duplicateProtocol ? "Reavaliação concluída e salva!" : "Análise concluída e salva!");
-        setDuplicateProtocol(null);
-        setPendingFile(null);
-        console.log("[Radar] Etapa 7: Resultado renderizado com sucesso");
-        await loadHistory();
-      }
-    } catch (err) {
-      console.error("[Radar] Erro crítico no pipeline:", err);
-      const msg = err instanceof Error ? err.message : "Erro desconhecido";
-      setAnalysisError(`Falha inesperada: ${msg}`);
-      toast.error("Erro inesperado ao processar o PDF.");
-      setUploadState("completed");
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  const handleConfirmReeval = () => {
-    if (pendingFile) {
-      executeAnalysis(pendingFile);
-    }
-  };
-
-  const handleCancelReeval = () => {
-    setPendingFile(null);
-    setDuplicateProtocol(null);
-    setUploadState("empty");
-    toast.info("Análise cancelada.");
   };
 
   const atendentes = useMemo(() => [...new Set(history.map((e) => e.atendente))].sort(), [history]);
@@ -395,7 +138,7 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
           <img src={logoSymbol} alt="Radar Insight" className="h-8 w-8 rounded-lg object-contain" />
           <h1 className="text-xl font-bold text-foreground">
-            Radar Insight — <span className="text-primary">Sucesso do Cliente</span>
+            Radar Insight — <span className="text-primary">Avaliação Oficial</span>
           </h1>
           <div className="ml-auto flex items-center gap-1">
             <Button variant="outline" size="sm" onClick={() => navigate("/")}>
@@ -415,37 +158,21 @@ const Index = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ErrorBoundary fallbackTitle="Erro no upload">
-            <UploadSection
-              onAnalyze={runAnalysis}
-              isAnalyzing={isAnalyzing}
-              analysisState={uploadState}
-              analyzedFileName={analyzedFileName}
-              onNewAnalysis={handleNewAnalysis}
-            />
-          </ErrorBoundary>
-          <ErrorBoundary fallbackTitle="Erro no resultado da análise">
-            {analysisError ? (
-              <Card className="p-6 border-destructive/30 bg-destructive/5">
-                <h2 className="text-lg font-bold text-primary mb-4">Resultado da Auditoria</h2>
-                <div className="flex flex-col items-center text-center gap-3 py-4">
-                  <div className="p-3 rounded-full bg-destructive/10">
-                    <AlertTriangle className="h-6 w-6 text-destructive" />
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">Erro ao processar atendimento</p>
-                  <p className="text-xs text-muted-foreground max-w-sm">{analysisError}</p>
-                  <Button variant="outline" size="sm" onClick={handleNewAnalysis}>
-                    <RefreshCw className="h-4 w-4 mr-1" /> Nova análise
-                  </Button>
-                </div>
-              </Card>
-            ) : (
-              <AnalysisResult data={analysis} />
-            )}
-          </ErrorBoundary>
-        </div>
-
+        {/* Info banner: no direct import */}
+        <Card className="p-4 border-l-4 border-l-primary bg-primary/5">
+          <div className="flex items-start gap-3">
+            <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">Avaliações Oficiais</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Este ambiente exibe apenas avaliações aprovadas no <strong>Mentoria Lab</strong>. Para importar e analisar novos atendimentos, acesse o Mentoria Lab.
+              </p>
+              <Button variant="outline" size="sm" className="mt-2 text-xs h-7" onClick={() => navigate("/mentoria-lab")}>
+                Ir para o Mentoria Lab
+              </Button>
+            </div>
+          </div>
+        </Card>
 
         {/* Charts toggle card */}
         {filtered.length >= 2 && !showCharts && (
@@ -523,25 +250,6 @@ const Index = () => {
           </ErrorBoundary>
         </div>
       </main>
-
-      <AlertDialog open={!!duplicateProtocol} onOpenChange={(open) => { if (!open) handleCancelReeval(); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Atendimento já avaliado</AlertDialogTitle>
-            <AlertDialogDescription>
-              Este atendimento (protocolo <strong>{duplicateProtocol}</strong>) já foi avaliado anteriormente. Deseja reavaliar?
-              <br />
-              <span className="text-xs text-muted-foreground mt-1 block">
-                Uma nova avaliação será criada, preservando o histórico anterior.
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancelReeval}>Não</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmReeval}>Sim, reavaliar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
