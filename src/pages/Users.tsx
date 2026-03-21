@@ -72,6 +72,8 @@ const UsersPage = () => {
   const [editRole, setEditRole] = useState<AppRole | "none">("none");
   const [editSectorIds, setEditSectorIds] = useState<string[]>([]);
   const [editLoading, setEditLoading] = useState(false);
+  const [resetPwOpen, setResetPwOpen] = useState(false);
+  const [resetPwUser, setResetPwUser] = useState<ProfileWithRole | null>(null);
 
   const loadProfiles = async () => {
     const { data: profilesData, error } = await supabase
@@ -373,14 +375,27 @@ const UsersPage = () => {
                       {new Date(profile.created_at).toLocaleDateString("pt-BR")}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditDialog(profile)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                        Editar
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(profile)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                          Editar
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setResetPwUser(profile);
+                            setResetPwOpen(true);
+                          }}
+                        >
+                          <KeyRound className="h-4 w-4" />
+                          Senha
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
