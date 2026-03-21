@@ -938,6 +938,11 @@ const MentoriaLab = () => {
           </h1>
           <Badge variant="outline" className="ml-2 text-xs">Beta</Badge>
           <div className="ml-auto flex items-center gap-1">
+            {isAdmin && (
+              <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowClearConfirm(true)}>
+                <Trash2 className="h-4 w-4" /> Limpar dados
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={() => navigate("/")}>
               <ArrowLeft className="h-4 w-4" /> Voltar
             </Button>
@@ -947,6 +952,28 @@ const MentoriaLab = () => {
           </div>
         </div>
       </header>
+
+      <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Limpar todos os dados de teste?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Essa ação é irreversível. Todos os atendimentos, lotes e análises do Mentoria Lab serão removidos permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={clearing}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleClearTestData}
+              disabled={clearing}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {clearing ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}
+              Confirmar limpeza
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-4">
         {/* Limit tags */}
