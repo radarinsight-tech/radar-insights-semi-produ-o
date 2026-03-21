@@ -151,7 +151,7 @@ const Hub = () => {
                         icon={<ShieldCheck className="h-4.5 w-4.5 text-emerald-500" />}
                         iconBg="bg-emerald-500/10 group-hover:bg-emerald-500/15"
                         onClick={() => navigate("/mentoria-preventiva")}
-                        badge="Em teste"
+                        badge="Novo"
                       />
                     )}
                     {showCredito && (
@@ -212,13 +212,14 @@ interface ModuleCardProps {
   iconBg: string;
   onClick: () => void;
   badge?: string;
+  highlight?: boolean;
 }
 
-const ModuleCard = ({ title, description, icon, iconBg, onClick, badge }: ModuleCardProps) => (
+const ModuleCard = ({ title, description, icon, iconBg, onClick, badge, highlight }: ModuleCardProps) => (
   <button
     type="button"
     onClick={onClick}
-    className="group relative text-left rounded-xl border border-border/60 bg-card p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    className={`group relative text-left rounded-xl border bg-card p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${highlight ? "border-primary/25 ring-1 ring-primary/10" : "border-border/60"}`}
   >
     <div className="flex items-start gap-3">
       <div className={`p-2 rounded-lg transition-colors shrink-0 ${iconBg}`}>
