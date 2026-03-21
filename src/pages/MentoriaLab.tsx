@@ -836,6 +836,71 @@ const MentoriaLab = () => {
     navigate("/auth");
   };
 
+  const handleClearTestData = async () => {
+    setClearing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get all batch IDs for this user
+      const { data: batches } = await supabase
+        .from("mentoria_batches")
+        .select("id, batch_code")
+        .eq("user_id", user.id);
+
+      if (batches && batches.length > 0) {
+        const batchIds = batches.map(b => b.id);
+
+        // Get all batch file protocols to delete related evaluations
+        const { data: batchFiles } = await supabase
+          .from("mentoria_batch_files")
+          .select("id, protocolo")
+          .in("batch_id", batchIds);
+
+        // Delete related evaluations (draft ones from mentoria lab)
+        if (batchFiles) {
+          const protocols = batchFiles
+            .map(f => f.protocolo)
+            .filter(Boolean) as string[];
+          if (protocols.length > 0) {
+            await supabase
+              .from("evaluations")
+              .delete()
+              .eq("user_id", user.id)
+              .in("protocolo", protocols);
+          }
+
+          // Delete batch files
+          await supabase
+            .from("mentoria_batch_files")
+            .delete()
+            .in("batch_id", batchIds);
+        }
+
+        // Delete batches
+        for (const bId of batchIds) {
+          await supabase.from("mentoria_batches").delete().eq("id", bId);
+        }
+      }
+
+      // Reset local state
+      setFiles([]);
+      setSelected(new Set());
+      setCurrentBatchId(null);
+      setBatchInfo(null);
+      setSideFile(null);
+      setMentoriaFile(null);
+      setHighlightedFileId(null);
+      setShowClearConfirm(false);
+      toast.success("Todos os dados de teste foram removidos com sucesso.");
+    } catch (err) {
+      console.error("Erro ao limpar dados:", err);
+      toast.error("Erro ao limpar dados. Tente novamente.");
+    } finally {
+      setClearing(false);
+    }
+  };
+
   const formatSize = (b: number) => b < 1024 ? `${b} B` : `${(b / 1024).toFixed(1)} KB`;
 
   const counts = useMemo(() => {
