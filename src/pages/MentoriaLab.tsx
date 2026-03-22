@@ -1683,6 +1683,7 @@ const MentoriaLab = () => {
         fileName={mentoriaFile?.name || ""}
         rawText={mentoriaFile?.text}
         atendente={mentoriaFile?.atendente}
+        structuredConversation={mentoriaFile?.structuredConversation}
       />
     </div>
   );
