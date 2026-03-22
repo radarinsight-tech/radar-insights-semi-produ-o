@@ -1,6 +1,6 @@
 /**
  * Parser Diagnostic Dialog — admin-only debug view showing exactly how the parser
- * processed each attendance: raw text, parsed messages, detected events, and summary.
+ * processed each attendance: raw text, normalized text, parsed messages, detected events, and summary.
  */
 
 import { useMemo } from "react";
@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { parseConversationText, parseStructuredConversation, type ParsedMessage, type StructuredConversation } from "@/lib/conversationParser";
+import { normalizeRawText, parseStructuredConversation, type ParsedMessage, type StructuredConversation } from "@/lib/conversationParser";
 import { classifyMessages, type ClassifiedMessage } from "@/lib/messageClassifier";
 import { buildJourneyTimeline, type JourneyMilestone } from "@/lib/uraJourneyTimeline";
 import { AlertTriangle, CheckCircle2, Clock, MessageSquare, Bot, User, Headphones, HelpCircle } from "lucide-react";
@@ -52,6 +52,10 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
   const diagnostic = useMemo(() => {
     if (!rawText) return null;
 
+    // Step 1: Normalize
+    const { text: normalizedText, wasNormalized } = normalizeRawText(rawText);
+
+    // Step 2: Parse from normalized text
     const structured = parseStructuredConversation(rawText, atendente);
     const messages = structured.messages;
     const classified = messages.length >= 2 ? classifyMessages(messages) : [];
@@ -62,7 +66,6 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
       const cls = classified[i] as ClassifiedMessage | undefined;
       const hasTimestamp = !!msg.isoTimestamp || !!msg.time;
       const hasAuthor = !!msg.speaker && msg.speaker.length > 0;
-      // Find matching milestone
       const milestone = journey.milestones.find(m =>
         m.time === msg.time && m.speaker === msg.speaker
       );
@@ -103,10 +106,13 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
 
     return {
       structured,
+      normalizedText,
+      wasNormalized,
       messages: msgDiag,
       journey,
       summary: {
         format: structured.format,
+        normalized: wasNormalized,
         totalMessages: messages.length,
         uraCount,
         clienteCount,
@@ -128,6 +134,7 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
       },
       rawTextLength: rawText.length,
       rawTextLines: rawText.split("\n").length,
+      normalizedLines: normalizedText.split("\n").length,
     };
   }, [rawText, atendente]);
 
@@ -166,6 +173,7 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
                   { label: "Formato", value: summary.format },
+                  { label: "Normalizado", value: summary.normalized ? "✅ Sim" : "— Não" },
                   { label: "Total mensagens", value: summary.totalMessages },
                   { label: "Msgs URA/Bot", value: summary.uraCount },
                   { label: "Msgs Cliente", value: summary.clienteCount },
@@ -176,6 +184,7 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
                   { label: "1º atendente humano", value: summary.firstHuman },
                   { label: "Entrada em fila", value: summary.entradaFila },
                   { label: "Texto bruto", value: `${diagnostic.rawTextLines} linhas` },
+                  { label: "Texto normalizado", value: `${diagnostic.normalizedLines} linhas` },
                   { label: "Alertas", value: summary.totalWarnings > 0 ? `⚠ ${summary.totalWarnings}` : "✅ 0" },
                 ].map(item => (
                   <div key={item.label} className="p-2 rounded bg-muted/50 border border-border">
@@ -282,16 +291,33 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
 
             <Separator />
 
+            {/* Normalized text preview */}
+            {diagnostic.wasNormalized && (
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                  Texto Normalizado (primeiras 200 linhas)
+                  <Badge className="bg-primary/15 text-primary text-[9px]">Pré-processado</Badge>
+                </h3>
+                <pre className="text-[11px] bg-primary/5 border border-primary/20 rounded-lg p-3 max-h-[250px] overflow-auto whitespace-pre-wrap font-mono text-foreground/80 leading-relaxed">
+                  {diagnostic.normalizedText
+                    .split("\n")
+                    .slice(0, 200)
+                    .map((line: string, i: number) => `${String(i + 1).padStart(4, " ")} │ ${line}`)
+                    .join("\n")}
+                </pre>
+              </div>
+            )}
+
             {/* Raw text preview */}
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-2">
-                Texto Bruto (primeiras 200 linhas)
+                Texto Bruto Original (primeiras 200 linhas)
               </h3>
               <pre className="text-[11px] bg-muted/50 border border-border rounded-lg p-3 max-h-[300px] overflow-auto whitespace-pre-wrap font-mono text-muted-foreground leading-relaxed">
-                {(diagnostic.structured.messages.length === 0 ? rawText : rawText)
+                {rawText
                   ?.split("\n")
                   .slice(0, 200)
-                  .map((line, i) => `${String(i + 1).padStart(4, " ")} │ ${line}`)
+                  .map((line: string, i: number) => `${String(i + 1).padStart(4, " ")} │ ${line}`)
                   .join("\n")}
               </pre>
             </div>

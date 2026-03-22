@@ -26,6 +26,8 @@ export interface StructuredConversation {
   totalMessages: number;
   firstTimestamp?: string;
   lastTimestamp?: string;
+  /** Whether normalization was applied */
+  normalized?: boolean;
 }
 
 // Known bot/system speaker names
@@ -39,13 +41,15 @@ const MONTH_MAP: Record<string, string> = {
   agosto: "08", setembro: "09", outubro: "10", novembro: "11", dezembro: "12",
 };
 
+const MONTH_NAMES = "janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro";
+
 /**
  * Parse Portuguese long date format: "7 de março de 2026 09:34"
  * Returns { date: "07/03/2026", time: "09:34" } or undefined.
  */
 function parsePortugueseDate(text: string): { date: string; time: string } | undefined {
   const match = text.match(
-    /(\d{1,2})\s+de\s+(janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\s+de\s+(\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)/i
+    new RegExp(`(\\d{1,2})\\s+de\\s+(${MONTH_NAMES})\\s+de\\s+(\\d{4})\\s+(\\d{2}:\\d{2}(?::\\d{2})?)`, "i")
   );
   if (!match) return undefined;
   const day = match[1].padStart(2, "0");
@@ -55,6 +59,102 @@ function parsePortugueseDate(text: string): { date: string; time: string } | und
   const year = match[3];
   const time = match[4];
   return { date: `${day}/${month}/${year}`, time };
+}
+
+// ─── TEXT NORMALIZATION ─────────────────────────────────────────────
+// PDF extractors often strip line breaks, producing flat text like:
+//   "Marte6 de março de 2026 11:22Olá! Eu sou Marte..."
+// This step re-inserts line breaks to create parseable blocks.
+
+const PT_DATE_REGEX = new RegExp(
+  `(\\d{1,2}\\s+de\\s+(?:${MONTH_NAMES})\\s+de\\s+\\d{4}\\s+\\d{2}:\\d{2}(?::\\d{2})?)`,
+  "gi"
+);
+
+const SHORT_DATE_REGEX = /(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}(?::\d{2})?)/g;
+
+/**
+ * Normalize raw PDF text to restore structure by inserting line breaks
+ * before dates and speaker names. This is the mandatory pre-processing
+ * step before any parsing.
+ */
+export function normalizeRawText(rawText: string): { text: string; wasNormalized: boolean } {
+  if (!rawText) return { text: rawText, wasNormalized: false };
+
+  // Check if text already has good structure (enough non-empty lines with short length)
+  const lines = rawText.split("\n").filter(l => l.trim());
+  const avgLen = lines.reduce((s, l) => s + l.length, 0) / Math.max(lines.length, 1);
+
+  // If lines are short on average and there are many, structure is likely OK
+  if (lines.length > 10 && avgLen < 200) {
+    // Still do light normalization for edge cases
+    return { text: lightNormalize(rawText), wasNormalized: false };
+  }
+
+  // Heavy normalization: insert line breaks before date patterns
+  let normalized = rawText;
+
+  // Step 1: Insert line break BEFORE Portuguese dates (e.g., "6 de março de 2026 11:22")
+  normalized = normalized.replace(
+    new RegExp(`([^\\n])\\s*(\\d{1,2}\\s+de\\s+(?:${MONTH_NAMES})\\s+de\\s+\\d{4}\\s+\\d{2}:\\d{2})`, "gi"),
+    "$1\n$2"
+  );
+
+  // Step 2: Insert line break BEFORE short dates (dd/mm/yyyy HH:mm)
+  normalized = normalized.replace(
+    /([^\n])\s*(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})/g,
+    "$1\n$2"
+  );
+
+  // Step 3: Insert line break AFTER date+time patterns (before message content)
+  normalized = normalized.replace(
+    new RegExp(`(\\d{1,2}\\s+de\\s+(?:${MONTH_NAMES})\\s+de\\s+\\d{4}\\s+\\d{2}:\\d{2}(?::\\d{2})?)\\s*([A-Za-zÀ-ÿ])`, "gi"),
+    "$1\n$2"
+  );
+  normalized = normalized.replace(
+    /(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}(?::\d{2})?)\s*([A-Za-zÀ-ÿ])/g,
+    "$1\n$2"
+  );
+
+  // Step 4: Insert line break before known speaker names followed by date on same line
+  // Detect pattern like "SpeakerName6 de março..." or "SpeakerName 6 de março..."
+  normalized = normalized.replace(
+    new RegExp(`([a-zà-ÿ\\.])\\s*((?:[A-ZÀ-Ÿ][a-zà-ÿ]+(?:\\s+[A-ZÀ-Ÿa-zà-ÿ]+){0,4})\\s*\\n?\\s*\\d{1,2}\\s+de\\s+(?:${MONTH_NAMES}))`, "gi"),
+    "$1\n$2"
+  );
+
+  // Step 5: If a line has a name glued to a date, separate them
+  // e.g., "Marte6 de março" → "Marte\n6 de março"
+  normalized = normalized.replace(
+    new RegExp(`^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\\s'.]{1,40}?)(\\d{1,2}\\s+de\\s+(?:${MONTH_NAMES}))`, "gmi"),
+    "$1\n$2"
+  );
+
+  // Step 6: Ensure line break between message end and next speaker name
+  // Look for patterns where text flows into a capitalized name before a date
+  const nameBeforeDatePattern = new RegExp(
+    `([.!?…])\\s*([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\\s+[A-ZÀ-Ÿa-zà-ÿ]+){0,4})\\s*\\n\\s*\\d{1,2}\\s+de`,
+    "gm"
+  );
+  normalized = normalized.replace(nameBeforeDatePattern, "$1\n$2\n" + (normalized.match(/\d{1,2}\s+de/) || [""])[0]);
+
+  const wasNormalized = normalized !== rawText;
+  return { text: normalized, wasNormalized };
+}
+
+/**
+ * Light normalization: fix minor issues without heavy restructuring
+ */
+function lightNormalize(text: string): string {
+  let result = text;
+
+  // Ensure line break between name and date when on same line but separated by space
+  result = result.replace(
+    new RegExp(`^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\\s'.]{1,40})\\s+(\\d{1,2}\\s+de\\s+(?:${MONTH_NAMES})\\s+de\\s+\\d{4}\\s+\\d{2}:\\d{2})`, "gmi"),
+    "$1\n$2"
+  );
+
+  return result;
 }
 
 // ─── Inline message patterns (ordered by specificity) ───────────────
@@ -87,11 +187,11 @@ const MESSAGE_PATTERNS = [
  */
 function isBlockFormat(text: string): boolean {
   // Check for Portuguese long dates (strong OPA signal)
-  const longDates = text.match(/\d{1,2}\s+de\s+(?:janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\s+de\s+\d{4}\s+\d{2}:\d{2}/gi);
+  const longDates = text.match(new RegExp(`\\d{1,2}\\s+de\\s+(?:${MONTH_NAMES})\\s+de\\s+\\d{4}\\s+\\d{2}:\\d{2}`, "gi"));
   if (longDates && longDates.length >= 2) return true;
 
   // Check for name-on-own-line followed by date pattern
-  const nameLineThenDate = text.match(/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,40}\s*\n\s*\d{1,2}\s+de\s+/gm);
+  const nameLineThenDate = text.match(new RegExp(`^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\\s'.]{1,40}\\s*\\n\\s*\\d{1,2}\\s+de\\s+`, "gm"));
   if (nameLineThenDate && nameLineThenDate.length >= 2) return true;
 
   return false;
@@ -154,18 +254,17 @@ function parseBlockFormat(text: string, atendente?: string): ParsedMessage[] {
       j++;
     }
 
-    if (textLines.length > 0) {
-      const role = determineRole(speaker, atendente);
-      const isoTs = dateTimeToISO(date, time);
-      messages.push({
-        speaker,
-        role,
-        text: textLines.join("\n"),
-        time,
-        date,
-        isoTimestamp: isoTs,
-      });
-    }
+    // Allow messages with empty text (some system messages)
+    const role = determineRole(speaker, atendente);
+    const isoTs = dateTimeToISO(date, time);
+    messages.push({
+      speaker,
+      role,
+      text: textLines.join("\n"),
+      time,
+      date,
+      isoTimestamp: isoTs,
+    });
 
     i = j;
   }
@@ -197,19 +296,22 @@ function dateTimeToISO(date?: string, time?: string): string | undefined {
 
 /**
  * Parse raw conversation text into structured messages.
- * Automatically detects format (block vs inline).
+ * Applies normalization first, then detects format (block vs inline).
  */
 export function parseConversationText(rawText: string, atendente?: string): ParsedMessage[] {
   if (!rawText) return [];
 
+  // MANDATORY: normalize text before parsing
+  const { text: normalized } = normalizeRawText(rawText);
+
   // Try OPA block format first
-  if (isBlockFormat(rawText)) {
-    const blockMessages = parseBlockFormat(rawText, atendente);
+  if (isBlockFormat(normalized)) {
+    const blockMessages = parseBlockFormat(normalized, atendente);
     if (blockMessages.length >= 2) return blockMessages;
   }
 
   // Fall back to inline pattern matching
-  const lines = rawText.split("\n");
+  const lines = normalized.split("\n");
   const messages: ParsedMessage[] = [];
   let current: ParsedMessage | null = null;
 
@@ -248,12 +350,15 @@ export function parseStructuredConversation(rawText: string, atendente?: string)
     return { messages: [], format: "unknown", totalMessages: 0 };
   }
 
-  const isBlock = isBlockFormat(rawText);
+  // MANDATORY: normalize first
+  const { text: normalized, wasNormalized } = normalizeRawText(rawText);
+
+  const isBlock = isBlockFormat(normalized);
   let messages: ParsedMessage[];
   let format: StructuredConversation["format"];
 
   if (isBlock) {
-    messages = parseBlockFormat(rawText, atendente);
+    messages = parseBlockFormat(normalized, atendente);
     format = messages.length >= 2 ? "block" : "unknown";
   } else {
     messages = [];
@@ -262,9 +367,36 @@ export function parseStructuredConversation(rawText: string, atendente?: string)
 
   // If block didn't yield results, try inline
   if (messages.length < 2) {
-    messages = parseConversationText(rawText, atendente);
-    if (messages.length >= 2) {
-      // Detect WhatsApp format
+    // Use normalized text for inline parsing too
+    const lines = normalized.split("\n");
+    const inlineMessages: ParsedMessage[] = [];
+    let current: ParsedMessage | null = null;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      let matched = false;
+      for (const p of MESSAGE_PATTERNS) {
+        const match = trimmed.match(p.regex);
+        if (match) {
+          if (current) inlineMessages.push(current);
+          const ext = p.extract(match) as Partial<ParsedMessage> & { speaker: string; text: string };
+          const role = determineRole(ext.speaker, atendente);
+          const isoTs = dateTimeToISO(ext.date as string | undefined, ext.time as string | undefined);
+          current = { ...ext, role, isoTimestamp: isoTs } as ParsedMessage;
+          matched = true;
+          break;
+        }
+      }
+      if (!matched && current) {
+        current.text += "\n" + trimmed;
+      }
+    }
+    if (current) inlineMessages.push(current);
+
+    if (inlineMessages.length >= 2) {
+      messages = inlineMessages;
       const hasWhatsApp = rawText.match(/\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}\s*[-–]/);
       format = hasWhatsApp ? "whatsapp" : "inline";
     }
@@ -278,6 +410,7 @@ export function parseStructuredConversation(rawText: string, atendente?: string)
     totalMessages: messages.length,
     firstTimestamp: timestamps[0],
     lastTimestamp: timestamps[timestamps.length - 1],
+    normalized: wasNormalized,
   };
 }
 

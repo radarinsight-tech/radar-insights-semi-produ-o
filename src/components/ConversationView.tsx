@@ -2,114 +2,17 @@ import { useMemo, useState } from "react";
 import { User, Bot, MessageSquare, Clock, ChevronDown, ChevronRight, Radio, FileText, MessageCircle } from "lucide-react";
 import { classifyMessages, type ClassifiedMessage, type MessageCategory } from "@/lib/messageClassifier";
 import { summarizeUraContext, type UraContext } from "@/lib/uraContextSummarizer";
+import { parseStructuredConversation, type ParsedMessage, type StructuredConversation } from "@/lib/conversationParser";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 
 // ─── Types ───────────────────────────────────────────────────────
 
-interface ConversationMessage {
-  speaker: string;
-  role: "atendente" | "cliente" | "bot" | "sistema";
-  text: string;
-  time?: string;
-  date?: string;
-}
-
 interface ConversationViewProps {
   rawText: string;
   atendente?: string;
-}
-
-// ─── Bot / system detection ──────────────────────────────────────
-
-const BOT_NAMES = new Set([
-  "marte", "bot", "sistema", "robô", "robo", "automático", "automatico",
-  "assistente virtual", "chatbot", "ura",
-]);
-
-const SYSTEM_KEYWORDS = /^(sistema|info|aviso|nota|notificação|alerta|transferência|fila)\b/i;
-
-function isBotName(name: string): boolean {
-  const lower = name.toLowerCase().trim();
-  return BOT_NAMES.has(lower) || /^(bot|sistema|robô|robo|marte|ura)\b/i.test(lower);
-}
-
-// ─── Parser ──────────────────────────────────────────────────────
-
-function parseConversation(rawText: string, knownAtendente?: string): ConversationMessage[] {
-  const lines = rawText.split("\n");
-  const messages: ConversationMessage[] = [];
-
-  const clienteLabelMatch = rawText.match(/(?:cliente|solicitante|requerente)\s*[:\-]\s*([^\n\r]+)/i);
-  const clienteName = clienteLabelMatch?.[1]?.trim().split(/[,\-\|\/]/)[0].trim().toLowerCase();
-
-  const patterns: {
-    regex: RegExp;
-    extract: (m: RegExpMatchArray) => { speaker: string; time?: string; date?: string; text: string };
-  }[] = [
-    { regex: /^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,35}?)\s*\((\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)\)\s*:\s*(.+)/, extract: (m) => ({ speaker: m[1].trim(), date: m[2], time: m[3], text: m[4].trim() }) },
-    { regex: /^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,35}?)\s*\((\d{2}:\d{2}(?::\d{2})?)\)\s*:\s*(.+)/, extract: (m) => ({ speaker: m[1].trim(), time: m[2], text: m[3].trim() }) },
-    { regex: /^\[(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)\]\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,35}?)\s*:\s*(.+)/, extract: (m) => ({ speaker: m[3].trim(), date: m[1], time: m[2], text: m[4].trim() }) },
-    { regex: /^\[(\d{2}:\d{2}(?::\d{2})?)\]\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,35}?)\s*:\s*(.+)/, extract: (m) => ({ speaker: m[2].trim(), time: m[1], text: m[3].trim() }) },
-    { regex: /^(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)\s*[-–]\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,35}?)\s*:\s*(.+)/, extract: (m) => ({ speaker: m[3].trim(), date: m[1], time: m[2], text: m[4].trim() }) },
-    { regex: /^(\d{2}:\d{2}(?::\d{2})?)\s*[-–]\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,35}?)\s*:\s*(.+)/, extract: (m) => ({ speaker: m[2].trim(), time: m[1], text: m[3].trim() }) },
-    { regex: /^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,35}?)\s*[-–]\s*(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)\s*$/, extract: (m) => ({ speaker: m[1].trim(), date: m[2], time: m[3], text: "" }) },
-    { regex: /^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,30}?)\s*:\s*(.+)/, extract: (m) => ({ speaker: m[1].trim(), text: m[2].trim() }) },
-  ];
-
-  let currentMessage: ConversationMessage | null = null;
-
-  const pushCurrent = () => {
-    if (currentMessage) {
-      currentMessage.text = currentMessage.text.trim();
-      if (currentMessage.text || currentMessage.role === "sistema") {
-        messages.push(currentMessage);
-      }
-    }
-  };
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) {
-      if (currentMessage) currentMessage.text += "\n";
-      continue;
-    }
-
-    let matched = false;
-    for (const pattern of patterns) {
-      const match = trimmed.match(pattern.regex);
-      if (!match) continue;
-      const extracted = pattern.extract(match);
-      if (extracted.speaker.length < 2) continue;
-      const role = classifyRole(extracted.speaker, knownAtendente, clienteName);
-      pushCurrent();
-      currentMessage = { speaker: extracted.speaker, role, text: extracted.text, time: extracted.time, date: extracted.date };
-      matched = true;
-      break;
-    }
-
-    if (!matched && currentMessage) {
-      currentMessage.text += "\n" + trimmed;
-    } else if (!matched && !currentMessage) {
-      currentMessage = { speaker: "Sistema", role: "sistema", text: trimmed };
-    }
-  }
-
-  pushCurrent();
-  return messages;
-}
-
-function classifyRole(speaker: string, knownAtendente?: string, clienteName?: string): "atendente" | "cliente" | "bot" | "sistema" {
-  const lower = speaker.toLowerCase().trim();
-  if (isBotName(speaker)) return "bot";
-  if (SYSTEM_KEYWORDS.test(speaker)) return "sistema";
-  if (knownAtendente) {
-    const atenLower = knownAtendente.toLowerCase().trim();
-    if (lower === atenLower || lower.includes(atenLower) || atenLower.includes(lower)) return "atendente";
-  }
-  if (clienteName && (lower === clienteName || lower.includes(clienteName) || clienteName.includes(lower))) return "cliente";
-  if (/^cliente\b/i.test(speaker)) return "cliente";
-  return "atendente";
+  /** Pre-parsed structured conversation (avoids re-parsing) */
+  structuredConversation?: StructuredConversation;
 }
 
 // ─── Role config ─────────────────────────────────────────────────
@@ -123,7 +26,7 @@ const roleConfig = {
 
 // ─── Sub-components ──────────────────────────────────────────────
 
-const MessageBubble = ({ msg, isTemplate }: { msg: ClassifiedMessage; isTemplate?: boolean }) => {
+const MessageBubble = ({ msg, isTemplate }: { msg: ParsedMessage | ClassifiedMessage; isTemplate?: boolean }) => {
   const config = roleConfig[msg.role];
   const Icon = config.icon;
   const isClient = msg.role === "cliente";
@@ -187,15 +90,19 @@ const UraContextBlock = ({ context }: { context: UraContext }) => (
 
 // ─── Main component ──────────────────────────────────────────────
 
-const ConversationView = ({ rawText, atendente }: ConversationViewProps) => {
+const ConversationView = ({ rawText, atendente, structuredConversation }: ConversationViewProps) => {
   const [templatesOpen, setTemplatesOpen] = useState(false);
 
-  const { classified, uraContext, humanMessages, templateMessages, hasStructure } = useMemo(() => {
-    const parsed = parseConversation(rawText, atendente);
-    const hasStruct = parsed.filter(m => m.role !== "sistema").length >= 2;
-    if (!hasStruct) return { classified: [], uraContext: null, humanMessages: [], templateMessages: [], hasStructure: false };
+  const { classified, uraContext, humanMessages, templateMessages, hasStructure, structured } = useMemo(() => {
+    // Use pre-parsed or parse fresh
+    const sc = structuredConversation || parseStructuredConversation(rawText, atendente);
+    const msgs = sc.messages;
 
-    const cls = classifyMessages(parsed);
+    if (msgs.length < 2) {
+      return { classified: [], uraContext: null, humanMessages: [], templateMessages: [], hasStructure: false, structured: sc };
+    }
+
+    const cls = classifyMessages(msgs);
     const ura = cls.filter(m => m.category === "URA");
     const ctx = summarizeUraContext(ura, cls);
     const human = cls.filter(m =>
@@ -207,10 +114,22 @@ const ConversationView = ({ rawText, atendente }: ConversationViewProps) => {
       (m.category === "TEMPLATE_CONVERSACIONAL" && m.role !== "cliente")
     );
 
-    return { classified: cls, uraContext: ctx, humanMessages: human, templateMessages: templates, hasStructure: true };
-  }, [rawText, atendente]);
+    return { classified: cls, uraContext: ctx, humanMessages: human, templateMessages: templates, hasStructure: true, structured: sc };
+  }, [rawText, atendente, structuredConversation]);
 
   if (!hasStructure) {
+    // If we have structured messages (even < 2), show them as chat
+    if (structured && structured.messages.length > 0) {
+      return (
+        <div className="max-h-[55vh] overflow-y-auto rounded-xl border border-border bg-background/50 p-3 space-y-1.5">
+          {structured.messages.map((msg, i) => (
+            <MessageBubble key={i} msg={msg} />
+          ))}
+        </div>
+      );
+    }
+
+    // True fallback: plain text
     const paragraphs = rawText.split(/\n{2,}/).filter(Boolean);
     return (
       <div className="max-h-[55vh] overflow-y-auto rounded-xl border border-border bg-muted/20 p-5 space-y-3">
@@ -244,7 +163,7 @@ const ConversationView = ({ rawText, atendente }: ConversationViewProps) => {
           <MessageBubble
             key={i}
             msg={msg}
-            isTemplate={msg.category === "TEMPLATE_CONVERSACIONAL"}
+            isTemplate={(msg as ClassifiedMessage).category === "TEMPLATE_CONVERSACIONAL"}
           />
         ))}
       </div>
