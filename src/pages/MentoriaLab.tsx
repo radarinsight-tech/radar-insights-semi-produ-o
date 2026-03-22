@@ -88,6 +88,8 @@ interface LabFile {
   transferred?: boolean;
   approvedAsOfficial?: boolean;
   evaluationId?: string;
+  uraContext?: UraContext;
+  uraStatus?: UraStatus;
 }
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
@@ -99,6 +101,8 @@ const statusConfig: Record<FileStatus, { label: string; color: string }> = {
 
 import { extractAllMetadata } from "@/lib/mentoriaMetadata";
 import { getRegisteredAttendants, matchAttendant, type MatchResult } from "@/lib/attendantMatcher";
+import { extractUraContext } from "@/lib/conversationParser";
+import type { UraContext, UraStatus } from "@/lib/uraContextSummarizer";
 
 const IMPORT_LIMIT = 1000;
 const IMPORT_RECOMMENDED = 500;
