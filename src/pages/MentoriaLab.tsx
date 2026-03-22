@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import {
   ArrowLeft, LogOut, Upload, FileText, Trash2, Eye, Play, Loader2,
   Search, X, Filter, Volume2, VolumeX, BookOpen, Archive, Package, Clock, CheckCircle2, AlertTriangle,
-  ChevronLeft, ChevronRight, Info, CalendarIcon, BarChart3, ShieldCheck
+  ChevronLeft, ChevronRight, Info, CalendarIcon, BarChart3, ShieldCheck, Bug
 } from "lucide-react";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
 import {
@@ -36,6 +36,7 @@ import MentoriaCharts from "@/components/MentoriaCharts";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import ConversationView from "@/components/ConversationView";
 import MentoriaDetailDialog from "@/components/MentoriaDetailDialog";
+import ParserDiagnosticDialog from "@/components/ParserDiagnosticDialog";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro";
 
@@ -129,6 +130,7 @@ const MentoriaLab = () => {
   const [approvingIds, setApprovingIds] = useState<Set<string>>(new Set());
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [diagnosticFile, setDiagnosticFile] = useState<LabFile | null>(null);
   const { isAdmin } = useUserPermissions();
   // Filters
   const [filterAtendente, setFilterAtendente] = useState("todos");
