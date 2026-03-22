@@ -9,10 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   CheckCircle2, XCircle, MinusCircle, ShieldAlert,
   MessageSquareQuote, Printer, X, Award, TrendingUp, AlertTriangle, Lightbulb,
-  User, Calendar, FileText, Hash, Radio, Sparkles
+  User, Calendar, FileText, Hash, Radio, Sparkles, Zap
 } from "lucide-react";
 import UraContextDialog from "@/components/UraContextDialog";
 import PreAnalysisPanel from "@/components/PreAnalysisPanel";
+import SemiAutoPanel, { type SemiAutoResult } from "@/components/SemiAutoPanel";
 import { runPreAnalysis, type PreAnalysisResult } from "@/lib/mentoriaPreAnalysis";
 import type { UraContext } from "@/lib/uraContextSummarizer";
 import { extractUraContext } from "@/lib/conversationParser";
