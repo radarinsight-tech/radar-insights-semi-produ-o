@@ -6,9 +6,10 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Radio, X, ChevronDown, ChevronRight, Phone, ShieldCheck, Route,
-  MessageSquare, ArrowRightLeft, Clock, AlertTriangle, Bot, UserX
+  MessageSquare, ArrowRightLeft, Clock, AlertTriangle, Bot, UserX, Timer, Milestone
 } from "lucide-react";
 import { extractUraContext } from "@/lib/conversationParser";
+import { buildJourneyTimeline, formatDuration, type JourneyTimeline } from "@/lib/uraJourneyTimeline";
 import type { UraContext, UraStatus } from "@/lib/uraContextSummarizer";
 
 interface UraContextDialogProps {
@@ -31,12 +32,137 @@ const STATUS_CONFIG: Record<UraStatus, { title: string; description: string; ico
   ura_ambiguous: { title: "URA não identificada com segurança", description: "Não foi possível classificar o fluxo da URA com precisão", icon: AlertTriangle },
 };
 
+const ALERT_COLORS: Record<string, string> = {
+  ok: "bg-accent/15 text-accent border-accent/30",
+  moderate: "bg-yellow-500/15 text-yellow-700 border-yellow-500/30",
+  long: "bg-orange-500/15 text-orange-700 border-orange-500/30",
+  critical: "bg-destructive/15 text-destructive border-destructive/30",
+};
+
+const ALERT_DOT: Record<string, string> = {
+  ok: "bg-accent",
+  moderate: "bg-yellow-500",
+  long: "bg-orange-500",
+  critical: "bg-destructive",
+};
+
+/* ─── Journey Summary Card ──────────────────────────────────────── */
+
+function JourneySummary({ timeline }: { timeline: JourneyTimeline }) {
+  if (!timeline.hasTimestamps && timeline.milestones.length === 0) return null;
+
+  const hasAnyTime = timeline.tempoUra !== undefined || timeline.tempoFila !== undefined || timeline.tempoTotalPreAtendimento !== undefined;
+
+  return (
+    <div className="rounded-xl border border-border/50 bg-muted/10 p-4 space-y-3">
+      <div className="flex items-center gap-2 mb-1">
+        <Timer className="h-3.5 w-3.5 text-primary" />
+        <span className="text-[11px] font-bold text-foreground uppercase tracking-wide">
+          Resumo da Jornada
+        </span>
+      </div>
+
+      {/* Time metrics */}
+      {hasAnyTime && (
+        <div className="grid grid-cols-3 gap-2">
+          <TimeMetric
+            label="Tempo na URA"
+            seconds={timeline.tempoUra}
+          />
+          <TimeMetric
+            label="Tempo em fila"
+            seconds={timeline.tempoFila}
+            alert={timeline.queueAlert?.level}
+          />
+          <TimeMetric
+            label="Até atendimento"
+            seconds={timeline.tempoTotalPreAtendimento}
+          />
+        </div>
+      )}
+
+      {/* Queue alert */}
+      {timeline.queueAlert && timeline.queueAlert.level !== "ok" && (
+        <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${ALERT_COLORS[timeline.queueAlert.level]}`}>
+          <div className={`w-2 h-2 rounded-full ${ALERT_DOT[timeline.queueAlert.level]} animate-pulse`} />
+          <span className="text-[11px] font-semibold">{timeline.queueAlert.label}</span>
+          {timeline.tempoFila !== undefined && (
+            <span className="text-[10px] ml-auto opacity-80">
+              {formatDuration(timeline.tempoFila)}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Milestone timeline */}
+      {timeline.milestones.length > 0 && (
+        <div className="space-y-0">
+          {timeline.milestones.map((m, i) => (
+            <div key={i} className="flex items-start gap-3 relative">
+              {/* Vertical line */}
+              {i < timeline.milestones.length - 1 && (
+                <div className="absolute left-[7px] top-[18px] w-px h-[calc(100%)] bg-border/60" />
+              )}
+              <div className={`w-[15px] h-[15px] rounded-full border-2 shrink-0 mt-0.5 z-10 ${
+                m.role === "bot" ? "border-muted-foreground bg-muted" :
+                m.role === "atendente" ? "border-accent bg-accent/20" :
+                m.role === "cliente" ? "border-primary bg-primary/20" :
+                "border-border bg-background"
+              }`} />
+              <div className="pb-3 min-w-0">
+                <p className="text-[11px] font-semibold text-foreground leading-tight">{m.label}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  {m.time && (
+                    <span className="text-[10px] text-muted-foreground font-mono">{m.time}</span>
+                  )}
+                  {m.speaker && (
+                    <span className="text-[10px] text-muted-foreground truncate">{m.speaker}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* No timestamps fallback */}
+      {!hasAnyTime && timeline.milestones.length > 0 && (
+        <p className="text-[10px] text-muted-foreground/70 italic">
+          Timestamps não disponíveis — cálculo de tempos indisponível
+        </p>
+      )}
+    </div>
+  );
+}
+
+function TimeMetric({ label, seconds, alert }: { label: string; seconds?: number; alert?: string }) {
+  return (
+    <div className={`rounded-lg border px-3 py-2 text-center ${
+      alert && alert !== "ok" ? ALERT_COLORS[alert] : "border-border/40 bg-background/50"
+    }`}>
+      <p className="text-[10px] text-muted-foreground font-medium mb-0.5">{label}</p>
+      <p className={`text-sm font-bold ${
+        alert && alert !== "ok" ? "" : "text-foreground"
+      }`}>
+        {seconds !== undefined ? formatDuration(seconds) : "—"}
+      </p>
+    </div>
+  );
+}
+
+/* ─── Main Dialog ───────────────────────────────────────────────── */
+
 const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContextDialogProps) => {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["fluxo", "jornada", "eventos"]));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["jornada_resumo", "fluxo", "jornada", "eventos"]));
 
   const uraContext = useMemo(() => {
     if (!rawText) return null;
     return extractUraContext(rawText, atendente);
+  }, [rawText, atendente]);
+
+  const timeline = useMemo(() => {
+    if (!rawText) return null;
+    return buildJourneyTimeline(rawText, atendente);
   }, [rawText, atendente]);
 
   const sections: SectionConfig[] = useMemo(() => {
@@ -77,6 +203,7 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
   const cfg = STATUS_CONFIG[status];
   const StatusIcon = cfg.icon;
   const hasData = sections.length > 0;
+  const showJourney = timeline && (timeline.milestones.length > 0 || timeline.hasTimestamps);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -157,6 +284,9 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
             {/* Data sections — for with_ura, ura_only, ura_ambiguous with items */}
             {(status === "with_ura" || ((status === "ura_only" || status === "ura_ambiguous") && hasData)) && (
               <>
+                {/* ★ Journey Summary — new section */}
+                {showJourney && <JourneySummary timeline={timeline!} />}
+
                 {/* Summary badges */}
                 <div className="flex flex-wrap gap-2 mb-2">
                   {uraContext?.autenticacao && (
@@ -223,7 +353,7 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
             )}
 
             {/* with_ura but no extracted data */}
-            {status === "with_ura" && !hasData && (
+            {status === "with_ura" && !hasData && !showJourney && (
               <div className="flex flex-col items-center text-center py-10">
                 <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
                   <Radio className="h-5 w-5 text-muted-foreground/60" />
