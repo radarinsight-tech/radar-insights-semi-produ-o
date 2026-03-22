@@ -282,10 +282,20 @@ const MentoriaLab = () => {
         }
       } catch { /* non-blocking */ }
 
+      // Compute URA context during import
+      let uraCtx: UraContext | undefined;
+      try {
+        uraCtx = extractUraContext(text, metadata.atendente);
+        // If URA detected audio, also flag hasAudio
+        if (uraCtx.audioDetectado && !metadata.hasAudio) {
+          metadata.hasAudio = true;
+        }
+      } catch { /* non-blocking */ }
+
       setFiles((prev) =>
         prev.map((f) =>
           f.id === labFile.id
-            ? { ...f, status: "lido", text, ...metadata, attendantMatch: attendantMatchResult, transferred: attendantMatchResult?.transferred }
+            ? { ...f, status: "lido", text, ...metadata, attendantMatch: attendantMatchResult, transferred: attendantMatchResult?.transferred, uraContext: uraCtx, uraStatus: uraCtx?.status }
             : f
         )
       );
