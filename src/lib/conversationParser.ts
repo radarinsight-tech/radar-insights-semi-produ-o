@@ -188,13 +188,21 @@ const MESSAGE_PATTERNS = [
  * [Message content]
  */
 function isBlockFormat(text: string): boolean {
-  // Check for Portuguese long dates (strong OPA signal)
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+
+  // Count how many name+date pairs we find in sequence
+  let blockPairs = 0;
+  for (let i = 0; i < lines.length - 1; i++) {
+    if (isNameLine(lines[i]) && isDateLine(lines[i + 1])) {
+      blockPairs++;
+      i++; // skip the date line
+    }
+  }
+  if (blockPairs >= 2) return true;
+
+  // Fallback: check for Portuguese long dates (strong OPA signal)
   const longDates = text.match(new RegExp(`\\d{1,2}\\s+de\\s+(?:${MONTH_NAMES})\\s+de\\s+\\d{4}\\s+\\d{2}:\\d{2}`, "gi"));
   if (longDates && longDates.length >= 2) return true;
-
-  // Check for name-on-own-line followed by date pattern
-  const nameLineThenDate = text.match(new RegExp(`^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\\s'.]{1,40}\\s*\\n\\s*\\d{1,2}\\s+de\\s+`, "gm"));
-  if (nameLineThenDate && nameLineThenDate.length >= 2) return true;
 
   return false;
 }
@@ -204,61 +212,60 @@ function isBlockFormat(text: string): boolean {
  * Line 1: Speaker name
  * Line 2: Date/time (Portuguese format or dd/mm/yyyy HH:mm)
  * Line 3+: Message content (until next speaker block)
+ *
+ * Uses a two-pass approach:
+ * 1. Find all block start positions (name + date pairs)
+ * 2. Extract message content between consecutive block starts
  */
 function parseBlockFormat(text: string, atendente?: string): ParsedMessage[] {
   const lines = text.split("\n");
   const messages: ParsedMessage[] = [];
-  let i = 0;
 
-  while (i < lines.length) {
+  // First pass: find all block start positions
+  const blockStarts: { nameIdx: number; dateIdx: number }[] = [];
+  for (let i = 0; i < lines.length - 1; i++) {
     const line = lines[i].trim();
-    if (!line) { i++; continue; }
+    if (!line) continue;
 
-    // Try to detect a speaker name line (a short line that could be a name)
-    const isNameCandidate = (
-      /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,40}$/.test(line) &&
-      !/^\d/.test(line) &&
-      line.length <= 45 &&
-      !line.includes(":") &&
-      line.split(/\s+/).length <= 5
-    );
+    if (isNameLine(line)) {
+      // Look at next non-empty line for a date
+      let nextIdx = i + 1;
+      while (nextIdx < lines.length && !lines[nextIdx].trim()) nextIdx++;
+      if (nextIdx < lines.length && isDateLine(lines[nextIdx].trim())) {
+        blockStarts.push({ nameIdx: i, dateIdx: nextIdx });
+        i = nextIdx; // skip past the date line
+      }
+    }
+  }
 
-    if (!isNameCandidate) { i++; continue; }
+  if (blockStarts.length === 0) return [];
 
-    // Check next line for date/time
-    const nextLine = (i + 1 < lines.length) ? lines[i + 1].trim() : "";
-    const ptDate = parsePortugueseDate(nextLine);
-    const shortDate = nextLine.match(/^(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)/);
+  // Second pass: extract messages using block boundaries
+  for (let b = 0; b < blockStarts.length; b++) {
+    const { nameIdx, dateIdx } = blockStarts[b];
+    const speaker = lines[nameIdx].trim().replace(/:$/, "").trim();
+    const dateLine = lines[dateIdx].trim();
 
-    if (!ptDate && !shortDate) { i++; continue; }
-
-    const speaker = line;
+    const ptDate = parsePortugueseDate(dateLine);
+    const shortDate = dateLine.match(/^(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)/);
     const date = ptDate?.date || shortDate?.[1];
     const time = ptDate?.time || shortDate?.[2];
 
-    // Collect message text from subsequent lines
+    // Message content: from line after date until next block's name line (or end)
+    const contentStart = dateIdx + 1;
+    const contentEnd = (b + 1 < blockStarts.length)
+      ? blockStarts[b + 1].nameIdx
+      : lines.length;
+
     const textLines: string[] = [];
-    let j = i + 2; // skip name + date lines
-    while (j < lines.length) {
+    for (let j = contentStart; j < contentEnd; j++) {
       const msgLine = lines[j].trim();
-      if (!msgLine) { j++; continue; }
-
-      // Check if this is the start of a new block (name + date)
-      const nextIsName = /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,40}$/.test(msgLine) && msgLine.length <= 45 && !msgLine.includes(":");
-      if (nextIsName && j + 1 < lines.length) {
-        const peek = lines[j + 1].trim();
-        if (parsePortugueseDate(peek) || /^\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}/.test(peek)) {
-          break; // New block starts here
-        }
-      }
-
-      textLines.push(msgLine);
-      j++;
+      if (msgLine) textLines.push(msgLine);
     }
 
-    // Allow messages with empty text (some system messages)
     const role = determineRole(speaker, atendente);
     const isoTs = dateTimeToISO(date, time);
+
     messages.push({
       speaker,
       role,
@@ -267,8 +274,6 @@ function parseBlockFormat(text: string, atendente?: string): ParsedMessage[] {
       date,
       isoTimestamp: isoTs,
     });
-
-    i = j;
   }
 
   return messages;
