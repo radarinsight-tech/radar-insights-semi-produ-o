@@ -1362,16 +1362,10 @@ const MentoriaLab = () => {
                               {f.attendantMatch?.matched && f.attendantMatch.matchConfidence === "partial" && (
                                 <Badge className="bg-sky-100 text-sky-700 text-[9px] px-1 py-0 shrink-0">Parcial</Badge>
                               )}
-                              {f.attendantMatch?.matched && f.attendantMatch.matchConfidence === "exact" && f.attendantMatch.evaluationStatus === "evaluable" && (
+                              {f.attendantMatch?.matched && f.attendantMatch.evaluationStatus === "evaluable" && (
                                 <Badge className="bg-emerald-500/10 text-emerald-600 text-[9px] px-1 py-0 shrink-0">Avaliável</Badge>
                               )}
-                              {f.attendantMatch?.matched && f.attendantMatch.matchConfidence === "exact" && f.attendantMatch.evaluationStatus === "outside_main_ruler" && (
-                                <Badge className="bg-amber-500/10 text-amber-600 text-[9px] px-1 py-0 shrink-0">Fora da régua</Badge>
-                              )}
-                              {f.attendantMatch?.matched && (f.attendantMatch.matchConfidence === "partial" || f.attendantMatch.matchConfidence === "first_name") && f.attendantMatch.evaluationStatus === "evaluable" && (
-                                <Badge className="bg-emerald-500/10 text-emerald-600 text-[9px] px-1 py-0 shrink-0">Avaliável</Badge>
-                              )}
-                              {f.attendantMatch?.matched && (f.attendantMatch.matchConfidence === "partial" || f.attendantMatch.matchConfidence === "first_name") && f.attendantMatch.evaluationStatus === "outside_main_ruler" && (
+                              {f.attendantMatch?.matched && f.attendantMatch.evaluationStatus === "outside_main_ruler" && (
                                 <Badge className="bg-amber-500/10 text-amber-600 text-[9px] px-1 py-0 shrink-0">Fora da régua</Badge>
                               )}
                             </div>
