@@ -288,7 +288,27 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           </div>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(96vh-72px)]">
+        {/* ═══ TAB NAVIGATION ═══ */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
+          <div className="px-8 pt-2 pb-0 border-b border-border/40 bg-muted/10">
+            <TabsList className="h-9 bg-transparent p-0 gap-4">
+              <TabsTrigger value="relatorio" className="text-xs font-bold data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-1 pb-2">
+                <FileText className="h-3.5 w-3.5 mr-1.5" /> Relatório
+              </TabsTrigger>
+              {preAnalysis && (
+                <TabsTrigger value="pre-analise" className="text-xs font-bold data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-1 pb-2">
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Pré-Análise
+                  <Badge variant="outline" className="ml-1.5 text-[9px] px-1.5 py-0 font-bold border-primary/30 text-primary">
+                    {preAnalysis.suggestions.length}
+                  </Badge>
+                </TabsTrigger>
+              )}
+            </TabsList>
+          </div>
+
+          {/* ═══ TAB: RELATÓRIO ═══ */}
+          <TabsContent value="relatorio" className="flex-1 min-h-0 m-0">
+            <ScrollArea className="max-h-[calc(96vh-140px)]">
           <div ref={printRef} className="px-8 py-8 space-y-0">
 
             {/* ═══ 1. HERO — Nota + Classificação + Bônus ═══ */}
