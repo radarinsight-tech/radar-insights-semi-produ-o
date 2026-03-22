@@ -59,6 +59,8 @@ function normalize(name: string): string {
 
 export type EvaluationStatus = "evaluable" | "outside_main_ruler" | "not_identified";
 
+export type MatchConfidence = "exact" | "partial" | "first_name" | "none";
+
 export interface MatchResult {
   matched: boolean;
   attendantId?: string;
@@ -70,6 +72,8 @@ export interface MatchResult {
   /** True if multiple attendants were found (transfer scenario) */
   transferred: boolean;
   allMatches: RegisteredAttendant[];
+  /** Confidence level of the match */
+  matchConfidence: MatchConfidence;
 }
 
 /**
@@ -80,7 +84,7 @@ export function matchAttendant(
   extractedName: string | undefined,
   registeredList: RegisteredAttendant[]
 ): MatchResult {
-  const empty: MatchResult = { matched: false, transferred: false, allMatches: [], evaluationStatus: "not_identified" };
+  const empty: MatchResult = { matched: false, transferred: false, allMatches: [], evaluationStatus: "not_identified", matchConfidence: "none" };
   if (!extractedName || !extractedName.trim()) return empty;
 
   const normalizedExtracted = normalize(extractedName);
@@ -90,7 +94,7 @@ export function matchAttendant(
     (a) => normalize(a.name) === normalizedExtracted || (a.nickname && normalize(a.nickname) === normalizedExtracted)
   );
   if (exact) {
-    return buildResult(exact, false, [exact]);
+    return buildResult(exact, false, [exact], "exact");
   }
 
   // Partial match: extracted name contains or is contained in registered name or nickname
@@ -102,11 +106,11 @@ export function matchAttendant(
   });
 
   if (partials.length === 1) {
-    return buildResult(partials[0], false, partials);
+    return buildResult(partials[0], false, partials, "partial");
   }
 
   if (partials.length > 1) {
-    return buildResult(partials[0], true, partials);
+    return buildResult(partials[0], true, partials, "partial");
   }
 
   // Fuzzy: try matching just the first name
@@ -118,14 +122,14 @@ export function matchAttendant(
     });
 
     if (firstNameMatches.length === 1) {
-      return buildResult(firstNameMatches[0], false, firstNameMatches);
+      return buildResult(firstNameMatches[0], false, firstNameMatches, "first_name");
     }
   }
 
   return empty;
 }
 
-function buildResult(primary: RegisteredAttendant, transferred: boolean, allMatches: RegisteredAttendant[]): MatchResult {
+function buildResult(primary: RegisteredAttendant, transferred: boolean, allMatches: RegisteredAttendant[], matchConfidence: MatchConfidence): MatchResult {
   return {
     matched: true,
     attendantId: primary.id,
@@ -135,6 +139,7 @@ function buildResult(primary: RegisteredAttendant, transferred: boolean, allMatc
     evaluationStatus: primary.participates_evaluation ? "evaluable" : "outside_main_ruler",
     transferred,
     allMatches,
+    matchConfidence,
   };
 }
 
@@ -159,9 +164,9 @@ export function matchMultipleAttendants(
   }
 
   if (allMatches.length === 0) {
-    return { matched: false, transferred: false, allMatches: [], evaluationStatus: "not_identified" };
+    return { matched: false, transferred: false, allMatches: [], evaluationStatus: "not_identified", matchConfidence: "none" };
   }
 
-  const primary = allMatches[allMatches.length - 1]; // Last attendant = who handled the case
-  return buildResult(primary, allMatches.length > 1, allMatches);
+  const primary = allMatches[allMatches.length - 1];
+  return buildResult(primary, allMatches.length > 1, allMatches, "partial");
 }
