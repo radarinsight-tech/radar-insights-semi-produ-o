@@ -203,7 +203,7 @@ function ChronologicalTimeline({ milestones }: { milestones: JourneyMilestone[] 
 
 /* ─── Main Dialog ───────────────────────────────────────────────── */
 
-const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContextDialogProps) => {
+const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredConversation }: UraContextDialogProps) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["detalhes"]));
 
   const uraContext = useMemo(() => {
@@ -213,8 +213,9 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
 
   const timeline = useMemo(() => {
     if (!rawText) return null;
-    return buildJourneyTimeline(rawText, atendente);
-  }, [rawText, atendente]);
+    const preParsed = structuredConversation?.messages;
+    return buildJourneyTimeline(rawText, atendente, preParsed);
+  }, [rawText, atendente, structuredConversation]);
 
   const sections: SectionConfig[] = useMemo(() => {
     if (!uraContext || uraContext.status === "no_ura") return [];
