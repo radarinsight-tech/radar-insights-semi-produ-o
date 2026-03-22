@@ -137,8 +137,14 @@ function milestoneLabel(type: JourneyMilestone["type"], text: string, speaker?: 
 
 // ─── Main ───────────────────────────────────────────────────────────
 
-export function buildJourneyTimeline(rawText: string, atendente?: string): JourneyTimeline {
-  const messages = parseConversationText(rawText, atendente);
+export function buildJourneyTimeline(
+  rawText: string,
+  atendente?: string,
+  preParsedMessages?: ParsedMessage[],
+): JourneyTimeline {
+  const messages = preParsedMessages && preParsedMessages.length >= 2
+    ? preParsedMessages
+    : parseConversationText(rawText, atendente);
 
   if (messages.length === 0) {
     return { milestones: [], hasTimestamps: false };
