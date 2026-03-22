@@ -1642,6 +1642,12 @@ const MentoriaLab = () => {
                   <ConversationView rawText={sideFile.text} atendente={sideFile.atendente} />
                 </div>
               )}
+              {!sideFile.text && sideFile.status !== "pendente" && !readingIds.has(sideFile.id) && !sideFile.error && (
+                <div className="text-center py-6">
+                  <AlertTriangle className="h-5 w-5 text-warning mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground">Texto do atendimento indisponível. Reimporte o arquivo para restaurar.</p>
+                </div>
+              )}
 
               {sideFile.error && (
                 <p className="text-xs text-destructive">Erro: {sideFile.error}</p>
