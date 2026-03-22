@@ -209,8 +209,17 @@ const MentoriaLab = () => {
           else if (bf.status === "read") fileStatus = "lido";
           else if (bf.status === "error") fileStatus = "erro";
 
-          // Restore raw text from DB for report and URA context
+          // Restore raw text and structured messages from DB
           const rawText = (bf as any).extracted_text as string | undefined;
+          const persistedMessages = (bf as any).parsed_messages as StructuredConversation | undefined;
+
+          // Restore or recompute structured conversation
+          let structured: StructuredConversation | undefined = persistedMessages || undefined;
+          if (!structured && rawText) {
+            try {
+              structured = parseStructuredConversation(rawText, bf.atendente || undefined);
+            } catch { /* non-blocking */ }
+          }
 
           // Recompute URA context from persisted raw text
           let uraCtx: UraContext | undefined;
@@ -246,6 +255,7 @@ const MentoriaLab = () => {
             evaluationId: matchedEval?.id,
             uraContext: uraCtx,
             uraStatus: uraCtx?.status,
+            structuredConversation: structured,
           } as LabFile;
         });
 
