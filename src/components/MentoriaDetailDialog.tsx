@@ -304,6 +304,11 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                   </Badge>
                 </TabsTrigger>
               )}
+              {preAnalysis && (
+                <TabsTrigger value="semi-auto" className="text-xs font-bold data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-1 pb-2">
+                  <Zap className="h-3.5 w-3.5 mr-1.5" /> Semi-Automático
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
 
@@ -581,6 +586,22 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
               <ScrollArea className="max-h-[calc(96vh-140px)]">
                 <div className="px-8 py-8">
                   <PreAnalysisPanel analysis={preAnalysis} />
+                </div>
+              </ScrollArea>
+            </TabsContent>
+          )}
+
+          {/* ═══ TAB: SEMI-AUTOMÁTICO ═══ */}
+          {preAnalysis && (
+            <TabsContent value="semi-auto" className="flex-1 min-h-0 m-0">
+              <ScrollArea className="max-h-[calc(96vh-140px)]">
+                <div className="px-8 py-8">
+                  <SemiAutoPanel
+                    analysis={preAnalysis}
+                    onConfirm={(result: SemiAutoResult) => {
+                      console.log("Semi-auto confirmed:", result);
+                    }}
+                  />
                 </div>
               </ScrollArea>
             </TabsContent>
