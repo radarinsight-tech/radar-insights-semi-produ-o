@@ -222,9 +222,9 @@ export function parseConversationText(rawText: string, atendente?: string): Pars
       const match = trimmed.match(p.regex);
       if (match) {
         if (current) messages.push(current);
-        const ext = p.extract(match);
+        const ext = p.extract(match) as Partial<ParsedMessage> & { speaker: string; text: string };
         const role = determineRole(ext.speaker, atendente);
-        const isoTs = dateTimeToISO(ext.date, ext.time);
+        const isoTs = dateTimeToISO(ext.date as string | undefined, ext.time as string | undefined);
         current = { ...ext, role, isoTimestamp: isoTs } as ParsedMessage;
         matched = true;
         break;
