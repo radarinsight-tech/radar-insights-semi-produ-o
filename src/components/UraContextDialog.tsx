@@ -18,6 +18,7 @@ interface UraContextDialogProps {
   onOpenChange: (open: boolean) => void;
   rawText?: string;
   atendente?: string;
+  structuredConversation?: StructuredConversation;
 }
 
 interface SectionConfig {
