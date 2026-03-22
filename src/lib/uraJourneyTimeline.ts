@@ -252,6 +252,30 @@ export function buildJourneyTimeline(
     });
   }
 
+  // Continue scanning AFTER human start for survey/reminder events
+  if (foundHuman) {
+    const humanIdx = messages.findIndex(m => m.role === "atendente");
+    for (let i = humanIdx + 1; i < messages.length; i++) {
+      const msg = messages[i];
+      const ts = parseTimestamp(msg);
+      if (isBot(msg)) {
+        if (PATTERNS.survey.test(msg.text)) {
+          milestones.push({
+            label: milestoneLabel("survey", msg.text, msg.speaker),
+            time: msg.time, date: msg.date, ts, speaker: msg.speaker,
+            role: "bot", type: "survey",
+          });
+        } else if (PATTERNS.reminder.test(msg.text)) {
+          milestones.push({
+            label: milestoneLabel("reminder", msg.text, msg.speaker),
+            time: msg.time, date: msg.date, ts, speaker: msg.speaker,
+            role: "bot", type: "reminder",
+          });
+        }
+      }
+    }
+  }
+
   // Difficulty alert
   if (invalidCount > 0) {
     difficultyReasons.unshift(`${invalidCount} opção(ões) inválida(s)`);
