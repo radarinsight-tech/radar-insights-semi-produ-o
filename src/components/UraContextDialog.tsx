@@ -6,7 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Radio, X, ChevronDown, ChevronRight, Phone, ShieldCheck, Route,
-  MessageSquare, ArrowRightLeft, Clock, AlertTriangle, Bot, UserX, Timer, Milestone, Zap
+  MessageSquare, ArrowRightLeft, Clock, AlertTriangle, Bot, Timer, Milestone, Zap, Info
 } from "lucide-react";
 import { extractUraContext } from "@/lib/conversationParser";
 import { buildJourneyTimeline, formatDuration, type JourneyTimeline, type JourneyMilestone } from "@/lib/uraJourneyTimeline";
@@ -28,10 +28,9 @@ interface SectionConfig {
 }
 
 const STATUS_CONFIG: Record<UraStatus, { title: string; description: string; icon: typeof Radio }> = {
-  with_ura: { title: "Contexto URA", description: "Jornada pré-atendimento identificada", icon: Radio },
-  no_ura: { title: "Sem dados de URA", description: "Atendimento humano direto — sem interação automática detectada", icon: Phone },
-  ura_only: { title: "URA sem atendente", description: "Atendimento puramente automático — nenhum atendente humano identificado", icon: Bot },
-  ura_ambiguous: { title: "URA não identificada com segurança", description: "Não foi possível classificar o fluxo da URA com precisão", icon: AlertTriangle },
+  ura_valid: { title: "Contexto URA", description: "Jornada pré-atendimento identificada", icon: Radio },
+  ura_irrelevant: { title: "URA irrelevante", description: "Automação detectada apenas após o atendimento humano", icon: Info },
+  no_ura: { title: "Sem URA", description: "Atendimento iniciado diretamente com atendente", icon: Phone },
 };
 
 const ALERT_COLORS: Record<string, string> = {
@@ -83,7 +82,6 @@ function JourneySummary({ timeline }: { timeline: JourneyTimeline }) {
         </span>
       </div>
 
-      {/* Time metrics */}
       {hasAnyTime && (
         <div className="grid grid-cols-3 gap-2">
           <TimeMetric label="Tempo na URA" seconds={timeline.tempoUra} />
@@ -92,7 +90,6 @@ function JourneySummary({ timeline }: { timeline: JourneyTimeline }) {
         </div>
       )}
 
-      {/* Queue alert */}
       {timeline.queueAlert && timeline.queueAlert.level !== "ok" && (
         <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${ALERT_COLORS[timeline.queueAlert.level]}`}>
           <div className={`w-2 h-2 rounded-full ${ALERT_DOT[timeline.queueAlert.level]} animate-pulse`} />
@@ -103,7 +100,6 @@ function JourneySummary({ timeline }: { timeline: JourneyTimeline }) {
         </div>
       )}
 
-      {/* URA difficulty alert */}
       {timeline.difficultyAlert?.detected && (
         <div className="flex items-start gap-2 rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-2">
           <Zap className="h-3.5 w-3.5 text-orange-600 mt-0.5 shrink-0" />
@@ -120,7 +116,6 @@ function JourneySummary({ timeline }: { timeline: JourneyTimeline }) {
         </div>
       )}
 
-      {/* No timestamps fallback */}
       {!hasAnyTime && timeline.milestones.length > 0 && (
         <p className="text-[10px] text-muted-foreground/70 italic">
           Timestamps não disponíveis — cálculo de tempos indisponível
@@ -168,17 +163,12 @@ function ChronologicalTimeline({ milestones }: { milestones: JourneyMilestone[] 
 
         return (
           <div key={i} className="flex items-start gap-3 relative">
-            {/* Vertical connector */}
             {!isLast && (
               <div className="absolute left-[7px] top-[18px] w-px h-[calc(100%)] bg-border/50" />
             )}
-
-            {/* Dot */}
             <div className={`w-[15px] h-[15px] rounded-full border-2 shrink-0 mt-0.5 z-10 ${colors.border} ${colors.bg} ${
               isHuman ? "ring-2 ring-accent/30" : ""
             }`} />
-
-            {/* Content */}
             <div className={`pb-3 min-w-0 flex-1 ${isInvalid ? "opacity-80" : ""}`}>
               <p className={`text-[11px] font-semibold leading-tight ${
                 isHuman ? "text-accent" : isInvalid ? "text-destructive" : "text-foreground"
@@ -218,22 +208,11 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredCo
   }, [rawText, atendente, structuredConversation]);
 
   const sections: SectionConfig[] = useMemo(() => {
-    if (!uraContext || uraContext.status === "no_ura") return [];
+    if (!uraContext || uraContext.status !== "ura_valid") return [];
 
-    const fluxoItems: { label: string; value: string }[] = [];
-    const eventosItems: { label: string; value: string }[] = [];
-
-    for (const item of uraContext.items) {
-      const label = item.label.toLowerCase();
-      if (label.includes("protocolo") || label.includes("remetente") || label.includes("saudação") || label.includes("autenticação")) {
-        fluxoItems.push(item);
-      } else {
-        eventosItems.push(item);
-      }
-    }
-
+    const allItems = uraContext.items;
     return [
-      { title: "Detalhes Identificados", icon: Route, items: [...fluxoItems, ...eventosItems] },
+      { title: "Detalhes Identificados", icon: Route, items: allItems },
     ].filter(s => s.items.length > 0);
   }, [uraContext]);
 
@@ -249,7 +228,7 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredCo
   const cfg = STATUS_CONFIG[status];
   const StatusIcon = cfg.icon;
   const hasData = sections.length > 0;
-  const showJourney = timeline && (timeline.milestones.length > 0 || timeline.hasTimestamps);
+  const showJourney = status === "ura_valid" && timeline && (timeline.milestones.length > 0 || timeline.hasTimestamps);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -288,47 +267,58 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredCo
               </div>
             )}
 
-            {/* No URA — human-only */}
+            {/* ═══ State: no_ura ═══ */}
             {rawText && status === "no_ura" && (
               <div className="flex flex-col items-center text-center py-10">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
                   <Phone className="h-5 w-5 text-primary/60" />
                 </div>
-                <p className="text-sm font-semibold text-foreground">Sem dados de URA</p>
+                <p className="text-sm font-semibold text-foreground">Atendimento iniciado diretamente com atendente</p>
                 <p className="text-xs text-muted-foreground/70 mt-1 max-w-xs">
-                  Este atendimento foi identificado como humano direto, sem interação automática prévia.
+                  Nenhuma interação automática (URA) foi detectada neste atendimento.
                 </p>
               </div>
             )}
 
-            {/* URA only */}
-            {status === "ura_only" && (
-              <div className="flex flex-col items-center text-center py-6 mb-3">
-                <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center mb-3">
-                  <Bot className="h-5 w-5 text-warning" />
+            {/* ═══ State: ura_irrelevant ═══ */}
+            {rawText && status === "ura_irrelevant" && (
+              <div className="space-y-4">
+                <div className="flex flex-col items-center text-center py-6">
+                  <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                    <Info className="h-5 w-5 text-muted-foreground/60" />
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">Sem URA relevante no pré-atendimento</p>
+                  <p className="text-xs text-muted-foreground/70 mt-1 max-w-xs">
+                    O atendimento foi iniciado diretamente com atendente humano. As interações automáticas detectadas ocorreram apenas após o atendimento.
+                  </p>
                 </div>
-                <p className="text-sm font-semibold text-foreground">URA sem atendente</p>
-                <p className="text-xs text-muted-foreground/70 mt-1 max-w-xs">
-                  Este atendimento foi composto apenas por mensagens automáticas.
-                </p>
+
+                {/* Post-attendance items */}
+                {uraContext?.postAttendanceItems && uraContext.postAttendanceItems.length > 0 && (
+                  <div className="rounded-xl border border-border/50 bg-muted/10 p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Bot className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide">
+                        Interações automáticas pós-atendimento
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {uraContext.postAttendanceItems.map((item, i) => (
+                        <div key={i} className="flex gap-3 items-start">
+                          <span className="text-[10px] text-muted-foreground font-semibold shrink-0 mt-0.5 min-w-[90px]">
+                            {item.label}
+                          </span>
+                          <span className="text-[12px] text-foreground/70 leading-snug">{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Ambiguous */}
-            {status === "ura_ambiguous" && (
-              <div className="flex flex-col items-center text-center py-6 mb-3">
-                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
-                  <AlertTriangle className="h-5 w-5 text-muted-foreground/60" />
-                </div>
-                <p className="text-sm font-semibold text-foreground">URA não identificada com segurança</p>
-                <p className="text-xs text-muted-foreground/70 mt-1 max-w-xs">
-                  Foram detectadas mensagens automáticas, mas não foi possível classificar o fluxo com precisão.
-                </p>
-              </div>
-            )}
-
-            {/* Data sections — with_ura, ura_only, ura_ambiguous */}
-            {(status === "with_ura" || ((status === "ura_only" || status === "ura_ambiguous") && hasData)) && (
+            {/* ═══ State: ura_valid ═══ */}
+            {rawText && status === "ura_valid" && (
               <>
                 {/* Journey Summary */}
                 {showJourney && <JourneySummary timeline={timeline!} />}
@@ -361,6 +351,20 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredCo
                     </Badge>
                   )}
                 </div>
+
+                {/* Post-attendance info (separate from pre-attendance) */}
+                {uraContext?.postAttendanceItems && uraContext.postAttendanceItems.length > 0 && (
+                  <div className="rounded-lg border border-border/40 bg-muted/10 px-3 py-2">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                      Pós-atendimento
+                    </p>
+                    {uraContext.postAttendanceItems.map((item, i) => (
+                      <p key={i} className="text-[11px] text-muted-foreground">
+                        {item.label}: {item.value}
+                      </p>
+                    ))}
+                  </div>
+                )}
 
                 {/* Collapsible detail sections */}
                 {sections.map((section, idx) => {
@@ -400,20 +404,20 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredCo
                     </Collapsible>
                   );
                 })}
-              </>
-            )}
 
-            {/* with_ura but no data */}
-            {status === "with_ura" && !hasData && !showJourney && (
-              <div className="flex flex-col items-center text-center py-10">
-                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
-                  <Radio className="h-5 w-5 text-muted-foreground/60" />
-                </div>
-                <p className="text-sm font-semibold text-muted-foreground">Sem dados de URA</p>
-                <p className="text-xs text-muted-foreground/70 mt-1 max-w-xs">
-                  Nenhuma interação automática (URA) foi identificada neste atendimento.
-                </p>
-              </div>
+                {/* ura_valid but empty */}
+                {!hasData && !showJourney && (
+                  <div className="flex flex-col items-center text-center py-10">
+                    <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                      <Radio className="h-5 w-5 text-muted-foreground/60" />
+                    </div>
+                    <p className="text-sm font-semibold text-muted-foreground">URA detectada sem detalhes extraídos</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1 max-w-xs">
+                      Foram encontradas mensagens automáticas antes do atendente, mas não foi possível extrair detalhes específicos.
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </ScrollArea>

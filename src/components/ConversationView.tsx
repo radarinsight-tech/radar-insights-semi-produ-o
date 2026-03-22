@@ -103,8 +103,7 @@ const ConversationView = ({ rawText, atendente, structuredConversation }: Conver
     }
 
     const cls = classifyMessages(msgs);
-    const ura = cls.filter(m => m.category === "URA");
-    const ctx = summarizeUraContext(ura, cls);
+    const ctx = summarizeUraContext(cls);
     const human = cls.filter(m =>
       m.category === "HUMANO" || m.role === "cliente" ||
       m.category === "TEMPLATE_CONVERSACIONAL"
