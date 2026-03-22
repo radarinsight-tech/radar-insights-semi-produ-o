@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { calcularBonus, formatBRL, notaToScale10, formatDateBR } from "@/lib/utils";
+import type { StructuredConversation } from "@/lib/conversationParser";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ interface MentoriaDetailDialogProps {
   fileName: string;
   rawText?: string;
   atendente?: string;
+  structuredConversation?: StructuredConversation;
 }
 
 const CATEGORY_ORDER = [
@@ -96,7 +98,7 @@ const findRelevantExcerpt = (rawText: string | undefined, explicacao: string): s
   return null;
 };
 
-const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente }: MentoriaDetailDialogProps) => {
+const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation }: MentoriaDetailDialogProps) => {
   const [uraOpen, setUraOpen] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -533,7 +535,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           </div>
         </ScrollArea>
       </DialogContent>
-      <UraContextDialog open={uraOpen} onOpenChange={setUraOpen} rawText={rawText} atendente={atendente} />
+      <UraContextDialog open={uraOpen} onOpenChange={setUraOpen} rawText={rawText} atendente={atendente} structuredConversation={structuredConversation} />
     </Dialog>
   );
 };

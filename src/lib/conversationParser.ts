@@ -1,6 +1,9 @@
 /**
- * Shared conversation parser — extracts structured messages from raw PDF text.
- * Used by both MentoriaLab (import) and UraContextDialog (display).
+ * Structured conversation parser — extracts individual messages with author,
+ * timestamp, and role from raw PDF text. Supports multiple export formats
+ * including OPA-style block layout.
+ *
+ * This is the SINGLE SOURCE OF TRUTH for conversation structure.
  */
 
 import { classifyMessages, type ClassifiedMessage } from "./messageClassifier";
@@ -12,12 +15,50 @@ export interface ParsedMessage {
   text: string;
   time?: string;
   date?: string;
+  /** ISO timestamp when available */
+  isoTimestamp?: string;
+}
+
+/** Structured conversation ready for persistence */
+export interface StructuredConversation {
+  messages: ParsedMessage[];
+  format: "inline" | "block" | "whatsapp" | "unknown";
+  totalMessages: number;
+  firstTimestamp?: string;
+  lastTimestamp?: string;
 }
 
 // Known bot/system speaker names
 const BOT_SPEAKERS = /^(marte|bot|sistema|robô|robo|ura|automático|automatico|assistente\s*virtual|chatbot|especialista\s*virtual)\b/i;
 
-// Patterns to extract messages from conversation text (ordered by specificity)
+// ─── Portuguese month map ───────────────────────────────────────────
+
+const MONTH_MAP: Record<string, string> = {
+  janeiro: "01", fevereiro: "02", "março": "03", marco: "03",
+  abril: "04", maio: "05", junho: "06", julho: "07",
+  agosto: "08", setembro: "09", outubro: "10", novembro: "11", dezembro: "12",
+};
+
+/**
+ * Parse Portuguese long date format: "7 de março de 2026 09:34"
+ * Returns { date: "07/03/2026", time: "09:34" } or undefined.
+ */
+function parsePortugueseDate(text: string): { date: string; time: string } | undefined {
+  const match = text.match(
+    /(\d{1,2})\s+de\s+(janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\s+de\s+(\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)/i
+  );
+  if (!match) return undefined;
+  const day = match[1].padStart(2, "0");
+  const monthKey = match[2].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const month = MONTH_MAP[monthKey] || MONTH_MAP[match[2].toLowerCase()];
+  if (!month) return undefined;
+  const year = match[3];
+  const time = match[4];
+  return { date: `${day}/${month}/${year}`, time };
+}
+
+// ─── Inline message patterns (ordered by specificity) ───────────────
+
 const MESSAGE_PATTERNS = [
   // "Nome (dd/mm/yyyy HH:mm): text"
   { regex: /^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,40}?)\s*\((\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)\)\s*:\s*(.+)/,
@@ -36,6 +77,104 @@ const MESSAGE_PATTERNS = [
     extract: (m: RegExpMatchArray) => ({ speaker: m[1].trim(), text: m[2].trim() }) },
 ];
 
+// ─── OPA Block format detection ─────────────────────────────────────
+
+/**
+ * Detect if text is in OPA block format where messages are structured as:
+ * [Name]
+ * [Date in Portuguese] or [dd/mm/yyyy HH:mm]
+ * [Message content]
+ */
+function isBlockFormat(text: string): boolean {
+  // Check for Portuguese long dates (strong OPA signal)
+  const longDates = text.match(/\d{1,2}\s+de\s+(?:janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\s+de\s+\d{4}\s+\d{2}:\d{2}/gi);
+  if (longDates && longDates.length >= 2) return true;
+
+  // Check for name-on-own-line followed by date pattern
+  const nameLineThenDate = text.match(/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,40}\s*\n\s*\d{1,2}\s+de\s+/gm);
+  if (nameLineThenDate && nameLineThenDate.length >= 2) return true;
+
+  return false;
+}
+
+/**
+ * Parse OPA-style block format where each message is:
+ * Line 1: Speaker name
+ * Line 2: Date/time (Portuguese format or dd/mm/yyyy HH:mm)
+ * Line 3+: Message content (until next speaker block)
+ */
+function parseBlockFormat(text: string, atendente?: string): ParsedMessage[] {
+  const lines = text.split("\n");
+  const messages: ParsedMessage[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i].trim();
+    if (!line) { i++; continue; }
+
+    // Try to detect a speaker name line (a short line that could be a name)
+    const isNameCandidate = (
+      /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,40}$/.test(line) &&
+      !/^\d/.test(line) &&
+      line.length <= 45 &&
+      !line.includes(":") &&
+      line.split(/\s+/).length <= 5
+    );
+
+    if (!isNameCandidate) { i++; continue; }
+
+    // Check next line for date/time
+    const nextLine = (i + 1 < lines.length) ? lines[i + 1].trim() : "";
+    const ptDate = parsePortugueseDate(nextLine);
+    const shortDate = nextLine.match(/^(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)/);
+
+    if (!ptDate && !shortDate) { i++; continue; }
+
+    const speaker = line;
+    const date = ptDate?.date || shortDate?.[1];
+    const time = ptDate?.time || shortDate?.[2];
+
+    // Collect message text from subsequent lines
+    const textLines: string[] = [];
+    let j = i + 2; // skip name + date lines
+    while (j < lines.length) {
+      const msgLine = lines[j].trim();
+      if (!msgLine) { j++; continue; }
+
+      // Check if this is the start of a new block (name + date)
+      const nextIsName = /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,40}$/.test(msgLine) && msgLine.length <= 45 && !msgLine.includes(":");
+      if (nextIsName && j + 1 < lines.length) {
+        const peek = lines[j + 1].trim();
+        if (parsePortugueseDate(peek) || /^\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}/.test(peek)) {
+          break; // New block starts here
+        }
+      }
+
+      textLines.push(msgLine);
+      j++;
+    }
+
+    if (textLines.length > 0) {
+      const role = determineRole(speaker, atendente);
+      const isoTs = dateTimeToISO(date, time);
+      messages.push({
+        speaker,
+        role,
+        text: textLines.join("\n"),
+        time,
+        date,
+        isoTimestamp: isoTs,
+      });
+    }
+
+    i = j;
+  }
+
+  return messages;
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────
+
 function determineRole(speaker: string, atendente?: string): "atendente" | "cliente" | "bot" | "sistema" {
   const lower = speaker.toLowerCase().trim();
   if (BOT_SPEAKERS.test(lower)) return "bot";
@@ -47,12 +186,29 @@ function determineRole(speaker: string, atendente?: string): "atendente" | "clie
   return "cliente";
 }
 
+function dateTimeToISO(date?: string, time?: string): string | undefined {
+  if (!date || !time) return undefined;
+  const dp = date.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (!dp) return undefined;
+  const tp = time.match(/(\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (!tp) return undefined;
+  return `${dp[3]}-${dp[2]}-${dp[1]}T${tp[1]}:${tp[2]}:${tp[3] || "00"}`;
+}
+
 /**
  * Parse raw conversation text into structured messages.
+ * Automatically detects format (block vs inline).
  */
 export function parseConversationText(rawText: string, atendente?: string): ParsedMessage[] {
   if (!rawText) return [];
 
+  // Try OPA block format first
+  if (isBlockFormat(rawText)) {
+    const blockMessages = parseBlockFormat(rawText, atendente);
+    if (blockMessages.length >= 2) return blockMessages;
+  }
+
+  // Fall back to inline pattern matching
   const lines = rawText.split("\n");
   const messages: ParsedMessage[] = [];
   let current: ParsedMessage | null = null;
@@ -66,9 +222,10 @@ export function parseConversationText(rawText: string, atendente?: string): Pars
       const match = trimmed.match(p.regex);
       if (match) {
         if (current) messages.push(current);
-        const ext = p.extract(match);
+        const ext = p.extract(match) as Partial<ParsedMessage> & { speaker: string; text: string };
         const role = determineRole(ext.speaker, atendente);
-        current = { ...ext, role } as ParsedMessage;
+        const isoTs = dateTimeToISO(ext.date as string | undefined, ext.time as string | undefined);
+        current = { ...ext, role, isoTimestamp: isoTs } as ParsedMessage;
         matched = true;
         break;
       }
@@ -80,6 +237,48 @@ export function parseConversationText(rawText: string, atendente?: string): Pars
   if (current) messages.push(current);
 
   return messages;
+}
+
+/**
+ * Full structured parse: returns a StructuredConversation object
+ * suitable for persistence and downstream use.
+ */
+export function parseStructuredConversation(rawText: string, atendente?: string): StructuredConversation {
+  if (!rawText) {
+    return { messages: [], format: "unknown", totalMessages: 0 };
+  }
+
+  const isBlock = isBlockFormat(rawText);
+  let messages: ParsedMessage[];
+  let format: StructuredConversation["format"];
+
+  if (isBlock) {
+    messages = parseBlockFormat(rawText, atendente);
+    format = messages.length >= 2 ? "block" : "unknown";
+  } else {
+    messages = [];
+    format = "unknown";
+  }
+
+  // If block didn't yield results, try inline
+  if (messages.length < 2) {
+    messages = parseConversationText(rawText, atendente);
+    if (messages.length >= 2) {
+      // Detect WhatsApp format
+      const hasWhatsApp = rawText.match(/\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}\s*[-–]/);
+      format = hasWhatsApp ? "whatsapp" : "inline";
+    }
+  }
+
+  const timestamps = messages.map(m => m.isoTimestamp).filter(Boolean) as string[];
+
+  return {
+    messages,
+    format,
+    totalMessages: messages.length,
+    firstTimestamp: timestamps[0],
+    lastTimestamp: timestamps[timestamps.length - 1],
+  };
 }
 
 /**
@@ -101,7 +300,6 @@ export function extractUraContext(rawText: string, atendente?: string): UraConte
   }
 
   // Fallback: scan raw text directly for URA indicators
-  // This handles OPA-style exports and non-standard formats
   return extractUraFromRawText(rawText);
 }
 
@@ -156,14 +354,12 @@ function extractUraFromRawText(text: string): UraContext {
   let audioDetectado = false;
   let entradaCliente: string | undefined;
 
-  // Protocolo
   const protMatch = text.match(RAW_URA_PATTERNS.protocolo);
   if (protMatch) {
     protocolo = protMatch[1];
     items.push({ label: "Protocolo", value: protocolo });
   }
 
-  // Marte / saudação
   const hasMarte = RAW_URA_PATTERNS.marte.test(text);
   const hasSaudacao = RAW_URA_PATTERNS.saudacao.test(text);
   if (hasMarte) {
@@ -176,26 +372,21 @@ function extractUraFromRawText(text: string): UraContext {
     }
   }
 
-  // Menu detection (text + block)
   const hasMenu = RAW_URA_PATTERNS.menu.test(text);
   const hasMenuBlock = RAW_URA_PATTERNS.menuBlock.test(text);
   if (hasMenu || hasMenuBlock) {
-    // Try to extract the menu text
     const menuMatch = text.match(/(?:em\s+que\s+posso[^\n\r]{0,80}|menu[^\n\r]{0,80}|escolha[^\n\r]{0,80})/i);
     opcaoMenu = menuMatch ? menuMatch[0].trim().slice(0, 120) : "Menu de opções detectado";
     items.push({ label: "Menu detectado", value: opcaoMenu });
   }
 
-  // Autenticação
   if (RAW_URA_PATTERNS.autenticacao.test(text)) {
     autenticacao = "Solicitação de CPF/CNPJ detectada";
     items.push({ label: "Autenticação", value: autenticacao });
   }
 
-  // Motivo / problema
   const problemaMatch = text.match(RAW_URA_PATTERNS.problema);
   if (problemaMatch) {
-    // Try to get the line after the prompt
     const idx = text.indexOf(problemaMatch[0]);
     const after = text.slice(idx + problemaMatch[0].length, idx + problemaMatch[0].length + 200);
     const nextLine = after.split("\n").find(l => l.trim().length > 5);
@@ -203,26 +394,22 @@ function extractUraFromRawText(text: string): UraContext {
     items.push({ label: "Motivo informado", value: motivoCliente });
   }
 
-  // Transferência
   const transMatch = text.match(/(?:transferi(?:u|ndo)[^\n\r]{0,120}|assumiu\s+(?:o\s+)?atendimento[^\n\r]{0,80}|atendimento\s+(?:será\s+)?transferido[^\n\r]{0,80})/i);
   if (transMatch) {
     transferencia = transMatch[0].trim().slice(0, 120);
     items.push({ label: "Transferência", value: transferencia });
   }
 
-  // Pesquisa de satisfação
   if (RAW_URA_PATTERNS.pesquisa.test(text)) {
     pesquisaSatisfacao = "Pesquisa enviada";
     items.push({ label: "Pesquisa de satisfação", value: pesquisaSatisfacao });
   }
 
-  // Áudio
   if (RAW_URA_PATTERNS.audio.test(text)) {
     audioDetectado = true;
     items.push({ label: "Observação", value: "Áudio detectado no atendimento" });
   }
 
-  // Determine status
   const hasHumanIndicator = RAW_URA_PATTERNS.transferencia.test(text);
   let status: UraStatus;
   if (hasMarte && hasHumanIndicator) {

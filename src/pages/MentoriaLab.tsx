@@ -28,6 +28,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn, formatDateBR, notaToScale10, formatNota } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
+import { parseStructuredConversation, type StructuredConversation } from "@/lib/conversationParser";
 import logoSymbol from "@/assets/logo-symbol.png";
 import { toast } from "sonner";
 import MentoriaInsights from "@/components/MentoriaInsights";
@@ -90,6 +91,7 @@ interface LabFile {
   evaluationId?: string;
   uraContext?: UraContext;
   uraStatus?: UraStatus;
+  structuredConversation?: StructuredConversation;
 }
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
@@ -207,8 +209,17 @@ const MentoriaLab = () => {
           else if (bf.status === "read") fileStatus = "lido";
           else if (bf.status === "error") fileStatus = "erro";
 
-          // Restore raw text from DB for report and URA context
+          // Restore raw text and structured messages from DB
           const rawText = (bf as any).extracted_text as string | undefined;
+          const persistedMessages = (bf as any).parsed_messages as StructuredConversation | undefined;
+
+          // Restore or recompute structured conversation
+          let structured: StructuredConversation | undefined = persistedMessages || undefined;
+          if (!structured && rawText) {
+            try {
+              structured = parseStructuredConversation(rawText, bf.atendente || undefined);
+            } catch { /* non-blocking */ }
+          }
 
           // Recompute URA context from persisted raw text
           let uraCtx: UraContext | undefined;
@@ -244,6 +255,7 @@ const MentoriaLab = () => {
             evaluationId: matchedEval?.id,
             uraContext: uraCtx,
             uraStatus: uraCtx?.status,
+            structuredConversation: structured,
           } as LabFile;
         });
 
@@ -296,6 +308,12 @@ const MentoriaLab = () => {
         }
       } catch { /* non-blocking */ }
 
+      // Parse structured conversation
+      let structured: StructuredConversation | undefined;
+      try {
+        structured = parseStructuredConversation(text, metadata.atendente);
+      } catch { /* non-blocking */ }
+
       // Compute URA context during import
       let uraCtx: UraContext | undefined;
       try {
@@ -309,12 +327,12 @@ const MentoriaLab = () => {
       setFiles((prev) =>
         prev.map((f) =>
           f.id === labFile.id
-            ? { ...f, status: "lido", text, ...metadata, attendantMatch: attendantMatchResult, transferred: attendantMatchResult?.transferred, uraContext: uraCtx, uraStatus: uraCtx?.status }
+            ? { ...f, status: "lido", text, ...metadata, attendantMatch: attendantMatchResult, transferred: attendantMatchResult?.transferred, uraContext: uraCtx, uraStatus: uraCtx?.status, structuredConversation: structured }
             : f
         )
       );
 
-      // Sync to DB (including raw text for persistence)
+      // Sync to DB (including raw text and structured messages for persistence)
       if (labFile.batchFileId) {
         await supabase.from("mentoria_batch_files").update({
           status: "read",
@@ -324,6 +342,7 @@ const MentoriaLab = () => {
           canal: metadata.canal,
           has_audio: metadata.hasAudio,
           extracted_text: text,
+          parsed_messages: structured ? JSON.parse(JSON.stringify(structured)) : null,
         } as any).eq("id", labFile.batchFileId);
       }
     } catch {
@@ -1664,6 +1683,7 @@ const MentoriaLab = () => {
         fileName={mentoriaFile?.name || ""}
         rawText={mentoriaFile?.text}
         atendente={mentoriaFile?.atendente}
+        structuredConversation={mentoriaFile?.structuredConversation}
       />
     </div>
   );

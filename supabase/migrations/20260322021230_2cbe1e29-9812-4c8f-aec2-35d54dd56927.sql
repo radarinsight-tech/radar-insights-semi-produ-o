@@ -1,0 +1,1 @@
+ALTER TABLE public.mentoria_batch_files ADD COLUMN IF NOT EXISTS parsed_messages jsonb DEFAULT NULL;
