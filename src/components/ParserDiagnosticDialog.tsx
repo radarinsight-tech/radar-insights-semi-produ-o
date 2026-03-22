@@ -62,8 +62,7 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
     const journey = buildJourneyTimeline(rawText, atendente, messages.length >= 2 ? messages : undefined);
 
     // Step 3: Get URA context with state classification
-    const { extractUraContext } = require("@/lib/conversationParser");
-    let uraContext: { status: string; statusReason: string } | null = null;
+    let uraContext: { status: string; statusReason: string; postAttendanceItems?: { label: string; value: string }[] } | null = null;
     try {
       uraContext = extractUraContext(rawText, atendente);
     } catch { /* ignore */ }
