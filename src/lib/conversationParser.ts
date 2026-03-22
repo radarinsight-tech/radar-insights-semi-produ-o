@@ -74,6 +74,37 @@ const PT_DATE_REGEX = new RegExp(
 const SHORT_DATE_REGEX = /(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}(?::\d{2})?)/g;
 
 /**
+ * Check if a line looks like a standalone date (Portuguese or short).
+ */
+function isDateLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+  if (parsePortugueseDate(trimmed)) return true;
+  if (/^\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}/.test(trimmed)) return true;
+  return false;
+}
+
+/**
+ * Check if a line looks like a speaker name (short, capitalized, no date/number prefix).
+ */
+function isNameLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.length > 50) return false;
+  if (/^\d/.test(trimmed)) return false;
+  // Must start with a letter
+  if (!/^[A-Za-zÀ-ÿ]/.test(trimmed)) return false;
+  // Should be short (a name, not a sentence)
+  if (trimmed.split(/\s+/).length > 6) return false;
+  // Should not contain date patterns
+  if (/\d{2}\/\d{2}\/\d{4}/.test(trimmed)) return false;
+  if (new RegExp(`\\d{1,2}\\s+de\\s+(?:${MONTH_NAMES})`, "i").test(trimmed)) return false;
+  // Allow names with or without colons (some formats use "Name:" on its own line)
+  const nameOnly = trimmed.replace(/:$/, "").trim();
+  if (nameOnly.length < 2 || nameOnly.length > 45) return false;
+  return true;
+}
+
+/**
  * Normalize raw PDF text to restore structure by inserting line breaks
  * before dates and speaker names. This is the mandatory pre-processing
  * step before any parsing.
@@ -81,17 +112,6 @@ const SHORT_DATE_REGEX = /(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}(?::\d{2})?)/g;
 export function normalizeRawText(rawText: string): { text: string; wasNormalized: boolean } {
   if (!rawText) return { text: rawText, wasNormalized: false };
 
-  // Check if text already has good structure (enough non-empty lines with short length)
-  const lines = rawText.split("\n").filter(l => l.trim());
-  const avgLen = lines.reduce((s, l) => s + l.length, 0) / Math.max(lines.length, 1);
-
-  // If lines are short on average and there are many, structure is likely OK
-  if (lines.length > 10 && avgLen < 200) {
-    // Still do light normalization for edge cases
-    return { text: lightNormalize(rawText), wasNormalized: false };
-  }
-
-  // Heavy normalization: insert line breaks before date patterns
   let normalized = rawText;
 
   // Step 1: Insert line break BEFORE Portuguese dates (e.g., "6 de março de 2026 11:22")
@@ -116,45 +136,27 @@ export function normalizeRawText(rawText: string): { text: string; wasNormalized
     "$1\n$2"
   );
 
-  // Step 4: Insert line break before known speaker names followed by date on same line
-  // Detect pattern like "SpeakerName6 de março..." or "SpeakerName 6 de março..."
-  normalized = normalized.replace(
-    new RegExp(`([a-zà-ÿ\\.])\\s*((?:[A-ZÀ-Ÿ][a-zà-ÿ]+(?:\\s+[A-ZÀ-Ÿa-zà-ÿ]+){0,4})\\s*\\n?\\s*\\d{1,2}\\s+de\\s+(?:${MONTH_NAMES}))`, "gi"),
-    "$1\n$2"
-  );
-
-  // Step 5: If a line has a name glued to a date, separate them
+  // Step 4: If a name is glued to a date, separate them
   // e.g., "Marte6 de março" → "Marte\n6 de março"
   normalized = normalized.replace(
     new RegExp(`^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\\s'.]{1,40}?)(\\d{1,2}\\s+de\\s+(?:${MONTH_NAMES}))`, "gmi"),
     "$1\n$2"
   );
 
-  // Step 6: Ensure line break between message end and next speaker name
-  // Look for patterns where text flows into a capitalized name before a date
-  const nameBeforeDatePattern = new RegExp(
-    `([.!?…])\\s*([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\\s+[A-ZÀ-Ÿa-zà-ÿ]+){0,4})\\s*\\n\\s*\\d{1,2}\\s+de`,
-    "gm"
+  // Step 5: Insert line break before capitalized names that precede a date on next line
+  normalized = normalized.replace(
+    new RegExp(`([.!?…"'])\\s*([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\\s+[A-ZÀ-Ÿa-zà-ÿ]+){0,4})\\s*\\n\\s*(\\d{1,2}\\s+de)`, "gm"),
+    "$1\n$2\n$3"
   );
-  normalized = normalized.replace(nameBeforeDatePattern, "$1\n$2\n" + (normalized.match(/\d{1,2}\s+de/) || [""])[0]);
 
-  const wasNormalized = normalized !== rawText;
-  return { text: normalized, wasNormalized };
-}
-
-/**
- * Light normalization: fix minor issues without heavy restructuring
- */
-function lightNormalize(text: string): string {
-  let result = text;
-
-  // Ensure line break between name and date when on same line but separated by space
-  result = result.replace(
+  // Step 6: Separate name on same line as date: "Maylla Ferreira 7 de março..." → separate lines
+  normalized = normalized.replace(
     new RegExp(`^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\\s'.]{1,40})\\s+(\\d{1,2}\\s+de\\s+(?:${MONTH_NAMES})\\s+de\\s+\\d{4}\\s+\\d{2}:\\d{2})`, "gmi"),
     "$1\n$2"
   );
 
-  return result;
+  const wasNormalized = normalized !== rawText;
+  return { text: normalized, wasNormalized };
 }
 
 // ─── Inline message patterns (ordered by specificity) ───────────────
