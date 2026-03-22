@@ -4,7 +4,7 @@
  */
 
 import { classifyMessages, type ClassifiedMessage } from "./messageClassifier";
-import { summarizeUraContext, type UraContext } from "./uraContextSummarizer";
+import { summarizeUraContext, type UraContext, type UraStatus } from "./uraContextSummarizer";
 
 export interface ParsedMessage {
   speaker: string;
