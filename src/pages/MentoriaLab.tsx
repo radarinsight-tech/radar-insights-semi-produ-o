@@ -1677,7 +1677,7 @@ const MentoriaLab = () => {
               {sideFile.text && (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground mb-2">Conteúdo do atendimento</p>
-                  <ConversationView rawText={sideFile.text} atendente={sideFile.atendente} />
+                  <ConversationView rawText={sideFile.text} atendente={sideFile.atendente} structuredConversation={sideFile.structuredConversation} />
                 </div>
               )}
               {!sideFile.text && sideFile.status !== "pendente" && !readingIds.has(sideFile.id) && !sideFile.error && (
