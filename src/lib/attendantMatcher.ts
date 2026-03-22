@@ -59,6 +59,8 @@ function normalize(name: string): string {
 
 export type EvaluationStatus = "evaluable" | "outside_main_ruler" | "not_identified";
 
+export type MatchConfidence = "exact" | "partial" | "first_name" | "none";
+
 export interface MatchResult {
   matched: boolean;
   attendantId?: string;
@@ -70,6 +72,8 @@ export interface MatchResult {
   /** True if multiple attendants were found (transfer scenario) */
   transferred: boolean;
   allMatches: RegisteredAttendant[];
+  /** Confidence level of the match */
+  matchConfidence: MatchConfidence;
 }
 
 /**
