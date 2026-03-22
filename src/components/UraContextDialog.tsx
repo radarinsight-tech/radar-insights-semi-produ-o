@@ -6,10 +6,10 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Radio, X, ChevronDown, ChevronRight, Phone, ShieldCheck, Route,
-  MessageSquare, ArrowRightLeft, Clock, AlertTriangle, Bot, UserX, Timer, Milestone
+  MessageSquare, ArrowRightLeft, Clock, AlertTriangle, Bot, UserX, Timer, Milestone, Zap
 } from "lucide-react";
 import { extractUraContext } from "@/lib/conversationParser";
-import { buildJourneyTimeline, formatDuration, type JourneyTimeline } from "@/lib/uraJourneyTimeline";
+import { buildJourneyTimeline, formatDuration, type JourneyTimeline, type JourneyMilestone } from "@/lib/uraJourneyTimeline";
 import type { UraContext, UraStatus } from "@/lib/uraContextSummarizer";
 
 interface UraContextDialogProps {
@@ -26,7 +26,7 @@ interface SectionConfig {
 }
 
 const STATUS_CONFIG: Record<UraStatus, { title: string; description: string; icon: typeof Radio }> = {
-  with_ura: { title: "Contexto URA", description: "Informações pré-atendimento identificadas", icon: Radio },
+  with_ura: { title: "Contexto URA", description: "Jornada pré-atendimento identificada", icon: Radio },
   no_ura: { title: "Sem dados de URA", description: "Atendimento humano direto — sem interação automática detectada", icon: Phone },
   ura_only: { title: "URA sem atendente", description: "Atendimento puramente automático — nenhum atendente humano identificado", icon: Bot },
   ura_ambiguous: { title: "URA não identificada com segurança", description: "Não foi possível classificar o fluxo da URA com precisão", icon: AlertTriangle },
@@ -44,6 +44,25 @@ const ALERT_DOT: Record<string, string> = {
   moderate: "bg-yellow-500",
   long: "bg-orange-500",
   critical: "bg-destructive",
+};
+
+const MILESTONE_ICON_COLORS: Record<string, { border: string; bg: string }> = {
+  ura_start: { border: "border-muted-foreground", bg: "bg-muted" },
+  greeting: { border: "border-muted-foreground", bg: "bg-muted" },
+  menu: { border: "border-primary", bg: "bg-primary/20" },
+  invalid_option: { border: "border-destructive", bg: "bg-destructive/20" },
+  valid_option: { border: "border-accent", bg: "bg-accent/20" },
+  auth_request: { border: "border-muted-foreground", bg: "bg-muted" },
+  auth_received: { border: "border-accent", bg: "bg-accent/20" },
+  problem_request: { border: "border-muted-foreground", bg: "bg-muted" },
+  problem_informed: { border: "border-primary", bg: "bg-primary/20" },
+  transfer: { border: "border-warning", bg: "bg-warning/20" },
+  queue: { border: "border-muted-foreground", bg: "bg-muted" },
+  human_start: { border: "border-accent", bg: "bg-accent/30" },
+  survey: { border: "border-muted-foreground", bg: "bg-muted" },
+  reminder: { border: "border-muted-foreground", bg: "bg-muted" },
+  client_interaction: { border: "border-primary", bg: "bg-primary/15" },
+  generic: { border: "border-border", bg: "bg-background" },
 };
 
 /* ─── Journey Summary Card ──────────────────────────────────────── */
@@ -65,19 +84,9 @@ function JourneySummary({ timeline }: { timeline: JourneyTimeline }) {
       {/* Time metrics */}
       {hasAnyTime && (
         <div className="grid grid-cols-3 gap-2">
-          <TimeMetric
-            label="Tempo na URA"
-            seconds={timeline.tempoUra}
-          />
-          <TimeMetric
-            label="Tempo em fila"
-            seconds={timeline.tempoFila}
-            alert={timeline.queueAlert?.level}
-          />
-          <TimeMetric
-            label="Até atendimento"
-            seconds={timeline.tempoTotalPreAtendimento}
-          />
+          <TimeMetric label="Tempo na URA" seconds={timeline.tempoUra} />
+          <TimeMetric label="Tempo em fila" seconds={timeline.tempoFila} alert={timeline.queueAlert?.level} />
+          <TimeMetric label="Até atendimento" seconds={timeline.tempoTotalPreAtendimento} />
         </div>
       )}
 
@@ -87,41 +96,25 @@ function JourneySummary({ timeline }: { timeline: JourneyTimeline }) {
           <div className={`w-2 h-2 rounded-full ${ALERT_DOT[timeline.queueAlert.level]} animate-pulse`} />
           <span className="text-[11px] font-semibold">{timeline.queueAlert.label}</span>
           {timeline.tempoFila !== undefined && (
-            <span className="text-[10px] ml-auto opacity-80">
-              {formatDuration(timeline.tempoFila)}
-            </span>
+            <span className="text-[10px] ml-auto opacity-80">{formatDuration(timeline.tempoFila)}</span>
           )}
         </div>
       )}
 
-      {/* Milestone timeline */}
-      {timeline.milestones.length > 0 && (
-        <div className="space-y-0">
-          {timeline.milestones.map((m, i) => (
-            <div key={i} className="flex items-start gap-3 relative">
-              {/* Vertical line */}
-              {i < timeline.milestones.length - 1 && (
-                <div className="absolute left-[7px] top-[18px] w-px h-[calc(100%)] bg-border/60" />
-              )}
-              <div className={`w-[15px] h-[15px] rounded-full border-2 shrink-0 mt-0.5 z-10 ${
-                m.role === "bot" ? "border-muted-foreground bg-muted" :
-                m.role === "atendente" ? "border-accent bg-accent/20" :
-                m.role === "cliente" ? "border-primary bg-primary/20" :
-                "border-border bg-background"
-              }`} />
-              <div className="pb-3 min-w-0">
-                <p className="text-[11px] font-semibold text-foreground leading-tight">{m.label}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  {m.time && (
-                    <span className="text-[10px] text-muted-foreground font-mono">{m.time}</span>
-                  )}
-                  {m.speaker && (
-                    <span className="text-[10px] text-muted-foreground truncate">{m.speaker}</span>
-                  )}
-                </div>
-              </div>
+      {/* URA difficulty alert */}
+      {timeline.difficultyAlert?.detected && (
+        <div className="flex items-start gap-2 rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-2">
+          <Zap className="h-3.5 w-3.5 text-orange-600 mt-0.5 shrink-0" />
+          <div>
+            <span className="text-[11px] font-semibold text-orange-700">Dificuldade na URA detectada</span>
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {timeline.difficultyAlert.reasons.map((r, i) => (
+                <span key={i} className="text-[10px] text-orange-600/80 bg-orange-500/10 rounded px-1.5 py-0.5">
+                  {r}
+                </span>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       )}
 
@@ -141,11 +134,67 @@ function TimeMetric({ label, seconds, alert }: { label: string; seconds?: number
       alert && alert !== "ok" ? ALERT_COLORS[alert] : "border-border/40 bg-background/50"
     }`}>
       <p className="text-[10px] text-muted-foreground font-medium mb-0.5">{label}</p>
-      <p className={`text-sm font-bold ${
-        alert && alert !== "ok" ? "" : "text-foreground"
-      }`}>
+      <p className={`text-sm font-bold ${alert && alert !== "ok" ? "" : "text-foreground"}`}>
         {seconds !== undefined ? formatDuration(seconds) : "—"}
       </p>
+    </div>
+  );
+}
+
+/* ─── Chronological Timeline ────────────────────────────────────── */
+
+function ChronologicalTimeline({ milestones }: { milestones: JourneyMilestone[] }) {
+  if (milestones.length === 0) return null;
+
+  return (
+    <div className="rounded-xl border border-border/50 bg-muted/10 p-4 space-y-0">
+      <div className="flex items-center gap-2 mb-3">
+        <Milestone className="h-3.5 w-3.5 text-primary" />
+        <span className="text-[11px] font-bold text-foreground uppercase tracking-wide">
+          Linha do Tempo
+        </span>
+        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 ml-1">
+          {milestones.length} etapas
+        </Badge>
+      </div>
+
+      {milestones.map((m, i) => {
+        const colors = MILESTONE_ICON_COLORS[m.type || "generic"] || MILESTONE_ICON_COLORS.generic;
+        const isLast = i === milestones.length - 1;
+        const isHuman = m.type === "human_start";
+        const isInvalid = m.type === "invalid_option";
+
+        return (
+          <div key={i} className="flex items-start gap-3 relative">
+            {/* Vertical connector */}
+            {!isLast && (
+              <div className="absolute left-[7px] top-[18px] w-px h-[calc(100%)] bg-border/50" />
+            )}
+
+            {/* Dot */}
+            <div className={`w-[15px] h-[15px] rounded-full border-2 shrink-0 mt-0.5 z-10 ${colors.border} ${colors.bg} ${
+              isHuman ? "ring-2 ring-accent/30" : ""
+            }`} />
+
+            {/* Content */}
+            <div className={`pb-3 min-w-0 flex-1 ${isInvalid ? "opacity-80" : ""}`}>
+              <p className={`text-[11px] font-semibold leading-tight ${
+                isHuman ? "text-accent" : isInvalid ? "text-destructive" : "text-foreground"
+              }`}>
+                {m.label}
+              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                {m.time && (
+                  <span className="text-[10px] text-muted-foreground font-mono">{m.time}</span>
+                )}
+                {m.speaker && m.type !== "human_start" && (
+                  <span className="text-[10px] text-muted-foreground truncate">{m.speaker}</span>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -153,7 +202,7 @@ function TimeMetric({ label, seconds, alert }: { label: string; seconds?: number
 /* ─── Main Dialog ───────────────────────────────────────────────── */
 
 const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContextDialogProps) => {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["jornada_resumo", "fluxo", "jornada", "eventos"]));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["detalhes"]));
 
   const uraContext = useMemo(() => {
     if (!rawText) return null;
@@ -169,24 +218,19 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
     if (!uraContext || uraContext.status === "no_ura") return [];
 
     const fluxoItems: { label: string; value: string }[] = [];
-    const jornadaItems: { label: string; value: string }[] = [];
     const eventosItems: { label: string; value: string }[] = [];
 
     for (const item of uraContext.items) {
       const label = item.label.toLowerCase();
-      if (label.includes("protocolo") || label.includes("entrada") || label.includes("autenticação")) {
+      if (label.includes("protocolo") || label.includes("remetente") || label.includes("saudação") || label.includes("autenticação")) {
         fluxoItems.push(item);
-      } else if (label.includes("opção") || label.includes("menu") || label.includes("motivo") || label.includes("caminho")) {
-        jornadaItems.push(item);
       } else {
         eventosItems.push(item);
       }
     }
 
     return [
-      { title: "Identificação do Fluxo", icon: Phone, items: fluxoItems },
-      { title: "Jornada do Cliente", icon: Route, items: jornadaItems },
-      { title: "Eventos Relevantes", icon: AlertTriangle, items: eventosItems },
+      { title: "Detalhes Identificados", icon: Route, items: [...fluxoItems, ...eventosItems] },
     ].filter(s => s.items.length > 0);
   }, [uraContext]);
 
@@ -198,7 +242,6 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
     });
   };
 
-  const sectionKeys = ["fluxo", "jornada", "eventos"];
   const status = uraContext?.status || "no_ura";
   const cfg = STATUS_CONFIG[status];
   const StatusIcon = cfg.icon;
@@ -229,7 +272,7 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
 
         <ScrollArea className="max-h-[calc(80vh-72px)]">
           <div className="p-6 space-y-3">
-            {/* Missing raw text — data integrity issue */}
+            {/* Missing raw text */}
             {!rawText && (
               <div className="flex flex-col items-center text-center py-10">
                 <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-3">
@@ -255,7 +298,7 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
               </div>
             )}
 
-            {/* URA only — no human agent */}
+            {/* URA only */}
             {status === "ura_only" && (
               <div className="flex flex-col items-center text-center py-6 mb-3">
                 <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center mb-3">
@@ -263,12 +306,12 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
                 </div>
                 <p className="text-sm font-semibold text-foreground">URA sem atendente</p>
                 <p className="text-xs text-muted-foreground/70 mt-1 max-w-xs">
-                  Este atendimento foi composto apenas por mensagens automáticas. Nenhum atendente humano foi identificado.
+                  Este atendimento foi composto apenas por mensagens automáticas.
                 </p>
               </div>
             )}
 
-            {/* Ambiguous URA */}
+            {/* Ambiguous */}
             {status === "ura_ambiguous" && (
               <div className="flex flex-col items-center text-center py-6 mb-3">
                 <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
@@ -276,16 +319,21 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
                 </div>
                 <p className="text-sm font-semibold text-foreground">URA não identificada com segurança</p>
                 <p className="text-xs text-muted-foreground/70 mt-1 max-w-xs">
-                  Foram detectadas mensagens automáticas, mas não foi possível classificar o fluxo da URA com precisão.
+                  Foram detectadas mensagens automáticas, mas não foi possível classificar o fluxo com precisão.
                 </p>
               </div>
             )}
 
-            {/* Data sections — for with_ura, ura_only, ura_ambiguous with items */}
+            {/* Data sections — with_ura, ura_only, ura_ambiguous */}
             {(status === "with_ura" || ((status === "ura_only" || status === "ura_ambiguous") && hasData)) && (
               <>
-                {/* ★ Journey Summary — new section */}
+                {/* Journey Summary */}
                 {showJourney && <JourneySummary timeline={timeline!} />}
+
+                {/* Chronological Timeline */}
+                {showJourney && timeline!.milestones.length > 0 && (
+                  <ChronologicalTimeline milestones={timeline!.milestones} />
+                )}
 
                 {/* Summary badges */}
                 <div className="flex flex-wrap gap-2 mb-2">
@@ -311,13 +359,13 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
                   )}
                 </div>
 
-                {/* Collapsible sections */}
+                {/* Collapsible detail sections */}
                 {sections.map((section, idx) => {
-                  const key = sectionKeys[idx] || `section-${idx}`;
-                  const isOpen = expandedSections.has(key);
+                  const key = `detalhes-${idx}`;
+                  const isOpen = expandedSections.has("detalhes");
                   const Icon = section.icon;
                   return (
-                    <Collapsible key={key} open={isOpen} onOpenChange={() => toggleSection(key)}>
+                    <Collapsible key={key} open={isOpen} onOpenChange={() => toggleSection("detalhes")}>
                       <CollapsibleTrigger className="flex items-center gap-2 w-full rounded-xl border border-border/50 bg-muted/10 px-4 py-2.5 hover:bg-muted/20 transition-colors">
                         <Icon className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="text-[11px] font-bold text-foreground uppercase tracking-wide">
@@ -352,7 +400,7 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
               </>
             )}
 
-            {/* with_ura but no extracted data */}
+            {/* with_ura but no data */}
             {status === "with_ura" && !hasData && !showJourney && (
               <div className="flex flex-col items-center text-center py-10">
                 <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
