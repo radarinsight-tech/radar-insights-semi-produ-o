@@ -1704,6 +1704,15 @@ const MentoriaLab = () => {
         atendente={mentoriaFile?.atendente}
         structuredConversation={mentoriaFile?.structuredConversation}
       />
+      {/* Parser Diagnostic Dialog (admin-only) */}
+      <ParserDiagnosticDialog
+        open={!!diagnosticFile}
+        onOpenChange={() => setDiagnosticFile(null)}
+        rawText={diagnosticFile?.text}
+        atendente={diagnosticFile?.atendente}
+        protocolo={diagnosticFile?.protocolo}
+        preParsedMessages={diagnosticFile?.structuredConversation?.messages}
+      />
     </div>
   );
 };
