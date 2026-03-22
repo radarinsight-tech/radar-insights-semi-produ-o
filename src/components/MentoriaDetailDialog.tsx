@@ -572,6 +572,19 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
 
           </div>
         </ScrollArea>
+          </TabsContent>
+
+          {/* ═══ TAB: PRÉ-ANÁLISE ═══ */}
+          {preAnalysis && (
+            <TabsContent value="pre-analise" className="flex-1 min-h-0 m-0">
+              <ScrollArea className="max-h-[calc(96vh-140px)]">
+                <div className="px-8 py-8">
+                  <PreAnalysisPanel analysis={preAnalysis} />
+                </div>
+              </ScrollArea>
+            </TabsContent>
+          )}
+        </Tabs>
       </DialogContent>
       <UraContextDialog open={uraOpen} onOpenChange={setUraOpen} rawText={rawText} atendente={atendente} structuredConversation={structuredConversation} />
     </Dialog>
