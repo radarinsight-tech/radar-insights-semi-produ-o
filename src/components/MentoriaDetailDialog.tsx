@@ -1,16 +1,21 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import { calcularBonus, formatBRL, notaToScale10, formatDateBR } from "@/lib/utils";
 import type { StructuredConversation } from "@/lib/conversationParser";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   CheckCircle2, XCircle, MinusCircle, ShieldAlert,
   MessageSquareQuote, Printer, X, Award, TrendingUp, AlertTriangle, Lightbulb,
-  User, Calendar, FileText, Hash, Radio
+  User, Calendar, FileText, Hash, Radio, Sparkles
 } from "lucide-react";
 import UraContextDialog from "@/components/UraContextDialog";
+import PreAnalysisPanel from "@/components/PreAnalysisPanel";
+import { runPreAnalysis, type PreAnalysisResult } from "@/lib/mentoriaPreAnalysis";
+import type { UraContext } from "@/lib/uraContextSummarizer";
+import { extractUraContext } from "@/lib/conversationParser";
 
 interface CriterioAvaliacao {
   numero: number;
