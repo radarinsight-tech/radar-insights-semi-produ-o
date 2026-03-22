@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { extractUraContext } from "@/lib/conversationParser";
 import { buildJourneyTimeline, formatDuration, type JourneyTimeline, type JourneyMilestone } from "@/lib/uraJourneyTimeline";
+import type { ParsedMessage, StructuredConversation } from "@/lib/conversationParser";
 import type { UraContext, UraStatus } from "@/lib/uraContextSummarizer";
 
 interface UraContextDialogProps {
