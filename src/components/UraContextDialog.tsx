@@ -102,8 +102,21 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
 
         <ScrollArea className="max-h-[calc(80vh-72px)]">
           <div className="p-6 space-y-3">
+            {/* Missing raw text — data integrity issue */}
+            {!rawText && (
+              <div className="flex flex-col items-center text-center py-10">
+                <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-3">
+                  <AlertTriangle className="h-5 w-5 text-destructive/60" />
+                </div>
+                <p className="text-sm font-semibold text-foreground">Texto do atendimento indisponível</p>
+                <p className="text-xs text-muted-foreground/70 mt-1 max-w-xs">
+                  O conteúdo bruto do PDF não foi encontrado. Reimporte o arquivo para restaurar os dados do atendimento.
+                </p>
+              </div>
+            )}
+
             {/* No URA — human-only */}
-            {status === "no_ura" && (
+            {rawText && status === "no_ura" && (
               <div className="flex flex-col items-center text-center py-10">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
                   <Phone className="h-5 w-5 text-primary/60" />

@@ -207,6 +207,17 @@ const MentoriaLab = () => {
           else if (bf.status === "read") fileStatus = "lido";
           else if (bf.status === "error") fileStatus = "erro";
 
+          // Restore raw text from DB for report and URA context
+          const rawText = (bf as any).extracted_text as string | undefined;
+
+          // Recompute URA context from persisted raw text
+          let uraCtx: UraContext | undefined;
+          if (rawText) {
+            try {
+              uraCtx = extractUraContext(rawText, bf.atendente || undefined);
+            } catch { /* non-blocking */ }
+          }
+
           return {
             id: bf.id,
             file: new File([], bf.file_name, { type: "application/pdf" }),
@@ -214,6 +225,7 @@ const MentoriaLab = () => {
             size: bf.file_size || 0,
             addedAt: new Date(bf.created_at),
             status: fileStatus,
+            text: rawText || undefined,
             atendente: bf.atendente || undefined,
             protocolo: bf.protocolo || undefined,
             data: bf.data_atendimento || undefined,
@@ -230,6 +242,8 @@ const MentoriaLab = () => {
             ineligibleReason,
             approvedAsOfficial: matchedEval?.resultado_validado === true,
             evaluationId: matchedEval?.id,
+            uraContext: uraCtx,
+            uraStatus: uraCtx?.status,
           } as LabFile;
         });
 
@@ -300,7 +314,7 @@ const MentoriaLab = () => {
         )
       );
 
-      // Sync to DB
+      // Sync to DB (including raw text for persistence)
       if (labFile.batchFileId) {
         await supabase.from("mentoria_batch_files").update({
           status: "read",
@@ -309,6 +323,7 @@ const MentoriaLab = () => {
           data_atendimento: metadata.data,
           canal: metadata.canal,
           has_audio: metadata.hasAudio,
+          extracted_text: text,
         } as any).eq("id", labFile.batchFileId);
       }
     } catch {
@@ -1625,6 +1640,12 @@ const MentoriaLab = () => {
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground mb-2">Conteúdo do atendimento</p>
                   <ConversationView rawText={sideFile.text} atendente={sideFile.atendente} />
+                </div>
+              )}
+              {!sideFile.text && sideFile.status !== "pendente" && !readingIds.has(sideFile.id) && !sideFile.error && (
+                <div className="text-center py-6">
+                  <AlertTriangle className="h-5 w-5 text-warning mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground">Texto do atendimento indisponível. Reimporte o arquivo para restaurar.</p>
                 </div>
               )}
 
