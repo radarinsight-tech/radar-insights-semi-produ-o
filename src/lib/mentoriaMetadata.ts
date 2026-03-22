@@ -37,6 +37,13 @@ export function extractCanal(text: string): string {
 // ── Áudio ──────────────────────────────────────────────────────────────
 export function detectAudio(text: string): boolean {
   const lower = text.toLowerCase();
+  // Explicit audio file markers
+  if (/\.mp3|\.wav|\.ogg|\.m4a|\.opus|\.aac/i.test(lower)) return true;
+  if (/gravacao_de_voz|gravação_de_voz|mensagem_de_voz/i.test(lower)) return true;
+  if (/download\s+de\s+[aá]udio/i.test(lower)) return true;
+  if (/mensagem\s+de\s+voz/i.test(lower)) return true;
+  if (/\b[aá]udio\s+(enviado|recebido|anexado|detectado)\b/i.test(lower)) return true;
+  // General audio keywords
   return /\b(áudio|audio|gravação|gravacao|escuta|ligação|ligacao|chamada)\b/.test(lower);
 }
 
