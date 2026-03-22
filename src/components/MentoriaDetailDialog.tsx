@@ -98,7 +98,7 @@ const findRelevantExcerpt = (rawText: string | undefined, explicacao: string): s
   return null;
 };
 
-const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente }: MentoriaDetailDialogProps) => {
+const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation }: MentoriaDetailDialogProps) => {
   const [uraOpen, setUraOpen] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -535,7 +535,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           </div>
         </ScrollArea>
       </DialogContent>
-      <UraContextDialog open={uraOpen} onOpenChange={setUraOpen} rawText={rawText} atendente={atendente} />
+      <UraContextDialog open={uraOpen} onOpenChange={setUraOpen} rawText={rawText} atendente={atendente} structuredConversation={structuredConversation} />
     </Dialog>
   );
 };
