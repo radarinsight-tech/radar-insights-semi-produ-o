@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { normalizeRawText, parseStructuredConversation, type ParsedMessage, type StructuredConversation } from "@/lib/conversationParser";
+import { normalizeRawText, parseStructuredConversation, extractUraContext, type ParsedMessage, type StructuredConversation } from "@/lib/conversationParser";
 import { classifyMessages, type ClassifiedMessage } from "@/lib/messageClassifier";
 import { buildJourneyTimeline, type JourneyMilestone } from "@/lib/uraJourneyTimeline";
 import { AlertTriangle, CheckCircle2, Clock, MessageSquare, Bot, User, Headphones, HelpCircle } from "lucide-react";
