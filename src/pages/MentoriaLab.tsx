@@ -207,6 +207,17 @@ const MentoriaLab = () => {
           else if (bf.status === "read") fileStatus = "lido";
           else if (bf.status === "error") fileStatus = "erro";
 
+          // Restore raw text from DB for report and URA context
+          const rawText = (bf as any).extracted_text as string | undefined;
+
+          // Recompute URA context from persisted raw text
+          let uraCtx: UraContext | undefined;
+          if (rawText) {
+            try {
+              uraCtx = extractUraContext(rawText, bf.atendente || undefined);
+            } catch { /* non-blocking */ }
+          }
+
           return {
             id: bf.id,
             file: new File([], bf.file_name, { type: "application/pdf" }),
@@ -214,6 +225,7 @@ const MentoriaLab = () => {
             size: bf.file_size || 0,
             addedAt: new Date(bf.created_at),
             status: fileStatus,
+            text: rawText || undefined,
             atendente: bf.atendente || undefined,
             protocolo: bf.protocolo || undefined,
             data: bf.data_atendimento || undefined,
@@ -230,6 +242,8 @@ const MentoriaLab = () => {
             ineligibleReason,
             approvedAsOfficial: matchedEval?.resultado_validado === true,
             evaluationId: matchedEval?.id,
+            uraContext: uraCtx,
+            uraStatus: uraCtx?.status,
           } as LabFile;
         });
 
@@ -300,7 +314,7 @@ const MentoriaLab = () => {
         )
       );
 
-      // Sync to DB
+      // Sync to DB (including raw text for persistence)
       if (labFile.batchFileId) {
         await supabase.from("mentoria_batch_files").update({
           status: "read",
@@ -309,6 +323,7 @@ const MentoriaLab = () => {
           data_atendimento: metadata.data,
           canal: metadata.canal,
           has_audio: metadata.hasAudio,
+          extracted_text: text,
         } as any).eq("id", labFile.batchFileId);
       }
     } catch {
