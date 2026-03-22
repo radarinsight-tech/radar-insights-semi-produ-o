@@ -1348,18 +1348,30 @@ const MentoriaLab = () => {
                               {readingIds.has(f.id) ? <Loader2 className="h-3 w-3 animate-spin inline mr-1" /> : null}
                               {f.atendente || <span className="italic text-muted-foreground opacity-60">Não identificado</span>}
                             </p>
-                            <div className="flex items-center gap-1 mt-0.5">
+                            <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                               <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">{f.name}</p>
                               {f.transferred && (
                                 <Badge className="bg-blue-100 text-blue-700 text-[9px] px-1 py-0 shrink-0">Transferido</Badge>
                               )}
                               {f.attendantMatch && !f.attendantMatch.matched && f.atendente && (
-                                <Badge className="bg-warning/15 text-warning text-[9px] px-1 py-0 shrink-0">Não identificado</Badge>
+                                <Badge className="bg-warning/15 text-warning text-[9px] px-1 py-0 shrink-0">Não cadastrado</Badge>
                               )}
-                              {f.attendantMatch?.matched && f.attendantMatch.evaluationStatus === "evaluable" && (
+                              {f.attendantMatch?.matched && f.attendantMatch.matchConfidence === "first_name" && (
+                                <Badge className="bg-orange-100 text-orange-700 text-[9px] px-1 py-0 shrink-0">Revisar</Badge>
+                              )}
+                              {f.attendantMatch?.matched && f.attendantMatch.matchConfidence === "partial" && (
+                                <Badge className="bg-sky-100 text-sky-700 text-[9px] px-1 py-0 shrink-0">Parcial</Badge>
+                              )}
+                              {f.attendantMatch?.matched && f.attendantMatch.matchConfidence === "exact" && f.attendantMatch.evaluationStatus === "evaluable" && (
                                 <Badge className="bg-emerald-500/10 text-emerald-600 text-[9px] px-1 py-0 shrink-0">Avaliável</Badge>
                               )}
-                              {f.attendantMatch?.matched && f.attendantMatch.evaluationStatus === "outside_main_ruler" && (
+                              {f.attendantMatch?.matched && f.attendantMatch.matchConfidence === "exact" && f.attendantMatch.evaluationStatus === "outside_main_ruler" && (
+                                <Badge className="bg-amber-500/10 text-amber-600 text-[9px] px-1 py-0 shrink-0">Fora da régua</Badge>
+                              )}
+                              {f.attendantMatch?.matched && (f.attendantMatch.matchConfidence === "partial" || f.attendantMatch.matchConfidence === "first_name") && f.attendantMatch.evaluationStatus === "evaluable" && (
+                                <Badge className="bg-emerald-500/10 text-emerald-600 text-[9px] px-1 py-0 shrink-0">Avaliável</Badge>
+                              )}
+                              {f.attendantMatch?.matched && (f.attendantMatch.matchConfidence === "partial" || f.attendantMatch.matchConfidence === "first_name") && f.attendantMatch.evaluationStatus === "outside_main_ruler" && (
                                 <Badge className="bg-amber-500/10 text-amber-600 text-[9px] px-1 py-0 shrink-0">Fora da régua</Badge>
                               )}
                             </div>
