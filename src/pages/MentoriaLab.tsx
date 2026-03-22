@@ -28,6 +28,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn, formatDateBR, notaToScale10, formatNota } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
+import { parseStructuredConversation, type StructuredConversation } from "@/lib/conversationParser";
 import logoSymbol from "@/assets/logo-symbol.png";
 import { toast } from "sonner";
 import MentoriaInsights from "@/components/MentoriaInsights";
