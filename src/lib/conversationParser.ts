@@ -276,10 +276,82 @@ function parseBlockFormat(text: string, atendente?: string): ParsedMessage[] {
     });
   }
 
+  // Post-process: if no atendente hint provided, infer roles from conversation flow
+  if (!atendente && messages.length >= 2) {
+    inferRoles(messages);
+  }
+
   return messages;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────
+
+/**
+ * Infer roles when no atendente hint is given.
+ * In OPA conversations: Marte=bot, client speaks first (non-bot),
+ * atendente appears after a transfer/assumes the conversation.
+ */
+function inferRoles(messages: ParsedMessage[]): void {
+  // Find unique non-bot speakers
+  const nonBotSpeakers = new Set<string>();
+  for (const m of messages) {
+    if (m.role !== "bot" && m.role !== "sistema") {
+      nonBotSpeakers.add(m.speaker.toLowerCase().trim());
+    }
+  }
+
+  if (nonBotSpeakers.size < 2) return; // Can't differentiate
+
+  // Find the transfer point — after transfer, the new speaker is the atendente
+  let transferIdx = -1;
+  for (let i = 0; i < messages.length; i++) {
+    if (messages[i].role === "bot" &&
+        /transferi|encaminha|assumiu|será\s+transferido/i.test(messages[i].text)) {
+      transferIdx = i;
+    }
+  }
+
+  if (transferIdx >= 0) {
+    // Find first non-bot speaker after transfer — that's the atendente
+    for (let i = transferIdx + 1; i < messages.length; i++) {
+      if (messages[i].role !== "bot" && messages[i].role !== "sistema") {
+        const atendenteName = messages[i].speaker.toLowerCase().trim();
+        // Re-assign all messages from this speaker as atendente
+        for (const m of messages) {
+          if (m.speaker.toLowerCase().trim() === atendenteName) {
+            m.role = "atendente";
+          }
+        }
+        // Everyone else non-bot is client
+        for (const m of messages) {
+          if (m.role !== "bot" && m.role !== "sistema" && m.role !== "atendente") {
+            m.role = "cliente";
+          }
+        }
+        return;
+      }
+    }
+  }
+
+  // No transfer found — first non-bot speaker is likely client, second is atendente
+  const speakerOrder: string[] = [];
+  for (const m of messages) {
+    const key = m.speaker.toLowerCase().trim();
+    if (m.role !== "bot" && m.role !== "sistema" && !speakerOrder.includes(key)) {
+      speakerOrder.push(key);
+    }
+  }
+
+  if (speakerOrder.length >= 2) {
+    const clientName = speakerOrder[0];
+    const atendenteName = speakerOrder[1];
+    for (const m of messages) {
+      const key = m.speaker.toLowerCase().trim();
+      if (key === clientName) m.role = "cliente";
+      else if (key === atendenteName) m.role = "atendente";
+    }
+  }
+}
 
 function determineRole(speaker: string, atendente?: string): "atendente" | "cliente" | "bot" | "sistema" {
   const lower = speaker.toLowerCase().trim();
