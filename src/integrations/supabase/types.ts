@@ -460,6 +460,7 @@ export type Database = {
           data_atendimento: string | null
           error_message: string | null
           extracted_path: string | null
+          extracted_text: string | null
           file_name: string
           file_path: string | null
           file_size: number | null
@@ -479,6 +480,7 @@ export type Database = {
           data_atendimento?: string | null
           error_message?: string | null
           extracted_path?: string | null
+          extracted_text?: string | null
           file_name: string
           file_path?: string | null
           file_size?: number | null
@@ -498,6 +500,7 @@ export type Database = {
           data_atendimento?: string | null
           error_message?: string | null
           extracted_path?: string | null
+          extracted_text?: string | null
           file_name?: string
           file_path?: string | null
           file_size?: number | null

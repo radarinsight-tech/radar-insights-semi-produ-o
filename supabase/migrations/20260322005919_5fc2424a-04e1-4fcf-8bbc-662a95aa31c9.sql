@@ -1,0 +1,1 @@
+ALTER TABLE public.mentoria_batch_files ADD COLUMN IF NOT EXISTS extracted_text text;
