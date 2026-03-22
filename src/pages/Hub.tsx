@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { LogOut, HeadsetIcon, CreditCard, Loader2, ShieldAlert, Users, FlaskConical, ShieldCheck, Users2, Trophy, ArrowRight, Sprout, Settings } from "lucide-react";
+import { LogOut, HeadsetIcon, CreditCard, Loader2, ShieldAlert, Users, FlaskConical, ShieldCheck, Users2, Trophy, ArrowRight, Sprout, Settings, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -131,6 +131,14 @@ const Hub = () => {
                       icon={<Trophy className="h-4.5 w-4.5 text-yellow-500" />}
                       iconBg="bg-yellow-500/10 group-hover:bg-yellow-500/15"
                       onClick={() => navigate("/ranking")}
+                    />
+                    <ModuleCard
+                      title="Performance & Insights"
+                      description="Visão gerencial com ranking, falhas recorrentes e evolução"
+                      icon={<BarChart3 className="h-4.5 w-4.5 text-indigo-500" />}
+                      iconBg="bg-indigo-500/10 group-hover:bg-indigo-500/15"
+                      onClick={() => navigate("/performance")}
+                      badge="Novo"
                     />
                   </div>
                 </section>

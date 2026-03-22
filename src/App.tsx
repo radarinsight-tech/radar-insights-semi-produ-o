@@ -19,6 +19,7 @@ import MentoriaLab from "./pages/MentoriaLab.tsx";
 import MentoriaPreventiva from "./pages/MentoriaPreventiva.tsx";
 import Atendentes from "./pages/Atendentes.tsx";
 import RankingBonus from "./pages/RankingBonus.tsx";
+import PerformanceDashboard from "./pages/PerformanceDashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AppModeBanner from "./components/AppModeBanner.tsx";
 
@@ -128,6 +129,16 @@ const App = () => (
               <ProtectedRoute>
                 <ModuleGuard module="auditoria">
                   <RankingBonus />
+                </ModuleGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/performance"
+            element={
+              <ProtectedRoute>
+                <ModuleGuard module="auditoria">
+                  <PerformanceDashboard />
                 </ModuleGuard>
               </ProtectedRoute>
             }
