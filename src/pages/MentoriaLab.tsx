@@ -1512,6 +1512,23 @@ const MentoriaLab = () => {
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
+                            {isAdmin && (
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-muted-foreground"
+                                      onClick={() => setDiagnosticFile(f)}
+                                    >
+                                      <Bug className="h-3 w-3" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent><p className="text-xs">Diagnóstico do parser</p></TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
                           </div>
                         </td>
                       </tr>
