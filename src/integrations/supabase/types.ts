@@ -467,6 +467,7 @@ export type Database = {
           has_audio: boolean | null
           id: string
           nota: number | null
+          parsed_messages: Json | null
           protocolo: string | null
           result: Json | null
           status: string
@@ -487,6 +488,7 @@ export type Database = {
           has_audio?: boolean | null
           id?: string
           nota?: number | null
+          parsed_messages?: Json | null
           protocolo?: string | null
           result?: Json | null
           status?: string
@@ -507,6 +509,7 @@ export type Database = {
           has_audio?: boolean | null
           id?: string
           nota?: number | null
+          parsed_messages?: Json | null
           protocolo?: string | null
           result?: Json | null
           status?: string
