@@ -91,14 +91,19 @@ const HistoryTable = ({ entries, onRefresh }: Props) => {
       const { data, error } = await supabase.functions.invoke("delete-evaluation", {
         body: { evaluationId: deleteTarget.id },
       });
-      if (error || data?.error) {
-        toast.error(data?.error || "Erro ao excluir avaliação.");
+      if (error) {
+        console.error("delete-evaluation invoke error:", error);
+        toast.error(`Erro ao excluir avaliação: ${error.message}`);
+      } else if (data?.error) {
+        console.error("delete-evaluation server error:", data);
+        toast.error(data.error + (data.details ? ` (${data.details})` : ""));
       } else {
         toast.success("Avaliação excluída com sucesso.");
         onRefresh?.();
       }
-    } catch {
-      toast.error("Erro ao excluir avaliação.");
+    } catch (e: any) {
+      console.error("delete-evaluation unexpected error:", e);
+      toast.error(`Erro inesperado: ${e?.message || "desconhecido"}`);
     } finally {
       setDeleting(false);
       setDeleteTarget(null);

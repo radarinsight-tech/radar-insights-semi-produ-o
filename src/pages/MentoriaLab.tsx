@@ -988,6 +988,9 @@ const MentoriaLab = () => {
           </h1>
           <Badge variant="outline" className="ml-2 text-xs">Beta</Badge>
           <div className="ml-auto flex items-center gap-1">
+            <Button variant="outline" size="sm" onClick={() => navigate("/avaliacoes-oficiais")}>
+              <ShieldCheck className="h-4 w-4" /> Avaliações Oficiais
+            </Button>
             {isAdmin && (
               <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowClearConfirm(true)}>
                 <Trash2 className="h-4 w-4" /> Limpar dados
