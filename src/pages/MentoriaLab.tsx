@@ -91,6 +91,7 @@ interface LabFile {
   evaluationId?: string;
   uraContext?: UraContext;
   uraStatus?: UraStatus;
+  structuredConversation?: StructuredConversation;
 }
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
