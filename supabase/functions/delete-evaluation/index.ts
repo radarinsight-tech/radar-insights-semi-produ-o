@@ -60,18 +60,35 @@ serve(async (req) => {
       });
     }
 
-    // Get evaluation to find PDF path
+    // Get evaluation to find PDF path and check status
     const { data: evaluation, error: fetchError } = await adminClient
       .from("evaluations")
-      .select("pdf_url")
+      .select("pdf_url, resultado_validado")
       .eq("id", evaluationId)
       .maybeSingle();
 
     if (fetchError || !evaluation) {
-      return new Response(JSON.stringify({ error: "Avaliação não encontrada" }), {
+      console.error("Fetch evaluation error:", fetchError);
+      return new Response(JSON.stringify({ error: "Avaliação não encontrada", details: fetchError?.message }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // If official (validated), un-validate first to bypass the trigger
+    if (evaluation.resultado_validado) {
+      const { error: unvalidateError } = await adminClient
+        .from("evaluations")
+        .update({ resultado_validado: false })
+        .eq("id", evaluationId);
+
+      if (unvalidateError) {
+        console.error("Unvalidate error:", unvalidateError);
+        return new Response(JSON.stringify({ error: "Erro ao desvalidar avaliação antes da exclusão", details: unvalidateError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Delete PDF from storage if exists
@@ -89,7 +106,8 @@ serve(async (req) => {
       .eq("id", evaluationId);
 
     if (deleteError) {
-      return new Response(JSON.stringify({ error: "Erro ao excluir avaliação" }), {
+      console.error("Delete evaluation error:", deleteError);
+      return new Response(JSON.stringify({ error: "Erro ao excluir avaliação", details: deleteError.message }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
