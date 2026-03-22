@@ -185,6 +185,34 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
               </div>
             )}
 
+            {/* URA State Classification */}
+            {diagnostic.uraContext && (
+              <div className={`p-3 rounded-lg border ${
+                diagnostic.uraContext.status === "ura_valid" ? "bg-accent/10 border-accent/20" :
+                diagnostic.uraContext.status === "ura_irrelevant" ? "bg-muted/30 border-border" :
+                "bg-primary/5 border-primary/20"
+              }`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-semibold text-foreground">Estado URA:</span>
+                  <Badge className={
+                    diagnostic.uraContext.status === "ura_valid" ? "bg-accent/20 text-accent" :
+                    diagnostic.uraContext.status === "ura_irrelevant" ? "bg-muted text-muted-foreground" :
+                    "bg-primary/15 text-primary"
+                  }>
+                    {diagnostic.uraContext.status === "ura_valid" ? "✅ URA válida" :
+                     diagnostic.uraContext.status === "ura_irrelevant" ? "ℹ️ URA irrelevante" :
+                     "📞 Sem URA"}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">{diagnostic.uraContext.statusReason}</p>
+                {summary.preHumanBotCount !== undefined && (
+                  <p className="text-[10px] text-muted-foreground/70 mt-1">
+                    Bot pré-humano: {summary.preHumanBotCount} | Bot pós-humano: {summary.postHumanBotCount}
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Technical summary */}
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-2">Resumo Técnico</h3>
@@ -194,6 +222,8 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
                   { label: "Normalizado", value: summary.normalized ? "✅ Sim" : "— Não" },
                   { label: "Total mensagens", value: summary.totalMessages },
                   { label: "Msgs URA/Bot", value: summary.uraCount },
+                  { label: "Bot pré-humano", value: summary.preHumanBotCount },
+                  { label: "Bot pós-humano", value: summary.postHumanBotCount },
                   { label: "Msgs Cliente", value: summary.clienteCount },
                   { label: "Msgs Atendente", value: summary.atendenteCount },
                   { label: "Timestamps válidos", value: `${summary.validTimestamps}/${summary.totalMessages}` },
