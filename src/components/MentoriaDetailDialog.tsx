@@ -105,7 +105,20 @@ const findRelevantExcerpt = (rawText: string | undefined, explicacao: string): s
 
 const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation }: MentoriaDetailDialogProps) => {
   const [uraOpen, setUraOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("relatorio");
   const printRef = useRef<HTMLDivElement>(null);
+
+  // Pre-analysis: run once when conversation is available
+  const preAnalysis: PreAnalysisResult | null = useMemo(() => {
+    if (!structuredConversation || structuredConversation.messages.length < 2) return null;
+    try {
+      let uraCtx: UraContext | undefined;
+      if (rawText) {
+        try { uraCtx = extractUraContext(rawText, atendente); } catch { /* non-blocking */ }
+      }
+      return runPreAnalysis(structuredConversation, uraCtx);
+    } catch { return null; }
+  }, [structuredConversation, rawText, atendente]);
 
   if (!result) return null;
 
