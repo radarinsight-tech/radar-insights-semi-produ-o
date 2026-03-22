@@ -298,6 +298,12 @@ const MentoriaLab = () => {
         }
       } catch { /* non-blocking */ }
 
+      // Parse structured conversation
+      let structured: StructuredConversation | undefined;
+      try {
+        structured = parseStructuredConversation(text, metadata.atendente);
+      } catch { /* non-blocking */ }
+
       // Compute URA context during import
       let uraCtx: UraContext | undefined;
       try {
@@ -311,12 +317,12 @@ const MentoriaLab = () => {
       setFiles((prev) =>
         prev.map((f) =>
           f.id === labFile.id
-            ? { ...f, status: "lido", text, ...metadata, attendantMatch: attendantMatchResult, transferred: attendantMatchResult?.transferred, uraContext: uraCtx, uraStatus: uraCtx?.status }
+            ? { ...f, status: "lido", text, ...metadata, attendantMatch: attendantMatchResult, transferred: attendantMatchResult?.transferred, uraContext: uraCtx, uraStatus: uraCtx?.status, structuredConversation: structured }
             : f
         )
       );
 
-      // Sync to DB (including raw text for persistence)
+      // Sync to DB (including raw text and structured messages for persistence)
       if (labFile.batchFileId) {
         await supabase.from("mentoria_batch_files").update({
           status: "read",
@@ -326,6 +332,7 @@ const MentoriaLab = () => {
           canal: metadata.canal,
           has_audio: metadata.hasAudio,
           extracted_text: text,
+          parsed_messages: structured ? JSON.parse(JSON.stringify(structured)) : null,
         } as any).eq("id", labFile.batchFileId);
       }
     } catch {
