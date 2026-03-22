@@ -61,6 +61,13 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
     const classified = messages.length >= 2 ? classifyMessages(messages) : [];
     const journey = buildJourneyTimeline(rawText, atendente, messages.length >= 2 ? messages : undefined);
 
+    // Step 3: Get URA context with state classification
+    const { extractUraContext } = require("@/lib/conversationParser");
+    let uraContext: { status: string; statusReason: string } | null = null;
+    try {
+      uraContext = extractUraContext(rawText, atendente);
+    } catch { /* ignore */ }
+
     // Build per-message diagnostic
     const msgDiag = messages.map((msg, i) => {
       const cls = classified[i] as ClassifiedMessage | undefined;
@@ -97,6 +104,15 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
     const validTimestamps = msgDiag.filter(m => m.isoTimestamp).length;
     const warnings = msgDiag.flatMap(m => m.warnings);
     const firstHuman = messages.find(m => m.role === "atendente");
+    const firstHumanIdx = messages.findIndex(m => m.role === "atendente");
+
+    // Pre/post human split
+    const preHumanBotCount = firstHumanIdx >= 0 
+      ? msgDiag.slice(0, firstHumanIdx).filter(m => m.role === "bot").length 
+      : uraCount;
+    const postHumanBotCount = firstHumanIdx >= 0 
+      ? msgDiag.slice(firstHumanIdx + 1).filter(m => m.role === "bot").length 
+      : 0;
 
     // Detect if raw text has URA signals but parser missed them
     const rawHasMarte = /\bmarte\b/i.test(rawText);
@@ -110,11 +126,14 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
       wasNormalized,
       messages: msgDiag,
       journey,
+      uraContext,
       summary: {
         format: structured.format,
         normalized: wasNormalized,
         totalMessages: messages.length,
         uraCount,
+        preHumanBotCount,
+        postHumanBotCount,
         clienteCount,
         atendenteCount,
         sistemaCount,
