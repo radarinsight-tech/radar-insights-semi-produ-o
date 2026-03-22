@@ -3,7 +3,7 @@
  * of the customer before human rescue, with bottleneck & difficulty alerts.
  */
 
-import { parseConversationText, type ParsedMessage } from "./conversationParser";
+import { parseConversationText, type ParsedMessage, type StructuredConversation } from "./conversationParser";
 
 export interface JourneyMilestone {
   label: string;
@@ -43,6 +43,12 @@ export interface JourneyTimeline {
 const BOT_SPEAKERS = /^(marte|bot|sistema|robô|robo|ura|automático|automatico|assistente\s*virtual|chatbot|especialista\s*virtual)\b/i;
 
 function parseTimestamp(msg: ParsedMessage): number | undefined {
+  // Prefer isoTimestamp if available
+  if (msg.isoTimestamp) {
+    const d = new Date(msg.isoTimestamp);
+    if (!isNaN(d.getTime())) return d.getTime();
+  }
+
   if (!msg.time) return undefined;
   const timeParts = msg.time.match(/(\d{2}):(\d{2})(?::(\d{2}))?/);
   if (!timeParts) return undefined;
