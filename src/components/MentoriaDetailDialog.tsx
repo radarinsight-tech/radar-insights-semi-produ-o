@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { calcularBonus, formatBRL, notaToScale10, formatDateBR } from "@/lib/utils";
+import type { StructuredConversation } from "@/lib/conversationParser";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ interface MentoriaDetailDialogProps {
   fileName: string;
   rawText?: string;
   atendente?: string;
+  structuredConversation?: StructuredConversation;
 }
 
 const CATEGORY_ORDER = [
