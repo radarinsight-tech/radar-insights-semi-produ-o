@@ -1,10 +1,15 @@
 /**
  * URA Context Summarizer — generates a structured summary of the URA interaction.
+ *
+ * Implements 3 MUTUALLY EXCLUSIVE states:
+ *  1. "ura_valid"      — real pre-attendance automation (Marte/bot BEFORE first human)
+ *  2. "ura_irrelevant"  — automation exists only AFTER the first human (e.g. survey)
+ *  3. "no_ura"          — no automation detected at all
  */
 
 import type { ClassifiedMessage } from "./messageClassifier";
 
-export type UraStatus = "with_ura" | "no_ura" | "ura_only" | "ura_ambiguous";
+export type UraStatus = "ura_valid" | "ura_irrelevant" | "no_ura";
 
 export interface UraContext {
   protocolo?: string;
@@ -17,32 +22,100 @@ export interface UraContext {
   audioDetectado?: boolean;
   items: { label: string; value: string }[];
   status: UraStatus;
+  /** Human-readable reason for the status decision */
+  statusReason: string;
+  /** Post-attendance automation items (surveys, reminders) */
+  postAttendanceItems?: { label: string; value: string }[];
 }
 
-export function summarizeUraContext(uraMessages: ClassifiedMessage[], allMessages: ClassifiedMessage[]): UraContext {
-  // Determine URA status
-  const hasUra = uraMessages.length > 0;
-  const humanMessages = allMessages.filter(m => m.category === "HUMANO" && m.role === "atendente");
-  const hasHuman = humanMessages.length > 0;
+// ─── URA event signals (pre-attendance) ──────────────────────────
+const PRE_ATTENDANCE_SIGNALS = [
+  /menu|opção|escolha|digite/i,
+  /cpf|cnpj|autenticação|informe.*número/i,
+  /descreva.*problema|motivo|assunto/i,
+  /transferindo|encaminhando|atendimento.*transferido|setor.*responsável/i,
+  /em\s+que\s+posso\s+(?:lhe\s+)?auxili/i,
+  /bem[- ]?vindo|sou\s+(?:seu|o)\s+especialista/i,
+  /opção\s+inválida/i,
+  /fila\s+de\s+atendimento|aguarde/i,
+];
+
+// ─── Post-attendance signals ─────────────────────────────────────
+const POST_ATTENDANCE_SIGNALS = [
+  /pesquisa\s+de\s+satisfação|avalie\s+(?:nosso|o)\s+atendimento/i,
+  /lembrete|pesquisa\s+não\s+respondida/i,
+  /nota\s+de\s+\d+\s+a\s+\d+/i,
+  /como\s+foi\s+(?:sua|a)\s+experiência/i,
+  /encerr(?:ado|amento)/i,
+];
+
+function matchesAny(text: string, patterns: RegExp[]): boolean {
+  return patterns.some(p => p.test(text));
+}
+
+export function summarizeUraContext(
+  allMessages: ClassifiedMessage[],
+): UraContext {
+  // ── Step 1: Find the first human attendant message ──────────────
+  const firstHumanIdx = allMessages.findIndex(
+    m => m.category === "HUMANO" && m.role === "atendente"
+  );
+
+  const preHumanMsgs = firstHumanIdx >= 0 ? allMessages.slice(0, firstHumanIdx) : allMessages;
+  const postHumanMsgs = firstHumanIdx >= 0 ? allMessages.slice(firstHumanIdx + 1) : [];
+
+  // ── Step 2: Identify bot messages BEFORE the first human ────────
+  const preUra = preHumanMsgs.filter(m => m.category === "URA");
+  const preUraWithSignals = preUra.filter(m => matchesAny(m.text, PRE_ATTENDANCE_SIGNALS));
+
+  // ── Step 3: Identify bot messages AFTER the first human ─────────
+  const postUra = postHumanMsgs.filter(m => m.category === "URA");
+  const postUraWithSignals = postUra.filter(m => matchesAny(m.text, POST_ATTENDANCE_SIGNALS));
+
+  // ── Step 4: Determine status ────────────────────────────────────
+  const hasPreUra = preUra.length > 0;
+  const hasPreUraSignals = preUraWithSignals.length > 0;
+  const hasPostUra = postUra.length > 0;
 
   let status: UraStatus;
-  if (!hasUra) {
+  let statusReason: string;
+
+  if (hasPreUra && (hasPreUraSignals || preUra.length >= 2)) {
+    status = "ura_valid";
+    statusReason = `${preUra.length} mensagem(ns) automática(s) antes do atendente humano, ${preUraWithSignals.length} com sinais de URA`;
+  } else if (!hasPreUra && hasPostUra) {
+    status = "ura_irrelevant";
+    statusReason = `Nenhuma automação pré-atendimento. ${postUra.length} mensagem(ns) automática(s) encontrada(s) apenas após o atendente humano (pesquisa/lembrete)`;
+  } else if (!hasPreUra && !hasPostUra) {
     status = "no_ura";
-  } else if (hasUra && !hasHuman) {
-    status = "ura_only";
-  } else if (hasUra && hasHuman) {
-    status = "with_ura";
+    statusReason = "Nenhuma mensagem automática (URA/bot) detectada no atendimento";
   } else {
-    status = "ura_ambiguous";
+    // hasPreUra but no signals and < 2 messages — single generic bot message
+    status = "no_ura";
+    statusReason = `${preUra.length} mensagem(ns) automática(s) pré-atendimento sem sinais de URA identificáveis`;
   }
 
-  if (!hasUra) {
-    return {
-      items: [],
-      status,
-    };
+  // ── Step 5: If no_ura, return early ─────────────────────────────
+  if (status === "no_ura") {
+    return { items: [], status, statusReason };
   }
 
+  // ── Step 6: If ura_irrelevant, collect post-attendance info ─────
+  if (status === "ura_irrelevant") {
+    const postItems: { label: string; value: string }[] = [];
+    for (const msg of postUra) {
+      if (/pesquisa\s+de\s+satisfação|avalie/i.test(msg.text)) {
+        postItems.push({ label: "Pesquisa de satisfação", value: "Enviada após atendimento" });
+      } else if (/lembrete|pesquisa\s+não\s+respondida/i.test(msg.text)) {
+        postItems.push({ label: "Lembrete", value: "Pesquisa não respondida" });
+      } else {
+        postItems.push({ label: "Automação pós-atendimento", value: msg.text.slice(0, 120) });
+      }
+    }
+    return { items: [], status, statusReason, postAttendanceItems: postItems };
+  }
+
+  // ── Step 7: ura_valid — extract details from pre-human messages ─
   const items: { label: string; value: string }[] = [];
   let protocolo: string | undefined;
   let entradaCliente: string | undefined;
@@ -53,7 +126,7 @@ export function summarizeUraContext(uraMessages: ClassifiedMessage[], allMessage
   let pesquisaSatisfacao: string | undefined;
   let audioDetectado = false;
 
-  for (const msg of uraMessages) {
+  for (const msg of preUra) {
     const t = msg.text;
 
     // Protocolo
@@ -63,12 +136,12 @@ export function summarizeUraContext(uraMessages: ClassifiedMessage[], allMessage
       items.push({ label: "Protocolo", value: protocolo });
     }
 
-    // Menu option chosen (look at client responses around this message)
+    // Menu option chosen
     if (/menu|opção|escolha|digite/i.test(t) && !opcaoMenu) {
-      const idx = allMessages.indexOf(msg);
-      for (let i = idx + 1; i < Math.min(idx + 3, allMessages.length); i++) {
-        if (allMessages[i]?.role === "cliente") {
-          opcaoMenu = allMessages[i].text.trim();
+      const idx = preHumanMsgs.indexOf(msg);
+      for (let i = idx + 1; i < Math.min(idx + 3, preHumanMsgs.length); i++) {
+        if (preHumanMsgs[i]?.role === "cliente") {
+          opcaoMenu = preHumanMsgs[i].text.trim();
           items.push({ label: "Opção escolhida", value: opcaoMenu });
           break;
         }
@@ -77,10 +150,10 @@ export function summarizeUraContext(uraMessages: ClassifiedMessage[], allMessage
 
     // Authentication
     if (/cpf|cnpj|informe.*número|autenticação/i.test(t) && !autenticacao) {
-      const idx = allMessages.indexOf(msg);
-      for (let i = idx + 1; i < Math.min(idx + 3, allMessages.length); i++) {
-        if (allMessages[i]?.role === "cliente") {
-          const clientText = allMessages[i].text.trim();
+      const idx = preHumanMsgs.indexOf(msg);
+      for (let i = idx + 1; i < Math.min(idx + 3, preHumanMsgs.length); i++) {
+        if (preHumanMsgs[i]?.role === "cliente") {
+          const clientText = preHumanMsgs[i].text.trim();
           if (/\d{3}[\d.\-/]+/.test(clientText)) {
             autenticacao = "CPF/CNPJ informado";
             items.push({ label: "Autenticação", value: autenticacao });
@@ -92,10 +165,10 @@ export function summarizeUraContext(uraMessages: ClassifiedMessage[], allMessage
 
     // Client motive
     if (/descreva.*problema|motivo|assunto/i.test(t) && !motivoCliente) {
-      const idx = allMessages.indexOf(msg);
-      for (let i = idx + 1; i < Math.min(idx + 3, allMessages.length); i++) {
-        if (allMessages[i]?.role === "cliente" && allMessages[i].text.trim().length > 5) {
-          motivoCliente = allMessages[i].text.trim().slice(0, 120);
+      const idx = preHumanMsgs.indexOf(msg);
+      for (let i = idx + 1; i < Math.min(idx + 3, preHumanMsgs.length); i++) {
+        if (preHumanMsgs[i]?.role === "cliente" && preHumanMsgs[i].text.trim().length > 5) {
+          motivoCliente = preHumanMsgs[i].text.trim().slice(0, 120);
           items.push({ label: "Motivo informado", value: motivoCliente });
           break;
         }
@@ -108,24 +181,29 @@ export function summarizeUraContext(uraMessages: ClassifiedMessage[], allMessage
       items.push({ label: "Transferência", value: transferencia });
     }
 
-    // Satisfaction survey
-    if (/pesquisa.*satisfação|avalie.*atendimento/i.test(t) && !pesquisaSatisfacao) {
-      pesquisaSatisfacao = "Pesquisa enviada";
-      items.push({ label: "Pesquisa de satisfação", value: pesquisaSatisfacao });
-    }
-
-    // Audio detection
+    // Audio
     if (/áudio|audio|mensagem\s+de\s+voz/i.test(t)) {
       audioDetectado = true;
     }
   }
 
-  // Client entrance (first client message)
-  const firstClientMsg = allMessages.find(m => m.role === "cliente");
+  // Client entrance (first client message before human)
+  const firstClientMsg = preHumanMsgs.find(m => m.role === "cliente");
   if (firstClientMsg && !entradaCliente) {
     entradaCliente = firstClientMsg.text.trim().slice(0, 100);
     if (entradaCliente && entradaCliente.length > 2) {
       items.unshift({ label: "Entrada do cliente", value: entradaCliente });
+    }
+  }
+
+  // Post-attendance survey (informational only, separate from pre-attendance)
+  const postItems: { label: string; value: string }[] = [];
+  for (const msg of postUra) {
+    if (/pesquisa\s+de\s+satisfação|avalie/i.test(msg.text)) {
+      pesquisaSatisfacao = "Pesquisa enviada";
+      postItems.push({ label: "Pesquisa de satisfação", value: "Enviada após atendimento" });
+    } else if (/lembrete|pesquisa\s+não\s+respondida/i.test(msg.text)) {
+      postItems.push({ label: "Lembrete", value: "Pesquisa não respondida" });
     }
   }
 
@@ -134,12 +212,7 @@ export function summarizeUraContext(uraMessages: ClassifiedMessage[], allMessage
   }
 
   if (items.length === 0) {
-    items.push({ label: "URA", value: `${uraMessages.length} mensagem(ns) automática(s) detectada(s)` });
-  }
-
-  // If we have URA but items are very sparse, it might be ambiguous
-  if (hasUra && items.length <= 1 && !protocolo && !opcaoMenu && !autenticacao) {
-    status = "ura_ambiguous";
+    items.push({ label: "URA", value: `${preUra.length} mensagem(ns) automática(s) detectada(s)` });
   }
 
   return {
@@ -153,5 +226,7 @@ export function summarizeUraContext(uraMessages: ClassifiedMessage[], allMessage
     audioDetectado,
     items,
     status,
+    statusReason,
+    postAttendanceItems: postItems.length > 0 ? postItems : undefined,
   };
 }

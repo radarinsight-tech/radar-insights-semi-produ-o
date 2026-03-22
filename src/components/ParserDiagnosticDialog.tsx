@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { normalizeRawText, parseStructuredConversation, type ParsedMessage, type StructuredConversation } from "@/lib/conversationParser";
+import { normalizeRawText, parseStructuredConversation, extractUraContext, type ParsedMessage, type StructuredConversation } from "@/lib/conversationParser";
 import { classifyMessages, type ClassifiedMessage } from "@/lib/messageClassifier";
 import { buildJourneyTimeline, type JourneyMilestone } from "@/lib/uraJourneyTimeline";
 import { AlertTriangle, CheckCircle2, Clock, MessageSquare, Bot, User, Headphones, HelpCircle } from "lucide-react";
@@ -61,6 +61,12 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
     const classified = messages.length >= 2 ? classifyMessages(messages) : [];
     const journey = buildJourneyTimeline(rawText, atendente, messages.length >= 2 ? messages : undefined);
 
+    // Step 3: Get URA context with state classification
+    let uraContext: { status: string; statusReason: string; postAttendanceItems?: { label: string; value: string }[] } | null = null;
+    try {
+      uraContext = extractUraContext(rawText, atendente);
+    } catch { /* ignore */ }
+
     // Build per-message diagnostic
     const msgDiag = messages.map((msg, i) => {
       const cls = classified[i] as ClassifiedMessage | undefined;
@@ -97,6 +103,15 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
     const validTimestamps = msgDiag.filter(m => m.isoTimestamp).length;
     const warnings = msgDiag.flatMap(m => m.warnings);
     const firstHuman = messages.find(m => m.role === "atendente");
+    const firstHumanIdx = messages.findIndex(m => m.role === "atendente");
+
+    // Pre/post human split
+    const preHumanBotCount = firstHumanIdx >= 0 
+      ? msgDiag.slice(0, firstHumanIdx).filter(m => m.role === "bot").length 
+      : uraCount;
+    const postHumanBotCount = firstHumanIdx >= 0 
+      ? msgDiag.slice(firstHumanIdx + 1).filter(m => m.role === "bot").length 
+      : 0;
 
     // Detect if raw text has URA signals but parser missed them
     const rawHasMarte = /\bmarte\b/i.test(rawText);
@@ -110,11 +125,14 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
       wasNormalized,
       messages: msgDiag,
       journey,
+      uraContext,
       summary: {
         format: structured.format,
         normalized: wasNormalized,
         totalMessages: messages.length,
         uraCount,
+        preHumanBotCount,
+        postHumanBotCount,
         clienteCount,
         atendenteCount,
         sistemaCount,
@@ -167,6 +185,34 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
               </div>
             )}
 
+            {/* URA State Classification */}
+            {diagnostic.uraContext && (
+              <div className={`p-3 rounded-lg border ${
+                diagnostic.uraContext.status === "ura_valid" ? "bg-accent/10 border-accent/20" :
+                diagnostic.uraContext.status === "ura_irrelevant" ? "bg-muted/30 border-border" :
+                "bg-primary/5 border-primary/20"
+              }`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-semibold text-foreground">Estado URA:</span>
+                  <Badge className={
+                    diagnostic.uraContext.status === "ura_valid" ? "bg-accent/20 text-accent" :
+                    diagnostic.uraContext.status === "ura_irrelevant" ? "bg-muted text-muted-foreground" :
+                    "bg-primary/15 text-primary"
+                  }>
+                    {diagnostic.uraContext.status === "ura_valid" ? "✅ URA válida" :
+                     diagnostic.uraContext.status === "ura_irrelevant" ? "ℹ️ URA irrelevante" :
+                     "📞 Sem URA"}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">{diagnostic.uraContext.statusReason}</p>
+                {summary.preHumanBotCount !== undefined && (
+                  <p className="text-[10px] text-muted-foreground/70 mt-1">
+                    Bot pré-humano: {summary.preHumanBotCount} | Bot pós-humano: {summary.postHumanBotCount}
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Technical summary */}
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-2">Resumo Técnico</h3>
@@ -176,6 +222,8 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
                   { label: "Normalizado", value: summary.normalized ? "✅ Sim" : "— Não" },
                   { label: "Total mensagens", value: summary.totalMessages },
                   { label: "Msgs URA/Bot", value: summary.uraCount },
+                  { label: "Bot pré-humano", value: summary.preHumanBotCount },
+                  { label: "Bot pós-humano", value: summary.postHumanBotCount },
                   { label: "Msgs Cliente", value: summary.clienteCount },
                   { label: "Msgs Atendente", value: summary.atendenteCount },
                   { label: "Timestamps válidos", value: `${summary.validTimestamps}/${summary.totalMessages}` },

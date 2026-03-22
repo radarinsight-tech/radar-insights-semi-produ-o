@@ -503,8 +503,7 @@ export function extractUraContext(rawText: string, atendente?: string): UraConte
   // If structured parsing found enough messages, use the full pipeline
   if (messages.length >= 2) {
     const classified = classifyMessages(messages);
-    const ura = classified.filter(m => m.category === "URA");
-    const ctx = summarizeUraContext(ura, classified);
+    const ctx = summarizeUraContext(classified);
     // If pipeline found URA or text doesn't have URA signals, return as-is
     if (ctx.status !== "no_ura" || !hasRawUraSignals(rawText)) {
       return ctx;
@@ -553,7 +552,7 @@ const RAW_URA_PATTERNS = {
 /** Extract URA context directly from raw text when structured parsing fails */
 function extractUraFromRawText(text: string): UraContext {
   if (!hasRawUraSignals(text)) {
-    return { items: [], status: "no_ura" };
+    return { items: [], status: "no_ura", statusReason: "Nenhum sinal de URA no texto bruto" };
   }
 
   const items: { label: string; value: string }[] = [];
@@ -624,14 +623,19 @@ function extractUraFromRawText(text: string): UraContext {
 
   const hasHumanIndicator = RAW_URA_PATTERNS.transferencia.test(text);
   let status: UraStatus;
+  let statusReason: string;
   if (hasMarte && hasHumanIndicator) {
-    status = "with_ura";
+    status = "ura_valid";
+    statusReason = "Marte + transferência detectados no texto bruto (fallback)";
   } else if (hasMarte && !hasHumanIndicator) {
-    status = "ura_only";
+    status = "ura_irrelevant";
+    statusReason = "Marte detectado mas sem transferência — possível automação pós-atendimento (fallback)";
   } else if (items.length <= 1) {
-    status = "ura_ambiguous";
+    status = "no_ura";
+    statusReason = "Sinais insuficientes para classificar como URA (fallback)";
   } else {
-    status = "with_ura";
+    status = "ura_valid";
+    statusReason = "Múltiplos sinais de URA detectados no texto bruto (fallback)";
   }
 
   if (items.length === 0) {
@@ -649,5 +653,6 @@ function extractUraFromRawText(text: string): UraContext {
     audioDetectado,
     items,
     status,
+    statusReason,
   };
 }
