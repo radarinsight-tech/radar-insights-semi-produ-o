@@ -8,8 +8,8 @@ import {
   Radio, X, ChevronDown, ChevronRight, Phone, ShieldCheck, Route,
   MessageSquare, ArrowRightLeft, Clock, AlertTriangle, Bot, UserX
 } from "lucide-react";
-import { classifyMessages } from "@/lib/messageClassifier";
-import { summarizeUraContext, type UraContext, type UraStatus } from "@/lib/uraContextSummarizer";
+import { extractUraContext } from "@/lib/conversationParser";
+import type { UraContext, UraStatus } from "@/lib/uraContextSummarizer";
 
 interface UraContextDialogProps {
   open: boolean;
@@ -36,42 +36,7 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente }: UraContext
 
   const uraContext = useMemo(() => {
     if (!rawText) return null;
-
-    const lines = rawText.split("\n");
-    const messages: { speaker: string; role: "atendente" | "cliente" | "bot" | "sistema"; text: string; time?: string; date?: string }[] = [];
-
-    const patterns = [
-      { regex: /^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,35}?)\s*\((\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)\)\s*:\s*(.+)/, extract: (m: RegExpMatchArray) => ({ speaker: m[1].trim(), date: m[2], time: m[3], text: m[4].trim() }) },
-      { regex: /^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,35}?)\s*\((\d{2}:\d{2}(?::\d{2})?)\)\s*:\s*(.+)/, extract: (m: RegExpMatchArray) => ({ speaker: m[1].trim(), time: m[2], text: m[3].trim() }) },
-      { regex: /^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,30}?)\s*:\s*(.+)/, extract: (m: RegExpMatchArray) => ({ speaker: m[1].trim(), text: m[2].trim() }) },
-    ];
-
-    let current: typeof messages[0] | null = null;
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-      let matched = false;
-      for (const p of patterns) {
-        const match = trimmed.match(p.regex);
-        if (match) {
-          if (current) messages.push(current);
-          const ext = p.extract(match);
-          const lower = ext.speaker.toLowerCase();
-          const isBotOrSystem = /^(marte|bot|sistema|robô|robo|ura|automático)\b/i.test(lower);
-          const isAtendente = atendente && (lower.includes(atendente.toLowerCase()) || atendente.toLowerCase().includes(lower));
-          const role = isBotOrSystem ? "bot" as const : isAtendente ? "atendente" as const : "cliente" as const;
-          current = { ...ext, role };
-          matched = true;
-          break;
-        }
-      }
-      if (!matched && current) current.text += "\n" + trimmed;
-    }
-    if (current) messages.push(current);
-
-    const classified = classifyMessages(messages);
-    const ura = classified.filter(m => m.category === "URA");
-    return summarizeUraContext(ura, classified);
+    return extractUraContext(rawText, atendente);
   }, [rawText, atendente]);
 
   const sections: SectionConfig[] = useMemo(() => {
