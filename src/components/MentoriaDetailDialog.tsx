@@ -594,11 +594,46 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                 {workflowStatus === "finalizado" ? "Finalizado" : workflowStatus === "em_analise" ? "Em análise" : "Não iniciado"}
               </Badge>
             )}
+            {/* Back step button */}
+            {preAnalysis && currentStep !== "pre-analise" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 text-xs h-8 font-semibold"
+                onClick={() => {
+                  const steps: MentoriaStep[] = ["pre-analise", "semi-auto", "relatorio"];
+                  const idx = steps.indexOf(currentStep);
+                  if (idx > 0) setCurrentStep(steps[idx - 1]);
+                }}
+              >
+                <ChevronLeft className="h-3.5 w-3.5" /> Voltar etapa
+              </Button>
+            )}
           </div>
           <div className="flex items-center gap-2">
-            {workflowStatus !== "finalizado" && onMarkFinished && (
-              <Button variant="outline" size="sm" onClick={onMarkFinished} className="gap-1.5 text-xs h-8 font-semibold text-accent border-accent/30 hover:bg-accent/10">
-                <CheckSquare className="h-3.5 w-3.5" /> Marcar como finalizado
+            {/* Advance step button */}
+            {preAnalysis && currentStep !== "relatorio" && (
+              <Button
+                size="sm"
+                className="gap-1.5 text-xs h-8 font-semibold"
+                onClick={() => {
+                  const steps: MentoriaStep[] = ["pre-analise", "semi-auto", "relatorio"];
+                  const idx = steps.indexOf(currentStep);
+                  setCompletedSteps(prev => new Set(prev).add(currentStep));
+                  if (idx < steps.length - 1) setCurrentStep(steps[idx + 1]);
+                }}
+              >
+                {currentStep === "pre-analise" ? "Avançar para Semi-Automático" : "Avançar para Relatório"}
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {/* Finalize button - only on report step */}
+            {currentStep === "relatorio" && workflowStatus !== "finalizado" && onMarkFinished && (
+              <Button variant="outline" size="sm" onClick={() => {
+                setCompletedSteps(prev => new Set(prev).add("relatorio"));
+                onMarkFinished();
+              }} className="gap-1.5 text-xs h-8 font-semibold text-accent border-accent/30 hover:bg-accent/10">
+                <CheckSquare className="h-3.5 w-3.5" /> Finalizar atendimento
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5 text-xs h-8 font-semibold">
