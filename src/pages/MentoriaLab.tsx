@@ -38,6 +38,7 @@ import ConversationView from "@/components/ConversationView";
 import MentoriaDetailDialog from "@/components/MentoriaDetailDialog";
 import ParserDiagnosticDialog from "@/components/ParserDiagnosticDialog";
 import MentoriaPipeline from "@/components/MentoriaPipeline";
+import MentoriaBatchHistory from "@/components/MentoriaBatchHistory";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro";
 type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
@@ -977,6 +978,19 @@ const MentoriaLab = () => {
     if (currentIdx < 0 || currentIdx >= analyzed.length - 1) return null;
     return analyzed[currentIdx + 1];
   }, [mentoriaFile, filteredFiles]);
+
+  // "Analisar próximo" — opens the first "nao_iniciado" file that has a result
+  const handleAnalyzeNextFromPipeline = useCallback(() => {
+    const notStarted = filteredFiles.filter(f => {
+      const ws = getWorkflowStatus(f.id);
+      return ws === "nao_iniciado" && f.status === "analisado" && f.result;
+    });
+    if (notStarted.length === 0) {
+      toast.info("Não há mais atendimentos pendentes de revisão.");
+      return;
+    }
+    openMentoria(notStarted[0]);
+  }, [filteredFiles, getWorkflowStatus, openMentoria]);
 
   const handleNextFile = useCallback(() => {
     const next = getNextAnalyzedFile();
