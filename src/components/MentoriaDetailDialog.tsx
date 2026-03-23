@@ -113,7 +113,8 @@ const findRelevantExcerpt = (rawText: string | undefined, explicacao: string): s
 
 const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation, workflowStatus, onMarkFinished, onNextFile, hasNextFile }: MentoriaDetailDialogProps) => {
   const [uraOpen, setUraOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("relatorio");
+  const [currentStep, setCurrentStep] = useState<MentoriaStep>("pre-analise");
+  const [completedSteps, setCompletedSteps] = useState<Set<MentoriaStep>>(new Set());
   const printRef = useRef<HTMLDivElement>(null);
 
   // Pre-analysis: run once when conversation is available
