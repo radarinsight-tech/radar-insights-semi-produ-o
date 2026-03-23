@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type MouseEvent } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -114,6 +114,26 @@ const AttendanceCard = ({
     onOpenMentoria(file);
   };
 
+  const handlePreviewClick = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    onOpenFile(file);
+  };
+
+  const handleApproveClick = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    onApproveOfficial(file);
+  };
+
+  const handleDiagnosticClick = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    onOpenDiagnostic(file);
+  };
+
+  const handleRemoveClick = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    onRemoveFile(file.id);
+  };
+
   return (
     <div
       role={canOpenMentoria ? "button" : undefined}
@@ -214,10 +234,7 @@ const AttendanceCard = ({
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onOpenFile(file);
-                }}
+                 onClick={handlePreviewClick}
               >
                 <Eye className="h-3 w-3" />
               </Button>
@@ -234,10 +251,7 @@ const AttendanceCard = ({
                   variant="outline"
                   size="icon"
                   className="h-6 w-6 text-accent border-accent/30 hover:bg-accent/10"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onApproveOfficial(file);
-                  }}
+                   onClick={handleApproveClick}
                   disabled={approvingIds.has(file.id)}
                 >
                   {approvingIds.has(file.id) ? (
@@ -261,10 +275,7 @@ const AttendanceCard = ({
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6 text-muted-foreground"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onOpenDiagnostic(file);
-                    }}
+                     onClick={handleDiagnosticClick}
                   >
                     <Bug className="h-3 w-3" />
                   </Button>
@@ -280,10 +291,7 @@ const AttendanceCard = ({
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 text-destructive/70 hover:text-destructive"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onRemoveFile(file.id);
-                  }}
+                   onClick={handleRemoveClick}
                 >
                   <Trash2 className="h-3 w-3" />
                 </Button>

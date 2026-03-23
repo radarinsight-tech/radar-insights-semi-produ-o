@@ -960,6 +960,7 @@ const MentoriaLab = () => {
   const getWorkflowStatus = (fileId: string): WorkflowStatus => workflowStatuses[fileId] || "nao_iniciado";
 
   const openMentoria = useCallback((f: LabFile) => {
+    setSideFile(null);
     setMentoriaFile(f);
     setHighlightedFileId(f.id);
     setWorkflowStatuses(prev => ({ ...prev, [f.id]: prev[f.id] === "finalizado" ? "finalizado" : "em_analise" }));
@@ -1415,7 +1416,7 @@ const MentoriaLab = () => {
               readingIds={readingIds}
               approvingIds={approvingIds}
               isAdmin={isAdmin}
-              onOpenFile={(f) => { setSideFile(f as any); setHighlightedFileId(f.id); }}
+              onOpenFile={(f) => { setMentoriaFile(null); setSideFile(f as any); setHighlightedFileId(f.id); }}
               onOpenMentoria={(f) => openMentoria(f as any)}
               onApproveOfficial={(f) => approveAsOfficial(f as any)}
               onRemoveFile={removeFile}
