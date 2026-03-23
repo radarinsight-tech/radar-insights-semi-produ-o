@@ -1166,6 +1166,7 @@ const MentoriaLab = () => {
       lido: files.filter((f) => f.status === "lido").length,
       analisado: analisados.length,
       erro: files.filter((f) => f.status === "erro").length,
+      naoAvaliavel: files.filter((f) => f.nonEvaluable || f.ineligible).length,
       atendentes: atendentesSet.size,
     };
   }, [files]);
@@ -1242,12 +1243,13 @@ const MentoriaLab = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
           {[
             { label: "Total", value: counts.total, color: "text-foreground" },
             { label: "Pendentes", value: counts.pendente, color: "text-muted-foreground" },
             { label: "Lidos", value: counts.lido, color: "text-primary" },
             { label: "Analisados", value: counts.analisado, color: "text-accent" },
+            { label: "Não avaliáveis", value: counts.naoAvaliavel, color: "text-warning" },
             { label: "Atendentes", value: counts.atendentes, color: "text-primary" },
             { label: "Erros", value: counts.erro, color: "text-destructive" },
           ].map((s) => (
