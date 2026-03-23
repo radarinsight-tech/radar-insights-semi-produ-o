@@ -800,17 +800,23 @@ const MentoriaLab = () => {
         }
 
         // Detect ineligible cases (audio, no interaction, bot-only)
-        const isIneligible = data.statusAtendimento === "fora_de_avaliacao"
+        const isServerIneligible = data.statusAtendimento === "fora_de_avaliacao"
           || data.statusAtendimento === "apenas_bot"
           || data.statusAuditoria === "impedimento_detectado"
           || data.statusAuditoria === "auditoria_bloqueada";
 
-        const ineligibleReason = isIneligible
+        // Also consider client-side non-evaluable detection
+        const isNonEvaluable = labFile.nonEvaluable === true;
+        const isIneligible = isServerIneligible || isNonEvaluable;
+
+        const ineligibleReason = isServerIneligible
           ? data.motivo === "sem_interacao_do_cliente" ? "Sem interação do cliente"
             : data.motivo === "atendimento_apenas_por_bot" ? "Apenas bot"
             : data.motivo === "envio_de_audio_pelo_atendente" ? "Fora da avaliação (Áudio)"
             : "Fora de avaliação"
-          : undefined;
+          : isNonEvaluable
+            ? labFile.nonEvaluableReason || "Interação insuficiente"
+            : undefined;
 
         const notaFinal = isIneligible ? 0 : (typeof data.notaFinal === "number" ? data.notaFinal : 0);
         const bonusQualidade = isIneligible ? 0 : (typeof data.bonusQualidade === "number" ? data.bonusQualidade : 0);
@@ -871,6 +877,8 @@ const MentoriaLab = () => {
           analyzedAt: new Date(),
           ineligible: isIneligible,
           ineligibleReason,
+          nonEvaluable: isNonEvaluable,
+          nonEvaluableReason: isNonEvaluable ? (labFile.nonEvaluableReason || "Interação insuficiente") : undefined,
           evaluationId: savedEval?.id,
         };
 
