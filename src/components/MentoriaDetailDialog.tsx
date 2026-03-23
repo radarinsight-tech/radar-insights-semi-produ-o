@@ -110,7 +110,7 @@ const findRelevantExcerpt = (rawText: string | undefined, explicacao: string): s
   return null;
 };
 
-const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation }: MentoriaDetailDialogProps) => {
+const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation, workflowStatus, onMarkFinished, onNextFile, hasNextFile }: MentoriaDetailDialogProps) => {
   const [uraOpen, setUraOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("relatorio");
   const printRef = useRef<HTMLDivElement>(null);
