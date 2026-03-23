@@ -89,6 +89,8 @@ interface LabFile {
   analyzedAt?: Date;
   ineligible?: boolean;
   ineligibleReason?: string;
+  nonEvaluable?: boolean;
+  nonEvaluableReason?: string;
   attendantMatch?: MatchResult;
   transferred?: boolean;
   approvedAsOfficial?: boolean;
@@ -109,6 +111,7 @@ import { extractAllMetadata } from "@/lib/mentoriaMetadata";
 import { getRegisteredAttendants, matchAttendant, type MatchResult } from "@/lib/attendantMatcher";
 import { extractUraContext } from "@/lib/conversationParser";
 import type { UraContext, UraStatus } from "@/lib/uraContextSummarizer";
+import { detectEvaluability } from "@/lib/evaluabilityDetector";
 
 const IMPORT_LIMIT = 1000;
 const IMPORT_RECOMMENDED = 500;
