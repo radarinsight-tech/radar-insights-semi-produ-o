@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   CheckCircle2, XCircle, MinusCircle, ShieldAlert,
   MessageSquareQuote, Printer, X, Award, TrendingUp, AlertTriangle, Lightbulb,
-  User, Calendar, FileText, Hash, Radio, Sparkles, Zap
+  User, Calendar, FileText, Hash, Radio, Sparkles, Zap, ChevronRight, List, CheckSquare
 } from "lucide-react";
 import UraContextDialog from "@/components/UraContextDialog";
 import PreAnalysisPanel from "@/components/PreAnalysisPanel";
@@ -35,6 +35,8 @@ interface Subtotais {
   encerramentoEValor: { obtidos: number; possiveis: number };
 }
 
+export type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
+
 interface MentoriaDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -43,6 +45,10 @@ interface MentoriaDetailDialogProps {
   rawText?: string;
   atendente?: string;
   structuredConversation?: StructuredConversation;
+  workflowStatus?: WorkflowStatus;
+  onMarkFinished?: () => void;
+  onNextFile?: () => void;
+  hasNextFile?: boolean;
 }
 
 const CATEGORY_ORDER = [
