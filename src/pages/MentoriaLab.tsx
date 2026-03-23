@@ -970,7 +970,6 @@ const MentoriaLab = () => {
       const readResult = await readFile(labFile);
       if (!readResult) {
         toast.error("Não foi possível preparar este atendimento para a mentoria.");
-        // Revert workflow status on failure
         setWorkflowStatuses(prev => ({ ...prev, [labFile.id]: "nao_iniciado" }));
         return;
       }
@@ -983,9 +982,12 @@ const MentoriaLab = () => {
     }
 
     if (preparedFile.status !== "lido") {
-      toast.error("Este atendimento ainda não está pronto para iniciar a mentoria.");
-      setWorkflowStatuses(prev => ({ ...prev, [labFile.id]: "nao_iniciado" }));
-      return;
+      // For files with text but wrong status, allow analysis anyway
+      if (!preparedFile.text) {
+        toast.error("Este atendimento ainda não está pronto para iniciar a mentoria.");
+        setWorkflowStatuses(prev => ({ ...prev, [labFile.id]: "nao_iniciado" }));
+        return;
+      }
     }
 
     await analyzeFiles([preparedFile], { openOnSuccessId: preparedFile.id, clearSelection: false });
