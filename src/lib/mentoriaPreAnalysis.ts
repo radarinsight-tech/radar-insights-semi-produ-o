@@ -129,6 +129,52 @@ function containsClientName(text: string, clientName?: string): boolean {
   return new RegExp(`\\b${firstName}\\b`, "i").test(text);
 }
 
+// ─── Reactive Execution Detection ───────────────────────────────────
+
+/**
+ * Detects if the attendant merely executed an action based on prior context
+ * (URA, phone history, previous ticket) without actively validating with the client.
+ */
+function detectReactiveExecution(attMsgs: ParsedMessage[], clientMsgs: ParsedMessage[], attText: string): {
+  isReactive: boolean;
+  hasActiveValidation: boolean;
+  reason: string;
+} {
+  const directExecutionPatterns = /(?:(?:estou\s+)?(?:enviando|encaminhando|gerando|emitindo)\s+(?:o\s+)?(?:boleto|fatura|segunda\s+via|arquivo|documento|comprovante|contrato|link)|(?:segue|aqui\s+está|pronto|feito|já\s+(?:enviei|encaminhei|gerei|fiz))|(?:vou\s+(?:enviar|encaminhar|gerar))\s+(?:o\s+)?(?:boleto|fatura|segunda\s+via|arquivo))/gi;
+
+  const activeValidationPatterns = /(?:(?:você|senhor[a]?)\s+(?:precisa|deseja|gostaria|quer)\b|(?:pode|poderia)\s+(?:me\s+)?(?:confirmar|informar|dizer)|(?:é\s+isso\s+mesmo|correto|certo)\s*\?|(?:antes\s+de\s+)?(?:prosseguir|continuar).*(?:confirmar|validar)|(?:me\s+(?:confirma|diz|informa))|(?:posso\s+confirmar))/gi;
+
+  const execMatches = attText.match(directExecutionPatterns) || [];
+  const validationMatches = attText.match(activeValidationPatterns) || [];
+  const questionMarks = (attText.match(/\?/g) || []).length;
+
+  const hasActiveValidation = validationMatches.length >= 1 || questionMarks >= 2;
+  const isReactive = execMatches.length >= 1 && !hasActiveValidation && clientMsgs.length <= 4;
+
+  let reason = "";
+  if (isReactive) {
+    reason = "Atendente executou ação diretamente com base no contexto prévio, sem validação ativa com o cliente.";
+  } else if (execMatches.length >= 1 && hasActiveValidation) {
+    reason = "Atendente executou ação, mas com validação ativa do cliente.";
+  }
+
+  return { isReactive, hasActiveValidation, reason };
+}
+
+function hasPriorContextDemand(allMsgs: ParsedMessage[], uraContext?: UraContext): boolean {
+  if (uraContext && uraContext.items.length > 0) {
+    const hasMenu = uraContext.items.some(i => /menu|opção|selecion/i.test(i.label + " " + i.value));
+    const hasProblem = uraContext.items.some(i => /motivo|problema|solicitação|demanda/i.test(i.label));
+    if (hasMenu || hasProblem) return true;
+  }
+  const firstHumanIdx = allMsgs.findIndex(m => m.role === "atendente");
+  if (firstHumanIdx > 0) {
+    const botText = allMsgs.slice(0, firstHumanIdx).filter(m => m.role === "bot" || m.role === "sistema").map(m => m.text).join(" ");
+    if (/(?:transferindo|sua\s+solicitação|motivo\s+do\s+contato|protocolo)/i.test(botText)) return true;
+  }
+  return false;
+}
+
 // ─── Criteria Analyzers ─────────────────────────────────────────────
 
 type CriterionAnalyzer = (msgs: ParsedMessage[], ctx: AnalysisContext) => Omit<PreAnalysisSuggestion, "numero" | "nome" | "categoria">;
@@ -143,6 +189,8 @@ interface AnalysisContext {
   allMsgs: ParsedMessage[];
   attText: string;
   clientText: string;
+  reactiveExecution: { isReactive: boolean; hasActiveValidation: boolean; reason: string };
+  hasPriorContext: boolean;
 }
 
 // 1. Informou o nome e se apresentou?
@@ -259,6 +307,15 @@ const c6: CriterionAnalyzer = (msgs, ctx) => {
   const qCount = questions?.length || 0;
   const pCount = probing?.length || 0;
   
+  // If demand was already in prior context and attendant didn't actively validate
+  if (ctx.hasPriorContext && ctx.reactiveExecution.isReactive) {
+    if (qCount >= 1) {
+      const ev = findEvidence(msgs, /\?/, "atendente");
+      return { sugestao: "PARCIAL", justificativa: "A demanda estava indicada no contexto anterior. Atendente fez pergunta(s), mas sem validação confirmatória da necessidade real.", evidencia: ev, confianca: "media" };
+    }
+    return { sugestao: "NÃO", justificativa: "A demanda estava indicada no contexto anterior, mas não houve validação ativa com o cliente. Atendente executou diretamente sem confirmar.", confianca: "alta" };
+  }
+  
   if (pCount >= 2 || qCount >= 3) {
     const ev = findEvidence(msgs, probingPatterns, "atendente") || findEvidence(msgs, /\?/, "atendente");
     return { sugestao: "SIM", justificativa: `Atendente fez ${qCount} perguntas, incluindo ${pCount} sondagens direcionadas.`, evidencia: ev, confianca: "alta" };
@@ -272,9 +329,17 @@ const c6: CriterionAnalyzer = (msgs, ctx) => {
 
 // 7. Identificou corretamente a solicitação?
 const c7: CriterionAnalyzer = (msgs, ctx) => {
-  // Check if attendant acknowledged/restated the issue
   const ackPatterns = /(?:entendi|compreendi|então\s+(?:você|o\s+senhor)|sua\s+solicitação|sua\s+demanda|sobre\s+(?:o|a)\s+(?:seu|sua)|(?:vou|vamos)\s+(?:verificar|resolver|analisar|tratar))/gi;
   const ack = ctx.attText.match(ackPatterns);
+  
+  // Reactive execution: even if attendant "acknowledged", without active validation it's partial
+  if (ctx.hasPriorContext && ctx.reactiveExecution.isReactive) {
+    if (ack && ack.length >= 1) {
+      const ev = findEvidence(msgs, ackPatterns, "atendente");
+      return { sugestao: "PARCIAL", justificativa: "Atendente executou a solicitação com base no histórico, sem condução confirmatória com o cliente.", evidencia: ev, confianca: "media" };
+    }
+    return { sugestao: "NÃO", justificativa: "Solicitação resolvida a partir de contexto prévio, sem que o atendente confirmasse ou validasse a demanda com o cliente.", confianca: "media" };
+  }
   
   if (ack && ack.length >= 2) {
     const ev = findEvidence(msgs, ackPatterns, "atendente");
@@ -291,13 +356,14 @@ const c7: CriterionAnalyzer = (msgs, ctx) => {
 const c8: CriterionAnalyzer = (msgs, ctx) => {
   const listenPatterns = /(?:entendo|compreendo|realmente|sei\s+como|imagino|lamento|sinto\s+muito|com\s+certeza|claro|perfeit[oa]|pode\s+contar|estou\s+aqui)/gi;
   const listen = ctx.attText.match(listenPatterns);
-  const interruptions = msgs.filter((m, i) => {
-    if (m.role !== "atendente" || i === 0) return false;
-    // Check for consecutive attendant messages (possible interruption)
-    return msgs[i - 1]?.role === "atendente";
-  });
   
   const lCount = listen?.length || 0;
+  
+  // In reactive executions, listening is limited since attendant didn't engage
+  if (ctx.reactiveExecution.isReactive && lCount < 2) {
+    return { sugestao: "PARCIAL", justificativa: "Atendimento de execução reativa — interação limitada para avaliar escuta ativa. O atendente executou sem engajamento conversacional.", confianca: "media" };
+  }
+  
   if (lCount >= 3) {
     const ev = findEvidence(msgs, listenPatterns, "atendente");
     return { sugestao: "SIM", justificativa: `Atendente demonstrou escuta ativa com ${lCount} expressões empáticas.`, evidencia: ev, confianca: "media" };
@@ -316,6 +382,15 @@ const c9: CriterionAnalyzer = (msgs, ctx) => {
   
   const pCount = proactive?.length || 0;
   const avgTime = ctx.avgResponseTimeSec;
+  
+  // Reactive execution with speed is agilidade, but cap at PARCIAL if no validation
+  if (ctx.reactiveExecution.isReactive) {
+    if (pCount >= 1 || (avgTime != null && avgTime <= 120)) {
+      const ev = findEvidence(msgs, proactivePatterns, "atendente");
+      return { sugestao: "PARCIAL", justificativa: "Atendente foi ágil na execução, porém atuou de forma reativa com base no contexto prévio, sem proatividade na condução do atendimento.", evidencia: ev, confianca: "media" };
+    }
+    return { sugestao: "NÃO", justificativa: "Execução reativa sem evidências de agilidade ou proatividade na condução.", confianca: "media" };
+  }
   
   if (pCount >= 2 || (pCount >= 1 && avgTime != null && avgTime <= 120)) {
     const ev = findEvidence(msgs, proactivePatterns, "atendente");
@@ -519,6 +594,9 @@ export function runPreAnalysis(
   const clientName = getClientName(msgs);
   const avgResponseTimeSec = calcAvgResponseTime(msgs);
 
+  const attText = allText(msgs, "atendente");
+  const clientText = allText(msgs, "cliente");
+
   const ctx: AnalysisContext = {
     clientName,
     attendantName,
@@ -527,8 +605,10 @@ export function runPreAnalysis(
     attMsgs,
     clientMsgs,
     allMsgs: msgs,
-    attText: allText(msgs, "atendente"),
-    clientText: allText(msgs, "cliente"),
+    attText,
+    clientText,
+    reactiveExecution: detectReactiveExecution(attMsgs, clientMsgs, attText),
+    hasPriorContext: hasPriorContextDemand(msgs, uraContext),
   };
 
   const suggestions: PreAnalysisSuggestion[] = CRITERIA.map(c => {
