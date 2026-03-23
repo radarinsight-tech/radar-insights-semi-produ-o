@@ -955,6 +955,34 @@ const MentoriaLab = () => {
 
   const formatSize = (b: number) => b < 1024 ? `${b} B` : `${(b / 1024).toFixed(1)} KB`;
 
+  const getWorkflowStatus = (fileId: string): WorkflowStatus => workflowStatuses[fileId] || "nao_iniciado";
+
+  const openMentoria = useCallback((f: LabFile) => {
+    setMentoriaFile(f);
+    setHighlightedFileId(f.id);
+    setWorkflowStatuses(prev => ({ ...prev, [f.id]: prev[f.id] === "finalizado" ? "finalizado" : "em_analise" }));
+  }, []);
+
+  const handleMarkFinished = useCallback(() => {
+    if (!mentoriaFile) return;
+    setWorkflowStatuses(prev => ({ ...prev, [mentoriaFile.id]: "finalizado" }));
+    toast.success("Atendimento marcado como finalizado.");
+  }, [mentoriaFile]);
+
+  const getNextAnalyzedFile = useCallback(() => {
+    if (!mentoriaFile) return null;
+    const analyzed = filteredFiles.filter(f => f.status === "analisado" && f.result);
+    const currentIdx = analyzed.findIndex(f => f.id === mentoriaFile.id);
+    if (currentIdx < 0 || currentIdx >= analyzed.length - 1) return null;
+    return analyzed[currentIdx + 1];
+  }, [mentoriaFile, filteredFiles]);
+
+  const handleNextFile = useCallback(() => {
+    const next = getNextAnalyzedFile();
+    if (!next) return;
+    openMentoria(next);
+  }, [getNextAnalyzedFile, openMentoria]);
+
   const counts = useMemo(() => {
     const analisados = files.filter((f) => f.status === "analisado");
     const atendentesSet = new Set(
