@@ -1392,9 +1392,14 @@ const MentoriaLab = () => {
                   {processing ? "Analisando..." : `Analisar ${selected.size} selecionado${selected.size !== 1 ? "s" : ""}`}
                 </Button>
                 {selected.size > 0 && (
-                  <Button variant="ghost" size="sm" onClick={removeSelected} className="text-destructive">
-                    <Trash2 className="h-4 w-4 mr-1" /> Remover selecionados
-                  </Button>
+                  <>
+                    <Button variant="ghost" size="sm" onClick={removeSelected} className="text-destructive">
+                      <Trash2 className="h-4 w-4 mr-1" /> Remover selecionados
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setSelected(new Set())} className="text-muted-foreground">
+                      <X className="h-4 w-4 mr-1" /> Limpar seleção
+                    </Button>
+                  </>
                 )}
                 <span className="ml-auto text-xs text-muted-foreground">
                   {filteredFiles.length} de {files.length} exibidos
@@ -1415,7 +1420,11 @@ const MentoriaLab = () => {
               onApproveOfficial={(f) => approveAsOfficial(f as any)}
               onRemoveFile={removeFile}
               onOpenDiagnostic={(f) => setDiagnosticFile(f as any)}
+              onAnalyzeNext={handleAnalyzeNextFromPipeline}
             />
+
+            {/* Batch history */}
+            <MentoriaBatchHistory />
 
             {/* Selection warning */}
             {selected.size > ANALYZE_LIMIT && (
