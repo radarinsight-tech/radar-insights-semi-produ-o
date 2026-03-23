@@ -1406,6 +1406,7 @@ const MentoriaLab = () => {
                       <th className="p-3 text-center font-medium text-muted-foreground">Status</th>
                       <th className="p-3 text-center font-medium text-muted-foreground">Fluxo</th>
                       <th className="p-3 text-left font-medium text-muted-foreground">Data da Auditoria</th>
+                      <th className="p-3 text-center font-medium text-muted-foreground">Ação</th>
                     </tr>
                   </thead>
                   <tbody>
