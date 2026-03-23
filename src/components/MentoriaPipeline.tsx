@@ -1,12 +1,10 @@
 import { useMemo } from "react";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   BookOpen, Eye, ShieldCheck, Bug, Trash2, Loader2,
-  Clock, PlayCircle, CheckCircle2, User, Calendar, Hash, FileText
+  Clock, PlayCircle, CheckCircle2, User, Calendar, SkipForward
 } from "lucide-react";
 import { cn, formatDateBR, notaToScale10, formatNota } from "@/lib/utils";
 import type { WorkflowStatus } from "@/components/MentoriaDetailDialog";
@@ -43,6 +41,7 @@ interface MentoriaPipelineProps {
   onApproveOfficial: (f: PipelineFile) => void;
   onRemoveFile: (id: string) => void;
   onOpenDiagnostic: (f: PipelineFile) => void;
+  onAnalyzeNext?: () => void;
 }
 
 const COLUMNS: { key: WorkflowStatus; label: string; icon: typeof Clock; emptyText: string }[] = [
@@ -76,12 +75,11 @@ const columnStyles: Record<WorkflowStatus, { header: string; border: string; bg:
 };
 
 const AttendanceCard = ({
-  file, highlighted, readingIds, approvingIds, isAdmin,
+  file, highlighted, approvingIds, isAdmin,
   onOpenFile, onOpenMentoria, onApproveOfficial, onRemoveFile, onOpenDiagnostic,
 }: {
   file: PipelineFile;
   highlighted: boolean;
-  readingIds: Set<string>;
   approvingIds: Set<string>;
   isAdmin: boolean;
   onOpenFile: (f: PipelineFile) => void;
@@ -248,6 +246,7 @@ const AttendanceCard = ({
 const MentoriaPipeline = ({
   files, getWorkflowStatus, highlightedFileId, readingIds, approvingIds, isAdmin,
   onOpenFile, onOpenMentoria, onApproveOfficial, onRemoveFile, onOpenDiagnostic,
+  onAnalyzeNext,
 }: MentoriaPipelineProps) => {
 
   const grouped = useMemo(() => {
@@ -263,31 +262,49 @@ const MentoriaPipeline = ({
     return groups;
   }, [files, getWorkflowStatus]);
 
+  const hasNextToAnalyze = grouped.nao_iniciado.some(f => f.status === "analisado" && f.result);
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4" id="mentoria-table">
-      {COLUMNS.map((col) => {
-        const items = grouped[col.key];
-        const style = columnStyles[col.key];
-        const Icon = col.icon;
+    <div className="space-y-3" id="mentoria-table">
+      {/* Action bar above pipeline */}
+      {hasNextToAnalyze && onAnalyzeNext && (
+        <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <SkipForward className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-foreground">
+              {grouped.nao_iniciado.filter(f => f.status === "analisado" && f.result).length} atendimento(s) aguardando revisão
+            </span>
+          </div>
+          <Button size="sm" className="gap-1.5 font-semibold" onClick={onAnalyzeNext}>
+            <SkipForward className="h-3.5 w-3.5" />
+            Analisar próximo
+          </Button>
+        </div>
+      )}
 
-        return (
-          <div key={col.key} className={cn("rounded-2xl border p-4", style.border, style.bg)}>
-            {/* Column header */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Icon className={cn("h-4 w-4", style.header)} />
-                <h3 className={cn("text-xs font-extrabold uppercase tracking-[0.1em]", style.header)}>
-                  {col.label}
-                </h3>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {COLUMNS.map((col) => {
+          const items = grouped[col.key];
+          const style = columnStyles[col.key];
+          const Icon = col.icon;
+
+          return (
+            <div key={col.key} className={cn("rounded-2xl border p-4 flex flex-col", style.border, style.bg)}>
+              {/* Column header */}
+              <div className="flex items-center justify-between mb-4 shrink-0">
+                <div className="flex items-center gap-2">
+                  <Icon className={cn("h-4 w-4", style.header)} />
+                  <h3 className={cn("text-xs font-extrabold uppercase tracking-[0.1em]", style.header)}>
+                    {col.label}
+                  </h3>
+                </div>
+                <span className={cn("text-[11px] font-bold px-2 py-0.5 rounded-full", style.countBg)}>
+                  {items.length}
+                </span>
               </div>
-              <span className={cn("text-[11px] font-bold px-2 py-0.5 rounded-full", style.countBg)}>
-                {items.length}
-              </span>
-            </div>
 
-            {/* Cards */}
-            <ScrollArea className="max-h-[calc(100vh-420px)]">
-              <div className="space-y-2.5 pr-1">
+              {/* Cards with independent scroll */}
+              <div className="flex-1 overflow-y-auto min-h-0 max-h-[calc(100vh-480px)] pr-1 space-y-2.5 scrollbar-thin">
                 {items.length === 0 && (
                   <div className="text-center py-8">
                     <p className="text-xs text-muted-foreground/60 italic">{col.emptyText}</p>
@@ -298,7 +315,6 @@ const MentoriaPipeline = ({
                     key={f.id}
                     file={f}
                     highlighted={highlightedFileId === f.id}
-                    readingIds={readingIds}
                     approvingIds={approvingIds}
                     isAdmin={isAdmin}
                     onOpenFile={onOpenFile}
@@ -309,10 +325,10 @@ const MentoriaPipeline = ({
                   />
                 ))}
               </div>
-            </ScrollArea>
-          </div>
-        );
-      })}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
