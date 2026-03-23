@@ -133,7 +133,7 @@ const CreditAnalysis = () => {
               <h1 className="text-xl font-bold text-foreground">
                 Radar Insight — <span className="text-primary">Análise de Crédito</span>
               </h1>
-              <p className="text-xs text-muted-foreground">Consulta SPC e enquadramento pela política Banda Turbo</p>
+              <p className="text-xs text-muted-foreground">Consulta SPC e enquadramento pela política Banda Turbo.</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
