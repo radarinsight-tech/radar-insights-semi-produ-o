@@ -44,9 +44,11 @@ interface MentoriaPipelineProps {
   highlightedFileId: string | null;
   readingIds: Set<string>;
   approvingIds: Set<string>;
+  processing: boolean;
   isAdmin: boolean;
   onOpenFile: (f: PipelineFile) => void;
   onOpenMentoria: (f: PipelineFile) => void;
+  onStartMentoria: (f: PipelineFile) => void;
   onApproveOfficial: (f: PipelineFile) => void;
   onRemoveFile: (id: string) => void;
   onOpenDiagnostic: (f: PipelineFile) => void;
@@ -86,20 +88,26 @@ const columnStyles: Record<WorkflowStatus, { header: string; border: string; bg:
 const AttendanceCard = ({
   file,
   highlighted,
+  readingIds,
   approvingIds,
+  processing,
   isAdmin,
   onOpenFile,
   onOpenMentoria,
+  onStartMentoria,
   onApproveOfficial,
   onRemoveFile,
   onOpenDiagnostic,
 }: {
   file: PipelineFile;
   highlighted: boolean;
+  readingIds: Set<string>;
   approvingIds: Set<string>;
+  processing: boolean;
   isAdmin: boolean;
   onOpenFile: (f: PipelineFile) => void;
   onOpenMentoria: (f: PipelineFile) => void;
+  onStartMentoria: (f: PipelineFile) => void;
   onApproveOfficial: (f: PipelineFile) => void;
   onRemoveFile: (id: string) => void;
   onOpenDiagnostic: (f: PipelineFile) => void;
@@ -107,11 +115,22 @@ const AttendanceCard = ({
   const hasResult = file.status === "analisado" && file.result;
   const nota = hasResult ? file.result?.notaFinal : null;
   const nota10 = nota != null ? notaToScale10(nota) : null;
-  const canOpenMentoria = Boolean(hasResult);
+  const isReading = readingIds.has(file.id);
+  const canStartMentoria = !processing && !isReading && file.status !== "erro";
+  const primaryLabel = isReading ? "Lendo atendimento..." : processing ? "Processando..." : "Iniciar mentoria";
 
   const handleOpenMentoria = () => {
-    if (!canOpenMentoria) return;
     onOpenMentoria(file);
+  };
+
+  const handleStartMentoria = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (!canStartMentoria) return;
+    if (hasResult) {
+      handleOpenMentoria();
+      return;
+    }
+    onStartMentoria(file);
   };
 
   const handlePreviewClick = (event: MouseEvent<HTMLButtonElement>) => {
@@ -136,22 +155,12 @@ const AttendanceCard = ({
 
   return (
     <div
-      role={canOpenMentoria ? "button" : undefined}
-      tabIndex={canOpenMentoria ? 0 : undefined}
-      onClick={handleOpenMentoria}
-      onKeyDown={(event) => {
-        if (!canOpenMentoria) return;
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          handleOpenMentoria();
-        }
-      }}
       className={cn(
         "rounded-xl border p-3.5 transition-all group",
-        canOpenMentoria && "cursor-pointer hover:shadow-md hover:border-primary/40 hover:-translate-y-0.5",
         highlighted
           ? "ring-2 ring-primary/30 border-primary/40 bg-primary/5 shadow-sm"
           : "bg-background border-border/60",
+        "hover:shadow-sm",
         file.approvedAsOfficial && "border-l-[3px] border-l-accent"
       )}
     >
@@ -225,6 +234,16 @@ const AttendanceCard = ({
           </Badge>
         )}
       </div>
+
+      <Button
+        size="sm"
+        className="w-full gap-1.5 mb-2.5 font-semibold"
+        onClick={handleStartMentoria}
+        disabled={!canStartMentoria}
+      >
+        {isReading || processing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlayCircle className="h-3.5 w-3.5" />}
+        {primaryLabel}
+      </Button>
 
       <div className="flex items-center gap-1 pt-2 border-t border-border/40 opacity-80 group-hover:opacity-100 transition-opacity">
         <TooltipProvider delayDuration={200}>
@@ -309,11 +328,13 @@ const MentoriaPipeline = ({
   files,
   getWorkflowStatus,
   highlightedFileId,
-  readingIds: _readingIds,
+  readingIds,
   approvingIds,
+  processing,
   isAdmin,
   onOpenFile,
   onOpenMentoria,
+  onStartMentoria,
   onApproveOfficial,
   onRemoveFile,
   onOpenDiagnostic,
@@ -382,10 +403,13 @@ const MentoriaPipeline = ({
                     key={f.id}
                     file={f}
                     highlighted={highlightedFileId === f.id}
+                    readingIds={readingIds}
                     approvingIds={approvingIds}
+                    processing={processing}
                     isAdmin={isAdmin}
                     onOpenFile={onOpenFile}
                     onOpenMentoria={onOpenMentoria}
+                    onStartMentoria={onStartMentoria}
                     onApproveOfficial={onApproveOfficial}
                     onRemoveFile={onRemoveFile}
                     onOpenDiagnostic={onOpenDiagnostic}
