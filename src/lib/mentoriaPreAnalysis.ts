@@ -567,6 +567,9 @@ export function runPreAnalysis(
   const clientName = getClientName(msgs);
   const avgResponseTimeSec = calcAvgResponseTime(msgs);
 
+  const attText = allText(msgs, "atendente");
+  const clientText = allText(msgs, "cliente");
+
   const ctx: AnalysisContext = {
     clientName,
     attendantName,
@@ -575,8 +578,10 @@ export function runPreAnalysis(
     attMsgs,
     clientMsgs,
     allMsgs: msgs,
-    attText: allText(msgs, "atendente"),
-    clientText: allText(msgs, "cliente"),
+    attText,
+    clientText,
+    reactiveExecution: detectReactiveExecution(attMsgs, clientMsgs, attText),
+    hasPriorContext: hasPriorContextDemand(msgs, uraContext),
   };
 
   const suggestions: PreAnalysisSuggestion[] = CRITERIA.map(c => {
