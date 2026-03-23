@@ -3,10 +3,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  BookOpen, Eye, ShieldCheck, Bug, Trash2, Loader2,
-  Clock, PlayCircle, CheckCircle2, User, Calendar, SkipForward, Play
+  Eye,
+  ShieldCheck,
+  Bug,
+  Trash2,
+  Loader2,
+  Clock,
+  PlayCircle,
+  CheckCircle2,
+  User,
+  Calendar,
+  SkipForward,
 } from "lucide-react";
-import { cn, formatDateBR, notaToScale10, formatNota } from "@/lib/utils";
+import { cn, formatDateBR, notaToScale10 } from "@/lib/utils";
 import type { WorkflowStatus } from "@/components/MentoriaDetailDialog";
 
 interface PipelineFile {
@@ -75,14 +84,20 @@ const columnStyles: Record<WorkflowStatus, { header: string; border: string; bg:
 };
 
 const AttendanceCard = ({
-  file, highlighted, approvingIds, isAdmin, workflowStatus,
-  onOpenFile, onOpenMentoria, onApproveOfficial, onRemoveFile, onOpenDiagnostic,
+  file,
+  highlighted,
+  approvingIds,
+  isAdmin,
+  onOpenFile,
+  onOpenMentoria,
+  onApproveOfficial,
+  onRemoveFile,
+  onOpenDiagnostic,
 }: {
   file: PipelineFile;
   highlighted: boolean;
   approvingIds: Set<string>;
   isAdmin: boolean;
-  workflowStatus: WorkflowStatus;
   onOpenFile: (f: PipelineFile) => void;
   onOpenMentoria: (f: PipelineFile) => void;
   onApproveOfficial: (f: PipelineFile) => void;
@@ -92,20 +107,34 @@ const AttendanceCard = ({
   const hasResult = file.status === "analisado" && file.result;
   const nota = hasResult ? file.result?.notaFinal : null;
   const nota10 = nota != null ? notaToScale10(nota) : null;
-  const isNotStarted = workflowStatus === "nao_iniciado";
+  const canOpenMentoria = Boolean(hasResult);
+
+  const handleOpenMentoria = () => {
+    if (!canOpenMentoria) return;
+    onOpenMentoria(file);
+  };
 
   return (
     <div
+      role={canOpenMentoria ? "button" : undefined}
+      tabIndex={canOpenMentoria ? 0 : undefined}
+      onClick={handleOpenMentoria}
+      onKeyDown={(event) => {
+        if (!canOpenMentoria) return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleOpenMentoria();
+        }
+      }}
       className={cn(
         "rounded-xl border p-3.5 transition-all group",
-        "hover:shadow-md hover:border-primary/40",
+        canOpenMentoria && "cursor-pointer hover:shadow-md hover:border-primary/40 hover:-translate-y-0.5",
         highlighted
           ? "ring-2 ring-primary/30 border-primary/40 bg-primary/5 shadow-sm"
           : "bg-background border-border/60",
         file.approvedAsOfficial && "border-l-[3px] border-l-accent"
       )}
     >
-      {/* Top row: atendente + nota */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
@@ -122,20 +151,24 @@ const AttendanceCard = ({
         </div>
 
         {nota10 != null && (
-          <div className={cn(
-            "shrink-0 text-center px-2 py-1 rounded-lg border",
-            nota10 >= 9 ? "bg-accent/10 border-accent/20 text-accent" :
-            nota10 >= 7 ? "bg-primary/10 border-primary/20 text-primary" :
-            nota10 >= 5 ? "bg-warning/10 border-warning/20 text-warning" :
-            "bg-destructive/10 border-destructive/20 text-destructive"
-          )}>
+          <div
+            className={cn(
+              "shrink-0 text-center px-2 py-1 rounded-lg border",
+              nota10 >= 9
+                ? "bg-accent/10 border-accent/20 text-accent"
+                : nota10 >= 7
+                  ? "bg-primary/10 border-primary/20 text-primary"
+                  : nota10 >= 5
+                    ? "bg-warning/10 border-warning/20 text-warning"
+                    : "bg-destructive/10 border-destructive/20 text-destructive"
+            )}
+          >
             <p className="text-lg font-black leading-none">{nota10.toFixed(1).replace(".", ",")}</p>
             <p className="text-[8px] font-medium mt-0.5">nota</p>
           </div>
         )}
       </div>
 
-      {/* Info row */}
       <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-2.5">
         {file.data && (
           <span className="flex items-center gap-1">
@@ -143,15 +176,12 @@ const AttendanceCard = ({
             {formatDateBR(file.data)}
           </span>
         )}
-        {file.canal && (
-          <span className="truncate">{file.canal}</span>
-        )}
+        {file.canal && <span className="truncate">{file.canal}</span>}
         {file.hasAudio && (
           <Badge className="bg-accent/15 text-accent text-[9px] px-1 py-0 h-auto">Áudio</Badge>
         )}
       </div>
 
-      {/* Status badges */}
       <div className="flex items-center gap-1.5 flex-wrap mb-2">
         {file.approvedAsOfficial && (
           <Badge className="bg-accent/15 text-accent text-[9px] gap-0.5 px-1.5 py-0 h-auto">
@@ -176,64 +206,66 @@ const AttendanceCard = ({
         )}
       </div>
 
-      {/* Primary CTA for not-started items */}
-      {isNotStarted && hasResult && (
-        <div className="mb-2">
-          <Button
-            className="w-full gap-2 font-semibold h-9 text-sm"
-            onClick={() => onOpenMentoria(file)}
-          >
-            <Play className="h-4 w-4" />
-            Iniciar mentoria
-          </Button>
-        </div>
-      )}
-
-      {/* Actions */}
       <div className="flex items-center gap-1 pt-2 border-t border-border/40 opacity-80 group-hover:opacity-100 transition-opacity">
         <TooltipProvider delayDuration={200}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onOpenFile(file)}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onOpenFile(file);
+                }}
+              >
                 <Eye className="h-3 w-3" />
               </Button>
             </TooltipTrigger>
             <TooltipContent><p className="text-xs">Visualizar preview</p></TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        {hasResult && !isNotStarted && (
-          <TooltipProvider delayDuration={200}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" className="h-6 w-6" onClick={() => onOpenMentoria(file)}>
-                  <BookOpen className="h-3 w-3" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent><p className="text-xs">Abrir mentoria</p></TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
+
         {hasResult && !file.ineligible && !file.approvedAsOfficial && file.evaluationId && (
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="h-6 w-6 text-accent border-accent/30 hover:bg-accent/10"
-                  onClick={() => onApproveOfficial(file)}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-6 w-6 text-accent border-accent/30 hover:bg-accent/10"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onApproveOfficial(file);
+                  }}
                   disabled={approvingIds.has(file.id)}
                 >
-                  {approvingIds.has(file.id) ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-3 w-3" />}
+                  {approvingIds.has(file.id) ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="h-3 w-3" />
+                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent><p className="text-xs">Aprovar como Oficial</p></TooltipContent>
             </Tooltip>
           </TooltipProvider>
         )}
+
         <div className="ml-auto flex items-center gap-1">
           {isAdmin && (
             <TooltipProvider delayDuration={200}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={() => onOpenDiagnostic(file)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onOpenDiagnostic(file);
+                    }}
+                  >
                     <Bug className="h-3 w-3" />
                   </Button>
                 </TooltipTrigger>
@@ -244,7 +276,15 @@ const AttendanceCard = ({
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive/70 hover:text-destructive" onClick={() => onRemoveFile(file.id)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-destructive/70 hover:text-destructive"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onRemoveFile(file.id);
+                  }}
+                >
                   <Trash2 className="h-3 w-3" />
                 </Button>
               </TooltipTrigger>
@@ -258,11 +298,19 @@ const AttendanceCard = ({
 };
 
 const MentoriaPipeline = ({
-  files, getWorkflowStatus, highlightedFileId, readingIds, approvingIds, isAdmin,
-  onOpenFile, onOpenMentoria, onApproveOfficial, onRemoveFile, onOpenDiagnostic,
+  files,
+  getWorkflowStatus,
+  highlightedFileId,
+  readingIds: _readingIds,
+  approvingIds,
+  isAdmin,
+  onOpenFile,
+  onOpenMentoria,
+  onApproveOfficial,
+  onRemoveFile,
+  onOpenDiagnostic,
   onAnalyzeNext,
 }: MentoriaPipelineProps) => {
-
   const grouped = useMemo(() => {
     const groups: Record<WorkflowStatus, PipelineFile[]> = {
       nao_iniciado: [],
@@ -276,17 +324,16 @@ const MentoriaPipeline = ({
     return groups;
   }, [files, getWorkflowStatus]);
 
-  const hasNextToAnalyze = grouped.nao_iniciado.some(f => f.status === "analisado" && f.result);
+  const hasNextToAnalyze = grouped.nao_iniciado.some((f) => f.status === "analisado" && f.result);
 
   return (
     <div className="space-y-3" id="mentoria-table">
-      {/* Action bar above pipeline */}
       {hasNextToAnalyze && onAnalyzeNext && (
         <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
           <div className="flex items-center gap-2">
             <SkipForward className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-foreground">
-              {grouped.nao_iniciado.filter(f => f.status === "analisado" && f.result).length} atendimento(s) aguardando revisão
+              {grouped.nao_iniciado.filter((f) => f.status === "analisado" && f.result).length} atendimento(s) aguardando revisão
             </span>
           </div>
           <Button size="sm" className="gap-1.5 font-semibold" onClick={onAnalyzeNext}>
@@ -304,7 +351,6 @@ const MentoriaPipeline = ({
 
           return (
             <div key={col.key} className={cn("rounded-2xl border p-4 flex flex-col", style.border, style.bg)}>
-              {/* Column header */}
               <div className="flex items-center justify-between mb-4 shrink-0">
                 <div className="flex items-center gap-2">
                   <Icon className={cn("h-4 w-4", style.header)} />
@@ -317,7 +363,6 @@ const MentoriaPipeline = ({
                 </span>
               </div>
 
-              {/* Cards with independent scroll */}
               <div className="flex-1 overflow-y-auto min-h-0 max-h-[calc(100vh-480px)] pr-1 space-y-2.5 scrollbar-thin">
                 {items.length === 0 && (
                   <div className="text-center py-8">
@@ -331,7 +376,6 @@ const MentoriaPipeline = ({
                     highlighted={highlightedFileId === f.id}
                     approvingIds={approvingIds}
                     isAdmin={isAdmin}
-                    workflowStatus={col.key}
                     onOpenFile={onOpenFile}
                     onOpenMentoria={onOpenMentoria}
                     onApproveOfficial={onApproveOfficial}
