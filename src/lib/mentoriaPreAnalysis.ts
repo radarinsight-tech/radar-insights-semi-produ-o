@@ -129,6 +129,52 @@ function containsClientName(text: string, clientName?: string): boolean {
   return new RegExp(`\\b${firstName}\\b`, "i").test(text);
 }
 
+// ─── Reactive Execution Detection ───────────────────────────────────
+
+/**
+ * Detects if the attendant merely executed an action based on prior context
+ * (URA, phone history, previous ticket) without actively validating with the client.
+ */
+function detectReactiveExecution(attMsgs: ParsedMessage[], clientMsgs: ParsedMessage[], attText: string): {
+  isReactive: boolean;
+  hasActiveValidation: boolean;
+  reason: string;
+} {
+  const directExecutionPatterns = /(?:(?:estou\s+)?(?:enviando|encaminhando|gerando|emitindo)\s+(?:o\s+)?(?:boleto|fatura|segunda\s+via|arquivo|documento|comprovante|contrato|link)|(?:segue|aqui\s+está|pronto|feito|já\s+(?:enviei|encaminhei|gerei|fiz))|(?:vou\s+(?:enviar|encaminhar|gerar))\s+(?:o\s+)?(?:boleto|fatura|segunda\s+via|arquivo))/gi;
+
+  const activeValidationPatterns = /(?:(?:você|senhor[a]?)\s+(?:precisa|deseja|gostaria|quer)\b|(?:pode|poderia)\s+(?:me\s+)?(?:confirmar|informar|dizer)|(?:é\s+isso\s+mesmo|correto|certo)\s*\?|(?:antes\s+de\s+)?(?:prosseguir|continuar).*(?:confirmar|validar)|(?:me\s+(?:confirma|diz|informa))|(?:posso\s+confirmar))/gi;
+
+  const execMatches = attText.match(directExecutionPatterns) || [];
+  const validationMatches = attText.match(activeValidationPatterns) || [];
+  const questionMarks = (attText.match(/\?/g) || []).length;
+
+  const hasActiveValidation = validationMatches.length >= 1 || questionMarks >= 2;
+  const isReactive = execMatches.length >= 1 && !hasActiveValidation && clientMsgs.length <= 4;
+
+  let reason = "";
+  if (isReactive) {
+    reason = "Atendente executou ação diretamente com base no contexto prévio, sem validação ativa com o cliente.";
+  } else if (execMatches.length >= 1 && hasActiveValidation) {
+    reason = "Atendente executou ação, mas com validação ativa do cliente.";
+  }
+
+  return { isReactive, hasActiveValidation, reason };
+}
+
+function hasPriorContextDemand(allMsgs: ParsedMessage[], uraContext?: UraContext): boolean {
+  if (uraContext && uraContext.items.length > 0) {
+    const hasMenu = uraContext.items.some(i => /menu|opção|selecion/i.test(i.label + " " + i.value));
+    const hasProblem = uraContext.items.some(i => /motivo|problema|solicitação|demanda/i.test(i.label));
+    if (hasMenu || hasProblem) return true;
+  }
+  const firstHumanIdx = allMsgs.findIndex(m => m.role === "atendente");
+  if (firstHumanIdx > 0) {
+    const botText = allMsgs.slice(0, firstHumanIdx).filter(m => m.role === "bot" || m.role === "sistema").map(m => m.text).join(" ");
+    if (/(?:transferindo|sua\s+solicitação|motivo\s+do\s+contato|protocolo)/i.test(botText)) return true;
+  }
+  return false;
+}
+
 // ─── Criteria Analyzers ─────────────────────────────────────────────
 
 type CriterionAnalyzer = (msgs: ParsedMessage[], ctx: AnalysisContext) => Omit<PreAnalysisSuggestion, "numero" | "nome" | "categoria">;
@@ -143,6 +189,8 @@ interface AnalysisContext {
   allMsgs: ParsedMessage[];
   attText: string;
   clientText: string;
+  reactiveExecution: { isReactive: boolean; hasActiveValidation: boolean; reason: string };
+  hasPriorContext: boolean;
 }
 
 // 1. Informou o nome e se apresentou?
