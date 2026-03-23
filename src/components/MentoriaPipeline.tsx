@@ -386,6 +386,23 @@ const MentoriaPipeline = ({
         </div>
       )}
 
+      {/* Non-evaluable counter */}
+      {(() => {
+        const nonEvaluableCount = files.filter(f => f.nonEvaluable || f.ineligible).length;
+        return nonEvaluableCount > 0 ? (
+          <div className="flex items-center gap-2.5 rounded-xl border border-warning/25 bg-warning/5 px-4 py-2.5">
+            <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
+            <span className="text-sm text-foreground">
+              <strong className="font-semibold">{nonEvaluableCount}</strong>
+              <span className="text-muted-foreground ml-1">
+                {nonEvaluableCount === 1 ? "atendimento não avaliável" : "atendimentos não avaliáveis"}
+                {" "}— não entram em médias ou indicadores
+              </span>
+            </span>
+          </div>
+        ) : null;
+      })()}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {COLUMNS.map((col) => {
           const items = grouped[col.key];
