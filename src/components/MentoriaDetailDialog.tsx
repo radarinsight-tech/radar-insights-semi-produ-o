@@ -309,6 +309,20 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           hasPreAnalysis={!!preAnalysis}
         />
 
+        {/* ═══ NON-EVALUABLE WARNING ═══ */}
+        {nonEvaluable && (
+          <div className="mx-8 mt-4 mb-0 flex items-center gap-3 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3">
+            <AlertTriangle className="h-5 w-5 text-warning shrink-0" />
+            <div>
+              <p className="text-sm font-bold text-warning">Atendimento sem interação suficiente para avaliação</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {nonEvaluableReason || "Este atendimento não possui troca de mensagens suficiente entre atendente e cliente."}
+                {" "}A nota gerada <strong>não será considerada</strong> em médias ou indicadores de desempenho.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* ═══ STEP CONTENT ═══ */}
         <div className="flex-1 min-h-0">
           {/* STEP: PRÉ-ANÁLISE */}
