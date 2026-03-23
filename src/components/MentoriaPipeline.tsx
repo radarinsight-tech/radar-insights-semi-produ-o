@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   BookOpen, Eye, ShieldCheck, Bug, Trash2, Loader2,
-  Clock, PlayCircle, CheckCircle2, User, Calendar, SkipForward
+  Clock, PlayCircle, CheckCircle2, User, Calendar, SkipForward, Play
 } from "lucide-react";
 import { cn, formatDateBR, notaToScale10, formatNota } from "@/lib/utils";
 import type { WorkflowStatus } from "@/components/MentoriaDetailDialog";
@@ -75,13 +75,14 @@ const columnStyles: Record<WorkflowStatus, { header: string; border: string; bg:
 };
 
 const AttendanceCard = ({
-  file, highlighted, approvingIds, isAdmin,
+  file, highlighted, approvingIds, isAdmin, workflowStatus,
   onOpenFile, onOpenMentoria, onApproveOfficial, onRemoveFile, onOpenDiagnostic,
 }: {
   file: PipelineFile;
   highlighted: boolean;
   approvingIds: Set<string>;
   isAdmin: boolean;
+  workflowStatus: WorkflowStatus;
   onOpenFile: (f: PipelineFile) => void;
   onOpenMentoria: (f: PipelineFile) => void;
   onApproveOfficial: (f: PipelineFile) => void;
@@ -91,18 +92,18 @@ const AttendanceCard = ({
   const hasResult = file.status === "analisado" && file.result;
   const nota = hasResult ? file.result?.notaFinal : null;
   const nota10 = nota != null ? notaToScale10(nota) : null;
+  const isNotStarted = workflowStatus === "nao_iniciado";
 
   return (
     <div
       className={cn(
-        "rounded-xl border p-3.5 transition-all cursor-pointer group",
+        "rounded-xl border p-3.5 transition-all group",
         "hover:shadow-md hover:border-primary/40",
         highlighted
           ? "ring-2 ring-primary/30 border-primary/40 bg-primary/5 shadow-sm"
           : "bg-background border-border/60",
         file.approvedAsOfficial && "border-l-[3px] border-l-accent"
       )}
-      onClick={() => onOpenMentoria(file)}
     >
       {/* Top row: atendente + nota */}
       <div className="flex items-start justify-between gap-2 mb-2">
