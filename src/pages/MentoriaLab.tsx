@@ -37,6 +37,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import ConversationView from "@/components/ConversationView";
 import MentoriaDetailDialog from "@/components/MentoriaDetailDialog";
 import ParserDiagnosticDialog from "@/components/ParserDiagnosticDialog";
+import MentoriaPipeline from "@/components/MentoriaPipeline";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro";
 type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
@@ -1387,234 +1388,20 @@ const MentoriaLab = () => {
               </div>
             </Card>
 
-            {/* Table */}
-            <Card id="mentoria-table" className="overflow-hidden scroll-mt-4">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/50">
-                      <th className="p-3 text-left w-10">
-                        <Checkbox
-                          checked={selected.size === filteredFiles.length && filteredFiles.length > 0}
-                          onCheckedChange={toggleSelectAll}
-                        />
-                      </th>
-                      <th className="p-3 text-left font-medium text-muted-foreground">Atendente</th>
-                      <th className="p-3 text-left font-medium text-muted-foreground">Data</th>
-                      <th className="p-3 text-left font-medium text-muted-foreground">Protocolo</th>
-                      <th className="p-3 text-center font-medium text-muted-foreground">Áudio</th>
-                      <th className="p-3 text-center font-medium text-muted-foreground">Status</th>
-                      <th className="p-3 text-center font-medium text-muted-foreground">Fluxo</th>
-                      <th className="p-3 text-left font-medium text-muted-foreground">Data da Auditoria</th>
-                      <th className="p-3 text-center font-medium text-muted-foreground">Ação</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedFiles.map((f) => (
-                      <tr
-                        key={f.id}
-                        className={cn(
-                          "border-b border-border last:border-0 transition-colors",
-                          highlightedFileId === f.id
-                            ? "bg-primary/8 ring-1 ring-inset ring-primary/20"
-                            : f.status === "analisado"
-                            ? "bg-accent/5"
-                            : "hover:bg-muted/30",
-                          f.approvedAsOfficial && "border-l-[3px] border-l-accent"
-                        )}
-                      >
-                        <td className="p-3">
-                          <Checkbox checked={selected.has(f.id)} onCheckedChange={() => toggleSelect(f.id)} />
-                        </td>
-                        <td className="p-3">
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate max-w-[180px]">
-                              {readingIds.has(f.id) ? <Loader2 className="h-3 w-3 animate-spin inline mr-1" /> : null}
-                              {f.atendente || <span className="italic text-muted-foreground opacity-60">Não identificado</span>}
-                            </p>
-                            <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                              <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">{f.name}</p>
-                              {f.transferred && (
-                                <Badge className="bg-blue-100 text-blue-700 text-[9px] px-1 py-0 shrink-0">Transferido</Badge>
-                              )}
-                              {f.attendantMatch && !f.attendantMatch.matched && f.atendente && (
-                                <Badge className="bg-warning/15 text-warning text-[9px] px-1 py-0 shrink-0">Não cadastrado</Badge>
-                              )}
-                              {f.attendantMatch?.matched && f.attendantMatch.matchConfidence === "first_name" && (
-                                <Badge className="bg-orange-100 text-orange-700 text-[9px] px-1 py-0 shrink-0">Revisar</Badge>
-                              )}
-                              {f.attendantMatch?.matched && f.attendantMatch.matchConfidence === "partial" && (
-                                <Badge className="bg-sky-100 text-sky-700 text-[9px] px-1 py-0 shrink-0">Parcial</Badge>
-                              )}
-                              {f.attendantMatch?.matched && f.attendantMatch.evaluationStatus === "evaluable" && (
-                                <Badge className="bg-emerald-500/10 text-emerald-600 text-[9px] px-1 py-0 shrink-0">Avaliável</Badge>
-                              )}
-                              {f.attendantMatch?.matched && f.attendantMatch.evaluationStatus === "outside_main_ruler" && (
-                                <Badge className="bg-amber-500/10 text-amber-600 text-[9px] px-1 py-0 shrink-0">Fora da régua</Badge>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-3 text-muted-foreground text-xs">{f.data ? formatDateBR(f.data) : <span className="italic opacity-60">—</span>}</td>
-                        <td className="p-3 text-muted-foreground text-xs font-mono">{f.protocolo || <span className="italic opacity-60 font-sans">—</span>}</td>
-                        <td className="p-3 text-center">
-                          {f.hasAudio === undefined ? (
-                            <span className="text-xs italic opacity-60">—</span>
-                          ) : f.hasAudio ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-accent/15 text-accent">Sim</span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">Não</span>
-                          )}
-                        </td>
-                        <td className="p-3 text-center">
-                          <div className="flex flex-col items-center gap-1">
-                            {readingIds.has(f.id) ? (
-                              <Badge className="bg-primary/10 text-primary text-xs">Lendo...</Badge>
-                            ) : f.approvedAsOfficial ? (
-                              <Badge className="bg-accent/15 text-accent text-xs gap-1">
-                                <ShieldCheck className="h-3 w-3" /> Oficial
-                              </Badge>
-                            ) : f.status === "analisado" && f.ineligible ? (
-                              <Badge className="bg-muted text-muted-foreground text-xs">
-                                {f.ineligibleReason || "Fora de avaliação"}
-                              </Badge>
-                            ) : (
-                              <Badge className={`${statusConfig[f.status].color} text-xs`}>
-                                {statusConfig[f.status].label}
-                              </Badge>
-                            )}
-                            {f.status === "analisado" && !f.ineligible && !f.approvedAsOfficial && f.result?.notaFinal != null && notaToScale10(f.result.notaFinal) < 7 && (
-                              <Badge className="bg-warning/15 text-warning text-[10px] whitespace-nowrap">
-                                Necessita mentoria
-                              </Badge>
-                            )}
-                          </div>
-                        </td>
-                        <td className="p-3 text-center">
-                          {(() => {
-                            const ws = getWorkflowStatus(f.id);
-                            if (ws === "finalizado") return <Badge className="bg-accent/15 text-accent text-[10px]"><CheckCircle2 className="h-3 w-3 mr-1" />Finalizado</Badge>;
-                            if (ws === "em_analise") return <Badge className="bg-primary/15 text-primary text-[10px]"><Eye className="h-3 w-3 mr-1" />Em análise</Badge>;
-                            return <Badge variant="outline" className="text-muted-foreground text-[10px]">Não iniciado</Badge>;
-                          })()}
-                        </td>
-                        <td className="p-3 text-muted-foreground text-xs">
-                          {f.analyzedAt ? formatDateBR(f.analyzedAt) : <span className="italic opacity-60">—</span>}
-                        </td>
-                        <td className="p-3 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-xs gap-1"
-                              onClick={() => { setSideFile(f); setHighlightedFileId(f.id); }}
-                            >
-                              <Eye className="h-3 w-3" /> Abrir
-                            </Button>
-                            {f.status === "analisado" && f.result && (
-                              <TooltipProvider delayDuration={200}>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      size="icon"
-                                      className="h-7 w-7"
-                                      onClick={() => openMentoria(f)}
-                                    >
-                                      <BookOpen className="h-3.5 w-3.5" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent><p className="text-xs">Ver mentoria</p></TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                            {f.status === "analisado" && !f.ineligible && !f.approvedAsOfficial && f.evaluationId && (
-                              <TooltipProvider delayDuration={200}>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-7 w-7 text-accent border-accent/30 hover:bg-accent/10"
-                                      onClick={() => approveAsOfficial(f)}
-                                      disabled={approvingIds.has(f.id)}
-                                    >
-                                      {approvingIds.has(f.id) ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent><p className="text-xs">Aprovar como Avaliação Oficial</p></TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-destructive"
-                              onClick={() => removeFile(f.id)}
-                              title="Remover"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                            {isAdmin && (
-                              <TooltipProvider delayDuration={200}>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7 text-muted-foreground"
-                                      onClick={() => setDiagnosticFile(f)}
-                                    >
-                                      <Bug className="h-3 w-3" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent><p className="text-xs">Diagnóstico do parser</p></TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {filteredFiles.length === 0 && (
-                      <tr>
-                        <td colSpan={10} className="p-8 text-center text-muted-foreground">
-                          Nenhum atendimento encontrado com os filtros aplicados.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-                  <span className="text-xs text-muted-foreground">
-                    Página {currentPage} de {totalPages} · {filteredFiles.length} atendimento(s)
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs gap-1"
-                      disabled={currentPage <= 1}
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    >
-                      <ChevronLeft className="h-3 w-3" /> Anterior
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs gap-1"
-                      disabled={currentPage >= totalPages}
-                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    >
-                      Próxima <ChevronRight className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </Card>
+            {/* Pipeline View */}
+            <MentoriaPipeline
+              files={filteredFiles}
+              getWorkflowStatus={getWorkflowStatus}
+              highlightedFileId={highlightedFileId}
+              readingIds={readingIds}
+              approvingIds={approvingIds}
+              isAdmin={isAdmin}
+              onOpenFile={(f) => { setSideFile(f as any); setHighlightedFileId(f.id); }}
+              onOpenMentoria={(f) => openMentoria(f as any)}
+              onApproveOfficial={(f) => approveAsOfficial(f as any)}
+              onRemoveFile={removeFile}
+              onOpenDiagnostic={(f) => setDiagnosticFile(f as any)}
+            />
 
             {/* Selection warning */}
             {selected.size > ANALYZE_LIMIT && (
