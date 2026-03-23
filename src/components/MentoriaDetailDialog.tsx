@@ -615,6 +615,35 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
             </TabsContent>
           )}
         </Tabs>
+        {/* ═══ WORKFLOW CONTROL BAR ═══ */}
+        <div className="px-8 py-3 border-t border-border/60 bg-muted/20 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            {workflowStatus && (
+              <Badge variant="outline" className={`text-[10px] font-bold ${
+                workflowStatus === "finalizado" ? "bg-accent/15 text-accent border-accent/30" :
+                workflowStatus === "em_analise" ? "bg-primary/15 text-primary border-primary/30" :
+                "bg-muted text-muted-foreground"
+              }`}>
+                {workflowStatus === "finalizado" ? "Finalizado" : workflowStatus === "em_analise" ? "Em análise" : "Não iniciado"}
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {workflowStatus !== "finalizado" && onMarkFinished && (
+              <Button variant="outline" size="sm" onClick={onMarkFinished} className="gap-1.5 text-xs h-8 font-semibold text-accent border-accent/30 hover:bg-accent/10">
+                <CheckSquare className="h-3.5 w-3.5" /> Marcar como finalizado
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5 text-xs h-8 font-semibold">
+              <List className="h-3.5 w-3.5" /> Voltar para lista
+            </Button>
+            {hasNextFile && onNextFile && (
+              <Button size="sm" onClick={onNextFile} className="gap-1.5 text-xs h-8 font-semibold">
+                Próximo atendimento <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        </div>
       </DialogContent>
       <UraContextDialog open={uraOpen} onOpenChange={setUraOpen} rawText={rawText} atendente={atendente} structuredConversation={structuredConversation} />
     </Dialog>
