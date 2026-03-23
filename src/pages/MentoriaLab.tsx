@@ -862,7 +862,7 @@ const MentoriaLab = () => {
             classificacao: classificacaoFinal,
             atendente: data.atendente || labFile.atendente,
             protocolo: data.protocolo || labFile.protocolo,
-            result: data,
+            result: { ...data, _ineligible: isIneligible, _ineligibleReason: ineligibleReason },
           } as any).eq("id", labFile.batchFileId);
         }
 
