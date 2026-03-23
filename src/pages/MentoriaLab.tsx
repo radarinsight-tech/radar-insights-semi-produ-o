@@ -89,6 +89,8 @@ interface LabFile {
   analyzedAt?: Date;
   ineligible?: boolean;
   ineligibleReason?: string;
+  nonEvaluable?: boolean;
+  nonEvaluableReason?: string;
   attendantMatch?: MatchResult;
   transferred?: boolean;
   approvedAsOfficial?: boolean;
@@ -109,6 +111,7 @@ import { extractAllMetadata } from "@/lib/mentoriaMetadata";
 import { getRegisteredAttendants, matchAttendant, type MatchResult } from "@/lib/attendantMatcher";
 import { extractUraContext } from "@/lib/conversationParser";
 import type { UraContext, UraStatus } from "@/lib/uraContextSummarizer";
+import { detectEvaluability } from "@/lib/evaluabilityDetector";
 
 const IMPORT_LIMIT = 1000;
 const IMPORT_RECOMMENDED = 500;
@@ -235,6 +238,9 @@ const MentoriaLab = () => {
             } catch { /* non-blocking */ }
           }
 
+          // Detect evaluability from structured conversation
+          const evaluability = detectEvaluability(structured, rawText);
+
           return {
             id: bf.id,
             file: new File([], bf.file_name, { type: "application/pdf" }),
@@ -257,6 +263,8 @@ const MentoriaLab = () => {
             analyzedAt: isAnalyzed ? new Date(bf.created_at) : undefined,
             ineligible: isIneligible,
             ineligibleReason,
+            nonEvaluable: !evaluability.evaluable,
+            nonEvaluableReason: evaluability.reason,
             approvedAsOfficial: matchedEval?.resultado_validado === true,
             evaluationId: matchedEval?.id,
             uraContext: uraCtx,
@@ -362,6 +370,9 @@ const MentoriaLab = () => {
         }
       } catch { /* non-blocking */ }
 
+      // Detect evaluability
+      const evaluability = detectEvaluability(structured, text);
+
       const updatedFile: LabFile = {
         ...sourceFile,
         status: "lido",
@@ -372,6 +383,8 @@ const MentoriaLab = () => {
         uraContext: uraCtx,
         uraStatus: uraCtx?.status,
         structuredConversation: structured,
+        nonEvaluable: !evaluability.evaluable,
+        nonEvaluableReason: evaluability.reason,
       };
 
       setFiles((prev) => prev.map((f) => (f.id === labFile.id ? updatedFile : f)));
@@ -787,17 +800,23 @@ const MentoriaLab = () => {
         }
 
         // Detect ineligible cases (audio, no interaction, bot-only)
-        const isIneligible = data.statusAtendimento === "fora_de_avaliacao"
+        const isServerIneligible = data.statusAtendimento === "fora_de_avaliacao"
           || data.statusAtendimento === "apenas_bot"
           || data.statusAuditoria === "impedimento_detectado"
           || data.statusAuditoria === "auditoria_bloqueada";
 
-        const ineligibleReason = isIneligible
+        // Also consider client-side non-evaluable detection
+        const isNonEvaluable = labFile.nonEvaluable === true;
+        const isIneligible = isServerIneligible || isNonEvaluable;
+
+        const ineligibleReason = isServerIneligible
           ? data.motivo === "sem_interacao_do_cliente" ? "Sem interação do cliente"
             : data.motivo === "atendimento_apenas_por_bot" ? "Apenas bot"
             : data.motivo === "envio_de_audio_pelo_atendente" ? "Fora da avaliação (Áudio)"
             : "Fora de avaliação"
-          : undefined;
+          : isNonEvaluable
+            ? labFile.nonEvaluableReason || "Interação insuficiente"
+            : undefined;
 
         const notaFinal = isIneligible ? 0 : (typeof data.notaFinal === "number" ? data.notaFinal : 0);
         const bonusQualidade = isIneligible ? 0 : (typeof data.bonusQualidade === "number" ? data.bonusQualidade : 0);
@@ -858,6 +877,8 @@ const MentoriaLab = () => {
           analyzedAt: new Date(),
           ineligible: isIneligible,
           ineligibleReason,
+          nonEvaluable: isNonEvaluable,
+          nonEvaluableReason: isNonEvaluable ? (labFile.nonEvaluableReason || "Interação insuficiente") : undefined,
           evaluationId: savedEval?.id,
         };
 
@@ -1695,6 +1716,8 @@ const MentoriaLab = () => {
         onMarkFinished={handleMarkFinished}
         onNextFile={handleNextFile}
         hasNextFile={!!getNextAnalyzedFile()}
+        nonEvaluable={mentoriaFile?.nonEvaluable}
+        nonEvaluableReason={mentoriaFile?.nonEvaluableReason}
       />
       {/* Parser Diagnostic Dialog (admin-only) */}
       <ParserDiagnosticDialog

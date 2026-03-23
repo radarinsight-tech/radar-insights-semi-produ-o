@@ -23,6 +23,8 @@ interface ChartFile {
   atendente?: string;
   data?: string;
   analyzedAt?: Date;
+  nonEvaluable?: boolean;
+  ineligible?: boolean;
   result?: {
     notaFinal?: number;
     classificacao?: string;
@@ -72,7 +74,7 @@ const MentoriaCharts = ({ files }: MentoriaChartsProps) => {
   const [appliedPeriod, setAppliedPeriod] = useState<PeriodMode>("dia");
   const chartsRef = useRef<HTMLDivElement>(null);
 
-  const allAnalyzed = useMemo(() => files.filter(f => f.result && typeof f.result.notaFinal === "number"), [files]);
+  const allAnalyzed = useMemo(() => files.filter(f => f.result && typeof f.result.notaFinal === "number" && !f.nonEvaluable && !f.ineligible), [files]);
 
   // Apply date filter
   const analyzed = useMemo(() => {

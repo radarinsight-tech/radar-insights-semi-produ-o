@@ -14,6 +14,7 @@ import {
   User,
   Calendar,
   SkipForward,
+  AlertTriangle,
 } from "lucide-react";
 import { cn, formatDateBR, notaToScale10 } from "@/lib/utils";
 import type { WorkflowStatus } from "@/components/MentoriaDetailDialog";
@@ -31,6 +32,8 @@ interface PipelineFile {
   error?: string;
   ineligible?: boolean;
   ineligibleReason?: string;
+  nonEvaluable?: boolean;
+  nonEvaluableReason?: string;
   approvedAsOfficial?: boolean;
   evaluationId?: string;
   analyzedAt?: Date;
@@ -218,6 +221,11 @@ const AttendanceCard = ({
       </div>
 
       <div className="flex items-center gap-1.5 flex-wrap mb-2">
+        {file.nonEvaluable && (
+          <Badge className="bg-warning/15 text-warning text-[9px] gap-0.5 px-1.5 py-0 h-auto border border-warning/30">
+            <AlertTriangle className="h-2.5 w-2.5" /> Não avaliável
+          </Badge>
+        )}
         {file.approvedAsOfficial && (
           <Badge className="bg-accent/15 text-accent text-[9px] gap-0.5 px-1.5 py-0 h-auto">
             <ShieldCheck className="h-2.5 w-2.5" /> Oficial
@@ -231,7 +239,7 @@ const AttendanceCard = ({
         {file.transferred && (
           <Badge className="bg-primary/15 text-primary text-[9px] px-1 py-0 h-auto">Transferido</Badge>
         )}
-        {hasResult && !file.ineligible && nota10 != null && nota10 < 7 && (
+        {hasResult && !file.ineligible && !file.nonEvaluable && nota10 != null && nota10 < 7 && (
           <Badge className="bg-warning/15 text-warning text-[9px] px-1.5 py-0 h-auto">Necessita mentoria</Badge>
         )}
         {file.result?.classificacao && !file.ineligible && (
