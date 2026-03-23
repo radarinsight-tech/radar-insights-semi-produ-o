@@ -299,32 +299,42 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           </div>
         </DialogHeader>
 
-        {/* ═══ TAB NAVIGATION ═══ */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
-          <div className="px-8 pt-2 pb-0 border-b border-border/40 bg-muted/10">
-            <TabsList className="h-9 bg-transparent p-0 gap-4">
-              <TabsTrigger value="relatorio" className="text-xs font-bold data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-1 pb-2">
-                <FileText className="h-3.5 w-3.5 mr-1.5" /> Relatório
-              </TabsTrigger>
-              {preAnalysis && (
-                <TabsTrigger value="pre-analise" className="text-xs font-bold data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-1 pb-2">
-                  <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Pré-Análise
-                  <Badge variant="outline" className="ml-1.5 text-[9px] px-1.5 py-0 font-bold border-primary/30 text-primary">
-                    {preAnalysis.suggestions.length}
-                  </Badge>
-                </TabsTrigger>
-              )}
-              {preAnalysis && (
-                <TabsTrigger value="semi-auto" className="text-xs font-bold data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-1 pb-2">
-                  <Zap className="h-3.5 w-3.5 mr-1.5" /> Semi-Automático
-                </TabsTrigger>
-              )}
-            </TabsList>
-          </div>
+        {/* ═══ STEP BAR ═══ */}
+        <MentoriaStepBar
+          currentStep={preAnalysis ? currentStep : "relatorio"}
+          completedSteps={completedSteps}
+          onStepClick={(step) => setCurrentStep(step)}
+          hasPreAnalysis={!!preAnalysis}
+        />
 
-          {/* ═══ TAB: RELATÓRIO ═══ */}
-          <TabsContent value="relatorio" className="flex-1 min-h-0 m-0">
-            <ScrollArea className="max-h-[calc(96vh-140px)]">
+        {/* ═══ STEP CONTENT ═══ */}
+        <div className="flex-1 min-h-0">
+          {/* STEP: PRÉ-ANÁLISE */}
+          {currentStep === "pre-analise" && preAnalysis && (
+            <ScrollArea className="max-h-[calc(96vh-200px)]">
+              <div className="px-8 py-8">
+                <PreAnalysisPanel analysis={preAnalysis} />
+              </div>
+            </ScrollArea>
+          )}
+
+          {/* STEP: SEMI-AUTOMÁTICO */}
+          {currentStep === "semi-auto" && preAnalysis && (
+            <ScrollArea className="max-h-[calc(96vh-200px)]">
+              <div className="px-8 py-8">
+                <SemiAutoPanel
+                  analysis={preAnalysis}
+                  onConfirm={(semiResult: SemiAutoResult) => {
+                    console.log("Semi-auto confirmed:", semiResult);
+                  }}
+                />
+              </div>
+            </ScrollArea>
+          )}
+
+          {/* STEP: RELATÓRIO */}
+          {currentStep === "relatorio" && (
+            <ScrollArea className="max-h-[calc(96vh-200px)]">
           <div ref={printRef} className="px-8 py-8 space-y-0">
 
             {/* ═══ 1. HERO — Nota + Classificação + Bônus ═══ */}
@@ -412,7 +422,6 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                   const catPct = subtotal ? Math.round((subtotal.obtidos / subtotal.possiveis) * 100) : null;
                   return (
                     <div key={categoria}>
-                      {/* Category header */}
                       <div className="flex items-center justify-between mb-4 pb-2 border-b border-border/40">
                         <div className="flex items-center gap-2.5">
                           <span className="text-lg">{CATEGORY_ICONS[categoria] || "📋"}</span>
@@ -423,10 +432,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                         {subtotal && (
                           <div className="flex items-center gap-3">
                             <div className="w-20 h-2 rounded-full bg-muted overflow-hidden">
-                              <div
-                                className="h-full rounded-full bg-primary transition-all"
-                                style={{ width: `${catPct}%` }}
-                              />
+                              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${catPct}%` }} />
                             </div>
                             <span className="text-xs font-bold text-muted-foreground tabular-nums whitespace-nowrap">
                               {subtotal.obtidos}/{subtotal.possiveis} pts
@@ -435,7 +441,6 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                         )}
                       </div>
 
-                      {/* Criteria list */}
                       <div className="space-y-1 border-l-2 border-border/60 ml-4">
                         {items.map((c) => {
                           const badge = resultLabel(c.resultado);
@@ -449,41 +454,29 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                               : "";
                           return (
                             <div key={c.numero} className={`relative pl-7 py-3.5 group ${rowBg} ${rowBg ? "px-5 my-1.5" : ""}`}>
-                              {/* Dot on timeline */}
                               <div className={`absolute ${rowBg ? "left-[13px]" : "left-[-5px]"} top-[20px] w-2.5 h-2.5 rounded-full ring-2 ring-background ${
                                 c.resultado === "SIM" ? "bg-accent" :
                                 c.resultado === "NÃO" ? "bg-destructive" : "bg-muted-foreground/40"
                               }`} />
-
-                              {/* Question + badge + pts */}
                               <div className="flex items-baseline gap-2.5 flex-wrap">
-                                <span className={`text-[13px] font-semibold leading-snug ${
-                                  c.resultado === "SIM" ? "text-foreground" :
-                                  c.resultado === "NÃO" ? "text-foreground" : "text-foreground"
-                                }`}>
+                                <span className="text-[13px] font-semibold leading-snug text-foreground">
                                   {c.numero}. {c.nome}
                                 </span>
                                 <Badge variant="outline" className={`text-[10px] px-2 py-0.5 border font-extrabold ${badge.cls}`}>
                                   {badge.text}
                                 </Badge>
                                 {isCritical && c.resultado !== "FORA DO ESCOPO" && (
-                                  <Badge className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-0 font-bold">
-                                    CRÍTICO
-                                  </Badge>
+                                  <Badge className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-0 font-bold">CRÍTICO</Badge>
                                 )}
                                 <span className="text-[10px] text-muted-foreground font-semibold ml-auto shrink-0 tabular-nums">
                                   {c.pontosObtidos}/{c.pesoMaximo} pts
                                 </span>
                               </div>
-
-                              {/* Justification */}
                               <p className={`text-xs mt-2 leading-relaxed pl-0.5 ${
                                 c.resultado === "NÃO" ? "text-destructive font-medium" : "text-muted-foreground"
                               }`}>
                                 {c.explicacao}
                               </p>
-
-                              {/* Conversation excerpt */}
                               {excerpt && (
                                 <div className={`mt-2.5 rounded-lg px-3.5 py-2.5 text-[11px] italic border-l-[3px] ${
                                   c.resultado === "SIM"
@@ -516,7 +509,6 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* Principal acerto */}
                 {melhorAcerto && (
                   <div className="rounded-2xl bg-accent/5 border border-accent/20 p-6">
                     <div className="flex items-center gap-2.5 mb-4">
@@ -529,8 +521,6 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                     <p className="text-xs text-muted-foreground mt-2.5 leading-relaxed">{melhorAcerto.explicacao}</p>
                   </div>
                 )}
-
-                {/* Principal ponto de melhoria */}
                 {principalMelhoria && (
                   <div className="rounded-2xl bg-destructive/5 border border-destructive/20 p-6">
                     <div className="flex items-center gap-2.5 mb-4">
@@ -555,7 +545,6 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                 )}
               </div>
 
-              {/* Orientações práticas */}
               {mentoriaItems.length > 0 && (
                 <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-6">
                   <div className="flex items-center gap-2.5 mb-5">
@@ -569,7 +558,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                   <div className="space-y-3.5">
                     {mentoriaItems.map((item, i) => (
                       <div key={i} className="flex gap-3.5 items-start">
-                        <span className="text-[10px] font-bold text-primary-foreground shrink-0 w-5.5 h-5.5 rounded-full bg-primary flex items-center justify-center mt-0.5 w-6 h-6">
+                        <span className="text-[10px] font-bold text-primary-foreground shrink-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center mt-0.5">
                           {i + 1}
                         </span>
                         <p className="text-[13px] text-foreground leading-relaxed">{item}</p>
@@ -588,35 +577,11 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
 
           </div>
         </ScrollArea>
-          </TabsContent>
-
-          {/* ═══ TAB: PRÉ-ANÁLISE ═══ */}
-          {preAnalysis && (
-            <TabsContent value="pre-analise" className="flex-1 min-h-0 m-0">
-              <ScrollArea className="max-h-[calc(96vh-140px)]">
-                <div className="px-8 py-8">
-                  <PreAnalysisPanel analysis={preAnalysis} />
-                </div>
-              </ScrollArea>
-            </TabsContent>
           )}
 
-          {/* ═══ TAB: SEMI-AUTOMÁTICO ═══ */}
-          {preAnalysis && (
-            <TabsContent value="semi-auto" className="flex-1 min-h-0 m-0">
-              <ScrollArea className="max-h-[calc(96vh-140px)]">
-                <div className="px-8 py-8">
-                  <SemiAutoPanel
-                    analysis={preAnalysis}
-                    onConfirm={(result: SemiAutoResult) => {
-                      console.log("Semi-auto confirmed:", result);
-                    }}
-                  />
-                </div>
-              </ScrollArea>
-            </TabsContent>
-          )}
-        </Tabs>
+          {/* Fallback: no pre-analysis, show report directly */}
+          {!preAnalysis && currentStep !== "relatorio" && (() => { setCurrentStep("relatorio"); return null; })()}
+        </div>
         {/* ═══ WORKFLOW CONTROL BAR ═══ */}
         <div className="px-8 py-3 border-t border-border/60 bg-muted/20 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
