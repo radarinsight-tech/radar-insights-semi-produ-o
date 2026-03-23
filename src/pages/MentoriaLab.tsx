@@ -1708,6 +1708,8 @@ const MentoriaLab = () => {
         onMarkFinished={handleMarkFinished}
         onNextFile={handleNextFile}
         hasNextFile={!!getNextAnalyzedFile()}
+        nonEvaluable={mentoriaFile?.nonEvaluable}
+        nonEvaluableReason={mentoriaFile?.nonEvaluableReason}
       />
       {/* Parser Diagnostic Dialog (admin-only) */}
       <ParserDiagnosticDialog
