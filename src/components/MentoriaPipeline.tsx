@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   BookOpen, Eye, ShieldCheck, Bug, Trash2, Loader2,
-  Clock, PlayCircle, CheckCircle2, User, Calendar, SkipForward
+  Clock, PlayCircle, CheckCircle2, User, Calendar, SkipForward, Play
 } from "lucide-react";
 import { cn, formatDateBR, notaToScale10, formatNota } from "@/lib/utils";
 import type { WorkflowStatus } from "@/components/MentoriaDetailDialog";
@@ -75,13 +75,14 @@ const columnStyles: Record<WorkflowStatus, { header: string; border: string; bg:
 };
 
 const AttendanceCard = ({
-  file, highlighted, approvingIds, isAdmin,
+  file, highlighted, approvingIds, isAdmin, workflowStatus,
   onOpenFile, onOpenMentoria, onApproveOfficial, onRemoveFile, onOpenDiagnostic,
 }: {
   file: PipelineFile;
   highlighted: boolean;
   approvingIds: Set<string>;
   isAdmin: boolean;
+  workflowStatus: WorkflowStatus;
   onOpenFile: (f: PipelineFile) => void;
   onOpenMentoria: (f: PipelineFile) => void;
   onApproveOfficial: (f: PipelineFile) => void;
@@ -91,18 +92,18 @@ const AttendanceCard = ({
   const hasResult = file.status === "analisado" && file.result;
   const nota = hasResult ? file.result?.notaFinal : null;
   const nota10 = nota != null ? notaToScale10(nota) : null;
+  const isNotStarted = workflowStatus === "nao_iniciado";
 
   return (
     <div
       className={cn(
-        "rounded-xl border p-3.5 transition-all cursor-pointer group",
+        "rounded-xl border p-3.5 transition-all group",
         "hover:shadow-md hover:border-primary/40",
         highlighted
           ? "ring-2 ring-primary/30 border-primary/40 bg-primary/5 shadow-sm"
           : "bg-background border-border/60",
         file.approvedAsOfficial && "border-l-[3px] border-l-accent"
       )}
-      onClick={() => onOpenMentoria(file)}
     >
       {/* Top row: atendente + nota */}
       <div className="flex items-start justify-between gap-2 mb-2">
@@ -163,7 +164,7 @@ const AttendanceCard = ({
           </Badge>
         )}
         {file.transferred && (
-          <Badge className="bg-blue-100 text-blue-700 text-[9px] px-1 py-0 h-auto">Transferido</Badge>
+          <Badge className="bg-primary/15 text-primary text-[9px] px-1 py-0 h-auto">Transferido</Badge>
         )}
         {hasResult && !file.ineligible && nota10 != null && nota10 < 7 && (
           <Badge className="bg-warning/15 text-warning text-[9px] px-1.5 py-0 h-auto">Necessita mentoria</Badge>
@@ -175,8 +176,21 @@ const AttendanceCard = ({
         )}
       </div>
 
+      {/* Primary CTA for not-started items */}
+      {isNotStarted && hasResult && (
+        <div className="mb-2">
+          <Button
+            className="w-full gap-2 font-semibold h-9 text-sm"
+            onClick={() => onOpenMentoria(file)}
+          >
+            <Play className="h-4 w-4" />
+            Iniciar mentoria
+          </Button>
+        </div>
+      )}
+
       {/* Actions */}
-      <div className="flex items-center gap-1 pt-2 border-t border-border/40 opacity-80 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center gap-1 pt-2 border-t border-border/40 opacity-80 group-hover:opacity-100 transition-opacity">
         <TooltipProvider delayDuration={200}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -184,10 +198,10 @@ const AttendanceCard = ({
                 <Eye className="h-3 w-3" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent><p className="text-xs">Abrir detalhes</p></TooltipContent>
+            <TooltipContent><p className="text-xs">Visualizar preview</p></TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        {hasResult && (
+        {hasResult && !isNotStarted && (
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -195,7 +209,7 @@ const AttendanceCard = ({
                   <BookOpen className="h-3 w-3" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent><p className="text-xs">Ver mentoria</p></TooltipContent>
+              <TooltipContent><p className="text-xs">Abrir mentoria</p></TooltipContent>
             </Tooltip>
           </TooltipProvider>
         )}
@@ -317,6 +331,7 @@ const MentoriaPipeline = ({
                     highlighted={highlightedFileId === f.id}
                     approvingIds={approvingIds}
                     isAdmin={isAdmin}
+                    workflowStatus={col.key}
                     onOpenFile={onOpenFile}
                     onOpenMentoria={onOpenMentoria}
                     onApproveOfficial={onApproveOfficial}
