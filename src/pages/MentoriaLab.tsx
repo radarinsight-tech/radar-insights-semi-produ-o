@@ -1490,6 +1490,14 @@ const MentoriaLab = () => {
                             )}
                           </div>
                         </td>
+                        <td className="p-3 text-center">
+                          {(() => {
+                            const ws = getWorkflowStatus(f.id);
+                            if (ws === "finalizado") return <Badge className="bg-accent/15 text-accent text-[10px]"><CheckCircle2 className="h-3 w-3 mr-1" />Finalizado</Badge>;
+                            if (ws === "em_analise") return <Badge className="bg-primary/15 text-primary text-[10px]"><Eye className="h-3 w-3 mr-1" />Em análise</Badge>;
+                            return <Badge variant="outline" className="text-muted-foreground text-[10px]">Não iniciado</Badge>;
+                          })()}
+                        </td>
                         <td className="p-3 text-muted-foreground text-xs">
                           {f.analyzedAt ? formatDateBR(f.analyzedAt) : <span className="italic opacity-60">—</span>}
                         </td>
