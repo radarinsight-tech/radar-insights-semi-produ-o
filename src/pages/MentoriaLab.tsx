@@ -1739,12 +1739,16 @@ const MentoriaLab = () => {
       {/* Mentoria Detail Dialog */}
       <MentoriaDetailDialog
         open={!!mentoriaFile}
-        onOpenChange={() => setMentoriaFile(null)}
+        onOpenChange={(open) => { if (!open) setMentoriaFile(null); }}
         result={mentoriaFile?.result}
         fileName={mentoriaFile?.name || ""}
         rawText={mentoriaFile?.text}
         atendente={mentoriaFile?.atendente}
         structuredConversation={mentoriaFile?.structuredConversation}
+        workflowStatus={mentoriaFile ? getWorkflowStatus(mentoriaFile.id) : undefined}
+        onMarkFinished={handleMarkFinished}
+        onNextFile={handleNextFile}
+        hasNextFile={!!getNextAnalyzedFile()}
       />
       {/* Parser Diagnostic Dialog (admin-only) */}
       <ParserDiagnosticDialog
