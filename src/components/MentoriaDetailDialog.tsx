@@ -50,6 +50,8 @@ interface MentoriaDetailDialogProps {
   onMarkFinished?: () => void;
   onNextFile?: () => void;
   hasNextFile?: boolean;
+  nonEvaluable?: boolean;
+  nonEvaluableReason?: string;
 }
 
 const CATEGORY_ORDER = [
@@ -111,7 +113,7 @@ const findRelevantExcerpt = (rawText: string | undefined, explicacao: string): s
   return null;
 };
 
-const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation, workflowStatus, onMarkFinished, onNextFile, hasNextFile }: MentoriaDetailDialogProps) => {
+const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation, workflowStatus, onMarkFinished, onNextFile, hasNextFile, nonEvaluable, nonEvaluableReason }: MentoriaDetailDialogProps) => {
   const [uraOpen, setUraOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<MentoriaStep>("pre-analise");
   const [completedSteps, setCompletedSteps] = useState<Set<MentoriaStep>>(new Set());
