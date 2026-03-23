@@ -275,6 +275,27 @@ const MentoriaLab = () => {
     loadPersistedData();
   }, []);
 
+  const ensureLocalFile = useCallback(async (labFile: LabFile): Promise<LabFile | null> => {
+    if (labFile.file.size > 0 || !labFile.storagePath) {
+      return labFile;
+    }
+
+    const { data, error } = await supabase.storage.from("mentoria-lab").download(labFile.storagePath);
+    if (error || !data) {
+      return null;
+    }
+
+    const hydratedFile = new File([data], labFile.name, { type: "application/pdf" });
+    const updatedFile: LabFile = {
+      ...labFile,
+      file: hydratedFile,
+      size: hydratedFile.size || labFile.size,
+    };
+
+    setFiles((prev) => prev.map((f) => (f.id === labFile.id ? updatedFile : f)));
+    return updatedFile;
+  }, []);
+
   // Derived unique values for filter dropdowns
   const atendentes = useMemo(() => {
     const set = new Set(files.map((f) => f.atendente).filter(Boolean) as string[]);
@@ -290,7 +311,18 @@ const MentoriaLab = () => {
   const readFile = useCallback(async (labFile: LabFile): Promise<LabFile | null> => {
     setReadingIds((prev) => new Set(prev).add(labFile.id));
     try {
-      const text = await extractTextFromPdf(labFile.file);
+      const sourceFile = await ensureLocalFile(labFile);
+      if (!sourceFile) {
+        setFiles((prev) =>
+          prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível recuperar este PDF salvo para leitura." } : f))
+        );
+        if (labFile.batchFileId) {
+          await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha ao recuperar PDF salvo" } as any).eq("id", labFile.batchFileId);
+        }
+        return null;
+      }
+
+      const text = await extractTextFromPdf(sourceFile.file);
       if (!text.trim()) {
         setFiles((prev) =>
           prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível extrair texto deste PDF." } : f))
@@ -331,7 +363,7 @@ const MentoriaLab = () => {
       } catch { /* non-blocking */ }
 
       const updatedFile: LabFile = {
-        ...labFile,
+        ...sourceFile,
         status: "lido",
         text,
         ...metadata,
@@ -373,7 +405,7 @@ const MentoriaLab = () => {
         return next;
       });
     }
-  }, []);
+  }, [ensureLocalFile]);
 
   // Extract PDFs from a ZIP file with detailed reporting
   const extractPdfsFromZip = useCallback(async (zipFile: File): Promise<{ pdfs: File[]; totalEntries: number; ignored: number }> => {
@@ -712,9 +744,19 @@ const MentoriaLab = () => {
 
     for (const labFile of toAnalyze) {
       try {
-        let text = labFile.text;
+        const sourceFile = await ensureLocalFile(labFile);
+        if (!sourceFile) {
+          setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível recuperar este PDF salvo para análise." } : f)));
+          if (labFile.batchFileId) {
+            await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha ao recuperar PDF salvo" } as any).eq("id", labFile.batchFileId);
+          }
+          errors++;
+          continue;
+        }
+
+        let text = sourceFile.text;
         if (!text) {
-          text = await extractTextFromPdf(labFile.file);
+          text = await extractTextFromPdf(sourceFile.file);
           if (!text.trim()) {
             setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível extrair texto deste arquivo." } : f)));
             if (labFile.batchFileId) {
@@ -726,7 +768,7 @@ const MentoriaLab = () => {
         }
 
         // Use the already-stored path in mentoria-lab bucket instead of re-uploading
-        const pdfUrl = labFile.storagePath || "";
+        const pdfUrl = sourceFile.storagePath || "";
 
         const { data, error } = await supabase.functions.invoke("analyze-attendance", { body: { text } });
 
@@ -801,13 +843,13 @@ const MentoriaLab = () => {
         }
 
         const updatedFile: LabFile = {
-          ...labFile,
+          ...sourceFile,
           status: "analisado",
           result: { ...data, _ineligible: isIneligible, _ineligibleReason: ineligibleReason },
-          protocolo: data.protocolo || labFile.protocolo,
-          atendente: data.atendente || labFile.atendente,
-          data: data.data || labFile.data,
-          tipo: data.tipo || labFile.tipo,
+          protocolo: data.protocolo || sourceFile.protocolo,
+          atendente: data.atendente || sourceFile.atendente,
+          data: data.data || sourceFile.data,
+          tipo: data.tipo || sourceFile.tipo,
           analyzedAt: new Date(),
           ineligible: isIneligible,
           ineligibleReason,
@@ -865,7 +907,7 @@ const MentoriaLab = () => {
     }
 
     return { success, errors, openedTarget };
-  }, [currentBatchId, openMentoria, updateBatchStatus]);
+  }, [currentBatchId, ensureLocalFile, openMentoria, updateBatchStatus]);
 
   // Batch analyze with cloud storage for results
   const analyzeSelected = async () => {
