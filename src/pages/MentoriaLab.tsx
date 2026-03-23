@@ -39,6 +39,7 @@ import MentoriaDetailDialog from "@/components/MentoriaDetailDialog";
 import ParserDiagnosticDialog from "@/components/ParserDiagnosticDialog";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro";
+type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
 
 type BatchStatus = "recebido" | "extraindo_arquivos" | "organizando_atendimentos" | "pronto_para_curadoria" | "em_analise" | "concluido" | "erro";
 
