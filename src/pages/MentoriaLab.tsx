@@ -1464,22 +1464,6 @@ const MentoriaLab = () => {
 
           {sideFile && (
             <div className="mt-4 space-y-4">
-              {/* CTA: Iniciar análise - positioned at top for visibility */}
-              {sideFile.status === "analisado" && sideFile.result && (
-                <Button
-                  className="w-full gap-2 font-semibold text-base h-12"
-                  onClick={() => {
-                    const f = sideFile;
-                    setSideFile(null);
-                    openMentoria(f);
-                  }}
-                >
-                  <Play className="h-5 w-5" />
-                  Iniciar análise
-                </Button>
-              )}
-
-              {/* Auto-read button if pending - also at top */}
               {sideFile.status === "pendente" && !readingIds.has(sideFile.id) && (
                 <Button
                   variant="outline"
