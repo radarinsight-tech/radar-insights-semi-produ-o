@@ -37,6 +37,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import ConversationView from "@/components/ConversationView";
 import MentoriaDetailDialog from "@/components/MentoriaDetailDialog";
 import ParserDiagnosticDialog from "@/components/ParserDiagnosticDialog";
+import MentoriaPipeline from "@/components/MentoriaPipeline";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro";
 type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
