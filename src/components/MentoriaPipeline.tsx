@@ -117,17 +117,21 @@ const AttendanceCard = ({
   const nota10 = nota != null ? notaToScale10(nota) : null;
   const isReading = readingIds.has(file.id);
   const canStartMentoria = !processing && !isReading && file.status !== "erro";
-  const primaryLabel = isReading ? "Lendo atendimento..." : processing ? "Processando..." : "Iniciar mentoria";
+  const primaryLabel = isReading ? "Lendo atendimento..." : processing ? "Processando..." : hasResult ? "Abrir mentoria" : "Iniciar mentoria";
 
-  const handleOpenMentoria = () => {
-    onOpenMentoria(file);
+  const handleCardClick = () => {
+    if (hasResult) {
+      onOpenMentoria(file);
+    } else if (canStartMentoria) {
+      onStartMentoria(file);
+    }
   };
 
   const handleStartMentoria = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     if (!canStartMentoria) return;
     if (hasResult) {
-      handleOpenMentoria();
+      onOpenMentoria(file);
       return;
     }
     onStartMentoria(file);
@@ -157,12 +161,14 @@ const AttendanceCard = ({
     <div
       className={cn(
         "rounded-xl border p-3.5 transition-all group",
+        canStartMentoria || hasResult ? "cursor-pointer" : "",
         highlighted
           ? "ring-2 ring-primary/30 border-primary/40 bg-primary/5 shadow-sm"
           : "bg-background border-border/60",
         "hover:shadow-sm",
         file.approvedAsOfficial && "border-l-[3px] border-l-accent"
       )}
+      onClick={handleCardClick}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="min-w-0 flex-1">
