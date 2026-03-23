@@ -680,6 +680,13 @@ const MentoriaLab = () => {
     }
   };
 
+  const openMentoria = useCallback((f: LabFile) => {
+    setSideFile(null);
+    setMentoriaFile(f);
+    setHighlightedFileId(f.id);
+    setWorkflowStatuses(prev => ({ ...prev, [f.id]: prev[f.id] === "finalizado" ? "finalizado" : "em_analise" }));
+  }, []);
+
   const analyzeFiles = useCallback(async (toAnalyze: LabFile[], options?: { openOnSuccessId?: string; clearSelection?: boolean }) => {
     if (toAnalyze.length === 0) {
       toast.warning("Não há atendimentos prontos para análise.");
@@ -1035,13 +1042,6 @@ const MentoriaLab = () => {
   const formatSize = (b: number) => b < 1024 ? `${b} B` : `${(b / 1024).toFixed(1)} KB`;
 
   const getWorkflowStatus = (fileId: string): WorkflowStatus => workflowStatuses[fileId] || "nao_iniciado";
-
-  const openMentoria = useCallback((f: LabFile) => {
-    setSideFile(null);
-    setMentoriaFile(f);
-    setHighlightedFileId(f.id);
-    setWorkflowStatuses(prev => ({ ...prev, [f.id]: prev[f.id] === "finalizado" ? "finalizado" : "em_analise" }));
-  }, []);
 
   const handleMarkFinished = useCallback(() => {
     if (!mentoriaFile) return;
