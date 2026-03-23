@@ -365,6 +365,9 @@ const MentoriaLab = () => {
         }
       } catch { /* non-blocking */ }
 
+      // Detect evaluability
+      const evaluability = detectEvaluability(structured, text);
+
       const updatedFile: LabFile = {
         ...sourceFile,
         status: "lido",
@@ -375,6 +378,8 @@ const MentoriaLab = () => {
         uraContext: uraCtx,
         uraStatus: uraCtx?.status,
         structuredConversation: structured,
+        nonEvaluable: !evaluability.evaluable,
+        nonEvaluableReason: evaluability.reason,
       };
 
       setFiles((prev) => prev.map((f) => (f.id === labFile.id ? updatedFile : f)));
