@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type MouseEvent } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -114,22 +114,22 @@ const AttendanceCard = ({
     onOpenMentoria(file);
   };
 
-  const handlePreviewClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handlePreviewClick = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     onOpenFile(file);
   };
 
-  const handleApproveClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleApproveClick = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     onApproveOfficial(file);
   };
 
-  const handleDiagnosticClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleDiagnosticClick = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     onOpenDiagnostic(file);
   };
 
-  const handleRemoveClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleRemoveClick = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     onRemoveFile(file.id);
   };
