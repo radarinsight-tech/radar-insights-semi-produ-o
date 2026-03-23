@@ -164,7 +164,7 @@ const AttendanceCard = ({
           </Badge>
         )}
         {file.transferred && (
-          <Badge className="bg-blue-100 text-blue-700 text-[9px] px-1 py-0 h-auto">Transferido</Badge>
+          <Badge className="bg-primary/15 text-primary text-[9px] px-1 py-0 h-auto">Transferido</Badge>
         )}
         {hasResult && !file.ineligible && nota10 != null && nota10 < 7 && (
           <Badge className="bg-warning/15 text-warning text-[9px] px-1.5 py-0 h-auto">Necessita mentoria</Badge>
