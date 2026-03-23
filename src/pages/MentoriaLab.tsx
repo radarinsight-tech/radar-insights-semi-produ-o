@@ -39,6 +39,7 @@ import MentoriaDetailDialog from "@/components/MentoriaDetailDialog";
 import ParserDiagnosticDialog from "@/components/ParserDiagnosticDialog";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro";
+type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
 
 type BatchStatus = "recebido" | "extraindo_arquivos" | "organizando_atendimentos" | "pronto_para_curadoria" | "em_analise" | "concluido" | "erro";
 
@@ -131,6 +132,7 @@ const MentoriaLab = () => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [diagnosticFile, setDiagnosticFile] = useState<LabFile | null>(null);
+  const [workflowStatuses, setWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
   const { isAdmin } = useUserPermissions();
   // Filters
   const [filterAtendente, setFilterAtendente] = useState("todos");
@@ -953,6 +955,34 @@ const MentoriaLab = () => {
 
   const formatSize = (b: number) => b < 1024 ? `${b} B` : `${(b / 1024).toFixed(1)} KB`;
 
+  const getWorkflowStatus = (fileId: string): WorkflowStatus => workflowStatuses[fileId] || "nao_iniciado";
+
+  const openMentoria = useCallback((f: LabFile) => {
+    setMentoriaFile(f);
+    setHighlightedFileId(f.id);
+    setWorkflowStatuses(prev => ({ ...prev, [f.id]: prev[f.id] === "finalizado" ? "finalizado" : "em_analise" }));
+  }, []);
+
+  const handleMarkFinished = useCallback(() => {
+    if (!mentoriaFile) return;
+    setWorkflowStatuses(prev => ({ ...prev, [mentoriaFile.id]: "finalizado" }));
+    toast.success("Atendimento marcado como finalizado.");
+  }, [mentoriaFile]);
+
+  const getNextAnalyzedFile = useCallback(() => {
+    if (!mentoriaFile) return null;
+    const analyzed = filteredFiles.filter(f => f.status === "analisado" && f.result);
+    const currentIdx = analyzed.findIndex(f => f.id === mentoriaFile.id);
+    if (currentIdx < 0 || currentIdx >= analyzed.length - 1) return null;
+    return analyzed[currentIdx + 1];
+  }, [mentoriaFile, filteredFiles]);
+
+  const handleNextFile = useCallback(() => {
+    const next = getNextAnalyzedFile();
+    if (!next) return;
+    openMentoria(next);
+  }, [getNextAnalyzedFile, openMentoria]);
+
   const counts = useMemo(() => {
     const analisados = files.filter((f) => f.status === "analisado");
     const atendentesSet = new Set(
@@ -1374,6 +1404,7 @@ const MentoriaLab = () => {
                       <th className="p-3 text-left font-medium text-muted-foreground">Protocolo</th>
                       <th className="p-3 text-center font-medium text-muted-foreground">Áudio</th>
                       <th className="p-3 text-center font-medium text-muted-foreground">Status</th>
+                      <th className="p-3 text-center font-medium text-muted-foreground">Fluxo</th>
                       <th className="p-3 text-left font-medium text-muted-foreground">Data da Auditoria</th>
                       <th className="p-3 text-center font-medium text-muted-foreground">Ação</th>
                     </tr>
@@ -1459,6 +1490,14 @@ const MentoriaLab = () => {
                             )}
                           </div>
                         </td>
+                        <td className="p-3 text-center">
+                          {(() => {
+                            const ws = getWorkflowStatus(f.id);
+                            if (ws === "finalizado") return <Badge className="bg-accent/15 text-accent text-[10px]"><CheckCircle2 className="h-3 w-3 mr-1" />Finalizado</Badge>;
+                            if (ws === "em_analise") return <Badge className="bg-primary/15 text-primary text-[10px]"><Eye className="h-3 w-3 mr-1" />Em análise</Badge>;
+                            return <Badge variant="outline" className="text-muted-foreground text-[10px]">Não iniciado</Badge>;
+                          })()}
+                        </td>
                         <td className="p-3 text-muted-foreground text-xs">
                           {f.analyzedAt ? formatDateBR(f.analyzedAt) : <span className="italic opacity-60">—</span>}
                         </td>
@@ -1479,7 +1518,7 @@ const MentoriaLab = () => {
                                     <Button
                                       size="icon"
                                       className="h-7 w-7"
-                                      onClick={() => { setMentoriaFile(f); setHighlightedFileId(f.id); }}
+                                      onClick={() => openMentoria(f)}
                                     >
                                       <BookOpen className="h-3.5 w-3.5" />
                                     </Button>
@@ -1700,12 +1739,16 @@ const MentoriaLab = () => {
       {/* Mentoria Detail Dialog */}
       <MentoriaDetailDialog
         open={!!mentoriaFile}
-        onOpenChange={() => setMentoriaFile(null)}
+        onOpenChange={(open) => { if (!open) setMentoriaFile(null); }}
         result={mentoriaFile?.result}
         fileName={mentoriaFile?.name || ""}
         rawText={mentoriaFile?.text}
         atendente={mentoriaFile?.atendente}
         structuredConversation={mentoriaFile?.structuredConversation}
+        workflowStatus={mentoriaFile ? getWorkflowStatus(mentoriaFile.id) : undefined}
+        onMarkFinished={handleMarkFinished}
+        onNextFile={handleNextFile}
+        hasNextFile={!!getNextAnalyzedFile()}
       />
       {/* Parser Diagnostic Dialog (admin-only) */}
       <ParserDiagnosticDialog
