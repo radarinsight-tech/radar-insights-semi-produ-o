@@ -279,9 +279,11 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
               <Button variant="outline" size="sm" onClick={() => setUraOpen(true)} className="gap-1.5 text-xs h-8 font-semibold">
                 <Radio className="h-3.5 w-3.5" /> Contexto URA
               </Button>
-              <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5 text-xs h-8 font-semibold">
-                <Printer className="h-3.5 w-3.5" /> Imprimir
-              </Button>
+              {activeTab === "relatorio" && (
+                <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5 text-xs h-8 font-semibold">
+                  <Printer className="h-3.5 w-3.5" /> Imprimir Relatório
+                </Button>
+              )}
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOpenChange(false)}>
                 <X className="h-4 w-4" />
               </Button>
