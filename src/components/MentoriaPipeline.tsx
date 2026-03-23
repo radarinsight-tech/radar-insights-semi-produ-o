@@ -14,6 +14,7 @@ import {
   User,
   Calendar,
   SkipForward,
+  AlertTriangle,
 } from "lucide-react";
 import { cn, formatDateBR, notaToScale10 } from "@/lib/utils";
 import type { WorkflowStatus } from "@/components/MentoriaDetailDialog";
