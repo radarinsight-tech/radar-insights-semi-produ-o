@@ -955,12 +955,18 @@ const MentoriaLab = () => {
       return;
     }
 
+    // Move card to "Em análise" immediately for visual feedback
+    setWorkflowStatuses(prev => ({ ...prev, [labFile.id]: "em_analise" }));
+    setHighlightedFileId(labFile.id);
+
     let preparedFile = labFile;
 
     if (labFile.status === "pendente") {
       const readResult = await readFile(labFile);
       if (!readResult) {
         toast.error("Não foi possível preparar este atendimento para a mentoria.");
+        // Revert workflow status on failure
+        setWorkflowStatuses(prev => ({ ...prev, [labFile.id]: "nao_iniciado" }));
         return;
       }
       preparedFile = readResult;
@@ -973,6 +979,7 @@ const MentoriaLab = () => {
 
     if (preparedFile.status !== "lido") {
       toast.error("Este atendimento ainda não está pronto para iniciar a mentoria.");
+      setWorkflowStatuses(prev => ({ ...prev, [labFile.id]: "nao_iniciado" }));
       return;
     }
 
