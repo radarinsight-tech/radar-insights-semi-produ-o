@@ -176,8 +176,21 @@ const AttendanceCard = ({
         )}
       </div>
 
+      {/* Primary CTA for not-started items */}
+      {isNotStarted && hasResult && (
+        <div className="mb-2">
+          <Button
+            className="w-full gap-2 font-semibold h-9 text-sm"
+            onClick={() => onOpenMentoria(file)}
+          >
+            <Play className="h-4 w-4" />
+            Iniciar mentoria
+          </Button>
+        </div>
+      )}
+
       {/* Actions */}
-      <div className="flex items-center gap-1 pt-2 border-t border-border/40 opacity-80 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center gap-1 pt-2 border-t border-border/40 opacity-80 group-hover:opacity-100 transition-opacity">
         <TooltipProvider delayDuration={200}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -185,10 +198,10 @@ const AttendanceCard = ({
                 <Eye className="h-3 w-3" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent><p className="text-xs">Abrir detalhes</p></TooltipContent>
+            <TooltipContent><p className="text-xs">Visualizar preview</p></TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        {hasResult && (
+        {hasResult && !isNotStarted && (
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -196,7 +209,7 @@ const AttendanceCard = ({
                   <BookOpen className="h-3 w-3" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent><p className="text-xs">Ver mentoria</p></TooltipContent>
+              <TooltipContent><p className="text-xs">Abrir mentoria</p></TooltipContent>
             </Tooltip>
           </TooltipProvider>
         )}
