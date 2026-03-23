@@ -331,6 +331,7 @@ const MentoriaPipeline = ({
                     highlighted={highlightedFileId === f.id}
                     approvingIds={approvingIds}
                     isAdmin={isAdmin}
+                    workflowStatus={col.key}
                     onOpenFile={onOpenFile}
                     onOpenMentoria={onOpenMentoria}
                     onApproveOfficial={onApproveOfficial}
