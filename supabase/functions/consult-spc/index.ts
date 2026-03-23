@@ -165,10 +165,11 @@ async function consultarSPCReal(
   const maskedPassword = password.length > 2 ? password.slice(0, 1) + "***" + password.slice(-1) : "***";
 
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    "Content-Type": "application/json; charset=utf-8",
     Accept: "application/json",
     Authorization: `Basic ${authToken}`,
     "User-Agent": "RadarInsight/1.0",
+    "Cache-Control": "no-cache",
   };
 
   // ── Diagnostic log: REQUEST ──
