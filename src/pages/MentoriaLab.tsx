@@ -38,6 +38,7 @@ import ConversationView from "@/components/ConversationView";
 import MentoriaDetailDialog from "@/components/MentoriaDetailDialog";
 import ParserDiagnosticDialog from "@/components/ParserDiagnosticDialog";
 import MentoriaPipeline from "@/components/MentoriaPipeline";
+import MentoriaBatchHistory from "@/components/MentoriaBatchHistory";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro";
 type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
@@ -978,6 +979,19 @@ const MentoriaLab = () => {
     return analyzed[currentIdx + 1];
   }, [mentoriaFile, filteredFiles]);
 
+  // "Analisar próximo" — opens the first "nao_iniciado" file that has a result
+  const handleAnalyzeNextFromPipeline = useCallback(() => {
+    const notStarted = filteredFiles.filter(f => {
+      const ws = getWorkflowStatus(f.id);
+      return ws === "nao_iniciado" && f.status === "analisado" && f.result;
+    });
+    if (notStarted.length === 0) {
+      toast.info("Não há mais atendimentos pendentes de revisão.");
+      return;
+    }
+    openMentoria(notStarted[0]);
+  }, [filteredFiles, getWorkflowStatus, openMentoria]);
+
   const handleNextFile = useCallback(() => {
     const next = getNextAnalyzedFile();
     if (!next) return;
@@ -1378,9 +1392,14 @@ const MentoriaLab = () => {
                   {processing ? "Analisando..." : `Analisar ${selected.size} selecionado${selected.size !== 1 ? "s" : ""}`}
                 </Button>
                 {selected.size > 0 && (
-                  <Button variant="ghost" size="sm" onClick={removeSelected} className="text-destructive">
-                    <Trash2 className="h-4 w-4 mr-1" /> Remover selecionados
-                  </Button>
+                  <>
+                    <Button variant="ghost" size="sm" onClick={removeSelected} className="text-destructive">
+                      <Trash2 className="h-4 w-4 mr-1" /> Remover selecionados
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setSelected(new Set())} className="text-muted-foreground">
+                      <X className="h-4 w-4 mr-1" /> Limpar seleção
+                    </Button>
+                  </>
                 )}
                 <span className="ml-auto text-xs text-muted-foreground">
                   {filteredFiles.length} de {files.length} exibidos
@@ -1401,7 +1420,11 @@ const MentoriaLab = () => {
               onApproveOfficial={(f) => approveAsOfficial(f as any)}
               onRemoveFile={removeFile}
               onOpenDiagnostic={(f) => setDiagnosticFile(f as any)}
+              onAnalyzeNext={handleAnalyzeNextFromPipeline}
             />
+
+            {/* Batch history */}
+            <MentoriaBatchHistory />
 
             {/* Selection warning */}
             {selected.size > ANALYZE_LIMIT && (
