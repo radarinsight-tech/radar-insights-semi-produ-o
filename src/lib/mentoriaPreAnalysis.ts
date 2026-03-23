@@ -307,6 +307,15 @@ const c6: CriterionAnalyzer = (msgs, ctx) => {
   const qCount = questions?.length || 0;
   const pCount = probing?.length || 0;
   
+  // If demand was already in prior context and attendant didn't actively validate
+  if (ctx.hasPriorContext && ctx.reactiveExecution.isReactive) {
+    if (qCount >= 1) {
+      const ev = findEvidence(msgs, /\?/, "atendente");
+      return { sugestao: "PARCIAL", justificativa: "A demanda estava indicada no contexto anterior. Atendente fez pergunta(s), mas sem validação confirmatória da necessidade real.", evidencia: ev, confianca: "media" };
+    }
+    return { sugestao: "NÃO", justificativa: "A demanda estava indicada no contexto anterior, mas não houve validação ativa com o cliente. Atendente executou diretamente sem confirmar.", confianca: "alta" };
+  }
+  
   if (pCount >= 2 || qCount >= 3) {
     const ev = findEvidence(msgs, probingPatterns, "atendente") || findEvidence(msgs, /\?/, "atendente");
     return { sugestao: "SIM", justificativa: `Atendente fez ${qCount} perguntas, incluindo ${pCount} sondagens direcionadas.`, evidencia: ev, confianca: "alta" };
@@ -320,9 +329,17 @@ const c6: CriterionAnalyzer = (msgs, ctx) => {
 
 // 7. Identificou corretamente a solicitação?
 const c7: CriterionAnalyzer = (msgs, ctx) => {
-  // Check if attendant acknowledged/restated the issue
   const ackPatterns = /(?:entendi|compreendi|então\s+(?:você|o\s+senhor)|sua\s+solicitação|sua\s+demanda|sobre\s+(?:o|a)\s+(?:seu|sua)|(?:vou|vamos)\s+(?:verificar|resolver|analisar|tratar))/gi;
   const ack = ctx.attText.match(ackPatterns);
+  
+  // Reactive execution: even if attendant "acknowledged", without active validation it's partial
+  if (ctx.hasPriorContext && ctx.reactiveExecution.isReactive) {
+    if (ack && ack.length >= 1) {
+      const ev = findEvidence(msgs, ackPatterns, "atendente");
+      return { sugestao: "PARCIAL", justificativa: "Atendente executou a solicitação com base no histórico, sem condução confirmatória com o cliente.", evidencia: ev, confianca: "media" };
+    }
+    return { sugestao: "NÃO", justificativa: "Solicitação resolvida a partir de contexto prévio, sem que o atendente confirmasse ou validasse a demanda com o cliente.", confianca: "media" };
+  }
   
   if (ack && ack.length >= 2) {
     const ev = findEvidence(msgs, ackPatterns, "atendente");
@@ -339,13 +356,14 @@ const c7: CriterionAnalyzer = (msgs, ctx) => {
 const c8: CriterionAnalyzer = (msgs, ctx) => {
   const listenPatterns = /(?:entendo|compreendo|realmente|sei\s+como|imagino|lamento|sinto\s+muito|com\s+certeza|claro|perfeit[oa]|pode\s+contar|estou\s+aqui)/gi;
   const listen = ctx.attText.match(listenPatterns);
-  const interruptions = msgs.filter((m, i) => {
-    if (m.role !== "atendente" || i === 0) return false;
-    // Check for consecutive attendant messages (possible interruption)
-    return msgs[i - 1]?.role === "atendente";
-  });
   
   const lCount = listen?.length || 0;
+  
+  // In reactive executions, listening is limited since attendant didn't engage
+  if (ctx.reactiveExecution.isReactive && lCount < 2) {
+    return { sugestao: "PARCIAL", justificativa: "Atendimento de execução reativa — interação limitada para avaliar escuta ativa. O atendente executou sem engajamento conversacional.", confianca: "media" };
+  }
+  
   if (lCount >= 3) {
     const ev = findEvidence(msgs, listenPatterns, "atendente");
     return { sugestao: "SIM", justificativa: `Atendente demonstrou escuta ativa com ${lCount} expressões empáticas.`, evidencia: ev, confianca: "media" };
@@ -364,6 +382,15 @@ const c9: CriterionAnalyzer = (msgs, ctx) => {
   
   const pCount = proactive?.length || 0;
   const avgTime = ctx.avgResponseTimeSec;
+  
+  // Reactive execution with speed is agilidade, but cap at PARCIAL if no validation
+  if (ctx.reactiveExecution.isReactive) {
+    if (pCount >= 1 || (avgTime != null && avgTime <= 120)) {
+      const ev = findEvidence(msgs, proactivePatterns, "atendente");
+      return { sugestao: "PARCIAL", justificativa: "Atendente foi ágil na execução, porém atuou de forma reativa com base no contexto prévio, sem proatividade na condução do atendimento.", evidencia: ev, confianca: "media" };
+    }
+    return { sugestao: "NÃO", justificativa: "Execução reativa sem evidências de agilidade ou proatividade na condução.", confianca: "media" };
+  }
   
   if (pCount >= 2 || (pCount >= 1 && avgTime != null && avgTime <= 120)) {
     const ev = findEvidence(msgs, proactivePatterns, "atendente");
