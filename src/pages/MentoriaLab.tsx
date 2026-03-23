@@ -744,14 +744,19 @@ const MentoriaLab = () => {
 
     for (const labFile of toAnalyze) {
       try {
-        const sourceFile = await ensureLocalFile(labFile);
-        if (!sourceFile) {
-          setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível recuperar este PDF salvo para análise." } : f)));
-          if (labFile.batchFileId) {
-            await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha ao recuperar PDF salvo" } as any).eq("id", labFile.batchFileId);
+        // If text is already available (e.g., restored "lido" files), skip file hydration
+        let sourceFile = labFile;
+        if (!labFile.text) {
+          const hydrated = await ensureLocalFile(labFile);
+          if (!hydrated) {
+            setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível recuperar este PDF salvo para análise." } : f)));
+            if (labFile.batchFileId) {
+              await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha ao recuperar PDF salvo" } as any).eq("id", labFile.batchFileId);
+            }
+            errors++;
+            continue;
           }
-          errors++;
-          continue;
+          sourceFile = hydrated;
         }
 
         let text = sourceFile.text;
@@ -965,7 +970,6 @@ const MentoriaLab = () => {
       const readResult = await readFile(labFile);
       if (!readResult) {
         toast.error("Não foi possível preparar este atendimento para a mentoria.");
-        // Revert workflow status on failure
         setWorkflowStatuses(prev => ({ ...prev, [labFile.id]: "nao_iniciado" }));
         return;
       }
@@ -978,9 +982,12 @@ const MentoriaLab = () => {
     }
 
     if (preparedFile.status !== "lido") {
-      toast.error("Este atendimento ainda não está pronto para iniciar a mentoria.");
-      setWorkflowStatuses(prev => ({ ...prev, [labFile.id]: "nao_iniciado" }));
-      return;
+      // For files with text but wrong status, allow analysis anyway
+      if (!preparedFile.text) {
+        toast.error("Este atendimento ainda não está pronto para iniciar a mentoria.");
+        setWorkflowStatuses(prev => ({ ...prev, [labFile.id]: "nao_iniciado" }));
+        return;
+      }
     }
 
     await analyzeFiles([preparedFile], { openOnSuccessId: preparedFile.id, clearSelection: false });
