@@ -103,6 +103,7 @@ const AttendanceCard = ({
         file.approvedAsOfficial && "border-l-[3px] border-l-accent"
       )}
       onClick={() => hasResult ? onOpenMentoria(file) : onOpenFile(file)}
+      title={hasResult ? "Abrir mentoria" : "Abrir detalhes"}
     >
       {/* Top row: atendente + nota */}
       <div className="flex items-start justify-between gap-2 mb-2">
