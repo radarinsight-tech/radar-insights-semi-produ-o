@@ -1464,6 +1464,39 @@ const MentoriaLab = () => {
 
           {sideFile && (
             <div className="mt-4 space-y-4">
+              {/* CTA: Iniciar análise - positioned at top for visibility */}
+              {sideFile.status === "analisado" && sideFile.result && (
+                <Button
+                  className="w-full gap-2 font-semibold text-base h-12"
+                  onClick={() => {
+                    const f = sideFile;
+                    setSideFile(null);
+                    openMentoria(f);
+                  }}
+                >
+                  <Play className="h-5 w-5" />
+                  Iniciar análise
+                </Button>
+              )}
+
+              {/* Auto-read button if pending - also at top */}
+              {sideFile.status === "pendente" && !readingIds.has(sideFile.id) && (
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => readFile(sideFile)}
+                >
+                  <BookOpen className="h-4 w-4" /> Iniciar leitura automática
+                </Button>
+              )}
+
+              {readingIds.has(sideFile.id) && (
+                <div className="flex items-center justify-center gap-2 py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Lendo PDF...</span>
+                </div>
+              )}
+
               {/* Metadata */}
               <div className="grid grid-cols-2 gap-3">
                 {[
@@ -1507,38 +1540,6 @@ const MentoriaLab = () => {
                 </div>
               )}
 
-              {/* CTA: Iniciar análise */}
-              {sideFile.status === "analisado" && sideFile.result && (
-                <Button
-                  className="w-full gap-2 font-semibold text-base h-12"
-                  onClick={() => {
-                    const f = sideFile;
-                    setSideFile(null);
-                    openMentoria(f);
-                  }}
-                >
-                  <Play className="h-5 w-5" />
-                  Iniciar análise
-                </Button>
-              )}
-
-              {/* Auto-read button if pending */}
-              {sideFile.status === "pendente" && !readingIds.has(sideFile.id) && (
-                <Button
-                  variant="outline"
-                  className="w-full gap-2"
-                  onClick={() => readFile(sideFile)}
-                >
-                  <BookOpen className="h-4 w-4" /> Iniciar leitura automática
-                </Button>
-              )}
-
-              {readingIds.has(sideFile.id) && (
-                <div className="flex items-center justify-center gap-2 py-4">
-                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  <span className="text-sm text-muted-foreground">Lendo PDF...</span>
-                </div>
-              )}
 
               {/* Conversation content */}
               {sideFile.text && (
