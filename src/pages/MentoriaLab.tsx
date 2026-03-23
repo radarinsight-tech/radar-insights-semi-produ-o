@@ -132,6 +132,7 @@ const MentoriaLab = () => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [diagnosticFile, setDiagnosticFile] = useState<LabFile | null>(null);
+  const [workflowStatuses, setWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
   const { isAdmin } = useUserPermissions();
   // Filters
   const [filterAtendente, setFilterAtendente] = useState("todos");
