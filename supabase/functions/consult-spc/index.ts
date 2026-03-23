@@ -60,7 +60,9 @@ function normalizarRespostaSPC(raw: Record<string, unknown>, cpf: string, nome: 
     cpf: digits,
     cpfFormatado: formatCpfCnpj(digits),
     tipo: isCnpj ? "CNPJ" : "CPF",
-    situacaoCpf: String(raw.situacaoCpf ?? (registroSpc === 0 && pendenciasSerasa === 0 ? "Regular" : "Com restrições")),
+    situacaoCpf: String(
+      raw.situacaoCpf ?? (registroSpc === 0 && pendenciasSerasa === 0 ? "Regular" : "Com restrições"),
+    ),
     registroSpc,
     pendenciasSerasa,
     protestos,
@@ -82,18 +84,32 @@ function gerarDadosSimulados(digits: string, nome: string): Record<string, unkno
 
   if (digits === "12345678900") {
     return {
-      cpf: digits, nome: nome || "Nome não informado",
-      situacaoCpf: "Regular", registroSpc: 0, pendenciasSerasa: 0, protestos: 0,
-      chequesSemFundo: 0, valorTotalPendencias: 0, consultas30dias: 1, consultas90dias: 3,
+      cpf: digits,
+      nome: nome || "Nome não informado",
+      situacaoCpf: "Regular",
+      registroSpc: 0,
+      pendenciasSerasa: 0,
+      protestos: 0,
+      chequesSemFundo: 0,
+      valorTotalPendencias: 0,
+      consultas30dias: 1,
+      consultas90dias: 3,
       protocoloConsulta: `SIM-${Date.now()}`,
       dataHoraConsulta: new Date().toLocaleString("pt-BR"),
     };
   }
   if (digits === "98765432100") {
     return {
-      cpf: digits, nome: nome || "Nome não informado",
-      situacaoCpf: "Com restrições", registroSpc: 4, pendenciasSerasa: 2, protestos: 1,
-      chequesSemFundo: 1, valorTotalPendencias: 4500, consultas30dias: 5, consultas90dias: 12,
+      cpf: digits,
+      nome: nome || "Nome não informado",
+      situacaoCpf: "Com restrições",
+      registroSpc: 4,
+      pendenciasSerasa: 2,
+      protestos: 1,
+      chequesSemFundo: 1,
+      valorTotalPendencias: 4500,
+      consultas30dias: 5,
+      consultas90dias: 12,
       protocoloConsulta: `SIM-${Date.now()}`,
       dataHoraConsulta: new Date().toLocaleString("pt-BR"),
     };
@@ -106,9 +122,13 @@ function gerarDadosSimulados(digits: string, nome: string): Record<string, unkno
   const valorTotalPendencias = registroSpc === 0 && pendenciasSerasa === 0 ? 0 : ((seed * 127) % 8000) + 50;
 
   return {
-    cpf: digits, nome: nome || "Nome não informado",
+    cpf: digits,
+    nome: nome || "Nome não informado",
     situacaoCpf: registroSpc === 0 && pendenciasSerasa === 0 ? "Regular" : "Com restrições",
-    registroSpc, pendenciasSerasa, protestos, chequesSemFundo,
+    registroSpc,
+    pendenciasSerasa,
+    protestos,
+    chequesSemFundo,
     valorTotalPendencias,
     consultas30dias: seed % 6,
     consultas90dias: seed % 15,
@@ -124,7 +144,13 @@ async function consultarSPCReal(
   operator: string,
   password: string,
   endpoint: string,
-): Promise<{ success: boolean; status: number; data: Record<string, unknown> | null; raw_response: string; elapsed_ms: number }> {
+): Promise<{
+  success: boolean;
+  status: number;
+  data: Record<string, unknown> | null;
+  raw_response: string;
+  elapsed_ms: number;
+}> {
   const digits = cpf.replace(/\D/g, "");
   const tipoConsumidor = digits.length === 14 ? "J" : "F";
 
@@ -135,13 +161,13 @@ async function consultarSPCReal(
   };
 
   const ts = new Date().toISOString();
-  const authToken = btoa(`${operator}:${password}`);
+  const authToken = btoa(unescape(encodeURIComponent(`${operator}:${password}`)));
   const maskedPassword = password.length > 2 ? password.slice(0, 1) + "***" + password.slice(-1) : "***";
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    "Accept": "application/json",
-    "Authorization": `Basic ${authToken}`,
+    Accept: "application/json",
+    Authorization: `Basic ${authToken}`,
     "User-Agent": "RadarInsight/1.0",
   };
 
@@ -169,11 +195,16 @@ async function consultarSPCReal(
   const rawText = await response.text();
 
   // ── Diagnostic log: RESPONSE ──
-  const errorCategory = response.status === 401 ? "AUTH_ERROR"
-    : response.status === 403 ? "FORBIDDEN/WAF"
-    : response.status >= 400 && response.status < 500 ? "CLIENT_ERROR"
-    : response.status >= 500 ? "SERVER_ERROR"
-    : "SUCCESS";
+  const errorCategory =
+    response.status === 401
+      ? "AUTH_ERROR"
+      : response.status === 403
+        ? "FORBIDDEN/WAF"
+        : response.status >= 400 && response.status < 500
+          ? "CLIENT_ERROR"
+          : response.status >= 500
+            ? "SERVER_ERROR"
+            : "SUCCESS";
 
   console.log(`[SPC] ════════════ RESPONSE ════════════`);
   console.log(`[SPC] Status: ${response.status} (${errorCategory})`);
@@ -212,13 +243,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -231,10 +263,10 @@ Deno.serve(async (req) => {
 
     const digits = (cpfCnpj ?? "").replace(/\D/g, "");
     if (digits.length !== 11 && digits.length !== 14) {
-      return new Response(
-        JSON.stringify({ error: "Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const spcMode = Deno.env.get("SPC_MODE") || mode || "simulation";
@@ -286,10 +318,14 @@ Deno.serve(async (req) => {
 
     // If API returned an error (403, 401, 500, etc), return raw details
     if (!spcResult.success) {
-      const errorCategory = spcResult.status === 401 ? "AUTH_ERROR"
-        : spcResult.status === 403 ? "FORBIDDEN_WAF"
-        : spcResult.status >= 400 && spcResult.status < 500 ? "CLIENT_ERROR"
-        : "SERVER_ERROR";
+      const errorCategory =
+        spcResult.status === 401
+          ? "AUTH_ERROR"
+          : spcResult.status === 403
+            ? "FORBIDDEN_WAF"
+            : spcResult.status >= 400 && spcResult.status < 500
+              ? "CLIENT_ERROR"
+              : "SERVER_ERROR";
 
       return new Response(
         JSON.stringify({
