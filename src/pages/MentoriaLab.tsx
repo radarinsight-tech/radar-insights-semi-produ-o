@@ -238,6 +238,9 @@ const MentoriaLab = () => {
             } catch { /* non-blocking */ }
           }
 
+          // Detect evaluability from structured conversation
+          const evaluability = detectEvaluability(structured, rawText);
+
           return {
             id: bf.id,
             file: new File([], bf.file_name, { type: "application/pdf" }),
@@ -260,6 +263,8 @@ const MentoriaLab = () => {
             analyzedAt: isAnalyzed ? new Date(bf.created_at) : undefined,
             ineligible: isIneligible,
             ineligibleReason,
+            nonEvaluable: !evaluability.evaluable,
+            nonEvaluableReason: evaluability.reason,
             approvedAsOfficial: matchedEval?.resultado_validado === true,
             evaluationId: matchedEval?.id,
             uraContext: uraCtx,

@@ -31,6 +31,8 @@ interface PipelineFile {
   error?: string;
   ineligible?: boolean;
   ineligibleReason?: string;
+  nonEvaluable?: boolean;
+  nonEvaluableReason?: string;
   approvedAsOfficial?: boolean;
   evaluationId?: string;
   analyzedAt?: Date;
