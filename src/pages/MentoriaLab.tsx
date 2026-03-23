@@ -275,6 +275,27 @@ const MentoriaLab = () => {
     loadPersistedData();
   }, []);
 
+  const ensureLocalFile = useCallback(async (labFile: LabFile): Promise<LabFile | null> => {
+    if (labFile.file.size > 0 || !labFile.storagePath) {
+      return labFile;
+    }
+
+    const { data, error } = await supabase.storage.from("mentoria-lab").download(labFile.storagePath);
+    if (error || !data) {
+      return null;
+    }
+
+    const hydratedFile = new File([data], labFile.name, { type: "application/pdf" });
+    const updatedFile: LabFile = {
+      ...labFile,
+      file: hydratedFile,
+      size: hydratedFile.size || labFile.size,
+    };
+
+    setFiles((prev) => prev.map((f) => (f.id === labFile.id ? updatedFile : f)));
+    return updatedFile;
+  }, []);
+
   // Derived unique values for filter dropdowns
   const atendentes = useMemo(() => {
     const set = new Set(files.map((f) => f.atendente).filter(Boolean) as string[]);
@@ -287,10 +308,21 @@ const MentoriaLab = () => {
   }, [files]);
 
   // Auto-read a file + sync metadata to DB
-  const readFile = useCallback(async (labFile: LabFile) => {
+  const readFile = useCallback(async (labFile: LabFile): Promise<LabFile | null> => {
     setReadingIds((prev) => new Set(prev).add(labFile.id));
     try {
-      const text = await extractTextFromPdf(labFile.file);
+      const sourceFile = await ensureLocalFile(labFile);
+      if (!sourceFile) {
+        setFiles((prev) =>
+          prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível recuperar este PDF salvo para leitura." } : f))
+        );
+        if (labFile.batchFileId) {
+          await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha ao recuperar PDF salvo" } as any).eq("id", labFile.batchFileId);
+        }
+        return null;
+      }
+
+      const text = await extractTextFromPdf(sourceFile.file);
       if (!text.trim()) {
         setFiles((prev) =>
           prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível extrair texto deste PDF." } : f))
@@ -298,7 +330,7 @@ const MentoriaLab = () => {
         if (labFile.batchFileId) {
           await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Não foi possível extrair texto deste PDF." } as any).eq("id", labFile.batchFileId);
         }
-        return;
+        return null;
       }
       const metadata = extractAllMetadata(text);
 
@@ -330,13 +362,19 @@ const MentoriaLab = () => {
         }
       } catch { /* non-blocking */ }
 
-      setFiles((prev) =>
-        prev.map((f) =>
-          f.id === labFile.id
-            ? { ...f, status: "lido", text, ...metadata, attendantMatch: attendantMatchResult, transferred: attendantMatchResult?.transferred, uraContext: uraCtx, uraStatus: uraCtx?.status, structuredConversation: structured }
-            : f
-        )
-      );
+      const updatedFile: LabFile = {
+        ...sourceFile,
+        status: "lido",
+        text,
+        ...metadata,
+        attendantMatch: attendantMatchResult,
+        transferred: attendantMatchResult?.transferred,
+        uraContext: uraCtx,
+        uraStatus: uraCtx?.status,
+        structuredConversation: structured,
+      };
+
+      setFiles((prev) => prev.map((f) => (f.id === labFile.id ? updatedFile : f)));
 
       // Sync to DB (including raw text and structured messages for persistence)
       if (labFile.batchFileId) {
@@ -351,6 +389,7 @@ const MentoriaLab = () => {
           parsed_messages: structured ? JSON.parse(JSON.stringify(structured)) : null,
         } as any).eq("id", labFile.batchFileId);
       }
+      return updatedFile;
     } catch {
       setFiles((prev) =>
         prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível ler este arquivo. Verifique se o PDF é válido." } : f))
@@ -358,6 +397,7 @@ const MentoriaLab = () => {
       if (labFile.batchFileId) {
         await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha na leitura do PDF" } as any).eq("id", labFile.batchFileId);
       }
+      return null;
     } finally {
       setReadingIds((prev) => {
         const next = new Set(prev);
@@ -365,7 +405,7 @@ const MentoriaLab = () => {
         return next;
       });
     }
-  }, []);
+  }, [ensureLocalFile]);
 
   // Extract PDFs from a ZIP file with detailed reporting
   const extractPdfsFromZip = useCallback(async (zipFile: File): Promise<{ pdfs: File[]; totalEntries: number; ignored: number }> => {
@@ -672,35 +712,23 @@ const MentoriaLab = () => {
     }
   };
 
-  // Batch analyze with cloud storage for results
-  const analyzeSelected = async () => {
-    const toAnalyze = files.filter((f) => selected.has(f.id) && (f.status === "lido" || f.status === "pendente"));
-    if (toAnalyze.length === 0) {
-      toast.warning("Selecione arquivos lidos ou pendentes para análise.");
-      return;
-    }
+  const openMentoria = useCallback((f: LabFile) => {
+    setSideFile(null);
+    setMentoriaFile(f);
+    setHighlightedFileId(f.id);
+    setWorkflowStatuses(prev => ({ ...prev, [f.id]: prev[f.id] === "finalizado" ? "finalizado" : "em_analise" }));
+  }, []);
 
-    // Show warning for large selections but allow continuing
-    if (toAnalyze.length > ANALYZE_LIMIT && !showAnalyzeWarning) {
-      setShowAnalyzeWarning(true);
-      toast.warning(`Você selecionou ${toAnalyze.length} atendimentos. Recomendamos analisar em blocos de até ${ANALYZE_LIMIT} para melhor desempenho.`, {
-        duration: 8000,
-        action: {
-          label: "Continuar mesmo assim",
-          onClick: () => {
-            setShowAnalyzeWarning(false);
-            analyzeSelected();
-          },
-        },
-      });
-      return;
+  const analyzeFiles = useCallback(async (toAnalyze: LabFile[], options?: { openOnSuccessId?: string; clearSelection?: boolean }) => {
+    if (toAnalyze.length === 0) {
+      toast.warning("Não há atendimentos prontos para análise.");
+      return { success: 0, errors: 0 };
     }
-    setShowAnalyzeWarning(false);
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast.error("Você precisa estar autenticado.");
-      return;
+      return { success: 0, errors: toAnalyze.length };
     }
 
     setProcessing(true);
@@ -712,12 +740,23 @@ const MentoriaLab = () => {
 
     let success = 0;
     let errors = 0;
+    let openedTarget = false;
 
     for (const labFile of toAnalyze) {
       try {
-        let text = labFile.text;
+        const sourceFile = await ensureLocalFile(labFile);
+        if (!sourceFile) {
+          setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível recuperar este PDF salvo para análise." } : f)));
+          if (labFile.batchFileId) {
+            await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha ao recuperar PDF salvo" } as any).eq("id", labFile.batchFileId);
+          }
+          errors++;
+          continue;
+        }
+
+        let text = sourceFile.text;
         if (!text) {
-          text = await extractTextFromPdf(labFile.file);
+          text = await extractTextFromPdf(sourceFile.file);
           if (!text.trim()) {
             setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível extrair texto deste arquivo." } : f)));
             if (labFile.batchFileId) {
@@ -729,7 +768,7 @@ const MentoriaLab = () => {
         }
 
         // Use the already-stored path in mentoria-lab bucket instead of re-uploading
-        const pdfUrl = labFile.storagePath || "";
+        const pdfUrl = sourceFile.storagePath || "";
 
         const { data, error } = await supabase.functions.invoke("analyze-attendance", { body: { text } });
 
@@ -803,13 +842,27 @@ const MentoriaLab = () => {
           } as any).eq("id", labFile.batchFileId);
         }
 
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === labFile.id
-              ? { ...f, status: "analisado", result: { ...data, _ineligible: isIneligible, _ineligibleReason: ineligibleReason }, protocolo: data.protocolo || f.protocolo, atendente: data.atendente || f.atendente, data: data.data || f.data, tipo: data.tipo || f.tipo, analyzedAt: new Date(), ineligible: isIneligible, ineligibleReason, evaluationId: savedEval?.id }
-              : f
-          )
-        );
+        const updatedFile: LabFile = {
+          ...sourceFile,
+          status: "analisado",
+          result: { ...data, _ineligible: isIneligible, _ineligibleReason: ineligibleReason },
+          protocolo: data.protocolo || sourceFile.protocolo,
+          atendente: data.atendente || sourceFile.atendente,
+          data: data.data || sourceFile.data,
+          tipo: data.tipo || sourceFile.tipo,
+          analyzedAt: new Date(),
+          ineligible: isIneligible,
+          ineligibleReason,
+          evaluationId: savedEval?.id,
+        };
+
+        setFiles((prev) => prev.map((f) => (f.id === labFile.id ? updatedFile : f)));
+
+        if (!openedTarget && options?.openOnSuccessId === labFile.id) {
+          openMentoria(updatedFile);
+          openedTarget = true;
+        }
+
         success++;
       } catch {
         setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Ocorreu uma falha temporária no processamento. Tente novamente." } : f)));
@@ -822,7 +875,6 @@ const MentoriaLab = () => {
 
     // Update batch status + save summary
     if (currentBatchId) {
-      const analyzed = files.filter((f) => f.status === "analisado" || f.result);
       const summary = {
         total_analyzed: success,
         total_errors: errors,
@@ -842,7 +894,10 @@ const MentoriaLab = () => {
     }
 
     setProcessing(false);
-    setSelected(new Set());
+    if (options?.clearSelection !== false) {
+      setSelected(new Set());
+    }
+
     if (errors === 0) {
       toast.success(`Análise concluída com sucesso. ${success} atendimento(s) analisado(s).`);
     } else if (success > 0) {
@@ -850,8 +905,79 @@ const MentoriaLab = () => {
     } else {
       toast.error("Ocorreu uma falha temporária no processamento do lote. Tente novamente.");
     }
-    // Stay on the table so users can click "Ver mentoria" on individual items
+
+    return { success, errors, openedTarget };
+  }, [currentBatchId, ensureLocalFile, openMentoria, updateBatchStatus]);
+
+  // Batch analyze with cloud storage for results
+  const analyzeSelected = async () => {
+    const toAnalyze = files.filter((f) => selected.has(f.id) && (f.status === "lido" || f.status === "pendente"));
+    if (toAnalyze.length === 0) {
+      toast.warning("Selecione arquivos lidos ou pendentes para análise.");
+      return;
+    }
+
+    // Show warning for large selections but allow continuing
+    if (toAnalyze.length > ANALYZE_LIMIT && !showAnalyzeWarning) {
+      setShowAnalyzeWarning(true);
+      toast.warning(`Você selecionou ${toAnalyze.length} atendimentos. Recomendamos analisar em blocos de até ${ANALYZE_LIMIT} para melhor desempenho.`, {
+        duration: 8000,
+        action: {
+          label: "Continuar mesmo assim",
+          onClick: () => {
+            setShowAnalyzeWarning(false);
+            analyzeSelected();
+          },
+        },
+      });
+      return;
+    }
+    setShowAnalyzeWarning(false);
+
+    await analyzeFiles(toAnalyze);
   };
+
+  const handleStartMentoria = useCallback(async (labFile: LabFile) => {
+    if (processing) return;
+
+    if (labFile.status === "analisado" && labFile.result) {
+      openMentoria(labFile);
+      return;
+    }
+
+    if (readingIds.has(labFile.id)) {
+      toast.info("Aguarde a leitura automática terminar para iniciar a mentoria.");
+      return;
+    }
+
+    if (labFile.status === "erro") {
+      toast.error("Este atendimento está com erro e não pode iniciar a mentoria agora.");
+      return;
+    }
+
+    let preparedFile = labFile;
+
+    if (labFile.status === "pendente") {
+      const readResult = await readFile(labFile);
+      if (!readResult) {
+        toast.error("Não foi possível preparar este atendimento para a mentoria.");
+        return;
+      }
+      preparedFile = readResult;
+    }
+
+    if (preparedFile.status === "analisado" && preparedFile.result) {
+      openMentoria(preparedFile);
+      return;
+    }
+
+    if (preparedFile.status !== "lido") {
+      toast.error("Este atendimento ainda não está pronto para iniciar a mentoria.");
+      return;
+    }
+
+    await analyzeFiles([preparedFile], { openOnSuccessId: preparedFile.id, clearSelection: false });
+  }, [analyzeFiles, openMentoria, processing, readFile, readingIds]);
 
   const removeFile = (id: string) => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
@@ -958,13 +1084,6 @@ const MentoriaLab = () => {
   const formatSize = (b: number) => b < 1024 ? `${b} B` : `${(b / 1024).toFixed(1)} KB`;
 
   const getWorkflowStatus = (fileId: string): WorkflowStatus => workflowStatuses[fileId] || "nao_iniciado";
-
-  const openMentoria = useCallback((f: LabFile) => {
-    setSideFile(null);
-    setMentoriaFile(f);
-    setHighlightedFileId(f.id);
-    setWorkflowStatuses(prev => ({ ...prev, [f.id]: prev[f.id] === "finalizado" ? "finalizado" : "em_analise" }));
-  }, []);
 
   const handleMarkFinished = useCallback(() => {
     if (!mentoriaFile) return;
@@ -1415,9 +1534,11 @@ const MentoriaLab = () => {
               highlightedFileId={highlightedFileId}
               readingIds={readingIds}
               approvingIds={approvingIds}
+              processing={processing}
               isAdmin={isAdmin}
               onOpenFile={(f) => { setMentoriaFile(null); setSideFile(f as any); setHighlightedFileId(f.id); }}
               onOpenMentoria={(f) => openMentoria(f as any)}
+              onStartMentoria={(f) => handleStartMentoria(f as any)}
               onApproveOfficial={(f) => approveAsOfficial(f as any)}
               onRemoveFile={removeFile}
               onOpenDiagnostic={(f) => setDiagnosticFile(f as any)}
