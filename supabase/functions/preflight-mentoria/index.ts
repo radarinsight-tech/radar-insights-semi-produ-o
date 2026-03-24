@@ -57,13 +57,18 @@ serve(async (req) => {
         message: "Variáveis de ambiente do backend não configuradas.",
       });
     } else {
-      // Quick connectivity test
+      // Quick connectivity test using health endpoint
       try {
         const testResp = await fetch(`${supabaseUrl}/rest/v1/`, {
-          method: "HEAD",
-          headers: { apikey: anonKey, Authorization: authHeader },
+          method: "GET",
+          headers: {
+            apikey: anonKey,
+            Authorization: `Bearer ${anonKey}`,
+            "Content-Type": "application/json",
+          },
         });
-        if (testResp.ok || testResp.status === 404) {
+        // Any 2xx/3xx/404/406 means Supabase is reachable and responding
+        if (testResp.ok || testResp.status === 404 || testResp.status === 406 || testResp.status === 200) {
           checks.push({
             key: "supabase_conn",
             label: "Conexão com backend",
