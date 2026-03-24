@@ -919,6 +919,9 @@ const MentoriaLab = () => {
 
     await runIngestionQueue(entries);
 
+    // ── Post-ingestion: classify evaluability ──
+    await classifyBatchFiles(entries);
+
     // Update to "pronto_para_curadoria"
     const finalStatus: BatchStatus = "pronto_para_curadoria";
     setBatchInfo((prev) => prev ? { ...prev, status: finalStatus } : prev);
