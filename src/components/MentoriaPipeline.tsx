@@ -388,7 +388,7 @@ const MentoriaPipeline = ({
 
       {/* Non-evaluable counter */}
       {(() => {
-        const nonEvaluableCount = files.filter(f => f.nonEvaluable || f.ineligible).length;
+        const nonEvaluableCount = files.filter(f => f.nonEvaluable).length;
         return nonEvaluableCount > 0 ? (
           <div className="flex items-center gap-2.5 rounded-xl border border-warning/25 bg-warning/5 px-4 py-2.5">
             <AlertTriangle className="h-4 w-4 text-warning shrink-0" />

@@ -29,6 +29,7 @@ export function detectMentoriaEvaluability(params: {
   hasAudio?: boolean;
 }): MentoriaEvaluabilityState {
   const { structuredConversation, rawText, hasAudio } = params;
+  const totalMessages = structuredConversation?.messages?.length ?? 0;
 
   const hasHumanTranscription = structuredConversation?.messages?.some((msg) => {
     if (msg.role !== "cliente" && msg.role !== "atendente") return false;
@@ -40,6 +41,14 @@ export function detectMentoriaEvaluability(params: {
       evaluable: false,
       nonEvaluable: true,
       reason: "Áudio sem transcrição válida",
+    };
+  }
+
+  if (totalMessages === 0) {
+    return {
+      evaluable: false,
+      nonEvaluable: true,
+      reason: "Sem mensagens suficientes para avaliação",
     };
   }
 
