@@ -961,7 +961,8 @@ const MentoriaLab = () => {
         const q = searchTerm.toLowerCase();
         if (!f.name.toLowerCase().includes(q) && !f.protocolo?.toLowerCase().includes(q) && !f.atendente?.toLowerCase().includes(q)) return false;
       }
-      if (filterAtendente !== "todos" && f.atendente !== filterAtendente) return false;
+      if (filterAtendente === "sem_atendente" && f.atendente) return false;
+      if (filterAtendente !== "todos" && filterAtendente !== "sem_atendente" && f.atendente !== filterAtendente) return false;
       if (filterCanal !== "todos" && f.canal !== filterCanal) return false;
       if (filterAudio === "com" && !f.hasAudio) return false;
       if (filterAudio === "sem" && f.hasAudio) return false;
@@ -1459,32 +1460,33 @@ const MentoriaLab = () => {
   }, [getNextAnalyzedFile, openMentoria]);
 
   const counts = useMemo(() => {
+    const source = filteredFiles;
     const nonEvaluableIds = new Set(
-      files
+      source
         .filter((f) => resolvePersistedMentoriaEvaluability(f.result)?.nonEvaluable === true)
         .map((f) => f.id)
     );
     const ineligibleIds = new Set(
-      files
+      source
         .filter((f) => resolvePersistedMentoriaIneligibility(f.result)?.ineligible === true || nonEvaluableIds.has(f.id))
         .map((f) => f.id)
     );
-    const analisados = files.filter((f) => f.status === "analisado" && !ineligibleIds.has(f.id));
+    const analisados = source.filter((f) => f.status === "analisado" && !ineligibleIds.has(f.id));
     const atendentesSet = new Set(
       analisados
         .map((f) => (f.result?.atendente || f.atendente || "").trim().toLowerCase())
         .filter(Boolean)
     );
     return {
-      total: files.length,
-      pendente: files.filter((f) => f.status === "pendente").length,
-      lido: files.filter((f) => f.status === "lido" && !nonEvaluableIds.has(f.id)).length,
+      total: source.length,
+      pendente: source.filter((f) => f.status === "pendente").length,
+      lido: source.filter((f) => f.status === "lido" && !nonEvaluableIds.has(f.id)).length,
       analisado: analisados.length,
-      erro: files.filter((f) => f.status === "erro").length,
+      erro: source.filter((f) => f.status === "erro").length,
       naoAvaliavel: nonEvaluableIds.size,
       atendentes: atendentesSet.size,
     };
-  }, [files]);
+  }, [filteredFiles]);
 
   // Keep sideFile in sync with files state
   useEffect(() => {
@@ -1767,6 +1769,7 @@ const MentoriaLab = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos atendentes</SelectItem>
+                    <SelectItem value="sem_atendente">Sem atendente</SelectItem>
                     {atendentes.map((a) => (
                       <SelectItem key={a} value={a}>{a}</SelectItem>
                     ))}
