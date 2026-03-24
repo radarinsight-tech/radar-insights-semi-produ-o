@@ -1092,9 +1092,21 @@ const MentoriaLab = () => {
       return { success: 0, errors: 0 };
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("Você precisa estar autenticado.");
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
+    if (!user || !session?.access_token) {
+      console.error("[MentoriaLab][analyzeFiles] Sessão inválida ou expirada.", {
+        hasSession: !!session,
+        hasUser: !!user,
+        hasToken: !!session?.access_token,
+      });
+      toast.error("Sessão expirada. Faça login novamente para continuar.", {
+        duration: 10000,
+        action: {
+          label: "Fazer login",
+          onClick: () => { window.location.href = "/auth"; },
+        },
+      });
       return { success: 0, errors: toAnalyze.length };
     }
 
@@ -1495,14 +1507,34 @@ const MentoriaLab = () => {
       return;
     }
 
+    // Validate session before any server-side action
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      console.error("[MentoriaLab][Mentoria] Sessão inválida ou expirada ao tentar iniciar mentoria.");
+      toast.error("Sessão expirada. Faça login novamente para continuar.", {
+        duration: 10000,
+        action: {
+          label: "Fazer login",
+          onClick: () => { window.location.href = "/auth"; },
+        },
+      });
+      return;
+    }
+
     // Run preflight before analysis
     const preflight = await runPreflightForSingle(1);
     if (!preflight.ready) {
       const errors = preflight.checks.filter(c => c.status === "erro");
       const firstError = errors[0];
-      toast.error(firstError?.message || "Ambiente não está pronto para análise. Verifique o diagnóstico.", {
-        duration: 8000,
-      });
+      // Provide specific error messages based on category
+      const isAuthError = firstError?.category === "autenticacao";
+      const isCreditError = firstError?.category === "credito";
+      const message = isAuthError
+        ? "Sessão inválida para iniciar mentoria. Faça login novamente."
+        : isCreditError
+        ? "Créditos insuficientes para executar a análise. Verifique seu saldo."
+        : firstError?.message || "Ambiente não está pronto para análise. Verifique o diagnóstico.";
+      toast.error(message, { duration: 8000 });
       return;
     }
 
