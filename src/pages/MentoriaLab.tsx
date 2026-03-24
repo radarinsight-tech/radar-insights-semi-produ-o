@@ -243,20 +243,16 @@ const MentoriaLab = () => {
           }
 
           const persistedEvaluability = resolvePersistedMentoriaEvaluability(result);
-          const evaluabilityState = persistedEvaluability ?? (rawText
-            ? detectMentoriaEvaluability({
-                structuredConversation: structured,
-                rawText,
-                hasAudio: bf.has_audio || uraCtx?.audioDetectado,
-              })
-            : { evaluable: true, nonEvaluable: false, reason: undefined });
-          const persistedResult = (result || rawText)
-            ? mergePersistedMentoriaEvaluability(result, evaluabilityState)
-            : undefined;
+          const evaluabilityState = persistedEvaluability ?? detectMentoriaEvaluability({
+            structuredConversation: structured,
+            rawText,
+            hasAudio: bf.has_audio || uraCtx?.audioDetectado,
+          });
+          const persistedResult = mergePersistedMentoriaEvaluability(result, evaluabilityState);
           const isIneligible = Boolean((persistedResult as any)?._ineligible);
           const ineligibleReason = (persistedResult as any)?._ineligibleReason as string | undefined;
 
-          if (!persistedEvaluability && persistedResult) {
+          if (!persistedEvaluability) {
             evaluabilityBackfill.push({ id: bf.id, result: persistedResult });
           }
 
@@ -398,42 +394,69 @@ const MentoriaLab = () => {
       } catch { /* non-blocking */ }
 
       // Detect evaluability and persist at ingestion time
+      const hasAudio = Boolean(metadata.hasAudio || uraCtx?.audioDetectado);
+
       const evaluabilityState = detectMentoriaEvaluability({
         structuredConversation: structured,
         rawText: text,
-        hasAudio: metadata.hasAudio || uraCtx?.audioDetectado,
+        hasAudio,
       });
       const persistedReadResult = mergePersistedMentoriaEvaluability(sourceFile.result, evaluabilityState);
 
-      const updatedFile: LabFile = {
-        ...sourceFile,
-        status: "lido",
-        text,
-        result: persistedReadResult,
-        ...metadata,
-        attendantMatch: attendantMatchResult,
-        transferred: attendantMatchResult?.transferred,
-        uraContext: uraCtx,
-        uraStatus: uraCtx?.status,
-        structuredConversation: structured,
-        nonEvaluable: evaluabilityState.nonEvaluable,
-        nonEvaluableReason: evaluabilityState.reason,
-      };
+      console.info("[MentoriaLab][Avaliabilidade][calculada]", {
+        id_atendimento: labFile.batchFileId || metadata.protocolo || labFile.id,
+        avaliavel: evaluabilityState.evaluable,
+        motivo_nao_avaliavel: evaluabilityState.reason ?? null,
+      });
+
+      let persistedResult = persistedReadResult;
+      let persistedEvaluability = evaluabilityState;
 
       // Sync to DB (including raw text and structured messages for persistence)
       if (labFile.batchFileId) {
-        await supabase.from("mentoria_batch_files").update({
+        const { data: persistedRow, error: persistError } = await supabase.from("mentoria_batch_files").update({
           status: "read",
           protocolo: metadata.protocolo,
           atendente: metadata.atendente,
           data_atendimento: metadata.data,
           canal: metadata.canal,
-          has_audio: metadata.hasAudio,
+          has_audio: hasAudio,
           extracted_text: text,
           parsed_messages: structured ? JSON.parse(JSON.stringify(structured)) : null,
           result: persistedReadResult,
-        } as any).eq("id", labFile.batchFileId);
+        } as any).eq("id", labFile.batchFileId).select("id, protocolo, result").single();
+
+        if (persistError) {
+          console.error("[MentoriaLab][Avaliabilidade][erro_persistencia]", persistError);
+          throw persistError;
+        }
+
+        persistedResult = (persistedRow?.result as Record<string, unknown> | null) ?? persistedReadResult;
+        persistedEvaluability = resolvePersistedMentoriaEvaluability(persistedResult) ?? evaluabilityState;
+
+        console.info("[MentoriaLab][Avaliabilidade][persistida]", {
+          id_atendimento: persistedRow?.id || labFile.batchFileId,
+          protocolo: persistedRow?.protocolo || metadata.protocolo || null,
+          avaliavel: persistedEvaluability.evaluable,
+          motivo_nao_avaliavel: persistedEvaluability.reason ?? null,
+        });
       }
+
+      const updatedFile: LabFile = {
+        ...sourceFile,
+        status: "lido",
+        text,
+        result: persistedResult,
+        ...metadata,
+        hasAudio,
+        attendantMatch: attendantMatchResult,
+        transferred: attendantMatchResult?.transferred,
+        uraContext: uraCtx,
+        uraStatus: uraCtx?.status,
+        structuredConversation: structured,
+        nonEvaluable: persistedEvaluability.nonEvaluable,
+        nonEvaluableReason: persistedEvaluability.reason,
+      };
 
       setFiles((prev) => prev.map((f) => (f.id === labFile.id ? updatedFile : f)));
       return updatedFile;
@@ -1202,10 +1225,15 @@ const MentoriaLab = () => {
   const counts = useMemo(() => {
     const nonEvaluableIds = new Set(
       files
-        .filter((f) => f.ineligible || f.nonEvaluable || resolvePersistedMentoriaEvaluability(f.result)?.nonEvaluable)
+        .filter((f) => resolvePersistedMentoriaEvaluability(f.result)?.nonEvaluable === true)
         .map((f) => f.id)
     );
-    const analisados = files.filter((f) => f.status === "analisado" && !nonEvaluableIds.has(f.id));
+    const excludedFromAnalyzedIds = new Set(
+      files
+        .filter((f) => f.ineligible || nonEvaluableIds.has(f.id))
+        .map((f) => f.id)
+    );
+    const analisados = files.filter((f) => f.status === "analisado" && !excludedFromAnalyzedIds.has(f.id));
     const atendentesSet = new Set(
       analisados
         .map((f) => (f.result?.atendente || f.atendente || "").trim().toLowerCase())

@@ -6,6 +6,18 @@ import {
 } from "@/lib/mentoriaEvaluability";
 
 describe("mentoria evaluability persistence", () => {
+  it("classifica atendimento sem mensagens parseadas como não avaliável", () => {
+    const result = detectMentoriaEvaluability({
+      hasAudio: false,
+      rawText: undefined,
+      structuredConversation: undefined,
+    });
+
+    expect(result.nonEvaluable).toBe(true);
+    expect(result.evaluable).toBe(false);
+    expect(result.reason).toBe("Sem mensagens suficientes para avaliação");
+  });
+
   it("classifica áudio sem transcrição válida como não avaliável", () => {
     const result = detectMentoriaEvaluability({
       hasAudio: true,
