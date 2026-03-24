@@ -15,6 +15,8 @@ import {
   Calendar,
   SkipForward,
   AlertTriangle,
+  BookOpen,
+  Zap,
 } from "lucide-react";
 import { cn, formatDateBR, notaToScale10 } from "@/lib/utils";
 import {
@@ -45,6 +47,12 @@ interface PipelineFile {
   attendantMatch?: any;
 }
 
+interface BatchStats {
+  analyzing: number;
+  completed: number;
+  failed: number;
+}
+
 interface MentoriaPipelineProps {
   files: PipelineFile[];
   getWorkflowStatus: (id: string) => WorkflowStatus;
@@ -52,6 +60,8 @@ interface MentoriaPipelineProps {
   readingIds: Set<string>;
   approvingIds: Set<string>;
   processing: boolean;
+  batchProcessing: boolean;
+  batchStats: BatchStats;
   isAdmin: boolean;
   onOpenFile: (f: PipelineFile) => void;
   onOpenMentoria: (f: PipelineFile) => void;
@@ -60,6 +70,7 @@ interface MentoriaPipelineProps {
   onRemoveFile: (id: string) => void;
   onOpenDiagnostic: (f: PipelineFile) => void;
   onAnalyzeNext?: () => void;
+  onBatchAnalyze?: (count: number | "all") => void;
 }
 
 const COLUMNS: { key: WorkflowStatus; label: string; icon: typeof Clock; emptyText: string }[] = [
@@ -95,9 +106,11 @@ const columnStyles: Record<WorkflowStatus, { header: string; border: string; bg:
 const AttendanceCard = ({
   file,
   highlighted,
+  workflowStatus,
   readingIds,
   approvingIds,
   processing,
+  batchProcessing,
   isAdmin,
   onOpenFile,
   onOpenMentoria,
@@ -108,9 +121,11 @@ const AttendanceCard = ({
 }: {
   file: PipelineFile;
   highlighted: boolean;
+  workflowStatus: WorkflowStatus;
   readingIds: Set<string>;
   approvingIds: Set<string>;
   processing: boolean;
+  batchProcessing: boolean;
   isAdmin: boolean;
   onOpenFile: (f: PipelineFile) => void;
   onOpenMentoria: (f: PipelineFile) => void;
@@ -128,25 +143,18 @@ const AttendanceCard = ({
   const nota = hasResult ? file.result?.notaFinal : null;
   const nota10 = nota != null ? notaToScale10(nota) : null;
   const isReading = readingIds.has(file.id);
-  const canStartMentoria = !processing && !isReading && file.status !== "erro" && !isNonEvaluable;
-  const primaryLabel = isReading ? "Lendo atendimento..." : processing ? "Processando..." : hasResult ? "Abrir mentoria" : "Iniciar mentoria";
+  const isProcessingThis = (processing || batchProcessing) && workflowStatus === "em_analise" && !hasResult;
+  const canStartAnalysis = !processing && !batchProcessing && !isReading && file.status !== "erro" && !isNonEvaluable && !hasResult;
 
-  const handleCardClick = () => {
-    if (hasResult) {
-      onOpenMentoria(file);
-    } else if (canStartMentoria) {
-      onStartMentoria(file);
-    }
+  const handleStartAnalysis = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (!canStartAnalysis) return;
+    onStartMentoria(file);
   };
 
-  const handleStartMentoria = (event: MouseEvent<HTMLButtonElement>) => {
+  const handleOpenMentoria = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
-    if (!canStartMentoria) return;
-    if (hasResult) {
-      onOpenMentoria(file);
-      return;
-    }
-    onStartMentoria(file);
+    onOpenMentoria(file);
   };
 
   const handlePreviewClick = (event: MouseEvent<HTMLButtonElement>) => {
@@ -169,11 +177,17 @@ const AttendanceCard = ({
     onRemoveFile(file.id);
   };
 
+  const handleCardClick = () => {
+    if (hasResult) {
+      onOpenMentoria(file);
+    }
+  };
+
   return (
     <div
       className={cn(
         "rounded-xl border p-3.5 transition-all group",
-        canStartMentoria || hasResult ? "cursor-pointer" : "",
+        hasResult ? "cursor-pointer" : "",
         highlighted
           ? "ring-2 ring-primary/30 border-primary/40 bg-primary/5 shadow-sm"
           : "bg-background border-border/60",
@@ -213,6 +227,12 @@ const AttendanceCard = ({
             <p className="text-lg font-black leading-none">{nota10.toFixed(1).replace(".", ",")}</p>
             <p className="text-[8px] font-medium mt-0.5">nota</p>
           </div>
+        )}
+
+        {isProcessingThis && (
+          <Badge className="bg-primary/15 text-primary text-[9px] gap-0.5 px-1.5 py-0 h-auto animate-pulse">
+            <Loader2 className="h-2.5 w-2.5 animate-spin" /> Processando
+          </Badge>
         )}
       </div>
 
@@ -256,19 +276,47 @@ const AttendanceCard = ({
             {file.result.classificacao}
           </Badge>
         )}
+        {file.status === "erro" && (
+          <Badge className="bg-destructive/15 text-destructive text-[9px] gap-0.5 px-1.5 py-0 h-auto">
+            <AlertTriangle className="h-2.5 w-2.5" /> Erro
+          </Badge>
+        )}
+        {hasResult && (
+          <Badge className="bg-accent/15 text-accent text-[9px] gap-0.5 px-1.5 py-0 h-auto">
+            <CheckCircle2 className="h-2.5 w-2.5" /> Analisado
+          </Badge>
+        )}
       </div>
 
-      {!isNonEvaluable && (
-        <Button
-          size="sm"
-          className="w-full gap-1.5 mb-2.5 font-semibold"
-          onClick={handleStartMentoria}
-          disabled={!canStartMentoria}
-        >
-          {isReading || processing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlayCircle className="h-3.5 w-3.5" />}
-          {primaryLabel}
-        </Button>
-      )}
+      {/* Action buttons — separated: Iniciar análise vs Abrir mentoria */}
+      <div className="flex items-center gap-1.5 mb-2.5">
+        {!isNonEvaluable && !hasResult && (
+          <Button
+            size="sm"
+            className="flex-1 gap-1.5 font-semibold"
+            onClick={handleStartAnalysis}
+            disabled={!canStartAnalysis}
+          >
+            {isReading || isProcessingThis ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <PlayCircle className="h-3.5 w-3.5" />
+            )}
+            {isReading ? "Lendo..." : isProcessingThis ? "Processando..." : "Iniciar análise"}
+          </Button>
+        )}
+        {hasResult && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 gap-1.5 font-semibold border-accent/30 text-accent hover:bg-accent/10"
+            onClick={handleOpenMentoria}
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            Abrir mentoria
+          </Button>
+        )}
+      </div>
 
       <div className="flex items-center gap-1 pt-2 border-t border-border/40 opacity-80 group-hover:opacity-100 transition-opacity">
         <TooltipProvider delayDuration={200}>
@@ -356,6 +404,8 @@ const MentoriaPipeline = ({
   readingIds,
   approvingIds,
   processing,
+  batchProcessing,
+  batchStats,
   isAdmin,
   onOpenFile,
   onOpenMentoria,
@@ -364,6 +414,7 @@ const MentoriaPipeline = ({
   onRemoveFile,
   onOpenDiagnostic,
   onAnalyzeNext,
+  onBatchAnalyze,
 }: MentoriaPipelineProps) => {
   const grouped = useMemo(() => {
     const groups: Record<WorkflowStatus, PipelineFile[]> = {
@@ -380,8 +431,72 @@ const MentoriaPipeline = ({
 
   const hasNextToAnalyze = grouped.nao_iniciado.some((f) => f.status === "analisado" && f.result);
 
+  // Count eligible files for batch buttons
+  const eligibleForBatch = useMemo(() => {
+    return grouped.nao_iniciado.filter(f => {
+      const evaluability = resolvePersistedMentoriaEvaluability(f.result);
+      return !evaluability?.nonEvaluable && (f.status === "lido" || f.status === "pendente");
+    }).length;
+  }, [grouped.nao_iniciado]);
+
+  const isBusy = processing || batchProcessing;
+
   return (
     <div className="space-y-3" id="mentoria-table">
+      {/* Batch action bar */}
+      {eligibleForBatch > 0 && onBatchAnalyze && (
+        <div className="flex items-center justify-between flex-wrap gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-foreground">
+              {eligibleForBatch} atendimento(s) prontos para análise
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {eligibleForBatch >= 1 && (
+              <Button size="sm" variant="outline" className="gap-1.5 font-semibold" onClick={() => onBatchAnalyze(10)} disabled={isBusy}>
+                {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlayCircle className="h-3.5 w-3.5" />}
+                Analisar próximos 10
+              </Button>
+            )}
+            {eligibleForBatch > 10 && (
+              <Button size="sm" variant="outline" className="gap-1.5 font-semibold" onClick={() => onBatchAnalyze(25)} disabled={isBusy}>
+                {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlayCircle className="h-3.5 w-3.5" />}
+                Analisar próximos 25
+              </Button>
+            )}
+            <Button size="sm" className="gap-1.5 font-semibold" onClick={() => onBatchAnalyze("all")} disabled={isBusy}>
+              {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+              Analisar todos ({eligibleForBatch})
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Batch progress counters */}
+      {batchProcessing && (
+        <div className="flex items-center gap-4 rounded-xl border border-primary/25 bg-primary/5 px-4 py-2.5">
+          <Loader2 className="h-4 w-4 text-primary animate-spin shrink-0" />
+          <span className="text-sm font-medium text-foreground">Processamento em lote</span>
+          <div className="flex items-center gap-3 ml-auto text-xs font-semibold">
+            <span className="text-primary">
+              <Loader2 className="h-3 w-3 animate-spin inline mr-1" />
+              {batchStats.analyzing} em análise
+            </span>
+            <span className="text-accent">
+              <CheckCircle2 className="h-3 w-3 inline mr-1" />
+              {batchStats.completed} concluído(s)
+            </span>
+            {batchStats.failed > 0 && (
+              <span className="text-destructive">
+                <AlertTriangle className="h-3 w-3 inline mr-1" />
+                {batchStats.failed} falha(s)
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {hasNextToAnalyze && onAnalyzeNext && (
         <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
           <div className="flex items-center gap-2">
@@ -448,9 +563,11 @@ const MentoriaPipeline = ({
                     key={f.id}
                     file={f}
                     highlighted={highlightedFileId === f.id}
+                    workflowStatus={col.key}
                     readingIds={readingIds}
                     approvingIds={approvingIds}
                     processing={processing}
+                    batchProcessing={batchProcessing}
                     isAdmin={isAdmin}
                     onOpenFile={onOpenFile}
                     onOpenMentoria={onOpenMentoria}
