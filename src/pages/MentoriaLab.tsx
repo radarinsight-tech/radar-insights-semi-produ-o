@@ -2285,6 +2285,8 @@ const MentoriaLab = () => {
               readingIds={readingIds}
               approvingIds={approvingIds}
               processing={processing}
+              batchProcessing={batchProcessing}
+              batchStats={batchStats}
               isAdmin={isAdmin}
               onOpenFile={(f) => { setMentoriaFile(null); setSideFile(f as any); setHighlightedFileId(f.id); }}
               onOpenMentoria={(f) => openMentoria(f as any)}
@@ -2293,6 +2295,7 @@ const MentoriaLab = () => {
               onRemoveFile={removeFile}
               onOpenDiagnostic={(f) => setDiagnosticFile(f as any)}
               onAnalyzeNext={handleAnalyzeNextFromPipeline}
+              onBatchAnalyze={handleBatchAnalyze}
             />
 
             {/* Batch history */}
