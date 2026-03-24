@@ -1358,11 +1358,54 @@ const MentoriaLab = () => {
     if (labFile.status === "pendente") {
       const readResult = await readFile(labFile);
       if (!readResult) {
-        toast.error("Não foi possível preparar este atendimento para a mentoria.");
-        setWorkflowStatuses(prev => ({ ...prev, [labFile.id]: "nao_iniciado" }));
-        return;
+        console.warn("[MentoriaLab][Mentoria][readFile_fallback]", {
+          id: labFile.batchFileId || labFile.id,
+          motivo: "readFile retornou null — tentando dados do banco",
+        });
+
+        // Try to fetch extracted_text from DB if readFile failed (e.g. storage download issue)
+        if (labFile.batchFileId) {
+          const { data: dbRow } = await supabase
+            .from("mentoria_batch_files")
+            .select("extracted_text, parsed_messages, result, atendente, protocolo, data_atendimento, canal, has_audio")
+            .eq("id", labFile.batchFileId)
+            .maybeSingle();
+
+          if (dbRow) {
+            const dbText = typeof dbRow.extracted_text === "string" ? dbRow.extracted_text : "";
+            preparedFile = {
+              ...labFile,
+              status: "lido" as FileStatus,
+              text: dbText.length > 0 ? dbText : "(conteúdo indisponível — fallback)",
+              atendente: dbRow.atendente ?? labFile.atendente,
+              protocolo: dbRow.protocolo ?? labFile.protocolo,
+              data: dbRow.data_atendimento ?? labFile.data,
+              canal: dbRow.canal ?? labFile.canal,
+              hasAudio: Boolean(dbRow.has_audio),
+              result: dbRow.result as any,
+            };
+            setFiles((prev) => prev.map((f) => (f.id === labFile.id ? preparedFile : f)));
+          } else {
+            // No DB data either — proceed with empty text fallback
+            preparedFile = {
+              ...labFile,
+              status: "lido" as FileStatus,
+              text: "(conteúdo indisponível — fallback)",
+            };
+            setFiles((prev) => prev.map((f) => (f.id === labFile.id ? preparedFile : f)));
+          }
+        } else {
+          // No batchFileId — proceed with empty text fallback
+          preparedFile = {
+            ...labFile,
+            status: "lido" as FileStatus,
+            text: "(conteúdo indisponível — fallback)",
+          };
+          setFiles((prev) => prev.map((f) => (f.id === labFile.id ? preparedFile : f)));
+        }
+      } else {
+        preparedFile = readResult;
       }
-      preparedFile = readResult;
     }
 
     if (preparedFile.status === "analisado" && preparedFile.result) {
@@ -1371,11 +1414,9 @@ const MentoriaLab = () => {
     }
 
     if (preparedFile.status !== "lido") {
-      // For files with text but wrong status, allow analysis anyway
+      // Allow analysis anyway — fallback will handle missing content
       if (!preparedFile.text) {
-        toast.error("Este atendimento ainda não está pronto para iniciar a mentoria.");
-        setWorkflowStatuses(prev => ({ ...prev, [labFile.id]: "nao_iniciado" }));
-        return;
+        preparedFile = { ...preparedFile, text: "(conteúdo indisponível — fallback)", status: "lido" as FileStatus };
       }
     }
 
