@@ -39,6 +39,7 @@ import MentoriaDetailDialog from "@/components/MentoriaDetailDialog";
 import ParserDiagnosticDialog from "@/components/ParserDiagnosticDialog";
 import MentoriaPipeline from "@/components/MentoriaPipeline";
 import MentoriaBatchHistory from "@/components/MentoriaBatchHistory";
+import MentoriaBonusPanel from "@/components/MentoriaBonusPanel";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro";
 type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
@@ -1914,6 +1915,11 @@ const MentoriaLab = () => {
                   </p>
                 </div>
               </div>
+            )}
+
+            {/* Bonus Panel */}
+            {filteredFiles.some((f) => f.status === "analisado") && (
+              <MentoriaBonusPanel files={filteredFiles} />
             )}
 
             {/* Charts section */}
