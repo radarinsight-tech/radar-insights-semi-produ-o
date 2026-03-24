@@ -939,7 +939,7 @@ const MentoriaLab = () => {
       toast.success(`${allPdfs.length} arquivo(s) importado(s). Leitura automática iniciada.`);
     }
 
-  }, [extractPdfsFromZip, generateBatchCode, runIngestionQueue, updateBatchStatus]);
+  }, [extractPdfsFromZip, generateBatchCode, runIngestionQueue, classifyBatchFiles, updateBatchStatus]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
