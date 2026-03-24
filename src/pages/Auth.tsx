@@ -201,7 +201,7 @@ const Auth = () => {
           <h1 className="text-2xl font-bold text-foreground">Radar Insight</h1>
           <p className="text-sm text-muted-foreground">Análise inteligente de atendimentos</p>
           {APP_MODE !== "production" && (
-            <span className="text-xs px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 font-medium">
+            <span className="text-xs px-2 py-0.5 rounded bg-accent text-accent-foreground font-medium">
               Modo {APP_MODE === "test" ? "teste" : "demo"} — confirmação de e-mail desativada
             </span>
           )}
