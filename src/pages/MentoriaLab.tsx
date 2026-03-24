@@ -122,6 +122,7 @@ const IMPORT_LIMIT = 1000;
 const IMPORT_RECOMMENDED = 500;
 const ANALYZE_LIMIT = 50;
 const PAGE_SIZE = 30;
+const INGESTION_CONCURRENCY = 4;
 
 interface PersistedIngestionClassificationResponse {
   row?: {
@@ -133,6 +134,26 @@ interface PersistedIngestionClassificationResponse {
   motivo_inelegivel: string | null;
   motivo_nao_avaliavel: string | null;
 }
+
+const FATAL_PDF_READ_ERROR_PATTERNS = [
+  /invalidpdf/i,
+  /invalid\s+pdf/i,
+  /corrupt/i,
+  /corrompid/i,
+  /formaterror/i,
+  /bad\s+xref/i,
+  /unexpected\s+end\s+of\s+file/i,
+  /missingpdf/i,
+  /password/i,
+  /unable\s+to\s+parse/i,
+  /cannot\s+read/i,
+  /failed\s+to\s+load\s+pdf/i,
+];
+
+const isFatalPdfReadError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return FATAL_PDF_READ_ERROR_PATTERNS.some((pattern) => pattern.test(message));
+};
 
 const MentoriaLab = () => {
   const navigate = useNavigate();
@@ -341,6 +362,98 @@ const MentoriaLab = () => {
     return updatedFile;
   }, []);
 
+  const ensureBatchFileRecord = useCallback(async (labFile: LabFile): Promise<LabFile | null> => {
+    if (labFile.batchFileId || !labFile.batchId) {
+      return labFile;
+    }
+
+    const { data: insertedRow, error } = await supabase
+      .from("mentoria_batch_files")
+      .insert({
+        batch_id: labFile.batchId,
+        file_name: labFile.name,
+        extracted_path: labFile.storagePath ?? null,
+        file_size: labFile.size,
+        status: "pending",
+      } as any)
+      .select("id")
+      .single();
+
+    if (error || !insertedRow?.id) {
+      console.error("[MentoriaLab][Importação][erro_tecnico]", {
+        id_atendimento: labFile.id,
+        etapa: "persistencia_registro",
+        erro: error?.message || "Falha ao criar registro do atendimento",
+      });
+      return null;
+    }
+
+    const updatedFile: LabFile = {
+      ...labFile,
+      batchFileId: insertedRow.id,
+    };
+
+    setFiles((prev) => prev.map((file) => (file.id === labFile.id ? updatedFile : file)));
+    return updatedFile;
+  }, []);
+
+  const persistReadFallback = useCallback(async (params: {
+    labFile: LabFile;
+    metadata: { protocolo?: string; atendente?: string; data?: string; canal: string };
+    hasAudio: boolean;
+    text: string;
+    structured?: StructuredConversation;
+    extractionError?: string;
+  }) => {
+    const { labFile, metadata, hasAudio, text, structured, extractionError } = params;
+
+    const evaluabilityState = detectMentoriaEvaluability({
+      structuredConversation: structured,
+      rawText: text,
+      hasAudio,
+    });
+    const mergedResult = mergePersistedMentoriaEvaluability(labFile.result, evaluabilityState);
+    const persistedIneligibility = resolvePersistedMentoriaIneligibility(mergedResult) ?? {
+      ineligible: evaluabilityState.nonEvaluable,
+      reason: evaluabilityState.reason,
+    };
+
+    const { error } = await supabase
+      .from("mentoria_batch_files")
+      .update({
+        status: "read",
+        protocolo: metadata.protocolo ?? null,
+        atendente: metadata.atendente ?? null,
+        data_atendimento: metadata.data ?? null,
+        canal: metadata.canal ?? "Não identificado",
+        has_audio: hasAudio,
+        extracted_text: text.trim().length > 0 ? text : null,
+        parsed_messages: structured ? JSON.parse(JSON.stringify(structured)) : null,
+        result: mergedResult,
+        error_message: null,
+      } as any)
+      .eq("id", labFile.batchFileId);
+
+    if (error) {
+      throw error;
+    }
+
+    console.warn("[MentoriaLab][Importação][fallback_local]", {
+      id_atendimento: labFile.batchFileId || labFile.id,
+      etapa: "persistencia_local_lido",
+      detalhe: extractionError ?? null,
+      avaliavel: evaluabilityState.evaluable,
+      inelegivel: persistedIneligibility.ineligible,
+      motivo_inelegivel: persistedIneligibility.reason ?? null,
+    });
+
+    return {
+      result: mergedResult,
+      evaluability: evaluabilityState,
+      ineligibility: persistedIneligibility,
+    };
+  }, []);
+
   // Derived unique values for filter dropdowns
   const atendentes = useMemo(() => {
     const set = new Set(files.map((f) => f.atendente).filter(Boolean) as string[]);
@@ -356,8 +469,8 @@ const MentoriaLab = () => {
   const readFile = useCallback(async (labFile: LabFile): Promise<LabFile | null> => {
     setReadingIds((prev) => new Set(prev).add(labFile.id));
     try {
-      const sourceFile = await ensureLocalFile(labFile);
-      if (!sourceFile) {
+      const hydratedFile = await ensureLocalFile(labFile);
+      if (!hydratedFile) {
         console.warn("[MentoriaLab][Importação][erro_leitura]", {
           id: labFile.batchFileId || labFile.id,
           etapa: "recuperacao_arquivo",
@@ -372,23 +485,48 @@ const MentoriaLab = () => {
         return null;
       }
 
-      // ── Step 1: Extract text (tolerant — empty text is NOT an error) ──
+      const sourceFile = await ensureBatchFileRecord(hydratedFile);
+      if (!sourceFile?.batchFileId) {
+        const persistenceError = "Não foi possível persistir o registro do atendimento antes da leitura.";
+        console.error("[MentoriaLab][Importação][erro_tecnico]", {
+          id_atendimento: hydratedFile.id,
+          etapa: "persistencia_registro",
+          erro: persistenceError,
+        });
+        setFiles((prev) =>
+          prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: persistenceError } : f))
+        );
+        return null;
+      }
+
       let text = "";
       let extractionError: string | undefined;
       try {
         text = await extractTextFromPdf(sourceFile.file);
       } catch (err: any) {
+        if (isFatalPdfReadError(err)) {
+          const fatalReadError = err?.message || "Falha crítica na leitura binária do PDF";
+          console.error("[MentoriaLab][Importação][erro_tecnico]", {
+            id_atendimento: sourceFile.batchFileId || sourceFile.id,
+            etapa: "leitura_binaria_pdf",
+            erro: fatalReadError,
+          });
+          setFiles((prev) =>
+            prev.map((f) => (f.id === sourceFile.id ? { ...f, status: "erro", error: `Erro na leitura: ${fatalReadError}` } : f))
+          );
+          await supabase.from("mentoria_batch_files").update({ status: "error", error_message: fatalReadError } as any).eq("id", sourceFile.batchFileId);
+          return null;
+        }
+
         extractionError = err?.message || "Falha na extração de texto";
-        console.warn("[MentoriaLab][Importação][erro_extracao]", {
-          id: labFile.batchFileId || labFile.id,
+        console.warn("[MentoriaLab][Importação][conteudo_incompleto]", {
+          id_atendimento: sourceFile.batchFileId || sourceFile.id,
           etapa: "extracao_texto",
-          erro: extractionError,
+          detalhe: extractionError,
         });
       }
 
       const hasText = text.trim().length > 0;
-
-      // ── Step 2: Extract metadata (best-effort) ──
       let metadata: { protocolo?: string; atendente?: string; data?: string; canal: string; hasAudio: boolean; tipo: string } = {
         protocolo: undefined,
         atendente: undefined,
@@ -397,14 +535,19 @@ const MentoriaLab = () => {
         hasAudio: false,
         tipo: "Não identificado",
       };
+
       if (hasText) {
         try {
-          const extracted = extractAllMetadata(text);
-          metadata = { ...extracted };
-        } catch { /* non-blocking */ }
+          metadata = { ...extractAllMetadata(text) };
+        } catch (err: any) {
+          console.warn("[MentoriaLab][Importação][conteudo_incompleto]", {
+            id_atendimento: sourceFile.batchFileId || sourceFile.id,
+            etapa: "extracao_metadados",
+            detalhe: err?.message || "Falha ao extrair metadados",
+          });
+        }
       }
 
-      // ── Step 3: Match attendant (best-effort) ──
       let attendantMatchResult: MatchResult | undefined;
       if (hasText) {
         try {
@@ -415,18 +558,28 @@ const MentoriaLab = () => {
               metadata.atendente = attendantMatchResult.matchedName;
             }
           }
-        } catch { /* non-blocking */ }
+        } catch (err: any) {
+          console.warn("[MentoriaLab][Importação][conteudo_incompleto]", {
+            id_atendimento: sourceFile.batchFileId || sourceFile.id,
+            etapa: "match_atendente",
+            detalhe: err?.message || "Falha ao identificar atendente",
+          });
+        }
       }
 
-      // ── Step 4: Parse structured conversation (best-effort) ──
       let structured: StructuredConversation | undefined;
       if (hasText) {
         try {
           structured = parseStructuredConversation(text, metadata.atendente);
-        } catch { /* non-blocking */ }
+        } catch (err: any) {
+          console.warn("[MentoriaLab][Importação][conteudo_incompleto]", {
+            id_atendimento: sourceFile.batchFileId || sourceFile.id,
+            etapa: "parsing_conversa",
+            detalhe: err?.message || "Falha ao estruturar conversa",
+          });
+        }
       }
 
-      // ── Step 5: URA context (best-effort) ──
       let uraCtx: UraContext | undefined;
       if (hasText) {
         try {
@@ -434,22 +587,27 @@ const MentoriaLab = () => {
           if (uraCtx.audioDetectado && !metadata.hasAudio) {
             metadata.hasAudio = true;
           }
-        } catch { /* non-blocking */ }
-      }
-
-      // ── Step 6: Persist evaluability in backend before exposing as "lido" ──
-      if (!labFile.batchFileId) {
-        throw new Error("Atendimento sem registro persistido para classificar na ingestão");
+        } catch (err: any) {
+          console.warn("[MentoriaLab][Importação][conteudo_incompleto]", {
+            id_atendimento: sourceFile.batchFileId || sourceFile.id,
+            etapa: "contexto_ura",
+            detalhe: err?.message || "Falha ao extrair contexto URA",
+          });
+        }
       }
 
       const hasAudio = Boolean(metadata.hasAudio || uraCtx?.audioDetectado);
       const parsedMessagesPayload = structured ? JSON.parse(JSON.stringify(structured)) : null;
 
+      let persistedResult: Record<string, unknown> | null = null;
+      let persistedEvaluability = resolvePersistedMentoriaEvaluability(sourceFile.result);
+      let persistedIneligibility = resolvePersistedMentoriaIneligibility(sourceFile.result);
+
       const { data: classificationResponse, error: classificationError } = await supabase.functions.invoke(
         "classify-mentoria-ingestion",
         {
           body: {
-            batchFileId: labFile.batchFileId,
+            batchFileId: sourceFile.batchFileId,
             existingResult: sourceFile.result ?? null,
             extractedText: hasText ? text : null,
             parsedMessages: parsedMessagesPayload,
@@ -466,36 +624,52 @@ const MentoriaLab = () => {
       );
 
       if (classificationError || classificationResponse?.error) {
-        throw new Error(
-          classificationError?.message ||
-          classificationResponse?.details ||
-          classificationResponse?.error ||
-          "Falha ao classificar atendimento na ingestão"
-        );
+        console.warn("[MentoriaLab][Importação][fallback_local]", {
+          id_atendimento: sourceFile.batchFileId || sourceFile.id,
+          etapa: "classificacao_backend",
+          detalhe:
+            classificationError?.message ||
+            classificationResponse?.details ||
+            classificationResponse?.error ||
+            "Falha ao classificar atendimento na ingestão",
+        });
+
+        const fallbackPersistence = await persistReadFallback({
+          labFile: sourceFile,
+          metadata,
+          hasAudio,
+          text,
+          structured,
+          extractionError,
+        });
+
+        persistedResult = fallbackPersistence.result;
+        persistedEvaluability = fallbackPersistence.evaluability;
+        persistedIneligibility = fallbackPersistence.ineligibility;
+      } else {
+        const persistedPayload = classificationResponse as PersistedIngestionClassificationResponse;
+        persistedResult = (persistedPayload.row?.result as Record<string, unknown> | null) ?? persistedPayload.result;
+        persistedEvaluability = resolvePersistedMentoriaEvaluability(persistedResult) ?? {
+          evaluable: persistedPayload.avaliavel,
+          nonEvaluable: !persistedPayload.avaliavel,
+          reason: persistedPayload.motivo_nao_avaliavel ?? persistedPayload.motivo_inelegivel ?? undefined,
+        };
+        persistedIneligibility = resolvePersistedMentoriaIneligibility(persistedResult) ?? {
+          ineligible: persistedPayload.inelegivel,
+          reason: persistedPayload.motivo_inelegivel ?? undefined,
+        };
       }
 
-      const persistedPayload = classificationResponse as PersistedIngestionClassificationResponse;
-      const persistedResult = (persistedPayload.row?.result as Record<string, unknown> | null) ?? persistedPayload.result;
-      const persistedEvaluability = resolvePersistedMentoriaEvaluability(persistedResult) ?? {
-        evaluable: persistedPayload.avaliavel,
-        nonEvaluable: !persistedPayload.avaliavel,
-        reason: persistedPayload.motivo_nao_avaliavel ?? persistedPayload.motivo_inelegivel ?? undefined,
-      };
-      const persistedIneligibility = resolvePersistedMentoriaIneligibility(persistedResult) ?? {
-        ineligible: persistedPayload.inelegivel,
-        reason: persistedPayload.motivo_inelegivel ?? undefined,
-      };
-
       console.info("[MentoriaLab][Importação][resultado]", {
-        id_atendimento: labFile.batchFileId || metadata.protocolo || labFile.id,
+        id_atendimento: sourceFile.batchFileId || metadata.protocolo || sourceFile.id,
         etapa: "classificacao_persistida",
         texto_extraido: hasText,
         mensagens_parseadas: structured?.totalMessages ?? 0,
         has_audio: hasAudio,
-        avaliavel: persistedEvaluability.evaluable,
-        inelegivel: persistedIneligibility.ineligible,
-        motivo_inelegivel: persistedIneligibility.reason ?? null,
-        motivo_nao_avaliavel: persistedEvaluability.reason ?? null,
+        avaliavel: persistedEvaluability?.evaluable ?? true,
+        inelegivel: persistedIneligibility?.ineligible ?? false,
+        motivo_inelegivel: persistedIneligibility?.reason ?? null,
+        motivo_nao_avaliavel: persistedEvaluability?.reason ?? null,
         erro_extracao: extractionError ?? null,
       });
 
@@ -503,7 +677,7 @@ const MentoriaLab = () => {
         ...sourceFile,
         status: "lido",
         text: hasText ? text : undefined,
-        result: persistedResult,
+        result: persistedResult ?? sourceFile.result,
         ...metadata,
         hasAudio,
         attendantMatch: attendantMatchResult,
@@ -511,16 +685,15 @@ const MentoriaLab = () => {
         uraContext: uraCtx,
         uraStatus: uraCtx?.status,
         structuredConversation: structured,
-        ineligible: persistedIneligibility.ineligible,
-        ineligibleReason: persistedIneligibility.reason,
-        nonEvaluable: persistedEvaluability.nonEvaluable,
-        nonEvaluableReason: persistedEvaluability.reason,
+        ineligible: persistedIneligibility?.ineligible,
+        ineligibleReason: persistedIneligibility?.reason,
+        nonEvaluable: persistedEvaluability?.nonEvaluable,
+        nonEvaluableReason: persistedEvaluability?.reason,
       };
 
       setFiles((prev) => prev.map((f) => (f.id === labFile.id ? updatedFile : f)));
       return updatedFile;
     } catch (err: any) {
-      // Only reach here for truly fatal errors (file unreadable, storage failure, etc.)
       const errorMsg = err?.message || "Erro inesperado na leitura";
       console.error("[MentoriaLab][Importação][erro_fatal]", {
         id: labFile.batchFileId || labFile.id,
@@ -541,7 +714,22 @@ const MentoriaLab = () => {
         return next;
       });
     }
-  }, [ensureLocalFile]);
+  }, [ensureBatchFileRecord, ensureLocalFile, persistReadFallback]);
+
+  const runIngestionQueue = useCallback(async (entries: LabFile[]) => {
+    const queue = [...entries];
+    const workerCount = Math.min(INGESTION_CONCURRENCY, queue.length);
+
+    await Promise.allSettled(
+      Array.from({ length: workerCount }, async () => {
+        while (queue.length > 0) {
+          const nextEntry = queue.shift();
+          if (!nextEntry) break;
+          await readFile(nextEntry);
+        }
+      })
+    );
+  }, [readFile]);
 
   // Extract PDFs from a ZIP file with detailed reporting
   const extractPdfsFromZip = useCallback(async (zipFile: File): Promise<{ pdfs: File[]; totalEntries: number; ignored: number }> => {
@@ -756,7 +944,7 @@ const MentoriaLab = () => {
 
     setFiles((prev) => [...prev, ...entries]);
 
-    await Promise.allSettled(entries.map((entry) => readFile(entry)));
+    await runIngestionQueue(entries);
 
     // Update to "pronto_para_curadoria"
     const finalStatus: BatchStatus = "pronto_para_curadoria";
@@ -775,7 +963,7 @@ const MentoriaLab = () => {
       toast.success(`${allPdfs.length} arquivo(s) importado(s). Leitura automática iniciada.`);
     }
 
-  }, [readFile, extractPdfsFromZip, generateBatchCode, updateBatchStatus]);
+  }, [extractPdfsFromZip, generateBatchCode, runIngestionQueue, updateBatchStatus]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
