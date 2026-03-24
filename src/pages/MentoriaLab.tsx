@@ -1730,6 +1730,118 @@ const MentoriaLab = () => {
     openMentoria(notStarted[0]);
   }, [filteredFiles, getWorkflowStatus, openMentoria]);
 
+  // Batch analysis: analyze N files from "Não iniciados" without opening modals
+  const BATCH_CONCURRENCY = 5;
+
+  const handleBatchAnalyze = useCallback(async (count: number | "all") => {
+    if (batchProcessing || processing) {
+      toast.warning("Já existe um processamento em andamento.");
+      return;
+    }
+
+    // Get eligible files: "nao_iniciado" workflow status, "lido" or "pendente" file status, not non-evaluable
+    const eligible = filteredFiles.filter(f => {
+      const ws = getWorkflowStatus(f.id);
+      const evaluability = resolvePersistedMentoriaEvaluability(f.result);
+      const isNonEvaluable = evaluability?.nonEvaluable === true;
+      return ws === "nao_iniciado" && (f.status === "lido" || f.status === "pendente") && !isNonEvaluable;
+    });
+
+    if (eligible.length === 0) {
+      toast.info("Não há atendimentos prontos para análise.");
+      return;
+    }
+
+    const toProcess = count === "all" ? eligible : eligible.slice(0, count);
+
+    // Validate session first
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      toast.error("Sessão expirada. Faça login novamente.", {
+        duration: 10000,
+        action: { label: "Fazer login", onClick: () => { window.location.href = "/auth"; } },
+      });
+      return;
+    }
+
+    // Run preflight
+    const preflight = await runPreflightForSingle(toProcess.length);
+    if (!preflight.ready) {
+      const errors = preflight.checks.filter(c => c.status === "erro");
+      const firstError = errors[0];
+      const categoryMessages: Record<string, string> = {
+        autenticacao: "Sessão inválida. Faça login novamente.",
+        credito: "IA pausada por falta de saldo.",
+        infraestrutura: "Infraestrutura indisponível. Tente novamente.",
+        configuracao: "Configuração ausente. Contate o administrador.",
+        limite: firstError?.message || "Limite técnico atingido.",
+      };
+      toast.error(categoryMessages[firstError?.category || ""] || "Ambiente não está pronto para análise.", { duration: 8000 });
+      return;
+    }
+
+    setBatchProcessing(true);
+    setBatchStats({ analyzing: 0, completed: 0, failed: 0 });
+
+    // Move all to "em_analise"
+    setWorkflowStatuses(prev => {
+      const next = { ...prev };
+      for (const f of toProcess) next[f.id] = "em_analise";
+      return next;
+    });
+
+    toast.info(`Iniciando análise em lote de ${toProcess.length} atendimento(s)...`);
+
+    // Process with concurrency limit
+    const queue = [...toProcess];
+    let completed = 0;
+    let failed = 0;
+
+    const worker = async () => {
+      while (queue.length > 0) {
+        const file = queue.shift();
+        if (!file) break;
+
+        setBatchStats(prev => ({ ...prev, analyzing: prev.analyzing + 1 }));
+
+        try {
+          // Prepare file if needed
+          let preparedFile = file;
+          if (file.status === "pendente") {
+            const readResult = await readFile(file);
+            preparedFile = readResult || { ...file, status: "lido" as FileStatus, text: "(conteúdo indisponível — fallback)" };
+            if (!readResult) {
+              setFiles(prev => prev.map(f => f.id === file.id ? preparedFile : f));
+            }
+          }
+
+          await analyzeFiles([preparedFile], { clearSelection: false });
+          completed++;
+          setBatchStats(prev => ({ ...prev, analyzing: prev.analyzing - 1, completed: prev.completed + 1 }));
+        } catch (err: any) {
+          failed++;
+          setWorkflowStatuses(prev => ({ ...prev, [file.id]: "nao_iniciado" }));
+          setBatchStats(prev => ({ ...prev, analyzing: prev.analyzing - 1, failed: prev.failed + 1 }));
+          console.error("[MentoriaLab][Lote][erro]", { fileId: file.id, erro: err?.message });
+          // Continue to next — don't stop the queue
+        }
+      }
+    };
+
+    const workerCount = Math.min(BATCH_CONCURRENCY, toProcess.length);
+    await Promise.allSettled(Array.from({ length: workerCount }, () => worker()));
+
+    setBatchProcessing(false);
+
+    if (failed === 0) {
+      toast.success(`Lote concluído: ${completed} atendimento(s) analisado(s) com sucesso.`);
+    } else if (completed > 0) {
+      toast.warning(`Lote concluído: ${completed} sucesso(s), ${failed} falha(s).`);
+    } else {
+      toast.error(`Falha no processamento do lote: ${failed} erro(s).`);
+    }
+  }, [batchProcessing, processing, filteredFiles, getWorkflowStatus, analyzeFiles, readFile, runPreflightForSingle]);
+
   const handleNextFile = useCallback(() => {
     const next = getNextAnalyzedFile();
     if (!next) return;
