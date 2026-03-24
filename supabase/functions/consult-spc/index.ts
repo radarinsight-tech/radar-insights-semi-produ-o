@@ -156,9 +156,10 @@ async function consultarSPCReal(
 
   const payload = {
     codigoProduto: "643",
-    tipoConsumidor,
-    documentoConsumidor: digits,
+    tipoConsumidor: "F",
+    documentoConsumidor: "22222222222",
   };
+
   console.log("PAYLOAD FINAL:", JSON.stringify(payload));
   console.log("TIPO CONSUMIDOR:", tipoConsumidor);
   console.log("DOCUMENTO FINAL:", digits);
