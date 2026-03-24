@@ -1163,20 +1163,43 @@ const MentoriaLab = () => {
 
         let data: any;
         try {
+          console.info("[MentoriaLab][Fluxo][Etapa:invoke]", {
+            endpoint: "analyze-attendance",
+            fileId: labFile.batchFileId || labFile.id,
+            fileName: labFile.name,
+          });
           const response = await supabase.functions.invoke("analyze-attendance", { body: { text } });
+
+          // Categorize invoke errors
           if (response.error || response.data?.error) {
             const errorDetail = response.data?.error || response.error?.message || "Erro desconhecido";
+            const httpStatus = (response.error as any)?.status;
+            const errorCategory = httpStatus === 401 || httpStatus === 403 ? "autenticacao"
+              : httpStatus === 402 ? "credito"
+              : httpStatus === 429 ? "limite"
+              : "infraestrutura";
+
             console.warn("[MentoriaLab][Análise][fallback_ativado]", {
               id: labFile.batchFileId || labFile.id,
               arquivo: labFile.name,
               erro: errorDetail,
+              categoria: errorCategory,
+              httpStatus,
               detalhes: response.data?.details || null,
             });
+
+            // Show categorized toast for specific errors
+            if (errorCategory === "credito") {
+              toast.error("IA pausada por falta de saldo. O atendimento foi processado em modo fallback.", { duration: 8000 });
+            } else if (errorCategory === "autenticacao") {
+              toast.error("Sessão inválida durante análise. O atendimento foi processado em modo fallback.", { duration: 8000 });
+            } else if (errorCategory === "limite") {
+              toast.warning("Limite de requisições atingido. Aguarde alguns minutos.", { duration: 6000 });
+            }
+
             // Fallback: generate a default valid result instead of blocking
             data = {
-              nota: 7,
-              notaFinal: 7,
-              bonusQualidade: 70,
+              nota: 7, notaFinal: 7, bonusQualidade: 70,
               classificacao: "Bom atendimento",
               resumo: "Análise gerada automaticamente em modo fallback",
               avaliacao: "Fluxo funcional, aguardando estabilização completa do motor",
@@ -1187,26 +1210,25 @@ const MentoriaLab = () => {
               mentoria: ["Análise automática — revisar manualmente quando possível"],
               promptVersion: "fallback_v1",
               criterios: Array.from({ length: 19 }, (_, i) => ({
-                numero: i + 1,
-                resultado: "PARCIAL",
+                numero: i + 1, resultado: "PARCIAL",
                 justificativa: "Avaliação gerada em modo fallback — revisar manualmente",
               })),
               bonusOperacional: { atualizacaoCadastral: "NÃO" },
               _fallback: true,
             };
           } else {
+            console.info("[MentoriaLab][Fluxo][Etapa:invoke] Resposta OK.", { fileId: labFile.batchFileId || labFile.id });
             data = response.data;
           }
         } catch (invokeErr: any) {
-          console.warn("[MentoriaLab][Análise][fallback_exception]", {
+          console.error("[MentoriaLab][Análise][fallback_exception]", {
             id: labFile.batchFileId || labFile.id,
             arquivo: labFile.name,
             erro: invokeErr?.message,
+            stack: invokeErr?.stack?.slice(0, 200),
           });
           data = {
-            nota: 7,
-            notaFinal: 7,
-            bonusQualidade: 70,
+            nota: 7, notaFinal: 7, bonusQualidade: 70,
             classificacao: "Bom atendimento",
             resumo: "Análise gerada automaticamente em modo fallback",
             avaliacao: "Fluxo funcional, aguardando estabilização completa do motor",
@@ -1217,8 +1239,7 @@ const MentoriaLab = () => {
             mentoria: ["Análise automática — revisar manualmente quando possível"],
             promptVersion: "fallback_v1",
             criterios: Array.from({ length: 19 }, (_, i) => ({
-              numero: i + 1,
-              resultado: "PARCIAL",
+              numero: i + 1, resultado: "PARCIAL",
               justificativa: "Avaliação gerada em modo fallback — revisar manualmente",
             })),
             bonusOperacional: { atualizacaoCadastral: "NÃO" },
@@ -1426,8 +1447,7 @@ const MentoriaLab = () => {
       return;
     }
 
-    // Move card to "Em análise" immediately for visual feedback
-    setWorkflowStatuses(prev => ({ ...prev, [labFile.id]: "em_analise" }));
+    // Card move is deferred — only set to "em_analise" after preflight passes (in handleStartMentoria wrapper)
     setHighlightedFileId(labFile.id);
 
     let preparedFile = labFile;
@@ -1501,16 +1521,19 @@ const MentoriaLab = () => {
   const { runCheck: runPreflightForSingle } = usePreflightCheck();
 
   const handleStartMentoria = useCallback(async (labFile: LabFile) => {
-    // If already analyzed, skip preflight
+    // If already analyzed, skip preflight — just open
     if (labFile.status === "analisado" && labFile.result) {
       openMentoria(labFile);
       return;
     }
 
-    // Validate session before any server-side action
+    // === STEP 1: Validate session before any server-side action ===
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) {
-      console.error("[MentoriaLab][Mentoria] Sessão inválida ou expirada ao tentar iniciar mentoria.");
+      console.error("[MentoriaLab][Fluxo][Etapa:sessao] Sessão inválida ou expirada.", {
+        hasSession: !!session,
+        hasToken: !!session?.access_token,
+      });
       toast.error("Sessão expirada. Faça login novamente para continuar.", {
         duration: 10000,
         action: {
@@ -1520,25 +1543,56 @@ const MentoriaLab = () => {
       });
       return;
     }
+    console.info("[MentoriaLab][Fluxo][Etapa:sessao] OK", { userId: session.user?.id });
 
-    // Run preflight before analysis
+    // === STEP 2: Run preflight before analysis ===
+    console.info("[MentoriaLab][Fluxo][Etapa:preflight] Iniciando pré-checagem...");
     const preflight = await runPreflightForSingle(1);
     if (!preflight.ready) {
       const errors = preflight.checks.filter(c => c.status === "erro");
       const firstError = errors[0];
-      // Provide specific error messages based on category
-      const isAuthError = firstError?.category === "autenticacao";
-      const isCreditError = firstError?.category === "credito";
-      const message = isAuthError
-        ? "Sessão inválida para iniciar mentoria. Faça login novamente."
-        : isCreditError
-        ? "Créditos insuficientes para executar a análise. Verifique seu saldo."
-        : firstError?.message || "Ambiente não está pronto para análise. Verifique o diagnóstico.";
+      console.error("[MentoriaLab][Fluxo][Etapa:preflight] Falha na pré-checagem.", {
+        checks: preflight.checks.map(c => ({ key: c.key, status: c.status, category: c.category, layer: c.layer })),
+      });
+
+      // Categorized error messages
+      const categoryMessages: Record<string, string> = {
+        autenticacao: "Sessão inválida para iniciar mentoria. Faça login novamente.",
+        credito: "IA pausada por falta de saldo. Recarregue para continuar.",
+        infraestrutura: firstError?.layer === "edge_function"
+          ? "Função de análise indisponível no momento."
+          : firstError?.layer === "supabase"
+          ? "Backend indisponível no momento."
+          : firstError?.layer === "provedor_ia"
+          ? "Provedor de IA indisponível. Tente novamente em instantes."
+          : "Infraestrutura indisponível. Tente novamente.",
+        configuracao: "Configuração obrigatória ausente. Contate o administrador.",
+        limite: firstError?.message || "Limite técnico atingido para este lote.",
+      };
+      const message = categoryMessages[firstError?.category || ""] || firstError?.message || "Ambiente não está pronto para análise.";
       toast.error(message, { duration: 8000 });
       return;
     }
+    console.info("[MentoriaLab][Fluxo][Etapa:preflight] OK — ambiente apto.");
 
-    await handleStartMentoriaCore(labFile);
+    // === STEP 3: Card moves to "Em análise" ONLY after preflight confirmed ===
+    setWorkflowStatuses(prev => ({ ...prev, [labFile.id]: "em_analise" }));
+    console.info("[MentoriaLab][Fluxo][Etapa:card_transicao] Card movido para 'Em análise'.", { fileId: labFile.id });
+
+    // === STEP 4: Execute analysis ===
+    console.info("[MentoriaLab][Fluxo][Etapa:analise] Iniciando análise...", { fileId: labFile.id, fileName: labFile.name });
+    try {
+      await handleStartMentoriaCore(labFile);
+      console.info("[MentoriaLab][Fluxo][Etapa:analise] Análise concluída.", { fileId: labFile.id });
+    } catch (err: any) {
+      // Revert card on failure
+      setWorkflowStatuses(prev => ({ ...prev, [labFile.id]: "nao_iniciado" }));
+      console.error("[MentoriaLab][Fluxo][Etapa:analise] Falha na análise — card revertido.", {
+        fileId: labFile.id,
+        erro: err?.message,
+      });
+      toast.error("Falha ao processar atendimento. O card foi revertido.", { duration: 6000 });
+    }
   }, [handleStartMentoriaCore, openMentoria, runPreflightForSingle]);
 
   const removeFile = (id: string) => {
