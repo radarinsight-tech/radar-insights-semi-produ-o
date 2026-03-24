@@ -599,77 +599,37 @@ const MentoriaLab = () => {
       const hasAudio = Boolean(metadata.hasAudio || uraCtx?.audioDetectado);
       const parsedMessagesPayload = structured ? JSON.parse(JSON.stringify(structured)) : null;
 
-      let persistedResult: Record<string, unknown> | null = null;
-      let persistedEvaluability = resolvePersistedMentoriaEvaluability(sourceFile.result);
-      let persistedIneligibility = resolvePersistedMentoriaIneligibility(sourceFile.result);
+      // ── Pure ingestion: persist read data, NO classification ──
+      const { error: persistError } = await supabase
+        .from("mentoria_batch_files")
+        .update({
+          status: "read",
+          protocolo: metadata.protocolo ?? null,
+          atendente: metadata.atendente ?? null,
+          data_atendimento: metadata.data ?? null,
+          canal: metadata.canal ?? "Não identificado",
+          has_audio: hasAudio,
+          extracted_text: hasText ? text : null,
+          parsed_messages: parsedMessagesPayload,
+          error_message: null,
+        } as any)
+        .eq("id", sourceFile.batchFileId);
 
-      const { data: classificationResponse, error: classificationError } = await supabase.functions.invoke(
-        "classify-mentoria-ingestion",
-        {
-          body: {
-            batchFileId: sourceFile.batchFileId,
-            existingResult: sourceFile.result ?? null,
-            extractedText: hasText ? text : null,
-            parsedMessages: parsedMessagesPayload,
-            hasAudio,
-            extractionError: extractionError ?? null,
-            metadata: {
-              protocolo: metadata.protocolo ?? null,
-              atendente: metadata.atendente ?? null,
-              dataAtendimento: metadata.data ?? null,
-              canal: metadata.canal ?? null,
-            },
-          },
-        }
-      );
-
-      if (classificationError || classificationResponse?.error) {
-        console.warn("[MentoriaLab][Importação][fallback_local]", {
+      if (persistError) {
+        console.error("[MentoriaLab][Importação][erro_tecnico]", {
           id_atendimento: sourceFile.batchFileId || sourceFile.id,
-          etapa: "classificacao_backend",
-          detalhe:
-            classificationError?.message ||
-            classificationResponse?.details ||
-            classificationResponse?.error ||
-            "Falha ao classificar atendimento na ingestão",
+          etapa: "persistencia_leitura",
+          erro: persistError.message,
         });
-
-        const fallbackPersistence = await persistReadFallback({
-          labFile: sourceFile,
-          metadata,
-          hasAudio,
-          text,
-          structured,
-          extractionError,
-        });
-
-        persistedResult = fallbackPersistence.result;
-        persistedEvaluability = fallbackPersistence.evaluability;
-        persistedIneligibility = fallbackPersistence.ineligibility;
-      } else {
-        const persistedPayload = classificationResponse as PersistedIngestionClassificationResponse;
-        persistedResult = (persistedPayload.row?.result as Record<string, unknown> | null) ?? persistedPayload.result;
-        persistedEvaluability = resolvePersistedMentoriaEvaluability(persistedResult) ?? {
-          evaluable: persistedPayload.avaliavel,
-          nonEvaluable: !persistedPayload.avaliavel,
-          reason: persistedPayload.motivo_nao_avaliavel ?? persistedPayload.motivo_inelegivel ?? undefined,
-        };
-        persistedIneligibility = resolvePersistedMentoriaIneligibility(persistedResult) ?? {
-          ineligible: persistedPayload.inelegivel,
-          reason: persistedPayload.motivo_inelegivel ?? undefined,
-        };
+        // Even if DB persist fails, mark as read locally to avoid blocking
       }
 
       console.info("[MentoriaLab][Importação][resultado]", {
         id_atendimento: sourceFile.batchFileId || metadata.protocolo || sourceFile.id,
-        etapa: "classificacao_persistida",
+        etapa: "ingestao_pura",
         texto_extraido: hasText,
-        mensagens_parseadas: structured?.totalMessages ?? 0,
+        mensagens_parseadas: structured?.messages?.length ?? 0,
         has_audio: hasAudio,
-        avaliavel: persistedEvaluability?.evaluable ?? true,
-        inelegivel: persistedIneligibility?.ineligible ?? false,
-        motivo_inelegivel: persistedIneligibility?.reason ?? null,
-        motivo_nao_avaliavel: persistedEvaluability?.reason ?? null,
         erro_extracao: extractionError ?? null,
       });
 
@@ -677,7 +637,7 @@ const MentoriaLab = () => {
         ...sourceFile,
         status: "lido",
         text: hasText ? text : undefined,
-        result: persistedResult ?? sourceFile.result,
+        result: sourceFile.result,
         ...metadata,
         hasAudio,
         attendantMatch: attendantMatchResult,
@@ -685,10 +645,6 @@ const MentoriaLab = () => {
         uraContext: uraCtx,
         uraStatus: uraCtx?.status,
         structuredConversation: structured,
-        ineligible: persistedIneligibility?.ineligible,
-        ineligibleReason: persistedIneligibility?.reason,
-        nonEvaluable: persistedEvaluability?.nonEvaluable,
-        nonEvaluableReason: persistedEvaluability?.reason,
       };
 
       setFiles((prev) => prev.map((f) => (f.id === labFile.id ? updatedFile : f)));
