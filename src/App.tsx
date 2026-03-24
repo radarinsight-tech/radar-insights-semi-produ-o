@@ -20,6 +20,7 @@ import MentoriaPreventiva from "./pages/MentoriaPreventiva.tsx";
 import Atendentes from "./pages/Atendentes.tsx";
 import RankingBonus from "./pages/RankingBonus.tsx";
 import PerformanceDashboard from "./pages/PerformanceDashboard.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AppModeBanner from "./components/AppModeBanner.tsx";
 
@@ -34,6 +35,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<Auth />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           
           <Route
             path="/"
