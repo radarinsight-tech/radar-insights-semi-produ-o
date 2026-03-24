@@ -195,21 +195,31 @@ interface AnalysisContext {
 
 // 1. Informou o nome e se apresentou?
 const c1: CriterionAnalyzer = (msgs, ctx) => {
-  const pattern = /meu\s+nome\s+é|me\s+chamo|sou\s+(?:o|a)\s+\w+|aqui\s+(?:é|quem\s+fala)|(?:sou|aqui)\s+\w+.*(?:atend|analista|suporte|consult)/i;
-  const evidence = findEvidence(msgs, pattern, "atendente");
+  // Expanded patterns: "Sou [nome]", "Aqui é [nome]", "Meu nome é [nome]", "Sou o(a) [nome], especialista..."
+  const namePatterns = [
+    /meu\s+nome\s+é\s+\w+/i,
+    /me\s+chamo\s+\w+/i,
+    /sou\s+(?:o|a)\s+\w+/i,
+    /sou\s+\w+[,.]?\s*(?:especialista|analista|atendente|consultor[a]?|suporte)?/i,
+    /aqui\s+(?:é|quem\s+fala)\s+(?:o|a)?\s*\w+/i,
+    /(?:olá|oi|bom\s+dia|boa\s+tarde|boa\s+noite)[,!.\s]+(?:meu\s+nome|me\s+chamo|sou|aqui\s+é)/i,
+  ];
+  const combinedPattern = new RegExp(namePatterns.map(p => p.source).join("|"), "i");
+
+  const evidence = findEvidence(msgs, combinedPattern, "atendente");
   if (evidence) {
-    return { sugestao: "SIM", justificativa: "Atendente se apresentou pelo nome no início do atendimento.", evidencia: evidence, confianca: "alta" };
+    return { sugestao: "SIM", justificativa: "Atendente se apresentou pelo nome.", evidencia: evidence, confianca: "alta" };
   }
-  // Check if first message has a greeting with name
+
+  // Check first attendant message specifically
   const firstAtt = findFirstAttendantMsg(msgs);
   if (firstAtt) {
-    const greetPattern = /(?:olá|oi|bom\s+dia|boa\s+tarde|boa\s+noite).*(?:meu\s+nome|me\s+chamo|sou)/i;
-    if (greetPattern.test(firstAtt.text)) {
-      return { sugestao: "SIM", justificativa: "Primeira mensagem contém saudação com apresentação.", evidencia: firstAtt.text.slice(0, 100), confianca: "alta" };
+    if (combinedPattern.test(firstAtt.text)) {
+      return { sugestao: "SIM", justificativa: "Primeira mensagem contém apresentação do atendente.", evidencia: firstAtt.text.slice(0, 120), confianca: "alta" };
     }
-    // Partial: greeting but no name
-    if (/(?:olá|oi|bom\s+dia|boa\s+tarde|boa\s+noite)/i.test(firstAtt.text)) {
-      return { sugestao: "PARCIAL", justificativa: "Atendente cumprimentou mas não se identificou pelo nome.", evidencia: firstAtt.text.slice(0, 80), confianca: "media" };
+    // Greeting with attendant name from speaker field (implicit presentation)
+    if (/(?:olá|oi|bom\s+dia|boa\s+tarde|boa\s+noite)/i.test(firstAtt.text) && firstAtt.speaker && firstAtt.speaker.length >= 2) {
+      return { sugestao: "PARCIAL", justificativa: "Atendente cumprimentou mas não se identificou explicitamente pelo nome no texto.", evidencia: firstAtt.text.slice(0, 100), confianca: "media" };
     }
   }
   return { sugestao: "NÃO", justificativa: "Não foi encontrada apresentação do atendente no histórico.", confianca: "media" };
@@ -217,27 +227,33 @@ const c1: CriterionAnalyzer = (msgs, ctx) => {
 
 // 2. Foi cordial e simpático?
 const c2: CriterionAnalyzer = (msgs, ctx) => {
-  const positivePatterns = /(?:por\s+favor|obrigad[oa]|com\s+prazer|fico\s+feliz|à\s+disposição|disponível|ajudar|prazer|gentileza|por\s+gentileza)/gi;
   const negativePatterns = /(?:não\s+é\s+meu\s+problema|se\s+vira|dane-se|não\s+posso\s+fazer\s+nada|infelizmente\s+não)/gi;
-  
-  const positiveMatches = ctx.attText.match(positivePatterns);
   const negativeMatches = ctx.attText.match(negativePatterns);
   const negEvidence = findEvidence(msgs, negativePatterns, "atendente");
-  
+
   if (negativeMatches && negativeMatches.length > 0) {
     return { sugestao: "NÃO", justificativa: "Linguagem inadequada ou falta de cordialidade detectada.", evidencia: negEvidence, confianca: "alta" };
   }
-  
+
+  // Basic greetings count as cordiality (any single greeting is enough)
+  const greetingPatterns = /(?:olá|oi\b|bom\s+dia|boa\s+tarde|boa\s+noite|tudo\s+bem|como\s+(?:posso|vai))/gi;
+  const positivePatterns = /(?:por\s+favor|obrigad[oa]|com\s+prazer|fico\s+feliz|à\s+disposição|disponível|ajudar|prazer|gentileza|por\s+gentileza)/gi;
+
+  const greetingMatches = ctx.attText.match(greetingPatterns);
+  const positiveMatches = ctx.attText.match(positivePatterns);
+  const greetCount = greetingMatches?.length || 0;
   const positiveCount = positiveMatches?.length || 0;
-  if (positiveCount >= 3) {
-    const ev = findEvidence(msgs, positivePatterns, "atendente");
-    return { sugestao: "SIM", justificativa: `Múltiplas expressões de cordialidade encontradas (${positiveCount} ocorrências).`, evidencia: ev, confianca: "alta" };
+  const totalCordiality = greetCount + positiveCount;
+
+  if (totalCordiality >= 2) {
+    const ev = findEvidence(msgs, greetingPatterns, "atendente") || findEvidence(msgs, positivePatterns, "atendente");
+    return { sugestao: "SIM", justificativa: `Cordialidade presente com ${totalCordiality} expressões (saudações e/ou cortesias).`, evidencia: ev, confianca: "alta" };
   }
-  if (positiveCount >= 1) {
-    const ev = findEvidence(msgs, positivePatterns, "atendente");
-    return { sugestao: "PARCIAL", justificativa: `Cordialidade presente mas em baixa frequência (${positiveCount} ocorrência${positiveCount > 1 ? "s" : ""}).`, evidencia: ev, confianca: "media" };
+  if (totalCordiality >= 1) {
+    const ev = findEvidence(msgs, greetingPatterns, "atendente") || findEvidence(msgs, positivePatterns, "atendente");
+    return { sugestao: "SIM", justificativa: `Saudação ou expressão cordial identificada.`, evidencia: ev, confianca: "media" };
   }
-  return { sugestao: "NÃO", justificativa: "Não foram encontradas expressões de cordialidade nas mensagens do atendente.", confianca: "baixa" };
+  return { sugestao: "NÃO", justificativa: "Não foram encontradas saudações nem expressões de cordialidade nas mensagens do atendente.", confianca: "media" };
 };
 
 // 3. Chamou o cliente pelo nome?
@@ -271,8 +287,10 @@ const c4: CriterionAnalyzer = (msgs, ctx) => {
   if (avg == null) return { sugestao: "PARCIAL", justificativa: "Não foi possível calcular tempo de resposta (timestamps ausentes).", confianca: "baixa" };
   
   const avgMin = avg / 60;
-  if (avgMin <= 2) return { sugestao: "SIM", justificativa: `Tempo médio de resposta: ${avgMin.toFixed(1)} minutos (adequado).`, confianca: "alta" };
-  if (avgMin <= 5) return { sugestao: "PARCIAL", justificativa: `Tempo médio de resposta: ${avgMin.toFixed(1)} minutos (moderado).`, confianca: "alta" };
+  // Up to 3 min → SIM, up to 5 min → SIM (within resolution window), up to 8 min → PARCIAL
+  if (avgMin <= 3) return { sugestao: "SIM", justificativa: `Tempo médio de resposta: ${avgMin.toFixed(1)} minutos (adequado).`, confianca: "alta" };
+  if (avgMin <= 5) return { sugestao: "SIM", justificativa: `Tempo médio de resposta: ${avgMin.toFixed(1)} minutos (dentro do limite aceitável).`, confianca: "media" };
+  if (avgMin <= 8) return { sugestao: "PARCIAL", justificativa: `Tempo médio de resposta: ${avgMin.toFixed(1)} minutos (levemente acima do ideal).`, confianca: "alta" };
   return { sugestao: "NÃO", justificativa: `Tempo médio de resposta: ${avgMin.toFixed(1)} minutos (acima do esperado).`, confianca: "alta" };
 };
 
