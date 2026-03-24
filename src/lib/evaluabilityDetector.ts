@@ -64,25 +64,17 @@ export function detectEvaluability(conversation: StructuredConversation | undefi
     clientMessages: 0,
     attendantMessages: 0,
     hasBackAndForth: false,
-    onlyAutomated: true,
+    onlyAutomated: false,
     clientResponded: false,
   };
 
+  // Rule: any attendance with any content is evaluable — never block.
   if (!conversation || !conversation.messages || conversation.messages.length === 0) {
-    // No structured conversation — if we have raw text, assume partially usable
-    // If no raw text either, it's truly non-evaluable
-    if (!rawText || rawText.trim().length === 0) {
-      return {
-        evaluable: false,
-        reason: "Sem conteúdo extraído para avaliação",
-        details: defaultDetails,
-      };
+    if (rawText && rawText.trim().length > 0) {
+      return { evaluable: true, details: defaultDetails };
     }
-    // Has raw text but no parsed messages — still potentially usable, mark as evaluable
-    return {
-      evaluable: true,
-      details: defaultDetails,
-    };
+    // Truly empty — no text at all
+    return { evaluable: true, details: defaultDetails };
   }
 
   const msgs = conversation.messages;
@@ -91,74 +83,16 @@ export function detectEvaluability(conversation: StructuredConversation | undefi
   const humanMsgs = [...clientMsgs, ...attendantMsgs];
   const backAndForthCount = countBackAndForth(msgs);
 
-  // Check if non-automated attendant messages exist
-  const nonAutomatedAttendant = attendantMsgs.filter(m => !isAutomatedMessage(m));
-  const nonAutomatedClient = clientMsgs.filter(m => {
-    const trivialClient = /^(sim|não|ok|obrigad[oa]|tchau|valeu|1|2|3|4|5|6|7|8|9|0|\*)$/i;
-    return !trivialClient.test(m.text.trim());
-  });
-
-  const onlyAutomated = nonAutomatedAttendant.length === 0;
-  const clientResponded = clientMsgs.length > 0;
-  const hasBackAndForth = backAndForthCount >= MIN_BACK_AND_FORTH;
-
   const details = {
     totalMessages: msgs.length,
     humanMessages: humanMsgs.length,
     clientMessages: clientMsgs.length,
     attendantMessages: attendantMsgs.length,
-    hasBackAndForth,
-    onlyAutomated,
-    clientResponded,
+    hasBackAndForth: backAndForthCount >= MIN_BACK_AND_FORTH,
+    onlyAutomated: false,
+    clientResponded: clientMsgs.length > 0,
   };
 
-  // Rule 1: No attendant messages at all
-  if (attendantMsgs.length === 0) {
-    return {
-      evaluable: false,
-      reason: "Sem participação de atendente humano",
-      details,
-    };
-  }
-
-  // Rule 2: Only automated/template messages from attendant
-  if (onlyAutomated && nonAutomatedAttendant.length === 0) {
-    return {
-      evaluable: false,
-      reason: "Apenas mensagens automáticas ou padrão do atendente",
-      details,
-    };
-  }
-
-  // Rule 3: No client interaction at all
-  if (clientMsgs.length === 0) {
-    return {
-      evaluable: false,
-      reason: "Sem resposta do cliente",
-      details,
-    };
-  }
-
-  // Rule 4: No back-and-forth (no real exchange)
-  if (!hasBackAndForth) {
-    return {
-      evaluable: false,
-      reason: "Sem troca de mensagens entre atendente e cliente",
-      details,
-    };
-  }
-
-  // Rule 5: Too few human messages for meaningful evaluation
-  if (humanMsgs.length < MIN_HUMAN_MESSAGES) {
-    return {
-      evaluable: false,
-      reason: "Interação insuficiente para avaliação (menos de 3 mensagens humanas)",
-      details,
-    };
-  }
-
-  return {
-    evaluable: true,
-    details,
-  };
+  // Always evaluable — the 19-question matrix adapts to any scenario
+  return { evaluable: true, details };
 }

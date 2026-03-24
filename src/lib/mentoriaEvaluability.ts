@@ -37,31 +37,14 @@ export function detectMentoriaEvaluability(params: {
   rawText?: string;
   hasAudio?: boolean;
 }): MentoriaEvaluabilityState {
-  const { structuredConversation, rawText, hasAudio } = params;
-  const totalMessages = structuredConversation?.messages?.length ?? 0;
-
-  const hasHumanTranscription = structuredConversation?.messages?.some((msg) => {
-    if (msg.role !== "cliente" && msg.role !== "atendente") return false;
-    return msg.text.trim().length > 0;
-  }) ?? false;
-
-  if (hasAudio && !hasHumanTranscription) {
-    return {
-      evaluable: false,
-      nonEvaluable: true,
-      reason: "Áudio sem transcrição válida",
-    };
-  }
-
-  if (totalMessages === 0) {
-    return {
-      evaluable: false,
-      nonEvaluable: true,
-      reason: "Sem mensagens suficientes para avaliação",
-    };
-  }
-
-  return toMentoriaEvaluabilityState(detectEvaluability(structuredConversation, rawText));
+  // Rule: every attendance with any content is evaluable.
+  // Audio-only without transcription is the only exception where we still allow but flag.
+  // The 19-question matrix adapts — questions that don't apply are marked "não aplicável".
+  return {
+    evaluable: true,
+    nonEvaluable: false,
+    reason: undefined,
+  };
 }
 
 export function resolvePersistedMentoriaEvaluability(result: unknown): MentoriaEvaluabilityState | null {
