@@ -161,16 +161,24 @@ async function consultarSPCReal(
   };
 
   const ts = new Date().toISOString();
-  const authToken = btoa(unescape(encodeURIComponent(`${operator}:${password}`)));
+
+  // Generate Base64 using TextEncoder (equivalent to Node Buffer.from, no btoa/unescape)
+  const encoder = new TextEncoder();
+  const credentialBytes = encoder.encode(`${operator}:${password}`);
+  const authToken = btoa(String.fromCharCode(...credentialBytes));
+
   const maskedPassword = password.length > 2 ? password.slice(0, 1) + "***" + password.slice(-1) : "***";
 
   const headers: Record<string, string> = {
-    "Content-Type": "application/json; charset=utf-8",
+    "Content-Type": "application/json; charset=UTF-8",
     Accept: "application/json",
     Authorization: `Basic ${authToken}`,
-    "User-Agent": "RadarInsight/1.0",
-    "Cache-Control": "no-cache",
   };
+
+  // Temporary diagnostic: log the final Authorization value for comparison with Postman
+  console.log(`[SPC] ══ AUTH DIAGNOSTIC ══`);
+  console.log(`[SPC] Authorization header value: Basic ${authToken}`);
+  console.log(`[SPC] Credential length (bytes): ${credentialBytes.length}`);
 
   // ── Diagnostic log: REQUEST ──
   console.log(`[SPC] ════════════ REQUEST ════════════`);
