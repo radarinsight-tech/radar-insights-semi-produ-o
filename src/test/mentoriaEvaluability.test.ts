@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   detectMentoriaEvaluability,
   mergePersistedMentoriaEvaluability,
+  resolvePersistedMentoriaIneligibility,
   resolvePersistedMentoriaEvaluability,
 } from "@/lib/mentoriaEvaluability";
 
@@ -39,13 +40,21 @@ describe("mentoria evaluability persistence", () => {
 
     expect(persisted).toMatchObject({
       avaliavel: false,
+      inelegivel: true,
+      motivo_inelegivel: "Sem resposta do cliente",
       motivo_nao_avaliavel: "Sem resposta do cliente",
+      _ineligible: true,
       _nonEvaluable: true,
     });
 
     expect(resolvePersistedMentoriaEvaluability(persisted)).toEqual({
       evaluable: false,
       nonEvaluable: true,
+      reason: "Sem resposta do cliente",
+    });
+
+    expect(resolvePersistedMentoriaIneligibility(persisted)).toEqual({
+      ineligible: true,
       reason: "Sem resposta do cliente",
     });
   });

@@ -7,12 +7,21 @@ export interface MentoriaEvaluabilityState {
   reason?: string;
 }
 
+export interface MentoriaIneligibilityState {
+  ineligible: boolean;
+  reason?: string;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
 function normalizeReason(value: unknown): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+}
+
+function normalizeBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
 }
 
 export function toMentoriaEvaluabilityState(result: EvaluabilityResult): MentoriaEvaluabilityState {
@@ -58,7 +67,11 @@ export function detectMentoriaEvaluability(params: {
 export function resolvePersistedMentoriaEvaluability(result: unknown): MentoriaEvaluabilityState | null {
   if (!isRecord(result)) return null;
 
-  const reason = normalizeReason(result.motivo_nao_avaliavel) ?? normalizeReason(result._nonEvaluableReason);
+  const reason =
+    normalizeReason(result.motivo_nao_avaliavel) ??
+    normalizeReason(result._nonEvaluableReason) ??
+    normalizeReason(result.motivo_inelegivel) ??
+    normalizeReason(result._ineligibleReason);
 
   if (typeof result.avaliavel === "boolean") {
     return {
@@ -87,15 +100,51 @@ export function resolvePersistedMentoriaEvaluability(result: unknown): MentoriaE
   return null;
 }
 
+export function resolvePersistedMentoriaIneligibility(result: unknown): MentoriaIneligibilityState | null {
+  if (!isRecord(result)) return null;
+
+  const reason =
+    normalizeReason(result.motivo_inelegivel) ??
+    normalizeReason(result._ineligibleReason) ??
+    normalizeReason(result.motivo_nao_avaliavel) ??
+    normalizeReason(result._nonEvaluableReason);
+
+  const ineligible = normalizeBoolean(result.inelegivel) ?? normalizeBoolean(result._ineligible);
+  if (typeof ineligible === "boolean") {
+    return {
+      ineligible,
+      reason,
+    };
+  }
+
+  const evaluability = resolvePersistedMentoriaEvaluability(result);
+  if (evaluability) {
+    return {
+      ineligible: evaluability.nonEvaluable,
+      reason: evaluability.reason,
+    };
+  }
+
+  return null;
+}
+
 export function mergePersistedMentoriaEvaluability(result: unknown, state: MentoriaEvaluabilityState) {
   const base = isRecord(result) ? result : {};
+  const persistedIneligibility = resolvePersistedMentoriaIneligibility(base);
+  const ineligible = (persistedIneligibility?.ineligible ?? false) || state.nonEvaluable;
+  const nonEvaluableReason = state.reason;
+  const ineligibleReason = persistedIneligibility?.reason ?? (state.nonEvaluable ? state.reason : undefined);
 
   return {
     ...base,
     avaliavel: state.evaluable,
-    motivo_nao_avaliavel: state.reason ?? null,
+    inelegivel: ineligible,
+    motivo_inelegivel: ineligibleReason ?? null,
+    motivo_nao_avaliavel: nonEvaluableReason ?? null,
     _evaluable: state.evaluable,
     _nonEvaluable: state.nonEvaluable,
-    _nonEvaluableReason: state.reason ?? null,
+    _nonEvaluableReason: nonEvaluableReason ?? null,
+    _ineligible: ineligible,
+    _ineligibleReason: ineligibleReason ?? null,
   };
 }

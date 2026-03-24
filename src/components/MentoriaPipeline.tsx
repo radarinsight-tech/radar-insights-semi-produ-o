@@ -17,6 +17,10 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { cn, formatDateBR, notaToScale10 } from "@/lib/utils";
+import {
+  resolvePersistedMentoriaEvaluability,
+  resolvePersistedMentoriaIneligibility,
+} from "@/lib/mentoriaEvaluability";
 import type { WorkflowStatus } from "@/components/MentoriaDetailDialog";
 
 interface PipelineFile {
@@ -115,6 +119,11 @@ const AttendanceCard = ({
   onRemoveFile: (id: string) => void;
   onOpenDiagnostic: (f: PipelineFile) => void;
 }) => {
+  const persistedEvaluability = resolvePersistedMentoriaEvaluability(file.result);
+  const persistedIneligibility = resolvePersistedMentoriaIneligibility(file.result);
+  const isNonEvaluable = persistedEvaluability?.nonEvaluable ?? file.nonEvaluable === true;
+  const isIneligible = persistedIneligibility?.ineligible ?? file.ineligible === true;
+  const ineligibleReason = persistedIneligibility?.reason ?? file.ineligibleReason;
   const hasResult = file.status === "analisado" && file.result;
   const nota = hasResult ? file.result?.notaFinal : null;
   const nota10 = nota != null ? notaToScale10(nota) : null;
@@ -221,7 +230,7 @@ const AttendanceCard = ({
       </div>
 
       <div className="flex items-center gap-1.5 flex-wrap mb-2">
-        {file.nonEvaluable && (
+        {isNonEvaluable && (
           <Badge className="bg-warning/15 text-warning text-[9px] gap-0.5 px-1.5 py-0 h-auto border border-warning/30">
             <AlertTriangle className="h-2.5 w-2.5" /> Não avaliável
           </Badge>
@@ -231,18 +240,18 @@ const AttendanceCard = ({
             <ShieldCheck className="h-2.5 w-2.5" /> Oficial
           </Badge>
         )}
-        {file.ineligible && (
+        {isIneligible && (
           <Badge className="bg-muted text-muted-foreground text-[9px] px-1.5 py-0 h-auto">
-            {file.ineligibleReason || "Fora de avaliação"}
+            {ineligibleReason || "Fora de avaliação"}
           </Badge>
         )}
         {file.transferred && (
           <Badge className="bg-primary/15 text-primary text-[9px] px-1 py-0 h-auto">Transferido</Badge>
         )}
-        {hasResult && !file.ineligible && !file.nonEvaluable && nota10 != null && nota10 < 7 && (
+        {hasResult && !isIneligible && !isNonEvaluable && nota10 != null && nota10 < 7 && (
           <Badge className="bg-warning/15 text-warning text-[9px] px-1.5 py-0 h-auto">Necessita mentoria</Badge>
         )}
-        {file.result?.classificacao && !file.ineligible && (
+        {file.result?.classificacao && !isIneligible && (
           <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-auto font-semibold">
             {file.result.classificacao}
           </Badge>
@@ -276,7 +285,7 @@ const AttendanceCard = ({
           </Tooltip>
         </TooltipProvider>
 
-        {hasResult && !file.ineligible && !file.approvedAsOfficial && file.evaluationId && (
+        {hasResult && !isIneligible && !file.approvedAsOfficial && file.evaluationId && (
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -388,7 +397,10 @@ const MentoriaPipeline = ({
 
       {/* Non-evaluable counter */}
       {(() => {
-        const nonEvaluableCount = files.filter(f => f.nonEvaluable).length;
+        const nonEvaluableCount = files.filter((file) => {
+          const persistedEvaluability = resolvePersistedMentoriaEvaluability(file.result);
+          return persistedEvaluability?.nonEvaluable ?? file.nonEvaluable === true;
+        }).length;
         return nonEvaluableCount > 0 ? (
           <div className="flex items-center gap-2.5 rounded-xl border border-warning/25 bg-warning/5 px-4 py-2.5">
             <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
