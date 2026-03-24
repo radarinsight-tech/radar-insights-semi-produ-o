@@ -409,7 +409,7 @@ const MentoriaLab = () => {
         motivo_nao_avaliavel: evaluabilityState.reason ?? null,
       });
 
-      let persistedResult = persistedReadResult;
+      let persistedResult: any = persistedReadResult;
       let persistedEvaluability = evaluabilityState;
 
       // Sync to DB (including raw text and structured messages for persistence)
