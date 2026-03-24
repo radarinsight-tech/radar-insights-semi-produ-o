@@ -602,7 +602,7 @@ const MentoriaLab = () => {
         return next;
       });
     }
-  }, [ensureBatchFileRecord, ensureLocalFile, persistReadFallback]);
+  }, [ensureBatchFileRecord, ensureLocalFile]);
 
   const runIngestionQueue = useCallback(async (entries: LabFile[]) => {
     const queue = [...entries];
