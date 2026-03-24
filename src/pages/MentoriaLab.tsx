@@ -332,12 +332,35 @@ const MentoriaLab = () => {
   }, []);
 
   const ensureLocalFile = useCallback(async (labFile: LabFile): Promise<LabFile | null> => {
-    if (labFile.file.size > 0 || !labFile.storagePath) {
+    // If file is already in memory, use it directly
+    if (labFile.file.size > 0) {
       return labFile;
+    }
+
+    // If no storage path, check if we already have text from DB
+    if (!labFile.storagePath) {
+      if (labFile.text && labFile.text.trim().length > 0) {
+        console.info("[MentoriaLab][Hidratação] Sem storagePath mas com texto do banco — prosseguindo sem PDF binário", { id: labFile.batchFileId || labFile.id });
+        return labFile;
+      }
+      console.warn("[MentoriaLab][Hidratação] Sem storagePath e sem texto — não é possível recuperar PDF", { id: labFile.batchFileId || labFile.id });
+      return null;
     }
 
     const { data, error } = await supabase.storage.from("mentoria-lab").download(labFile.storagePath);
     if (error || !data) {
+      console.warn("[MentoriaLab][Hidratação] Falha ao baixar PDF do storage", {
+        id: labFile.batchFileId || labFile.id,
+        storagePath: labFile.storagePath,
+        erro: error?.message || "Sem dados retornados",
+      });
+
+      // If we already have text from DB, proceed without the binary PDF
+      if (labFile.text && labFile.text.trim().length > 0) {
+        console.info("[MentoriaLab][Hidratação] Usando texto já disponível do banco como fallback", { id: labFile.batchFileId || labFile.id });
+        return labFile;
+      }
+
       return null;
     }
 
@@ -402,20 +425,47 @@ const MentoriaLab = () => {
   const readFile = useCallback(async (labFile: LabFile): Promise<LabFile | null> => {
     setReadingIds((prev) => new Set(prev).add(labFile.id));
     try {
-      const hydratedFile = await ensureLocalFile(labFile);
+      let hydratedFile = await ensureLocalFile(labFile);
       if (!hydratedFile) {
-        console.warn("[MentoriaLab][Importação][erro_leitura]", {
-          id: labFile.batchFileId || labFile.id,
-          etapa: "recuperacao_arquivo",
-          erro: "Não foi possível recuperar PDF salvo",
-        });
-        setFiles((prev) =>
-          prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível recuperar este PDF salvo para leitura." } : f))
-        );
+        // Try fetching extracted_text from DB as last resort
         if (labFile.batchFileId) {
-          await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha ao recuperar PDF salvo" } as any).eq("id", labFile.batchFileId);
+          const { data: dbRow } = await supabase
+            .from("mentoria_batch_files")
+            .select("extracted_text, atendente, protocolo, data_atendimento, canal, has_audio")
+            .eq("id", labFile.batchFileId)
+            .maybeSingle();
+
+          if (dbRow?.extracted_text && dbRow.extracted_text.trim().length > 0) {
+            console.info("[MentoriaLab][Importação][fallback_texto_banco]", {
+              id: labFile.batchFileId,
+              chars: dbRow.extracted_text.length,
+            });
+            hydratedFile = {
+              ...labFile,
+              text: dbRow.extracted_text,
+              atendente: dbRow.atendente || labFile.atendente,
+              protocolo: dbRow.protocolo || labFile.protocolo,
+              data: dbRow.data_atendimento || labFile.data,
+              canal: dbRow.canal || labFile.canal,
+              hasAudio: Boolean(dbRow.has_audio),
+            };
+          }
         }
-        return null;
+
+        if (!hydratedFile) {
+          console.warn("[MentoriaLab][Importação][erro_leitura]", {
+            id: labFile.batchFileId || labFile.id,
+            etapa: "recuperacao_arquivo",
+            erro: "Não foi possível recuperar PDF salvo nem texto do banco",
+          });
+          setFiles((prev) =>
+            prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível recuperar este PDF. Tente reimportar o arquivo." } : f))
+          );
+          if (labFile.batchFileId) {
+            await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha ao recuperar PDF salvo" } as any).eq("id", labFile.batchFileId);
+          }
+          return null;
+        }
       }
 
       const sourceFile = await ensureBatchFileRecord(hydratedFile);
@@ -434,29 +484,40 @@ const MentoriaLab = () => {
 
       let text = "";
       let extractionError: string | undefined;
-      try {
-        text = await extractTextFromPdf(sourceFile.file);
-      } catch (err: any) {
-        if (isFatalPdfReadError(err)) {
-          const fatalReadError = err?.message || "Falha crítica na leitura binária do PDF";
-          console.error("[MentoriaLab][Importação][erro_tecnico]", {
-            id_atendimento: sourceFile.batchFileId || sourceFile.id,
-            etapa: "leitura_binaria_pdf",
-            erro: fatalReadError,
-          });
-          setFiles((prev) =>
-            prev.map((f) => (f.id === sourceFile.id ? { ...f, status: "erro", error: `Erro na leitura: ${fatalReadError}` } : f))
-          );
-          await supabase.from("mentoria_batch_files").update({ status: "error", error_message: fatalReadError } as any).eq("id", sourceFile.batchFileId);
-          return null;
-        }
 
-        extractionError = err?.message || "Falha na extração de texto";
-        console.warn("[MentoriaLab][Importação][conteudo_incompleto]", {
+      // If file has no binary content but has text from DB, skip PDF extraction
+      const hasBinaryContent = sourceFile.file.size > 0;
+      if (!hasBinaryContent && sourceFile.text && sourceFile.text.trim().length > 0) {
+        text = sourceFile.text;
+        console.info("[MentoriaLab][Importação][texto_do_banco]", {
           id_atendimento: sourceFile.batchFileId || sourceFile.id,
-          etapa: "extracao_texto",
-          detalhe: extractionError,
+          chars: text.length,
         });
+      } else {
+        try {
+          text = await extractTextFromPdf(sourceFile.file);
+        } catch (err: any) {
+          if (isFatalPdfReadError(err)) {
+            const fatalReadError = err?.message || "Falha crítica na leitura binária do PDF";
+            console.error("[MentoriaLab][Importação][erro_tecnico]", {
+              id_atendimento: sourceFile.batchFileId || sourceFile.id,
+              etapa: "leitura_binaria_pdf",
+              erro: fatalReadError,
+            });
+            setFiles((prev) =>
+              prev.map((f) => (f.id === sourceFile.id ? { ...f, status: "erro", error: `Erro na leitura: ${fatalReadError}` } : f))
+            );
+            await supabase.from("mentoria_batch_files").update({ status: "error", error_message: fatalReadError } as any).eq("id", sourceFile.batchFileId);
+            return null;
+          }
+
+          extractionError = err?.message || "Falha na extração de texto";
+          console.warn("[MentoriaLab][Importação][conteudo_incompleto]", {
+            id_atendimento: sourceFile.batchFileId || sourceFile.id,
+            etapa: "extracao_texto",
+            detalhe: extractionError,
+          });
+        }
       }
 
       const hasText = text.trim().length > 0;
