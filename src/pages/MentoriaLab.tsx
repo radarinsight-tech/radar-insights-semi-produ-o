@@ -1459,17 +1459,24 @@ const MentoriaLab = () => {
   }, [getNextAnalyzedFile, openMentoria]);
 
   const counts = useMemo(() => {
+    // Use same logic as pipeline cards: persisted flag OR local flag
     const nonEvaluableIds = new Set(
       files
-        .filter((f) => resolvePersistedMentoriaEvaluability(f.result)?.nonEvaluable === true)
+        .filter((f) => {
+          const persisted = resolvePersistedMentoriaEvaluability(f.result);
+          return persisted?.nonEvaluable === true || f.nonEvaluable === true;
+        })
         .map((f) => f.id)
     );
-    const excludedFromAnalyzedIds = new Set(
+    const ineligibleIds = new Set(
       files
-        .filter((f) => f.ineligible || nonEvaluableIds.has(f.id))
+        .filter((f) => {
+          const persisted = resolvePersistedMentoriaIneligibility(f.result);
+          return persisted?.ineligible === true || f.ineligible === true || nonEvaluableIds.has(f.id);
+        })
         .map((f) => f.id)
     );
-    const analisados = files.filter((f) => f.status === "analisado" && !excludedFromAnalyzedIds.has(f.id));
+    const analisados = files.filter((f) => f.status === "analisado" && !ineligibleIds.has(f.id));
     const atendentesSet = new Set(
       analisados
         .map((f) => (f.result?.atendente || f.atendente || "").trim().toLowerCase())
@@ -1478,7 +1485,7 @@ const MentoriaLab = () => {
     return {
       total: files.length,
       pendente: files.filter((f) => f.status === "pendente").length,
-      lido: files.filter((f) => f.status === "lido").length,
+      lido: files.filter((f) => f.status === "lido" && !nonEvaluableIds.has(f.id)).length,
       analisado: analisados.length,
       erro: files.filter((f) => f.status === "erro").length,
       naoAvaliavel: nonEvaluableIds.size,
