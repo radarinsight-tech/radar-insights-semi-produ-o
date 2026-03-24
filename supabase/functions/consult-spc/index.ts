@@ -152,36 +152,28 @@ async function consultarSPCReal(
   elapsed_ms: number;
 }> {
   const digits = cpf.replace(/\D/g, "");
-  const tipoConsumidor = "F";
+  const tipoConsumidor = digits.length === 14 ? "J" : "F";
 
   const payload = {
     codigoProduto: "643",
-    tipoConsumidor: "F",
-    documentoConsumidor: "22222222222",
+    tipoConsumidor,
+    documentoConsumidor: digits,
   };
 
-  console.log("PAYLOAD FINAL:", JSON.stringify(payload));
-  console.log("TIPO CONSUMIDOR:", tipoConsumidor);
-  console.log("DOCUMENTO FINAL:", digits);
+  console.log("[SPC] PAYLOAD FINAL:", JSON.stringify(payload));
 
   const ts = new Date().toISOString();
 
-  // Generate Base64 using TextEncoder (equivalent to Node Buffer.from, no btoa/unescape)
-
+  // Basic Auth: base64(username:password)
   const authToken = btoa(`${operator}:${password}`);
 
   const maskedPassword = password.length > 2 ? password.slice(0, 1) + "***" + password.slice(-1) : "***";
 
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    "Content-Type": "application/json; charset=UTF-8",
     Accept: "application/json",
     Authorization: `Basic ${authToken}`,
   };
-
-  // Temporary diagnostic: log the final Authorization value for comparison with Postman
-  console.log(`[SPC] ══ AUTH DIAGNOSTIC ══`);
-  console.log(`[SPC] Authorization header value: Basic ${authToken}`);
-  console.log(`[SPC] Credential length (bytes): ${credentialBytes.length}`);
 
   // ── Diagnostic log: REQUEST ──
   console.log(`[SPC] ════════════ REQUEST ════════════`);
