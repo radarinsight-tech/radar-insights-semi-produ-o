@@ -457,8 +457,18 @@ const MentoriaLab = () => {
 
       let text = "";
       let extractionError: string | undefined;
-      try {
-        text = await extractTextFromPdf(sourceFile.file);
+
+      // If file has no binary content but has text from DB, skip PDF extraction
+      const hasBinaryContent = sourceFile.file.size > 0;
+      if (!hasBinaryContent && sourceFile.text && sourceFile.text.trim().length > 0) {
+        text = sourceFile.text;
+        console.info("[MentoriaLab][Importação][texto_do_banco]", {
+          id_atendimento: sourceFile.batchFileId || sourceFile.id,
+          chars: text.length,
+        });
+      } else {
+        try {
+          text = await extractTextFromPdf(sourceFile.file);
       } catch (err: any) {
         if (isFatalPdfReadError(err)) {
           const fatalReadError = err?.message || "Falha crítica na leitura binária do PDF";
