@@ -375,17 +375,18 @@ const MentoriaLab = () => {
       const hasText = text.trim().length > 0;
 
       // ── Step 2: Extract metadata (best-effort) ──
-      let metadata = {
-        protocolo: undefined as string | undefined,
-        atendente: undefined as string | undefined,
-        data: undefined as string | undefined,
+      let metadata: { protocolo?: string; atendente?: string; data?: string; canal: string; hasAudio: boolean; tipo: string } = {
+        protocolo: undefined,
+        atendente: undefined,
+        data: undefined,
         canal: "Não identificado",
         hasAudio: false,
         tipo: "Não identificado",
       };
       if (hasText) {
         try {
-          metadata = extractAllMetadata(text);
+          const extracted = extractAllMetadata(text);
+          metadata = { ...extracted };
         } catch { /* non-blocking */ }
       }
 
