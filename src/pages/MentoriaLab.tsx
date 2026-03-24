@@ -32,6 +32,7 @@ import { parseStructuredConversation, type StructuredConversation } from "@/lib/
 import logoSymbol from "@/assets/logo-symbol.png";
 import { toast } from "sonner";
 import MentoriaInsights from "@/components/MentoriaInsights";
+import PreflightCheck, { PreflightStatusBadge, usePreflightCheck } from "@/components/PreflightCheck";
 import MentoriaCharts from "@/components/MentoriaCharts";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import ConversationView from "@/components/ConversationView";
@@ -1365,7 +1366,7 @@ const MentoriaLab = () => {
   }, [currentBatchId, ensureLocalFile, openMentoria, updateBatchStatus]);
 
   // Batch analyze with cloud storage for results
-  const analyzeSelected = async () => {
+  const analyzeSelectedCore = async () => {
     const toAnalyze = files.filter((f) => selected.has(f.id) && (f.status === "lido" || f.status === "pendente"));
     if (toAnalyze.length === 0) {
       toast.warning("Selecione arquivos lidos ou pendentes para análise.");
@@ -1381,7 +1382,7 @@ const MentoriaLab = () => {
           label: "Continuar mesmo assim",
           onClick: () => {
             setShowAnalyzeWarning(false);
-            analyzeSelected();
+            analyzeSelectedCore();
           },
         },
       });
@@ -1392,7 +1393,10 @@ const MentoriaLab = () => {
     await analyzeFiles(toAnalyze);
   };
 
-  const handleStartMentoria = useCallback(async (labFile: LabFile) => {
+  // analyzeSelected is now just a reference used by PreflightCheck's onReady
+  const analyzeSelected = analyzeSelectedCore;
+
+  const handleStartMentoriaCore = useCallback(async (labFile: LabFile) => {
     if (processing) return;
 
     if (labFile.status === "analisado" && labFile.result) {
@@ -1424,7 +1428,6 @@ const MentoriaLab = () => {
           motivo: "readFile retornou null — tentando dados do banco",
         });
 
-        // Try to fetch extracted_text from DB if readFile failed (e.g. storage download issue)
         if (labFile.batchFileId) {
           const { data: dbRow } = await supabase
             .from("mentoria_batch_files")
@@ -1447,7 +1450,6 @@ const MentoriaLab = () => {
             };
             setFiles((prev) => prev.map((f) => (f.id === labFile.id ? preparedFile : f)));
           } else {
-            // No DB data either — proceed with empty text fallback
             preparedFile = {
               ...labFile,
               status: "lido" as FileStatus,
@@ -1456,7 +1458,6 @@ const MentoriaLab = () => {
             setFiles((prev) => prev.map((f) => (f.id === labFile.id ? preparedFile : f)));
           }
         } else {
-          // No batchFileId — proceed with empty text fallback
           preparedFile = {
             ...labFile,
             status: "lido" as FileStatus,
@@ -1475,7 +1476,6 @@ const MentoriaLab = () => {
     }
 
     if (preparedFile.status !== "lido") {
-      // Allow analysis anyway — fallback will handle missing content
       if (!preparedFile.text) {
         preparedFile = { ...preparedFile, text: "(conteúdo indisponível — fallback)", status: "lido" as FileStatus };
       }
@@ -1483,6 +1483,31 @@ const MentoriaLab = () => {
 
     await analyzeFiles([preparedFile], { openOnSuccessId: preparedFile.id, clearSelection: false });
   }, [analyzeFiles, openMentoria, processing, readFile, readingIds]);
+
+  // Wrap handleStartMentoria with preflight check
+  const preflightRef = useRef<{ pendingFile: LabFile | null }>({ pendingFile: null });
+  const { runCheck: runPreflightForSingle } = usePreflightCheck();
+
+  const handleStartMentoria = useCallback(async (labFile: LabFile) => {
+    // If already analyzed, skip preflight
+    if (labFile.status === "analisado" && labFile.result) {
+      openMentoria(labFile);
+      return;
+    }
+
+    // Run preflight before analysis
+    const preflight = await runPreflightForSingle(1);
+    if (!preflight.ready) {
+      const errors = preflight.checks.filter(c => c.status === "erro");
+      const firstError = errors[0];
+      toast.error(firstError?.message || "Ambiente não está pronto para análise. Verifique o diagnóstico.", {
+        duration: 8000,
+      });
+      return;
+    }
+
+    await handleStartMentoriaCore(labFile);
+  }, [handleStartMentoriaCore, openMentoria, runPreflightForSingle]);
 
   const removeFile = (id: string) => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
@@ -1669,6 +1694,7 @@ const MentoriaLab = () => {
             Radar Insight — <span className="text-primary">Mentoria Lab</span>
           </h1>
           <Badge variant="outline" className="ml-2 text-xs">Beta</Badge>
+          <PreflightStatusBadge />
           <div className="ml-auto flex items-center gap-1">
             <Button variant="outline" size="sm" onClick={() => navigate("/attendance")}>
               <ShieldCheck className="h-4 w-4" /> Avaliações Oficiais
@@ -2021,15 +2047,20 @@ const MentoriaLab = () => {
 
               {/* Action bar */}
               <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border">
-                <Button
-                  onClick={analyzeSelected}
-                  disabled={selected.size === 0 || processing}
-                  size="lg"
-                  className="gap-2 font-semibold"
+                <PreflightCheck
+                  onReady={analyzeSelected}
+                  batchSize={selected.size}
+                  autoAdvance
                 >
-                  {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                  {processing ? "Analisando..." : `Analisar ${selected.size} selecionado${selected.size !== 1 ? "s" : ""}`}
-                </Button>
+                  <Button
+                    disabled={selected.size === 0 || processing}
+                    size="lg"
+                    className="gap-2 font-semibold"
+                  >
+                    {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                    {processing ? "Analisando..." : `Analisar ${selected.size} selecionado${selected.size !== 1 ? "s" : ""}`}
+                  </Button>
+                </PreflightCheck>
                 {selected.size > 0 && (
                   <>
                     <Button variant="ghost" size="sm" onClick={removeSelected} className="text-destructive">
