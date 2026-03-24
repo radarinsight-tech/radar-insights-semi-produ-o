@@ -124,17 +124,6 @@ const ANALYZE_LIMIT = 50;
 const PAGE_SIZE = 30;
 const INGESTION_CONCURRENCY = 4;
 
-interface PersistedIngestionClassificationResponse {
-  row?: {
-    result?: Record<string, unknown> | null;
-  };
-  result: Record<string, unknown>;
-  avaliavel: boolean;
-  inelegivel: boolean;
-  motivo_inelegivel: string | null;
-  motivo_nao_avaliavel: string | null;
-}
-
 const FATAL_PDF_READ_ERROR_PATTERNS = [
   /invalidpdf/i,
   /invalid\s+pdf/i,
@@ -395,63 +384,6 @@ const MentoriaLab = () => {
 
     setFiles((prev) => prev.map((file) => (file.id === labFile.id ? updatedFile : file)));
     return updatedFile;
-  }, []);
-
-  const persistReadFallback = useCallback(async (params: {
-    labFile: LabFile;
-    metadata: { protocolo?: string; atendente?: string; data?: string; canal: string };
-    hasAudio: boolean;
-    text: string;
-    structured?: StructuredConversation;
-    extractionError?: string;
-  }) => {
-    const { labFile, metadata, hasAudio, text, structured, extractionError } = params;
-
-    const evaluabilityState = detectMentoriaEvaluability({
-      structuredConversation: structured,
-      rawText: text,
-      hasAudio,
-    });
-    const mergedResult = mergePersistedMentoriaEvaluability(labFile.result, evaluabilityState);
-    const persistedIneligibility = resolvePersistedMentoriaIneligibility(mergedResult) ?? {
-      ineligible: evaluabilityState.nonEvaluable,
-      reason: evaluabilityState.reason,
-    };
-
-    const { error } = await supabase
-      .from("mentoria_batch_files")
-      .update({
-        status: "read",
-        protocolo: metadata.protocolo ?? null,
-        atendente: metadata.atendente ?? null,
-        data_atendimento: metadata.data ?? null,
-        canal: metadata.canal ?? "Não identificado",
-        has_audio: hasAudio,
-        extracted_text: text.trim().length > 0 ? text : null,
-        parsed_messages: structured ? JSON.parse(JSON.stringify(structured)) : null,
-        result: mergedResult,
-        error_message: null,
-      } as any)
-      .eq("id", labFile.batchFileId);
-
-    if (error) {
-      throw error;
-    }
-
-    console.warn("[MentoriaLab][Importação][fallback_local]", {
-      id_atendimento: labFile.batchFileId || labFile.id,
-      etapa: "persistencia_local_lido",
-      detalhe: extractionError ?? null,
-      avaliavel: evaluabilityState.evaluable,
-      inelegivel: persistedIneligibility.ineligible,
-      motivo_inelegivel: persistedIneligibility.reason ?? null,
-    });
-
-    return {
-      result: mergedResult,
-      evaluability: evaluabilityState,
-      ineligibility: persistedIneligibility,
-    };
   }, []);
 
   // Derived unique values for filter dropdowns
