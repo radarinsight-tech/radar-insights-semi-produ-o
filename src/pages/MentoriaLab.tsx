@@ -1426,8 +1426,7 @@ const MentoriaLab = () => {
       return;
     }
 
-    // Move card to "Em análise" immediately for visual feedback
-    setWorkflowStatuses(prev => ({ ...prev, [labFile.id]: "em_analise" }));
+    // Card move is deferred — only set to "em_analise" after preflight passes (in handleStartMentoria wrapper)
     setHighlightedFileId(labFile.id);
 
     let preparedFile = labFile;
@@ -1501,16 +1500,19 @@ const MentoriaLab = () => {
   const { runCheck: runPreflightForSingle } = usePreflightCheck();
 
   const handleStartMentoria = useCallback(async (labFile: LabFile) => {
-    // If already analyzed, skip preflight
+    // If already analyzed, skip preflight — just open
     if (labFile.status === "analisado" && labFile.result) {
       openMentoria(labFile);
       return;
     }
 
-    // Validate session before any server-side action
+    // === STEP 1: Validate session before any server-side action ===
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) {
-      console.error("[MentoriaLab][Mentoria] Sessão inválida ou expirada ao tentar iniciar mentoria.");
+      console.error("[MentoriaLab][Fluxo][Etapa:sessao] Sessão inválida ou expirada.", {
+        hasSession: !!session,
+        hasToken: !!session?.access_token,
+      });
       toast.error("Sessão expirada. Faça login novamente para continuar.", {
         duration: 10000,
         action: {
@@ -1520,25 +1522,56 @@ const MentoriaLab = () => {
       });
       return;
     }
+    console.info("[MentoriaLab][Fluxo][Etapa:sessao] OK", { userId: session.user?.id });
 
-    // Run preflight before analysis
+    // === STEP 2: Run preflight before analysis ===
+    console.info("[MentoriaLab][Fluxo][Etapa:preflight] Iniciando pré-checagem...");
     const preflight = await runPreflightForSingle(1);
     if (!preflight.ready) {
       const errors = preflight.checks.filter(c => c.status === "erro");
       const firstError = errors[0];
-      // Provide specific error messages based on category
-      const isAuthError = firstError?.category === "autenticacao";
-      const isCreditError = firstError?.category === "credito";
-      const message = isAuthError
-        ? "Sessão inválida para iniciar mentoria. Faça login novamente."
-        : isCreditError
-        ? "Créditos insuficientes para executar a análise. Verifique seu saldo."
-        : firstError?.message || "Ambiente não está pronto para análise. Verifique o diagnóstico.";
+      console.error("[MentoriaLab][Fluxo][Etapa:preflight] Falha na pré-checagem.", {
+        checks: preflight.checks.map(c => ({ key: c.key, status: c.status, category: c.category, layer: c.layer })),
+      });
+
+      // Categorized error messages
+      const categoryMessages: Record<string, string> = {
+        autenticacao: "Sessão inválida para iniciar mentoria. Faça login novamente.",
+        credito: "IA pausada por falta de saldo. Recarregue para continuar.",
+        infraestrutura: firstError?.layer === "edge_function"
+          ? "Função de análise indisponível no momento."
+          : firstError?.layer === "supabase"
+          ? "Backend indisponível no momento."
+          : firstError?.layer === "provedor_ia"
+          ? "Provedor de IA indisponível. Tente novamente em instantes."
+          : "Infraestrutura indisponível. Tente novamente.",
+        configuracao: "Configuração obrigatória ausente. Contate o administrador.",
+        limite: firstError?.message || "Limite técnico atingido para este lote.",
+      };
+      const message = categoryMessages[firstError?.category || ""] || firstError?.message || "Ambiente não está pronto para análise.";
       toast.error(message, { duration: 8000 });
       return;
     }
+    console.info("[MentoriaLab][Fluxo][Etapa:preflight] OK — ambiente apto.");
 
-    await handleStartMentoriaCore(labFile);
+    // === STEP 3: Card moves to "Em análise" ONLY after preflight confirmed ===
+    setWorkflowStatuses(prev => ({ ...prev, [labFile.id]: "em_analise" }));
+    console.info("[MentoriaLab][Fluxo][Etapa:card_transicao] Card movido para 'Em análise'.", { fileId: labFile.id });
+
+    // === STEP 4: Execute analysis ===
+    console.info("[MentoriaLab][Fluxo][Etapa:analise] Iniciando análise...", { fileId: labFile.id, fileName: labFile.name });
+    try {
+      await handleStartMentoriaCore(labFile);
+      console.info("[MentoriaLab][Fluxo][Etapa:analise] Análise concluída.", { fileId: labFile.id });
+    } catch (err: any) {
+      // Revert card on failure
+      setWorkflowStatuses(prev => ({ ...prev, [labFile.id]: "nao_iniciado" }));
+      console.error("[MentoriaLab][Fluxo][Etapa:analise] Falha na análise — card revertido.", {
+        fileId: labFile.id,
+        erro: err?.message,
+      });
+      toast.error("Falha ao processar atendimento. O card foi revertido.", { duration: 6000 });
+    }
   }, [handleStartMentoriaCore, openMentoria, runPreflightForSingle]);
 
   const removeFile = (id: string) => {
