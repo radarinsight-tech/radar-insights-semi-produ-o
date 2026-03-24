@@ -7,28 +7,27 @@ import {
 } from "@/lib/mentoriaEvaluability";
 
 describe("mentoria evaluability persistence", () => {
-  it("classifica atendimento sem mensagens parseadas como não avaliável", () => {
+  it("classifica atendimento sem mensagens como avaliável (regra: toda conversa é avaliável)", () => {
     const result = detectMentoriaEvaluability({
       hasAudio: false,
       rawText: undefined,
       structuredConversation: undefined,
     });
 
-    expect(result.nonEvaluable).toBe(true);
-    expect(result.evaluable).toBe(false);
-    expect(result.reason).toBe("Sem mensagens suficientes para avaliação");
+    expect(result.nonEvaluable).toBe(false);
+    expect(result.evaluable).toBe(true);
+    expect(result.reason).toBeUndefined();
   });
 
-  it("classifica áudio sem transcrição válida como não avaliável", () => {
+  it("classifica áudio sem transcrição como avaliável (não bloqueia)", () => {
     const result = detectMentoriaEvaluability({
       hasAudio: true,
       rawText: "Download de áudio",
       structuredConversation: { messages: [] } as any,
     });
 
-    expect(result.nonEvaluable).toBe(true);
-    expect(result.evaluable).toBe(false);
-    expect(result.reason).toBe("Áudio sem transcrição válida");
+    expect(result.nonEvaluable).toBe(false);
+    expect(result.evaluable).toBe(true);
   });
 
   it("persiste e restaura a flag de avaliabilidade", () => {
