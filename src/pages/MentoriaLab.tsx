@@ -1459,21 +1459,14 @@ const MentoriaLab = () => {
   }, [getNextAnalyzedFile, openMentoria]);
 
   const counts = useMemo(() => {
-    // Use same logic as pipeline cards: persisted flag OR local flag
     const nonEvaluableIds = new Set(
       files
-        .filter((f) => {
-          const persisted = resolvePersistedMentoriaEvaluability(f.result);
-          return persisted?.nonEvaluable === true || f.nonEvaluable === true;
-        })
+        .filter((f) => resolvePersistedMentoriaEvaluability(f.result)?.nonEvaluable === true)
         .map((f) => f.id)
     );
     const ineligibleIds = new Set(
       files
-        .filter((f) => {
-          const persisted = resolvePersistedMentoriaIneligibility(f.result);
-          return persisted?.ineligible === true || f.ineligible === true || nonEvaluableIds.has(f.id);
-        })
+        .filter((f) => resolvePersistedMentoriaIneligibility(f.result)?.ineligible === true || nonEvaluableIds.has(f.id))
         .map((f) => f.id)
     );
     const analisados = files.filter((f) => f.status === "analisado" && !ineligibleIds.has(f.id));
