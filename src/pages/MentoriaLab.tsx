@@ -1163,20 +1163,43 @@ const MentoriaLab = () => {
 
         let data: any;
         try {
+          console.info("[MentoriaLab][Fluxo][Etapa:invoke]", {
+            endpoint: "analyze-attendance",
+            fileId: labFile.batchFileId || labFile.id,
+            fileName: labFile.name,
+          });
           const response = await supabase.functions.invoke("analyze-attendance", { body: { text } });
+
+          // Categorize invoke errors
           if (response.error || response.data?.error) {
             const errorDetail = response.data?.error || response.error?.message || "Erro desconhecido";
+            const httpStatus = (response.error as any)?.status;
+            const errorCategory = httpStatus === 401 || httpStatus === 403 ? "autenticacao"
+              : httpStatus === 402 ? "credito"
+              : httpStatus === 429 ? "limite"
+              : "infraestrutura";
+
             console.warn("[MentoriaLab][Análise][fallback_ativado]", {
               id: labFile.batchFileId || labFile.id,
               arquivo: labFile.name,
               erro: errorDetail,
+              categoria: errorCategory,
+              httpStatus,
               detalhes: response.data?.details || null,
             });
+
+            // Show categorized toast for specific errors
+            if (errorCategory === "credito") {
+              toast.error("IA pausada por falta de saldo. O atendimento foi processado em modo fallback.", { duration: 8000 });
+            } else if (errorCategory === "autenticacao") {
+              toast.error("Sessão inválida durante análise. O atendimento foi processado em modo fallback.", { duration: 8000 });
+            } else if (errorCategory === "limite") {
+              toast.warning("Limite de requisições atingido. Aguarde alguns minutos.", { duration: 6000 });
+            }
+
             // Fallback: generate a default valid result instead of blocking
             data = {
-              nota: 7,
-              notaFinal: 7,
-              bonusQualidade: 70,
+              nota: 7, notaFinal: 7, bonusQualidade: 70,
               classificacao: "Bom atendimento",
               resumo: "Análise gerada automaticamente em modo fallback",
               avaliacao: "Fluxo funcional, aguardando estabilização completa do motor",
@@ -1187,26 +1210,25 @@ const MentoriaLab = () => {
               mentoria: ["Análise automática — revisar manualmente quando possível"],
               promptVersion: "fallback_v1",
               criterios: Array.from({ length: 19 }, (_, i) => ({
-                numero: i + 1,
-                resultado: "PARCIAL",
+                numero: i + 1, resultado: "PARCIAL",
                 justificativa: "Avaliação gerada em modo fallback — revisar manualmente",
               })),
               bonusOperacional: { atualizacaoCadastral: "NÃO" },
               _fallback: true,
             };
           } else {
+            console.info("[MentoriaLab][Fluxo][Etapa:invoke] Resposta OK.", { fileId: labFile.batchFileId || labFile.id });
             data = response.data;
           }
         } catch (invokeErr: any) {
-          console.warn("[MentoriaLab][Análise][fallback_exception]", {
+          console.error("[MentoriaLab][Análise][fallback_exception]", {
             id: labFile.batchFileId || labFile.id,
             arquivo: labFile.name,
             erro: invokeErr?.message,
+            stack: invokeErr?.stack?.slice(0, 200),
           });
           data = {
-            nota: 7,
-            notaFinal: 7,
-            bonusQualidade: 70,
+            nota: 7, notaFinal: 7, bonusQualidade: 70,
             classificacao: "Bom atendimento",
             resumo: "Análise gerada automaticamente em modo fallback",
             avaliacao: "Fluxo funcional, aguardando estabilização completa do motor",
@@ -1217,8 +1239,7 @@ const MentoriaLab = () => {
             mentoria: ["Análise automática — revisar manualmente quando possível"],
             promptVersion: "fallback_v1",
             criterios: Array.from({ length: 19 }, (_, i) => ({
-              numero: i + 1,
-              resultado: "PARCIAL",
+              numero: i + 1, resultado: "PARCIAL",
               justificativa: "Avaliação gerada em modo fallback — revisar manualmente",
             })),
             bonusOperacional: { atualizacaoCadastral: "NÃO" },
