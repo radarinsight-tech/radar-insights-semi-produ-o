@@ -166,9 +166,8 @@ async function consultarSPCReal(
   const ts = new Date().toISOString();
 
   // Generate Base64 using TextEncoder (equivalent to Node Buffer.from, no btoa/unescape)
-  const encoder = new TextEncoder();
-  const credentialBytes = encoder.encode(`${operator}:${password}`);
-  const authToken = btoa(String.fromCharCode(...credentialBytes));
+
+  const authToken = btoa(`${operator}:${password}`);
 
   const maskedPassword = password.length > 2 ? password.slice(0, 1) + "***" + password.slice(-1) : "***";
 
