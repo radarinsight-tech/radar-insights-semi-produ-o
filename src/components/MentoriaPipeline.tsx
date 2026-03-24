@@ -128,7 +128,7 @@ const AttendanceCard = ({
   const nota = hasResult ? file.result?.notaFinal : null;
   const nota10 = nota != null ? notaToScale10(nota) : null;
   const isReading = readingIds.has(file.id);
-  const canStartMentoria = !processing && !isReading && file.status !== "erro";
+  const canStartMentoria = !processing && !isReading && file.status !== "erro" && !isNonEvaluable;
   const primaryLabel = isReading ? "Lendo atendimento..." : processing ? "Processando..." : hasResult ? "Abrir mentoria" : "Iniciar mentoria";
 
   const handleCardClick = () => {
@@ -258,15 +258,17 @@ const AttendanceCard = ({
         )}
       </div>
 
-      <Button
-        size="sm"
-        className="w-full gap-1.5 mb-2.5 font-semibold"
-        onClick={handleStartMentoria}
-        disabled={!canStartMentoria}
-      >
-        {isReading || processing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlayCircle className="h-3.5 w-3.5" />}
-        {primaryLabel}
-      </Button>
+      {!isNonEvaluable && (
+        <Button
+          size="sm"
+          className="w-full gap-1.5 mb-2.5 font-semibold"
+          onClick={handleStartMentoria}
+          disabled={!canStartMentoria}
+        >
+          {isReading || processing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlayCircle className="h-3.5 w-3.5" />}
+          {primaryLabel}
+        </Button>
+      )}
 
       <div className="flex items-center gap-1 pt-2 border-t border-border/40 opacity-80 group-hover:opacity-100 transition-opacity">
         <TooltipProvider delayDuration={200}>
