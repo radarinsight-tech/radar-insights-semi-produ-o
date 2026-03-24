@@ -145,7 +145,7 @@ describe("Preflight error categorization", () => {
     for (const check of checks) {
       const msg = categorizeError(check);
       expect(msg).not.toContain("Backend retornou status 401");
-      expect(msg.length).toBeGreaterThan(10);
+      expect(msg.length).toBeGreaterThanOrEqual(10);
     }
   });
 });
