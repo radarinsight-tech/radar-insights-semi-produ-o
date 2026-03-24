@@ -92,61 +92,9 @@ function countBackAndForth(messages: ParsedMessage[]): number {
   return exchanges;
 }
 
-function detectEvaluability(conversation?: StructuredConversation, rawText?: string): EvaluabilityResult {
-  if (!conversation?.messages || conversation.messages.length === 0) {
-    if (!rawText || rawText.trim().length === 0) {
-      return {
-        evaluable: false,
-        reason: "Sem conteúdo extraído para avaliação",
-      };
-    }
-
-    return { evaluable: true };
-  }
-
-  const messages = conversation.messages;
-  const clientMessages = messages.filter((message) => message.role === "cliente");
-  const attendantMessages = messages.filter((message) => message.role === "atendente");
-  const humanMessages = [...clientMessages, ...attendantMessages];
-  const backAndForthCount = countBackAndForth(messages);
-  const nonAutomatedAttendant = attendantMessages.filter((message) => !isAutomatedMessage(message));
-  const hasBackAndForth = backAndForthCount >= MIN_BACK_AND_FORTH;
-
-  if (attendantMessages.length === 0) {
-    return {
-      evaluable: false,
-      reason: "Sem participação de atendente humano",
-    };
-  }
-
-  if (nonAutomatedAttendant.length === 0) {
-    return {
-      evaluable: false,
-      reason: "Apenas mensagens automáticas ou padrão do atendente",
-    };
-  }
-
-  if (clientMessages.length === 0) {
-    return {
-      evaluable: false,
-      reason: "Sem resposta do cliente",
-    };
-  }
-
-  if (!hasBackAndForth) {
-    return {
-      evaluable: false,
-      reason: "Sem troca de mensagens entre atendente e cliente",
-    };
-  }
-
-  if (humanMessages.length < MIN_HUMAN_MESSAGES) {
-    return {
-      evaluable: false,
-      reason: "Interação insuficiente para avaliação (menos de 3 mensagens humanas)",
-    };
-  }
-
+function detectEvaluability(_conversation?: StructuredConversation, _rawText?: string): EvaluabilityResult {
+  // Rule: every attendance with any content is evaluable.
+  // The 19-question matrix adapts — questions that don't apply are marked "não aplicável".
   return { evaluable: true };
 }
 
@@ -156,39 +104,12 @@ function detectMentoriaEvaluability(params: {
   hasAudio?: boolean;
   extractionError?: string;
 }): EvaluabilityResult & { nonEvaluable: boolean } {
-  const { structuredConversation, rawText, hasAudio, extractionError } = params;
-  const totalMessages = structuredConversation?.messages?.length ?? 0;
-
-  const hasHumanTranscription = structuredConversation?.messages?.some((message) => {
-    if (message.role !== "cliente" && message.role !== "atendente") return false;
-    return message.text.trim().length > 0;
-  }) ?? false;
-
-  if (hasAudio && !hasHumanTranscription) {
-    return {
-      evaluable: false,
-      nonEvaluable: true,
-      reason: "Áudio sem transcrição válida",
-    };
-  }
-
-  if (totalMessages === 0) {
-    return {
-      evaluable: false,
-      nonEvaluable: true,
-      reason: rawText?.trim()
-        ? "Sem mensagens suficientes para avaliação"
-        : extractionError
-          ? `Dados incompletos: ${extractionError}`
-          : "Dados incompletos: PDF sem texto extraível (possivelmente digitalizado)",
-    };
-  }
-
-  const evaluability = detectEvaluability(structuredConversation, rawText);
+  // Rule: every attendance with any content is evaluable.
+  // The 19-question matrix adapts to any scenario.
   return {
-    evaluable: evaluability.evaluable,
-    nonEvaluable: !evaluability.evaluable,
-    reason: evaluability.reason,
+    evaluable: true,
+    nonEvaluable: false,
+    reason: undefined,
   };
 }
 
