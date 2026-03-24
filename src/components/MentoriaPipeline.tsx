@@ -121,9 +121,9 @@ const AttendanceCard = ({
 }) => {
   const persistedEvaluability = resolvePersistedMentoriaEvaluability(file.result);
   const persistedIneligibility = resolvePersistedMentoriaIneligibility(file.result);
-  const isNonEvaluable = persistedEvaluability?.nonEvaluable ?? file.nonEvaluable === true;
-  const isIneligible = persistedIneligibility?.ineligible ?? file.ineligible === true;
-  const ineligibleReason = persistedIneligibility?.reason ?? file.ineligibleReason;
+  const isNonEvaluable = persistedEvaluability?.nonEvaluable === true;
+  const isIneligible = persistedIneligibility?.ineligible === true;
+  const ineligibleReason = persistedIneligibility?.reason;
   const hasResult = file.status === "analisado" && file.result;
   const nota = hasResult ? file.result?.notaFinal : null;
   const nota10 = nota != null ? notaToScale10(nota) : null;
@@ -399,7 +399,7 @@ const MentoriaPipeline = ({
       {(() => {
         const nonEvaluableCount = files.filter((file) => {
           const persistedEvaluability = resolvePersistedMentoriaEvaluability(file.result);
-          return persistedEvaluability?.nonEvaluable ?? file.nonEvaluable === true;
+          return persistedEvaluability?.nonEvaluable === true;
         }).length;
         return nonEvaluableCount > 0 ? (
           <div className="flex items-center gap-2.5 rounded-xl border border-warning/25 bg-warning/5 px-4 py-2.5">
