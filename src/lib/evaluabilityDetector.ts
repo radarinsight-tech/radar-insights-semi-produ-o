@@ -69,8 +69,16 @@ export function detectEvaluability(conversation: StructuredConversation | undefi
   };
 
   if (!conversation || !conversation.messages || conversation.messages.length === 0) {
-    // No structured conversation available — can't determine evaluability yet
-    // Assume evaluable until we have parsed data to judge
+    // No structured conversation — if we have raw text, assume partially usable
+    // If no raw text either, it's truly non-evaluable
+    if (!rawText || rawText.trim().length === 0) {
+      return {
+        evaluable: false,
+        reason: "Sem conteúdo extraído para avaliação",
+        details: defaultDetails,
+      };
+    }
+    // Has raw text but no parsed messages — still potentially usable, mark as evaluable
     return {
       evaluable: true,
       details: defaultDetails,

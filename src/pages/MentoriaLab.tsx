@@ -344,6 +344,11 @@ const MentoriaLab = () => {
     try {
       const sourceFile = await ensureLocalFile(labFile);
       if (!sourceFile) {
+        console.warn("[MentoriaLab][Importação][erro_leitura]", {
+          id: labFile.batchFileId || labFile.id,
+          etapa: "recuperacao_arquivo",
+          erro: "Não foi possível recuperar PDF salvo",
+        });
         setFiles((prev) =>
           prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível recuperar este PDF salvo para leitura." } : f))
         );
@@ -353,66 +358,111 @@ const MentoriaLab = () => {
         return null;
       }
 
-      const text = await extractTextFromPdf(sourceFile.file);
-      if (!text.trim()) {
-        setFiles((prev) =>
-          prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível extrair texto deste PDF." } : f))
-        );
-        if (labFile.batchFileId) {
-          await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Não foi possível extrair texto deste PDF." } as any).eq("id", labFile.batchFileId);
-        }
-        return null;
+      // ── Step 1: Extract text (tolerant — empty text is NOT an error) ──
+      let text = "";
+      let extractionError: string | undefined;
+      try {
+        text = await extractTextFromPdf(sourceFile.file);
+      } catch (err: any) {
+        extractionError = err?.message || "Falha na extração de texto";
+        console.warn("[MentoriaLab][Importação][erro_extracao]", {
+          id: labFile.batchFileId || labFile.id,
+          etapa: "extracao_texto",
+          erro: extractionError,
+        });
       }
-      const metadata = extractAllMetadata(text);
 
-      // Match attendant against registered list
+      const hasText = text.trim().length > 0;
+
+      // ── Step 2: Extract metadata (best-effort) ──
+      let metadata: { protocolo?: string; atendente?: string; data?: string; canal: string; hasAudio: boolean; tipo: string } = {
+        protocolo: undefined,
+        atendente: undefined,
+        data: undefined,
+        canal: "Não identificado",
+        hasAudio: false,
+        tipo: "Não identificado",
+      };
+      if (hasText) {
+        try {
+          const extracted = extractAllMetadata(text);
+          metadata = { ...extracted };
+        } catch { /* non-blocking */ }
+      }
+
+      // ── Step 3: Match attendant (best-effort) ──
       let attendantMatchResult: MatchResult | undefined;
-      try {
-        const registeredList = await getRegisteredAttendants();
-        if (registeredList.length > 0 && metadata.atendente) {
-          attendantMatchResult = matchAttendant(metadata.atendente, registeredList);
-          if (attendantMatchResult.matched && attendantMatchResult.matchedName) {
-            metadata.atendente = attendantMatchResult.matchedName;
+      if (hasText) {
+        try {
+          const registeredList = await getRegisteredAttendants();
+          if (registeredList.length > 0 && metadata.atendente) {
+            attendantMatchResult = matchAttendant(metadata.atendente, registeredList);
+            if (attendantMatchResult.matched && attendantMatchResult.matchedName) {
+              metadata.atendente = attendantMatchResult.matchedName;
+            }
           }
-        }
-      } catch { /* non-blocking */ }
+        } catch { /* non-blocking */ }
+      }
 
-      // Parse structured conversation
+      // ── Step 4: Parse structured conversation (best-effort) ──
       let structured: StructuredConversation | undefined;
-      try {
-        structured = parseStructuredConversation(text, metadata.atendente);
-      } catch { /* non-blocking */ }
+      if (hasText) {
+        try {
+          structured = parseStructuredConversation(text, metadata.atendente);
+        } catch { /* non-blocking */ }
+      }
 
-      // Compute URA context during import
+      // ── Step 5: URA context (best-effort) ──
       let uraCtx: UraContext | undefined;
-      try {
-        uraCtx = extractUraContext(text, metadata.atendente);
-        // If URA detected audio, also flag hasAudio
-        if (uraCtx.audioDetectado && !metadata.hasAudio) {
-          metadata.hasAudio = true;
-        }
-      } catch { /* non-blocking */ }
+      if (hasText) {
+        try {
+          uraCtx = extractUraContext(text, metadata.atendente);
+          if (uraCtx.audioDetectado && !metadata.hasAudio) {
+            metadata.hasAudio = true;
+          }
+        } catch { /* non-blocking */ }
+      }
 
-      // Detect evaluability and persist at ingestion time
+      // ── Step 6: Evaluability (always computed — empty text = non-evaluable, NOT error) ──
       const hasAudio = Boolean(metadata.hasAudio || uraCtx?.audioDetectado);
 
       const evaluabilityState = detectMentoriaEvaluability({
         structuredConversation: structured,
-        rawText: text,
+        rawText: hasText ? text : undefined,
         hasAudio,
       });
+
+      // If text extraction failed completely AND no audio → mark non-evaluable with reason
+      if (!hasText && !hasAudio) {
+        evaluabilityState.evaluable = false;
+        evaluabilityState.nonEvaluable = true;
+        evaluabilityState.reason = extractionError
+          ? `Dados incompletos: ${extractionError}`
+          : "Dados incompletos: PDF sem texto extraível (possivelmente digitalizado)";
+      }
+      if (!hasText && hasAudio) {
+        evaluabilityState.evaluable = false;
+        evaluabilityState.nonEvaluable = true;
+        evaluabilityState.reason = "Áudio sem transcrição válida";
+      }
+
       const persistedReadResult = mergePersistedMentoriaEvaluability(sourceFile.result, evaluabilityState);
 
-      console.info("[MentoriaLab][Avaliabilidade][calculada]", {
+      console.info("[MentoriaLab][Importação][resultado]", {
         id_atendimento: labFile.batchFileId || metadata.protocolo || labFile.id,
+        etapa: "completa",
+        texto_extraido: hasText,
+        mensagens_parseadas: structured?.totalMessages ?? 0,
+        has_audio: hasAudio,
         avaliavel: evaluabilityState.evaluable,
         motivo_nao_avaliavel: evaluabilityState.reason ?? null,
+        erro_extracao: extractionError ?? null,
       });
 
       let persistedResult: any = persistedReadResult;
       let persistedEvaluability = evaluabilityState;
 
-      // Sync to DB (including raw text and structured messages for persistence)
+      // ── Step 7: Persist to DB — always as "read", NEVER as "error" for content issues ──
       if (labFile.batchFileId) {
         const { data: persistedRow, error: persistError } = await supabase.from("mentoria_batch_files").update({
           status: "read",
@@ -421,31 +471,28 @@ const MentoriaLab = () => {
           data_atendimento: metadata.data,
           canal: metadata.canal,
           has_audio: hasAudio,
-          extracted_text: text,
+          extracted_text: hasText ? text : null,
           parsed_messages: structured ? JSON.parse(JSON.stringify(structured)) : null,
           result: persistedReadResult,
         } as any).eq("id", labFile.batchFileId).select("id, protocolo, result").single();
 
         if (persistError) {
-          console.error("[MentoriaLab][Avaliabilidade][erro_persistencia]", persistError);
-          throw persistError;
+          console.warn("[MentoriaLab][Importação][erro_persistencia]", {
+            id: labFile.batchFileId,
+            etapa: "persistencia_db",
+            erro: persistError.message,
+          });
+          // DB persistence error is not fatal — continue with local state
+        } else {
+          persistedResult = (persistedRow?.result as Record<string, unknown> | null) ?? persistedReadResult;
+          persistedEvaluability = resolvePersistedMentoriaEvaluability(persistedResult) ?? evaluabilityState;
         }
-
-        persistedResult = (persistedRow?.result as Record<string, unknown> | null) ?? persistedReadResult;
-        persistedEvaluability = resolvePersistedMentoriaEvaluability(persistedResult) ?? evaluabilityState;
-
-        console.info("[MentoriaLab][Avaliabilidade][persistida]", {
-          id_atendimento: persistedRow?.id || labFile.batchFileId,
-          protocolo: persistedRow?.protocolo || metadata.protocolo || null,
-          avaliavel: persistedEvaluability.evaluable,
-          motivo_nao_avaliavel: persistedEvaluability.reason ?? null,
-        });
       }
 
       const updatedFile: LabFile = {
         ...sourceFile,
         status: "lido",
-        text,
+        text: hasText ? text : undefined,
         result: persistedResult,
         ...metadata,
         hasAudio,
@@ -460,12 +507,19 @@ const MentoriaLab = () => {
 
       setFiles((prev) => prev.map((f) => (f.id === labFile.id ? updatedFile : f)));
       return updatedFile;
-    } catch {
+    } catch (err: any) {
+      // Only reach here for truly fatal errors (file unreadable, storage failure, etc.)
+      const errorMsg = err?.message || "Erro inesperado na leitura";
+      console.error("[MentoriaLab][Importação][erro_fatal]", {
+        id: labFile.batchFileId || labFile.id,
+        etapa: "fatal",
+        erro: errorMsg,
+      });
       setFiles((prev) =>
-        prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível ler este arquivo. Verifique se o PDF é válido." } : f))
+        prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: `Erro na leitura: ${errorMsg}` } : f))
       );
       if (labFile.batchFileId) {
-        await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha na leitura do PDF" } as any).eq("id", labFile.batchFileId);
+        await supabase.from("mentoria_batch_files").update({ status: "error", error_message: errorMsg } as any).eq("id", labFile.batchFileId);
       }
       return null;
     } finally {
