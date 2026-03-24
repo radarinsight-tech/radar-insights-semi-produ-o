@@ -159,6 +159,9 @@ async function consultarSPCReal(
     tipoConsumidor,
     documentoConsumidor: digits,
   };
+  console.log("PAYLOAD FINAL:", JSON.stringify(payload));
+  console.log("TIPO CONSUMIDOR:", tipoConsumidor);
+  console.log("DOCUMENTO FINAL:", digits);
 
   const ts = new Date().toISOString();
 
