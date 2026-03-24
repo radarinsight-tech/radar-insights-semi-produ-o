@@ -332,12 +332,35 @@ const MentoriaLab = () => {
   }, []);
 
   const ensureLocalFile = useCallback(async (labFile: LabFile): Promise<LabFile | null> => {
-    if (labFile.file.size > 0 || !labFile.storagePath) {
+    // If file is already in memory, use it directly
+    if (labFile.file.size > 0) {
       return labFile;
+    }
+
+    // If no storage path, check if we already have text from DB
+    if (!labFile.storagePath) {
+      if (labFile.text && labFile.text.trim().length > 0) {
+        console.info("[MentoriaLab][Hidratação] Sem storagePath mas com texto do banco — prosseguindo sem PDF binário", { id: labFile.batchFileId || labFile.id });
+        return labFile;
+      }
+      console.warn("[MentoriaLab][Hidratação] Sem storagePath e sem texto — não é possível recuperar PDF", { id: labFile.batchFileId || labFile.id });
+      return null;
     }
 
     const { data, error } = await supabase.storage.from("mentoria-lab").download(labFile.storagePath);
     if (error || !data) {
+      console.warn("[MentoriaLab][Hidratação] Falha ao baixar PDF do storage", {
+        id: labFile.batchFileId || labFile.id,
+        storagePath: labFile.storagePath,
+        erro: error?.message || "Sem dados retornados",
+      });
+
+      // If we already have text from DB, proceed without the binary PDF
+      if (labFile.text && labFile.text.trim().length > 0) {
+        console.info("[MentoriaLab][Hidratação] Usando texto já disponível do banco como fallback", { id: labFile.batchFileId || labFile.id });
+        return labFile;
+      }
+
       return null;
     }
 
