@@ -76,6 +76,15 @@ serve(async (req) => {
             layer: "supabase",
             status: "ok",
           });
+        } else if (testResp.status === 401 || testResp.status === 403) {
+          // 401/403 from REST root is normal when no table specified — connection is alive
+          checks.push({
+            key: "supabase_conn",
+            label: "Conexão com backend",
+            category: "infraestrutura",
+            layer: "supabase",
+            status: "ok",
+          });
         } else {
           checks.push({
             key: "supabase_conn",
