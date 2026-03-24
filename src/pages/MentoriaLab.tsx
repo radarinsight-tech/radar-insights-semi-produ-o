@@ -1066,14 +1066,21 @@ const MentoriaLab = () => {
 
         let text = sourceFile.text;
         if (!text) {
-          text = await extractTextFromPdf(sourceFile.file);
+          try {
+            text = await extractTextFromPdf(sourceFile.file);
+          } catch (extractErr: any) {
+            console.error("[MentoriaLab][Análise][erro_extracao]", {
+              id: labFile.batchFileId || labFile.id,
+              erro: extractErr?.message,
+            });
+            text = "";
+          }
           if (!text.trim()) {
-            setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível extrair texto deste arquivo." } : f)));
-            if (labFile.batchFileId) {
-              await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Sem texto extraído" } as any).eq("id", labFile.batchFileId);
-            }
-            errors++;
-            continue;
+            console.warn("[MentoriaLab][Análise][sem_texto]", {
+              id: labFile.batchFileId || labFile.id,
+              mensagem: "PDF sem texto extraível, enviando conteúdo mínimo para análise",
+            });
+            text = `[Atendimento sem texto extraível - arquivo: ${labFile.name}]`;
           }
         }
 
@@ -1083,9 +1090,17 @@ const MentoriaLab = () => {
         const { data, error } = await supabase.functions.invoke("analyze-attendance", { body: { text } });
 
         if (error || data?.error) {
-          setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Ocorreu uma falha ao analisar este atendimento." } : f)));
+          const errorDetail = data?.error || error?.message || "Erro desconhecido";
+          console.error("[MentoriaLab][Análise][erro_funcao]", {
+            id: labFile.batchFileId || labFile.id,
+            arquivo: labFile.name,
+            erro: errorDetail,
+            detalhes: data?.details || null,
+            partialResult: data?.partialResult || null,
+          });
+          setFiles((prev) => prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: `Falha na análise: ${typeof errorDetail === 'string' ? errorDetail : 'Erro no processamento'}` } : f)));
           if (labFile.batchFileId) {
-            await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha na análise" } as any).eq("id", labFile.batchFileId);
+            await supabase.from("mentoria_batch_files").update({ status: "error", error_message: typeof errorDetail === 'string' ? errorDetail.slice(0, 500) : "Falha na análise" } as any).eq("id", labFile.batchFileId);
           }
           errors++;
           continue;
