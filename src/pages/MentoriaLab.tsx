@@ -619,6 +619,91 @@ const MentoriaLab = () => {
     );
   }, [readFile]);
 
+  // ── Post-ingestion classification (separate from reading) ──
+  const classifyBatchFiles = useCallback(async (entries: LabFile[]) => {
+    const readFiles = entries.filter((f) => f.status === "lido" || f.status === "pendente");
+    
+    console.info("[MentoriaLab][Classificação][inicio]", { total: readFiles.length });
+
+    const updates: Array<{ id: string; patch: Partial<LabFile> }> = [];
+
+    for (const labFile of readFiles) {
+      try {
+        // Get current state from local files (may have been updated during ingestion)
+        const currentFile = files.find((f) => f.id === labFile.id) ?? labFile;
+
+        const evaluabilityState = detectMentoriaEvaluability({
+          structuredConversation: currentFile.structuredConversation,
+          rawText: currentFile.text,
+          hasAudio: currentFile.hasAudio,
+        });
+
+        const mergedResult = mergePersistedMentoriaEvaluability(
+          currentFile.result,
+          evaluabilityState
+        );
+
+        const ineligibility = resolvePersistedMentoriaIneligibility(mergedResult) ?? {
+          ineligible: evaluabilityState.nonEvaluable,
+          reason: evaluabilityState.reason,
+        };
+
+        // Persist classification to DB
+        if (currentFile.batchFileId) {
+          await supabase
+            .from("mentoria_batch_files")
+            .update({ result: mergedResult } as any)
+            .eq("id", currentFile.batchFileId);
+        }
+
+        updates.push({
+          id: labFile.id,
+          patch: {
+            result: mergedResult,
+            nonEvaluable: evaluabilityState.nonEvaluable,
+            nonEvaluableReason: evaluabilityState.reason,
+            ineligible: ineligibility.ineligible,
+            ineligibleReason: ineligibility.reason,
+          },
+        });
+
+        console.info("[MentoriaLab][Classificação][resultado]", {
+          id: currentFile.batchFileId || currentFile.id,
+          avaliavel: evaluabilityState.evaluable,
+          nao_avaliavel: evaluabilityState.nonEvaluable,
+          inelegivel: ineligibility.ineligible,
+          motivo: ineligibility.reason ?? evaluabilityState.reason ?? null,
+        });
+      } catch (err: any) {
+        console.warn("[MentoriaLab][Classificação][erro]", {
+          id: labFile.batchFileId || labFile.id,
+          erro: err?.message,
+        });
+      }
+    }
+
+    // Batch update local state
+    if (updates.length > 0) {
+      setFiles((prev) =>
+        prev.map((f) => {
+          const update = updates.find((u) => u.id === f.id);
+          return update ? { ...f, ...update.patch } : f;
+        })
+      );
+    }
+
+    const nonEvaluableCount = updates.filter((u) => u.patch.nonEvaluable).length;
+    console.info("[MentoriaLab][Classificação][fim]", {
+      total: readFiles.length,
+      classificados: updates.length,
+      nao_avaliaveis: nonEvaluableCount,
+    });
+
+    if (nonEvaluableCount > 0) {
+      toast.info(`${nonEvaluableCount} atendimento(s) classificado(s) como não avaliável.`);
+    }
+  }, [files]);
+
   // Extract PDFs from a ZIP file with detailed reporting
   const extractPdfsFromZip = useCallback(async (zipFile: File): Promise<{ pdfs: File[]; totalEntries: number; ignored: number }> => {
     try {
