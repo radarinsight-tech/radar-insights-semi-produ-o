@@ -425,20 +425,47 @@ const MentoriaLab = () => {
   const readFile = useCallback(async (labFile: LabFile): Promise<LabFile | null> => {
     setReadingIds((prev) => new Set(prev).add(labFile.id));
     try {
-      const hydratedFile = await ensureLocalFile(labFile);
+      let hydratedFile = await ensureLocalFile(labFile);
       if (!hydratedFile) {
-        console.warn("[MentoriaLab][Importação][erro_leitura]", {
-          id: labFile.batchFileId || labFile.id,
-          etapa: "recuperacao_arquivo",
-          erro: "Não foi possível recuperar PDF salvo",
-        });
-        setFiles((prev) =>
-          prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível recuperar este PDF salvo para leitura." } : f))
-        );
+        // Try fetching extracted_text from DB as last resort
         if (labFile.batchFileId) {
-          await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha ao recuperar PDF salvo" } as any).eq("id", labFile.batchFileId);
+          const { data: dbRow } = await supabase
+            .from("mentoria_batch_files")
+            .select("extracted_text, atendente, protocolo, data_atendimento, canal, has_audio")
+            .eq("id", labFile.batchFileId)
+            .maybeSingle();
+
+          if (dbRow?.extracted_text && dbRow.extracted_text.trim().length > 0) {
+            console.info("[MentoriaLab][Importação][fallback_texto_banco]", {
+              id: labFile.batchFileId,
+              chars: dbRow.extracted_text.length,
+            });
+            hydratedFile = {
+              ...labFile,
+              text: dbRow.extracted_text,
+              atendente: dbRow.atendente || labFile.atendente,
+              protocolo: dbRow.protocolo || labFile.protocolo,
+              data: dbRow.data_atendimento || labFile.data,
+              canal: dbRow.canal || labFile.canal,
+              hasAudio: Boolean(dbRow.has_audio),
+            };
+          }
         }
-        return null;
+
+        if (!hydratedFile) {
+          console.warn("[MentoriaLab][Importação][erro_leitura]", {
+            id: labFile.batchFileId || labFile.id,
+            etapa: "recuperacao_arquivo",
+            erro: "Não foi possível recuperar PDF salvo nem texto do banco",
+          });
+          setFiles((prev) =>
+            prev.map((f) => (f.id === labFile.id ? { ...f, status: "erro", error: "Não foi possível recuperar este PDF. Tente reimportar o arquivo." } : f))
+          );
+          if (labFile.batchFileId) {
+            await supabase.from("mentoria_batch_files").update({ status: "error", error_message: "Falha ao recuperar PDF salvo" } as any).eq("id", labFile.batchFileId);
+          }
+          return null;
+        }
       }
 
       const sourceFile = await ensureBatchFileRecord(hydratedFile);
