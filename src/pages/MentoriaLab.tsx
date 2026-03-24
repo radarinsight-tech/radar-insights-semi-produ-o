@@ -469,27 +469,28 @@ const MentoriaLab = () => {
       } else {
         try {
           text = await extractTextFromPdf(sourceFile.file);
-      } catch (err: any) {
-        if (isFatalPdfReadError(err)) {
-          const fatalReadError = err?.message || "Falha crítica na leitura binária do PDF";
-          console.error("[MentoriaLab][Importação][erro_tecnico]", {
-            id_atendimento: sourceFile.batchFileId || sourceFile.id,
-            etapa: "leitura_binaria_pdf",
-            erro: fatalReadError,
-          });
-          setFiles((prev) =>
-            prev.map((f) => (f.id === sourceFile.id ? { ...f, status: "erro", error: `Erro na leitura: ${fatalReadError}` } : f))
-          );
-          await supabase.from("mentoria_batch_files").update({ status: "error", error_message: fatalReadError } as any).eq("id", sourceFile.batchFileId);
-          return null;
-        }
+        } catch (err: any) {
+          if (isFatalPdfReadError(err)) {
+            const fatalReadError = err?.message || "Falha crítica na leitura binária do PDF";
+            console.error("[MentoriaLab][Importação][erro_tecnico]", {
+              id_atendimento: sourceFile.batchFileId || sourceFile.id,
+              etapa: "leitura_binaria_pdf",
+              erro: fatalReadError,
+            });
+            setFiles((prev) =>
+              prev.map((f) => (f.id === sourceFile.id ? { ...f, status: "erro", error: `Erro na leitura: ${fatalReadError}` } : f))
+            );
+            await supabase.from("mentoria_batch_files").update({ status: "error", error_message: fatalReadError } as any).eq("id", sourceFile.batchFileId);
+            return null;
+          }
 
-        extractionError = err?.message || "Falha na extração de texto";
-        console.warn("[MentoriaLab][Importação][conteudo_incompleto]", {
-          id_atendimento: sourceFile.batchFileId || sourceFile.id,
-          etapa: "extracao_texto",
-          detalhe: extractionError,
-        });
+          extractionError = err?.message || "Falha na extração de texto";
+          console.warn("[MentoriaLab][Importação][conteudo_incompleto]", {
+            id_atendimento: sourceFile.batchFileId || sourceFile.id,
+            etapa: "extracao_texto",
+            detalhe: extractionError,
+          });
+        }
       }
 
       const hasText = text.trim().length > 0;
