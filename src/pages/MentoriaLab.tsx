@@ -166,6 +166,8 @@ const MentoriaLab = () => {
   const [clearing, setClearing] = useState(false);
   const [diagnosticFile, setDiagnosticFile] = useState<LabFile | null>(null);
   const [workflowStatuses, setWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
+  const [batchStats, setBatchStats] = useState<{ analyzing: number; completed: number; failed: number }>({ analyzing: 0, completed: 0, failed: 0 });
+  const [batchProcessing, setBatchProcessing] = useState(false);
   const { isAdmin } = useUserPermissions();
   // Filters
   const [filterAtendente, setFilterAtendente] = useState("todos");
@@ -1513,7 +1515,7 @@ const MentoriaLab = () => {
       }
     }
 
-    await analyzeFiles([preparedFile], { openOnSuccessId: preparedFile.id, clearSelection: false });
+    await analyzeFiles([preparedFile], { clearSelection: false });
   }, [analyzeFiles, openMentoria, processing, readFile, readingIds]);
 
   // Wrap handleStartMentoria with preflight check
