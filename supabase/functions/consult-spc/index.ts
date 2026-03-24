@@ -152,7 +152,7 @@ async function consultarSPCReal(
   elapsed_ms: number;
 }> {
   const digits = cpf.replace(/\D/g, "");
-  const tipoConsumidor = digits.length === 14 ? "J" : "F";
+  const tipoConsumidor = "F";
 
   const payload = {
     codigoProduto: "643",
