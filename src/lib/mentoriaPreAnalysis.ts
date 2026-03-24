@@ -277,7 +277,7 @@ const c3: CriterionAnalyzer = (msgs, ctx) => {
   }
   
   if (count >= 2) return { sugestao: "SIM", justificativa: `Atendente chamou o cliente pelo nome ${count} vezes.`, evidencia: evidence, confianca: "alta" };
-  if (count === 1) return { sugestao: "PARCIAL", justificativa: "Atendente usou o nome do cliente apenas 1 vez.", evidencia: evidence, confianca: "media" };
+  if (count === 1) return { sugestao: "SIM", justificativa: "Atendente chamou o cliente pelo nome.", evidencia: evidence, confianca: "media" };
   return { sugestao: "NÃO", justificativa: `Atendente não chamou o cliente pelo nome (${firstName}).`, confianca: "media" };
 };
 
