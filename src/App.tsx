@@ -23,6 +23,9 @@ import PerformanceDashboard from "./pages/PerformanceDashboard.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AppModeBanner from "./components/AppModeBanner.tsx";
+import CreditAnalysisLegado from "./pages/CreditAnalysisLegado.tsx";
+import CreditDashboardLegado from "./pages/CreditDashboardLegado.tsx";
+import CreditDocsLegado from "./pages/CreditDocsLegado.tsx";
 
 const queryClient = new QueryClient();
 
@@ -152,6 +155,37 @@ const App = () => (
                 <AdminGuard>
                   <Users />
                 </AdminGuard>
+              </ProtectedRoute>
+            }
+          />
+          {/* ── Legacy Credit (read-only) ── */}
+          <Route
+            path="/credit-legado"
+            element={
+              <ProtectedRoute>
+                <ModuleGuard module="credito">
+                  <CreditAnalysisLegado />
+                </ModuleGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/credit-dashboard-legado"
+            element={
+              <ProtectedRoute>
+                <ModuleGuard module="credito">
+                  <CreditDashboardLegado />
+                </ModuleGuard>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/credit-docs-legado"
+            element={
+              <ProtectedRoute>
+                <ModuleGuard module="credito">
+                  <CreditDocsLegado />
+                </ModuleGuard>
               </ProtectedRoute>
             }
           />

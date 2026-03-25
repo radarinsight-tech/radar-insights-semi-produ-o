@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { LogOut, HeadsetIcon, CreditCard, Loader2, ShieldAlert, Users, FlaskConical, ShieldCheck, Users2, Trophy, ArrowRight, Sprout, Settings, BarChart3 } from "lucide-react";
+import { LogOut, HeadsetIcon, CreditCard, Loader2, ShieldAlert, Users, FlaskConical, ShieldCheck, Users2, Trophy, ArrowRight, Sprout, Settings, BarChart3, PauseCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -169,6 +169,16 @@ const Hub = () => {
                         icon={<CreditCard className="h-4.5 w-4.5 text-purple-500" />}
                         iconBg="bg-purple-500/10 group-hover:bg-purple-500/15"
                         onClick={() => navigate("/credit")}
+                      />
+                    )}
+                    {showCredito && (
+                      <ModuleCard
+                        title="Crédito (Pausado)"
+                        description="Versão legado mantida para referência — somente leitura"
+                        icon={<PauseCircle className="h-4.5 w-4.5 text-orange-400" />}
+                        iconBg="bg-orange-400/10 group-hover:bg-orange-400/15"
+                        onClick={() => navigate("/credit-legado")}
+                        badge="Legado"
                       />
                     )}
                   </div>
