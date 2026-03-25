@@ -41,6 +41,7 @@ import ParserDiagnosticDialog from "@/components/ParserDiagnosticDialog";
 import MentoriaPipeline from "@/components/MentoriaPipeline";
 import MentoriaBatchHistory from "@/components/MentoriaBatchHistory";
 import MentoriaBonusPanel from "@/components/MentoriaBonusPanel";
+import MentoriaReportExport from "@/components/MentoriaReportExport";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro";
 type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
@@ -1896,6 +1897,7 @@ const MentoriaLab = () => {
           <Badge variant="outline" className="ml-2 text-xs">Beta</Badge>
           <PreflightStatusBadge />
           <div className="ml-auto flex items-center gap-1">
+            <MentoriaReportExport files={filteredFiles} batchInfo={batchInfo} />
             <Button variant="outline" size="sm" onClick={() => navigate("/attendance")}>
               <ShieldCheck className="h-4 w-4" /> Avaliações Oficiais
             </Button>
