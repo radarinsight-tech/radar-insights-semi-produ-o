@@ -16,15 +16,18 @@ const CreditDocsLegado = () => {
           </Button>
           <span className="text-xs text-muted-foreground font-medium">Documentos (Legado — somente leitura)</span>
         </div>
-        <LegacyBanner />
+        <LegacyBanner
+          message="⚠️ Versão legado — somente leitura"
+          description="Use o módulo principal de Análise de Crédito para upload e validação de documentos."
+        />
 
         <div className="text-center p-12 border border-dashed border-border rounded-xl bg-muted/30 mt-4">
           <p className="text-sm text-muted-foreground font-medium">
             Upload e validação de documentos estão desabilitados nesta versão legado.
           </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Consulte os registros existentes pelo Dashboard ou Histórico.
-          </p>
+          <Button variant="outline" size="sm" className="mt-3" onClick={() => navigate("/credit-docs")}>
+            Ir para Documentos (versão ativa)
+          </Button>
         </div>
       </div>
     </div>
