@@ -1897,6 +1897,7 @@ const MentoriaLab = () => {
           <Badge variant="outline" className="ml-2 text-xs">Beta</Badge>
           <PreflightStatusBadge />
           <div className="ml-auto flex items-center gap-1">
+            <MentoriaReportExport files={filteredFiles} batchInfo={batchInfo} />
             <Button variant="outline" size="sm" onClick={() => navigate("/attendance")}>
               <ShieldCheck className="h-4 w-4" /> Avaliações Oficiais
             </Button>
