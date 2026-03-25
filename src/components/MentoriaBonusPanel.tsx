@@ -645,25 +645,38 @@ const MentoriaBonusPanel = ({ files }: MentoriaBonusPanelProps) => {
         </div>
 
         {/* Confirm exclude dialog */}
-        <SensitiveActionDialog
-          open={confirmDialogOpen}
-          onOpenChange={setConfirmDialogOpen}
-          title="Excluir atendentes do painel"
-          description={`Tem certeza que deseja excluir ${selectedExcludable} atendente${selectedExcludable !== 1 ? "s" : ""} do painel de bônus? Os atendimentos originais não serão apagados. Esta ação pode ser revertida.`}
-          confirmLabel="Excluir do painel"
-          onConfirm={handleExclude}
-          variant="destructive"
-        />
+        <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir atendentes do painel</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir {selectedExcludable} atendente{selectedExcludable !== 1 ? "s" : ""} do painel de bônus? Os atendimentos originais não serão apagados. Esta ação pode ser revertida.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleExclude} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Excluir do painel
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Confirm restore dialog */}
-        <SensitiveActionDialog
-          open={restoreDialogOpen}
-          onOpenChange={setRestoreDialogOpen}
-          title="Restaurar atendentes ao painel"
-          description={`Restaurar ${selectedRestorable} atendente${selectedRestorable !== 1 ? "s" : ""} ao painel de bônus e recalcular médias e ranking?`}
-          confirmLabel="Restaurar"
-          onConfirm={handleRestore}
-        />
+        <AlertDialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Restaurar atendentes ao painel</AlertDialogTitle>
+              <AlertDialogDescription>
+                Restaurar {selectedRestorable} atendente{selectedRestorable !== 1 ? "s" : ""} ao painel de bônus e recalcular médias e ranking?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleRestore}>Restaurar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
