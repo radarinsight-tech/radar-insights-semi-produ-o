@@ -59,12 +59,12 @@ const CreditAnalysisLegado = () => {
 
         <section>
           <h2 className="text-sm font-semibold mb-3">Histórico de Análises (somente leitura)</h2>
-          <CreditHistoryTable />
+          <CreditHistoryTable refreshTrigger={0} />
         </section>
 
         <section>
           <h2 className="text-sm font-semibold mb-3">Resumo Diário</h2>
-          <CreditDailySummary />
+          <CreditDailySummary refreshTrigger={0} />
         </section>
       </main>
     </div>
