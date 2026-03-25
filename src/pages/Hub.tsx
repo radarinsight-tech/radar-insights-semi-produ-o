@@ -164,21 +164,22 @@ const Hub = () => {
                     )}
                     {showCredito && (
                       <ModuleCard
-                        title="Análise de Crédito"
+                        title="Crédito (Legado)"
                         description="Consulte SPC/Serasa com parecer técnico automatizado"
                         icon={<CreditCard className="h-4.5 w-4.5 text-purple-500" />}
                         iconBg="bg-purple-500/10 group-hover:bg-purple-500/15"
-                        onClick={() => navigate("/credit")}
+                        onClick={() => navigate("/credit-legado")}
+                        badge="Legado"
                       />
                     )}
                     {showCredito && (
                       <ModuleCard
-                        title="Crédito (Pausado)"
+                        title="Análise de Crédito (Em teste)"
                         description="Funcionalidade temporariamente desativada"
                         icon={<PauseCircle className="h-4.5 w-4.5 text-muted-foreground/60" />}
                         iconBg="bg-muted/60 group-hover:bg-muted/70"
-                        onClick={() => navigate("/credit-legado")}
-                        badge="Legado"
+                        onClick={() => navigate("/credit")}
+                        badge="Pausado"
                         disabled
                       />
                     )}
