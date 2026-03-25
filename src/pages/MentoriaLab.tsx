@@ -41,6 +41,7 @@ import ParserDiagnosticDialog from "@/components/ParserDiagnosticDialog";
 import MentoriaPipeline from "@/components/MentoriaPipeline";
 import MentoriaBatchHistory from "@/components/MentoriaBatchHistory";
 import MentoriaBonusPanel from "@/components/MentoriaBonusPanel";
+import MentoriaReportExport from "@/components/MentoriaReportExport";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro";
 type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
