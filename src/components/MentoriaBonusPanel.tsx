@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,11 @@ import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Trophy, TrendingUp, Users, Search, ChevronDown, ChevronUp,
   AlertTriangle, CheckCircle2, XCircle, MinusCircle, Info,
+  Trash2, RotateCcw, Filter, Eye, EyeOff, ShieldAlert,
 } from "lucide-react";
 import { cn, formatNota } from "@/lib/utils";
 import {
@@ -21,6 +23,37 @@ import {
   type AttendantAutoSelection,
   type AmostraStatus,
 } from "@/lib/mentoriaAutoSelection";
+import { toast } from "@/hooks/use-toast";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+// ─── Suspect detection ─────────────────────────────────────────────
+const SUSPECT_PATTERNS = [
+  /^n[aã]o\s*identificad/i,
+  /^bot\b/i,
+  /^ura\b/i,
+  /\//,                       // names with slash
+  /^.{1,2}$/,                 // very short names (1-2 chars)
+  /^marte$/i,
+  /^sistema$/i,
+  /^atendente$/i,
+  /^teste$/i,
+];
+
+function isSuspectName(name: string): boolean {
+  return SUSPECT_PATTERNS.some((p) => p.test(name.trim()));
+}
+
+// ─── Types ──────────────────────────────────────────────────────────
+type PanelFilter = "all" | "valid" | "excluded" | "suspect";
+
+interface ExcludedEntry {
+  nome: string;
+  excludedAt: string;
+  excludedBy: string;
+}
 
 // ─── formatBRL (local) ─────────────────────────────────────────────
 function formatBRL(value: number): string {
@@ -41,14 +74,29 @@ function AmostraIcon({ status }: { status: AmostraStatus }) {
   }
 }
 
-// ─── Attendant Detail Row ───────────────────────────────────────────
-function AttendantDetailRow({ att }: { att: AttendantAutoSelection }) {
+// ─── Attendant Detail Row (Auto mode) ───────────────────────────────
+function AttendantDetailRow({
+  att,
+  selected,
+  onToggle,
+  excluded,
+  suspect,
+}: {
+  att: AttendantAutoSelection;
+  selected: boolean;
+  onToggle: () => void;
+  excluded: boolean;
+  suspect: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const cfg = AMOSTRA_STATUS_CONFIG[att.amostraStatus];
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <TableRow className="group">
+      <TableRow className={cn("group", excluded && "opacity-50 bg-muted/30")}>
+        <TableCell className="w-8 pr-0">
+          <Checkbox checked={selected} onCheckedChange={onToggle} />
+        </TableCell>
         <TableCell className="font-semibold text-foreground">
           <CollapsibleTrigger asChild>
             <button className="flex items-center gap-1.5 text-left hover:underline decoration-primary/40 underline-offset-2">
@@ -56,6 +104,16 @@ function AttendantDetailRow({ att }: { att: AttendantAutoSelection }) {
               {att.nome}
             </button>
           </CollapsibleTrigger>
+          {excluded && (
+            <Badge variant="outline" className="ml-2 text-[9px] border-destructive/30 text-destructive bg-destructive/5">
+              Excluído
+            </Badge>
+          )}
+          {!excluded && suspect && (
+            <Badge variant="outline" className="ml-2 text-[9px] border-warning/30 text-warning bg-warning/5">
+              <ShieldAlert className="h-2.5 w-2.5 mr-0.5" /> Suspeito
+            </Badge>
+          )}
           {att.volumetria === "baixa_volumetria" && (
             <span className="ml-2 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold text-warning bg-warning/10 border-warning/20">
               <AlertTriangle className="h-2.5 w-2.5" /> Baixa volumetria
@@ -102,9 +160,8 @@ function AttendantDetailRow({ att }: { att: AttendantAutoSelection }) {
 
       <CollapsibleContent asChild>
         <tr>
-          <td colSpan={8} className="p-0">
+          <td colSpan={9} className="p-0">
             <div className="px-6 py-3 bg-muted/30 border-t border-b border-border space-y-2">
-              {/* Notas das mentorias selecionadas */}
               {att.notas.length > 0 && (
                 <div>
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
@@ -119,8 +176,6 @@ function AttendantDetailRow({ att }: { att: AttendantAutoSelection }) {
                   </div>
                 </div>
               )}
-
-              {/* Atendimentos selecionados */}
               {att.selecionados.length > 0 && (
                 <div>
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
@@ -137,8 +192,6 @@ function AttendantDetailRow({ att }: { att: AttendantAutoSelection }) {
                   </div>
                 </div>
               )}
-
-              {/* Not selected */}
               {att.naoSelecionados.length > 0 && (
                 <div>
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
@@ -149,7 +202,6 @@ function AttendantDetailRow({ att }: { att: AttendantAutoSelection }) {
                   </p>
                 </div>
               )}
-
               {att.totalElegiveis === 0 && (
                 <p className="text-xs text-muted-foreground italic">
                   Nenhum atendimento elegível encontrado. É necessário analisar os atendimentos deste atendente primeiro.
@@ -164,7 +216,6 @@ function AttendantDetailRow({ att }: { att: AttendantAutoSelection }) {
 }
 
 // ─── Props ──────────────────────────────────────────────────────────
-
 interface MentoriaBonusPanelProps {
   files: Array<{
     id: string;
@@ -183,9 +234,14 @@ interface MentoriaBonusPanelProps {
 }
 
 // ─── Main Component ─────────────────────────────────────────────────
-
 const MentoriaBonusPanel = ({ files }: MentoriaBonusPanelProps) => {
   const [autoMode, setAutoMode] = useState(false);
+  const [excludedNames, setExcludedNames] = useState<Map<string, ExcludedEntry>>(new Map());
+  const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
+  const [panelFilter, setPanelFilter] = useState<PanelFilter>("valid");
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+  const [auditLog, setAuditLog] = useState<ExcludedEntry[]>([]);
 
   // Classic ranking (existing behavior)
   const classicRanking = useMemo(() => {
@@ -220,11 +276,129 @@ const MentoriaBonusPanel = ({ files }: MentoriaBonusPanelProps) => {
     return runAutoSelection(files as AutoSelectionFile[]);
   }, [files, autoMode]);
 
-  if (classicRanking.length === 0 && !autoMode) return null;
+  // All unique attendant names
+  const allNames = useMemo(() => {
+    const names = autoMode
+      ? autoRanking.map((a) => a.nome)
+      : classicRanking.map((a) => a.nome);
+    return new Set(names);
+  }, [autoMode, autoRanking, classicRanking]);
 
-  const totalBonusClassic = classicRanking.reduce((s, r) => s + r.valor, 0);
-  const totalBonusAuto = autoRanking.reduce((s, r) => s + (r.valor ?? 0), 0);
-  const lowVolumeCount = autoRanking.filter(a => a.volumetria === "baixa_volumetria").length;
+  // Suspect names
+  const suspectNames = useMemo(() => {
+    const s = new Set<string>();
+    allNames.forEach((n) => { if (isSuspectName(n)) s.add(n); });
+    return s;
+  }, [allNames]);
+
+  // Filtered rankings
+  const filteredClassic = useMemo(() => {
+    return classicRanking.filter((r) => {
+      const isExcluded = excludedNames.has(r.nome);
+      const isSuspect = suspectNames.has(r.nome);
+      switch (panelFilter) {
+        case "valid": return !isExcluded;
+        case "excluded": return isExcluded;
+        case "suspect": return isSuspect && !isExcluded;
+        default: return true;
+      }
+    });
+  }, [classicRanking, excludedNames, suspectNames, panelFilter]);
+
+  const filteredAuto = useMemo(() => {
+    return autoRanking.filter((r) => {
+      const isExcluded = excludedNames.has(r.nome);
+      const isSuspect = suspectNames.has(r.nome);
+      switch (panelFilter) {
+        case "valid": return !isExcluded;
+        case "excluded": return isExcluded;
+        case "suspect": return isSuspect && !isExcluded;
+        default: return true;
+      }
+    });
+  }, [autoRanking, excludedNames, suspectNames, panelFilter]);
+
+  // Totals (only valid / non-excluded)
+  const validClassic = useMemo(() => classicRanking.filter((r) => !excludedNames.has(r.nome)), [classicRanking, excludedNames]);
+  const validAuto = useMemo(() => autoRanking.filter((r) => !excludedNames.has(r.nome)), [autoRanking, excludedNames]);
+
+  const totalBonusClassic = validClassic.reduce((s, r) => s + r.valor, 0);
+  const totalBonusAuto = validAuto.reduce((s, r) => s + (r.valor ?? 0), 0);
+  const lowVolumeCount = validAuto.filter((a) => a.volumetria === "baixa_volumetria").length;
+
+  // Selection helpers
+  const toggleSelect = useCallback((name: string) => {
+    setSelectedNames((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    const visibleNames = autoMode
+      ? filteredAuto.map((a) => a.nome)
+      : filteredClassic.map((a) => a.nome);
+    const allSelected = visibleNames.every((n) => selectedNames.has(n));
+    if (allSelected) {
+      setSelectedNames(new Set());
+    } else {
+      setSelectedNames(new Set(visibleNames));
+    }
+  }, [autoMode, filteredAuto, filteredClassic, selectedNames]);
+
+  const visibleNames = autoMode
+    ? filteredAuto.map((a) => a.nome)
+    : filteredClassic.map((a) => a.nome);
+  const allVisibleSelected = visibleNames.length > 0 && visibleNames.every((n) => selectedNames.has(n));
+
+  // Exclude selected
+  const handleExclude = useCallback(() => {
+    const now = new Date().toISOString();
+    const newExcluded = new Map(excludedNames);
+    const excluded: string[] = [];
+    selectedNames.forEach((name) => {
+      if (!newExcluded.has(name)) {
+        const entry: ExcludedEntry = { nome: name, excludedAt: now, excludedBy: "admin" };
+        newExcluded.set(name, entry);
+        excluded.push(name);
+      }
+    });
+    setExcludedNames(newExcluded);
+    setAuditLog((prev) => [...prev, ...excluded.map((nome) => ({ nome, excludedAt: now, excludedBy: "admin" }))]);
+    setSelectedNames(new Set());
+    setConfirmDialogOpen(false);
+    toast({
+      title: `${excluded.length} linha${excluded.length !== 1 ? "s" : ""} removida${excluded.length !== 1 ? "s" : ""} do painel`,
+      description: `Nomes: ${excluded.join(", ")}`,
+    });
+  }, [excludedNames, selectedNames]);
+
+  // Restore selected
+  const handleRestore = useCallback(() => {
+    const newExcluded = new Map(excludedNames);
+    const restored: string[] = [];
+    selectedNames.forEach((name) => {
+      if (newExcluded.has(name)) {
+        newExcluded.delete(name);
+        restored.push(name);
+      }
+    });
+    setExcludedNames(newExcluded);
+    setSelectedNames(new Set());
+    setRestoreDialogOpen(false);
+    toast({
+      title: `${restored.length} linha${restored.length !== 1 ? "s" : ""} restaurada${restored.length !== 1 ? "s" : ""} ao painel`,
+      description: `Nomes: ${restored.join(", ")}`,
+    });
+  }, [excludedNames, selectedNames]);
+
+  // Count how many selected are excludable vs restorable
+  const selectedExcludable = [...selectedNames].filter((n) => !excludedNames.has(n)).length;
+  const selectedRestorable = [...selectedNames].filter((n) => excludedNames.has(n)).length;
+
+  if (classicRanking.length === 0 && !autoMode) return null;
 
   return (
     <Card>
@@ -247,7 +421,7 @@ const MentoriaBonusPanel = ({ files }: MentoriaBonusPanelProps) => {
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Users className="h-3.5 w-3.5" />
-                {autoMode ? autoRanking.length : classicRanking.length} atendente{(autoMode ? autoRanking.length : classicRanking.length) !== 1 ? "s" : ""}
+                {autoMode ? validAuto.length : validClassic.length} atendente{(autoMode ? validAuto.length : validClassic.length) !== 1 ? "s" : ""}
               </span>
               <span className="flex items-center gap-1">
                 <TrendingUp className="h-3.5 w-3.5" />
@@ -258,25 +432,78 @@ const MentoriaBonusPanel = ({ files }: MentoriaBonusPanelProps) => {
         </div>
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
+        {/* Toolbar: filters + actions */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 rounded-lg border border-border p-0.5">
+            {([
+              { key: "valid" as PanelFilter, label: "Válidos", icon: Eye },
+              { key: "excluded" as PanelFilter, label: "Excluídos", icon: EyeOff },
+              { key: "suspect" as PanelFilter, label: "Suspeitos", icon: ShieldAlert },
+              { key: "all" as PanelFilter, label: "Todos", icon: Filter },
+            ]).map(({ key, label, icon: Icon }) => (
+              <Button
+                key={key}
+                variant={panelFilter === key ? "default" : "ghost"}
+                size="sm"
+                className="h-7 text-[11px] gap-1 px-2"
+                onClick={() => setPanelFilter(key)}
+              >
+                <Icon className="h-3 w-3" />
+                {label}
+                {key === "excluded" && excludedNames.size > 0 && (
+                  <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px]">{excludedNames.size}</Badge>
+                )}
+                {key === "suspect" && suspectNames.size > 0 && (
+                  <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px]">{suspectNames.size}</Badge>
+                )}
+              </Button>
+            ))}
+          </div>
+
+          {selectedNames.size > 0 && (
+            <div className="flex items-center gap-1.5 ml-auto">
+              <span className="text-xs text-muted-foreground">{selectedNames.size} selecionado{selectedNames.size !== 1 ? "s" : ""}</span>
+              {selectedExcludable > 0 && (
+                <Button variant="destructive" size="sm" className="h-7 text-[11px] gap-1" onClick={() => setConfirmDialogOpen(true)}>
+                  <Trash2 className="h-3 w-3" /> Excluir do painel
+                </Button>
+              )}
+              {selectedRestorable > 0 && (
+                <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1" onClick={() => setRestoreDialogOpen(true)}>
+                  <RotateCcw className="h-3 w-3" /> Restaurar ao painel
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Suspect suggestion */}
+        {suspectNames.size > 0 && panelFilter !== "excluded" && [...suspectNames].some((n) => !excludedNames.has(n)) && (
+          <Alert className="border-warning/30 bg-warning/5">
+            <ShieldAlert className="h-4 w-4 text-warning" />
+            <AlertDescription className="text-xs">
+              <strong>{[...suspectNames].filter((n) => !excludedNames.has(n)).length} nome{[...suspectNames].filter((n) => !excludedNames.has(n)).length !== 1 ? "s" : ""} suspeito{[...suspectNames].filter((n) => !excludedNames.has(n)).length !== 1 ? "s" : ""}</strong> detectado{[...suspectNames].filter((n) => !excludedNames.has(n)).length !== 1 ? "s" : ""}: possíveis bots, URA, nomes inválidos ou duplicados.
+              Use o filtro "Suspeitos" para revisá-los e excluí-los se necessário.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Low volume alert */}
         {autoMode && lowVolumeCount > 0 && (
           <Alert className="border-warning/30 bg-warning/5">
             <AlertTriangle className="h-4 w-4 text-warning" />
             <AlertDescription className="text-xs">
               <strong>{lowVolumeCount} atendente{lowVolumeCount !== 1 ? "s" : ""}</strong> com 50 atendimentos ou menos no período (baixa volumetria).
-              Este alerta é informativo — não impede participação na mentoria ou cálculo de bônus.
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Auto-selection info */}
         {autoMode && (
           <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
             <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
             <p className="text-xs text-muted-foreground">
               O sistema selecionou automaticamente até <strong>6 atendimentos mais representativos</strong> por atendente,
               priorizando interação humana real, densidade de diálogo e recência. O bônus só é calculado quando há 6 mentorias válidas.
-              Clique no nome do atendente para ver os detalhes.
             </p>
           </div>
         )}
@@ -286,6 +513,9 @@ const MentoriaBonusPanel = ({ files }: MentoriaBonusPanelProps) => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-8 pr-0">
+                  <Checkbox checked={allVisibleSelected} onCheckedChange={toggleSelectAll} />
+                </TableHead>
                 <TableHead>Atendente</TableHead>
                 <TableHead className="text-center w-16">Total</TableHead>
                 <TableHead className="text-center w-16">Elegíveis</TableHead>
@@ -297,9 +527,23 @@ const MentoriaBonusPanel = ({ files }: MentoriaBonusPanelProps) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {autoRanking.map((att) => (
-                <AttendantDetailRow key={att.nome} att={att} />
+              {filteredAuto.map((att) => (
+                <AttendantDetailRow
+                  key={att.nome}
+                  att={att}
+                  selected={selectedNames.has(att.nome)}
+                  onToggle={() => toggleSelect(att.nome)}
+                  excluded={excludedNames.has(att.nome)}
+                  suspect={suspectNames.has(att.nome)}
+                />
               ))}
+              {filteredAuto.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-8">
+                    Nenhum atendente nesta categoria.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         ) : (
@@ -307,6 +551,9 @@ const MentoriaBonusPanel = ({ files }: MentoriaBonusPanelProps) => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-8 pr-0">
+                  <Checkbox checked={allVisibleSelected} onCheckedChange={toggleSelectAll} />
+                </TableHead>
                 <TableHead className="w-8">#</TableHead>
                 <TableHead>Atendente</TableHead>
                 <TableHead className="text-center">Avaliações</TableHead>
@@ -316,28 +563,54 @@ const MentoriaBonusPanel = ({ files }: MentoriaBonusPanelProps) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {classicRanking.map((r, idx) => (
-                <TableRow key={r.nome}>
-                  <TableCell className="font-bold text-muted-foreground">{idx + 1}</TableCell>
-                  <TableCell className="font-semibold text-foreground">{r.nome}</TableCell>
-                  <TableCell className="text-center">{r.qtdAvaliados}</TableCell>
-                  <TableCell className="text-center">
-                    <span className={cn("font-bold", r.faixaColor)}>
-                      {r.media10.toFixed(1).replace(".", ",")}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge className={cn("text-[10px] px-2 py-0.5 border", r.faixaBg, r.faixaColor)}>
-                      {r.faixa} ({r.percentual}%)
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-bold">
-                    <span className={r.valor > 0 ? r.faixaColor : "text-muted-foreground"}>
-                      {formatBRL(r.valor)}
-                    </span>
+              {filteredClassic.map((r, idx) => {
+                const isExcluded = excludedNames.has(r.nome);
+                const isSuspect = suspectNames.has(r.nome);
+                return (
+                  <TableRow key={r.nome} className={cn(isExcluded && "opacity-50 bg-muted/30")}>
+                    <TableCell className="w-8 pr-0">
+                      <Checkbox checked={selectedNames.has(r.nome)} onCheckedChange={() => toggleSelect(r.nome)} />
+                    </TableCell>
+                    <TableCell className="font-bold text-muted-foreground">{idx + 1}</TableCell>
+                    <TableCell className="font-semibold text-foreground">
+                      {r.nome}
+                      {isExcluded && (
+                        <Badge variant="outline" className="ml-2 text-[9px] border-destructive/30 text-destructive bg-destructive/5">
+                          Excluído
+                        </Badge>
+                      )}
+                      {!isExcluded && isSuspect && (
+                        <Badge variant="outline" className="ml-2 text-[9px] border-warning/30 text-warning bg-warning/5">
+                          <ShieldAlert className="h-2.5 w-2.5 mr-0.5" /> Suspeito
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">{r.qtdAvaliados}</TableCell>
+                    <TableCell className="text-center">
+                      <span className={cn("font-bold", r.faixaColor)}>
+                        {r.media10.toFixed(1).replace(".", ",")}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge className={cn("text-[10px] px-2 py-0.5 border", r.faixaBg, r.faixaColor)}>
+                        {r.faixa} ({r.percentual}%)
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-bold">
+                      <span className={r.valor > 0 ? r.faixaColor : "text-muted-foreground"}>
+                        {formatBRL(r.valor)}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {filteredClassic.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">
+                    Nenhum atendente nesta categoria.
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         )}
@@ -370,6 +643,40 @@ const MentoriaBonusPanel = ({ files }: MentoriaBonusPanelProps) => {
             </div>
           )}
         </div>
+
+        {/* Confirm exclude dialog */}
+        <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir atendentes do painel</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir {selectedExcludable} atendente{selectedExcludable !== 1 ? "s" : ""} do painel de bônus? Os atendimentos originais não serão apagados. Esta ação pode ser revertida.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleExclude} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Excluir do painel
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Confirm restore dialog */}
+        <AlertDialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Restaurar atendentes ao painel</AlertDialogTitle>
+              <AlertDialogDescription>
+                Restaurar {selectedRestorable} atendente{selectedRestorable !== 1 ? "s" : ""} ao painel de bônus e recalcular médias e ranking?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleRestore}>Restaurar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
