@@ -270,7 +270,7 @@ const CreditUploadSection = ({ onAnalyze, isAnalyzing, uploadState, onStateChang
   // Empty state (default)
   return (
     <Card className="p-6">
-      <h2 className="text-lg font-bold text-primary mb-4">Upload da Consulta</h2>
+      <h2 className="text-lg font-bold text-primary mb-4">Upload da Consulta SPC/Serasa</h2>
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
@@ -287,7 +287,7 @@ const CreditUploadSection = ({ onAnalyze, isAnalyzing, uploadState, onStateChang
         <div className="space-y-2">
           <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
           <p className="text-muted-foreground text-sm">
-            Arraste um PDF ou imagem, ou clique para selecionar
+            Arraste ou anexe o PDF da consulta SPC/Serasa
           </p>
           <p className="text-muted-foreground text-xs">
             Formatos aceitos: PDF, PNG, JPG, WEBP
