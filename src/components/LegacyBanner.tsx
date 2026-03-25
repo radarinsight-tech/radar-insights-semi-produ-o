@@ -2,13 +2,13 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 
 const LegacyBanner = () => (
-  <Alert variant="destructive" className="mb-4 border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
-    <AlertTriangle className="h-4 w-4 text-yellow-600" />
-    <AlertTitle className="text-yellow-800 dark:text-yellow-400 font-semibold">
-      ⚠️ Funcionalidade pausada temporariamente
+  <Alert variant="destructive" className="mb-4 border-destructive/60 bg-destructive/10 dark:bg-destructive/20">
+    <AlertTriangle className="h-5 w-5 text-destructive" />
+    <AlertTitle className="text-destructive font-bold text-base">
+      ⚠️ Funcionalidade temporariamente desativada
     </AlertTitle>
-    <AlertDescription className="text-yellow-700 dark:text-yellow-500 text-sm">
-      Esta versão está mantida apenas para referência e não deve ser utilizada em produção.
+    <AlertDescription className="text-destructive/80 dark:text-destructive/70 text-sm mt-1">
+      Esta versão está mantida apenas para referência e consulta. Nenhuma operação de escrita é permitida.
     </AlertDescription>
   </Alert>
 );

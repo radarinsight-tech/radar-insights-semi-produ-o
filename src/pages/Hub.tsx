@@ -174,11 +174,12 @@ const Hub = () => {
                     {showCredito && (
                       <ModuleCard
                         title="Crédito (Pausado)"
-                        description="Versão legado mantida para referência — somente leitura"
-                        icon={<PauseCircle className="h-4.5 w-4.5 text-orange-400" />}
-                        iconBg="bg-orange-400/10 group-hover:bg-orange-400/15"
+                        description="Funcionalidade temporariamente desativada"
+                        icon={<PauseCircle className="h-4.5 w-4.5 text-muted-foreground/60" />}
+                        iconBg="bg-muted/60 group-hover:bg-muted/70"
                         onClick={() => navigate("/credit-legado")}
                         badge="Legado"
+                        disabled
                       />
                     )}
                   </div>
@@ -231,13 +232,14 @@ interface ModuleCardProps {
   onClick: () => void;
   badge?: string;
   highlight?: boolean;
+  disabled?: boolean;
 }
 
-const ModuleCard = ({ title, description, icon, iconBg, onClick, badge, highlight }: ModuleCardProps) => (
+const ModuleCard = ({ title, description, icon, iconBg, onClick, badge, highlight, disabled }: ModuleCardProps) => (
   <button
     type="button"
     onClick={onClick}
-    className={`group relative text-left rounded-xl border bg-card p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${highlight ? "border-primary/25 ring-1 ring-primary/10" : "border-border/60"}`}
+    className={`group relative text-left rounded-xl border bg-card p-4 shadow-sm transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${highlight ? "border-primary/25 ring-1 ring-primary/10" : "border-border/60"} ${disabled ? "opacity-50 grayscale hover:opacity-60" : "hover:shadow-md hover:-translate-y-0.5"}`}
   >
     <div className="flex items-start gap-3">
       <div className={`p-2 rounded-lg transition-colors shrink-0 ${iconBg}`}>
