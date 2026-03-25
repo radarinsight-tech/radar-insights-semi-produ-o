@@ -136,7 +136,7 @@ function gerarDadosSimulados(digits: string, nome: string): Record<string, unkno
     dataHoraConsulta: new Date().toLocaleString("pt-BR"),
   };
 }
-
+// SPC keep-alive deploy
 // ── Real SPC 643 call ──
 async function consultarSPCReal(
   cpf: string,
