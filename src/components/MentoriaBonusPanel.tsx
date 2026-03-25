@@ -24,7 +24,10 @@ import {
   type AmostraStatus,
 } from "@/lib/mentoriaAutoSelection";
 import { toast } from "@/hooks/use-toast";
-import SensitiveActionDialog from "@/components/SensitiveActionDialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // ─── Suspect detection ─────────────────────────────────────────────
 const SUSPECT_PATTERNS = [
