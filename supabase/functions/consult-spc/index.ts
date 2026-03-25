@@ -290,8 +290,8 @@ Deno.serve(async (req) => {
     // ── PRODUCTION MODE ──
     const operator = Deno.env.get("SPC_OPERATOR");
     const password = Deno.env.get("SPC_PASSWORD");
-    const endpoint = "https://api.spcbrasil.com.br/spcconsulta/recurso/consulta/padrao";
-    console.log("[SPC] endpoint usado:", endpoint);
+    const endpoint = Deno.env.get("SPC_ENDPOINT");
+    console.log("[SPC] endpoint lido:", endpoint);
     if (!operator || !password || !endpoint) {
       return new Response(
         JSON.stringify({
