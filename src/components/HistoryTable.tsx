@@ -172,8 +172,12 @@ const HistoryTable = ({ entries, onRefresh }: Props) => {
                           {e.bonus ? "Sim" : "Não"}
                         </Badge>
                         {getOfficialApprovalOrigin(e.audit_log) && (
-                          <Badge variant="outline" className="text-[9px] px-1.5 py-0">
-                            {getOfficialApprovalOrigin(e.audit_log) === "automatic" ? "Oficial (Automática)" : "Oficial (Manual)"}
+                          <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${
+                            getOfficialApprovalOrigin(e.audit_log) === "automatic"
+                              ? "border-primary/30 text-primary bg-primary/5"
+                              : "border-muted-foreground/30 text-muted-foreground bg-muted/30"
+                          }`}>
+                            {getOfficialApprovalOrigin(e.audit_log) === "automatic" ? "Automática" : "Manual"}
                           </Badge>
                         )}
                       </div>

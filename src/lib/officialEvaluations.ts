@@ -36,3 +36,20 @@ export const buildOfficialAuditLog = (
     approvedAt: now,
   };
 };
+
+// ─── Structured audit trail ────────────────────────────────────────
+
+export type AuditAction = "criado" | "atualizado" | "excluido" | "aprovado";
+
+export interface AuditRecord {
+  protocolo: string;
+  atendente: string;
+  acao: AuditAction;
+  origem: "manual" | "automatica";
+  data: string;
+  usuario?: string;
+}
+
+export function logAudit(record: AuditRecord) {
+  console.log("[Auditoria]", record);
+}

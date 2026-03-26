@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useRef } from "react";
 import { formatDateTimeBR } from "@/lib/utils";
 import { useUserSectors } from "@/hooks/useUserSectors";
 import { useExcludedAttendants } from "@/hooks/useExcludedAttendants";
@@ -10,7 +11,7 @@ import { matchesStatusFilter, getStatusLabel } from "@/lib/auditStatus";
 import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeAttendantName } from "@/lib/officialEvaluations";
-import { LogOut, Users, Search, ArrowLeft, X, BarChart3, Info } from "lucide-react";
+import { LogOut, Users, Search, ArrowLeft, X, BarChart3, Info, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import logoSymbol from "@/assets/logo-symbol.png";
@@ -40,6 +41,8 @@ const Index = () => {
   const [protocolSearch, setProtocolSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(null);
   const [showCharts, setShowCharts] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<"synced" | "stale">("synced");
+  const lastLoadRef = useRef<number>(Date.now());
 
   const sectorIds = useMemo(() => sectors.map(s => s.id), [sectors]);
   const normalizedExcludedAttendants = useMemo(
@@ -49,6 +52,7 @@ const Index = () => {
 
   const loadHistory = useCallback(async () => {
     try {
+      setSyncStatus("stale");
       const { data, error } = await supabase
         .from("evaluations")
         .select("*")
@@ -83,6 +87,8 @@ const Index = () => {
         }, new Map<string, any>()).values()
       );
 
+      setSyncStatus("synced");
+      lastLoadRef.current = Date.now();
       setHistory(
         rows.map((row: any) => ({
           id: row.id,
@@ -105,12 +111,23 @@ const Index = () => {
       );
     } catch (err) {
       console.error("Error loading history (uncaught):", err);
+      setSyncStatus("stale");
     }
   }, [isSectorAdmin, normalizedExcludedAttendants, sectorIds]);
 
   useEffect(() => {
     loadHistory();
   }, [loadHistory]);
+
+  // Mark stale after 5 minutes of inactivity
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (Date.now() - lastLoadRef.current > 5 * 60 * 1000) {
+        setSyncStatus("stale");
+      }
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -165,6 +182,18 @@ const Index = () => {
           <h1 className="text-xl font-bold text-foreground">
             Radar Insight — <span className="text-primary">Avaliação Oficial</span>
           </h1>
+          {/* Sync indicator */}
+          <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full border ${
+            syncStatus === "synced"
+              ? "bg-accent/10 text-accent border-accent/20"
+              : "bg-warning/10 text-warning border-warning/20"
+          }`}>
+            {syncStatus === "synced" ? (
+              <><CheckCircle2 className="h-3 w-3" /> Sincronizado</>
+            ) : (
+              <><AlertTriangle className="h-3 w-3" /> Desatualizado</>
+            )}
+          </span>
           <div className="ml-auto flex items-center gap-1">
             <Button variant="outline" size="sm" onClick={() => navigate("/")}>
               <ArrowLeft className="h-4 w-4" />
