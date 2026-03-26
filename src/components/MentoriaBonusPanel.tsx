@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import type { ExcludedEntry } from "@/hooks/useExcludedAttendants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,12 +49,6 @@ function isSuspectName(name: string): boolean {
 
 // ─── Types ──────────────────────────────────────────────────────────
 type PanelFilter = "all" | "valid" | "excluded" | "suspect";
-
-interface ExcludedEntry {
-  nome: string;
-  excludedAt: string;
-  excludedBy: string;
-}
 
 // ─── formatBRL (local) ─────────────────────────────────────────────
 function formatBRL(value: number): string {
