@@ -2360,6 +2360,7 @@ const MentoriaLab = () => {
                 excludedNames={globalExcludedNames}
                 onExclude={excludeAttendants}
                 onRestore={restoreAttendants}
+                onAutoApprove={batchAutoApprove}
               />
             )}
 
