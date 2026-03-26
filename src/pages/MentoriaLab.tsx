@@ -8,6 +8,7 @@ import {
   ChevronLeft, ChevronRight, Info, CalendarIcon, BarChart3, ShieldCheck, Bug
 } from "lucide-react";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
+import { useExcludedAttendants } from "@/hooks/useExcludedAttendants";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -170,6 +171,7 @@ const MentoriaLab = () => {
   const [batchStats, setBatchStats] = useState<{ analyzing: number; completed: number; failed: number }>({ analyzing: 0, completed: 0, failed: 0 });
   const [batchProcessing, setBatchProcessing] = useState(false);
   const { isAdmin } = useUserPermissions();
+  const { excludedNames: globalExcludedNames, excludedSet: globalExcludedSet, excludeAttendants, restoreAttendants } = useExcludedAttendants();
   // Filters
   const [filterAtendente, setFilterAtendente] = useState("todos");
   const [filterPeriodoFrom, setFilterPeriodoFrom] = useState<Date | undefined>();
@@ -1861,7 +1863,14 @@ const MentoriaLab = () => {
         .filter((f) => resolvePersistedMentoriaIneligibility(f.result)?.ineligible === true || nonEvaluableIds.has(f.id))
         .map((f) => f.id)
     );
-    const analisados = source.filter((f) => f.status === "analisado" && !ineligibleIds.has(f.id));
+    const analisados = source.filter((f) => {
+      if (f.status !== "analisado" || ineligibleIds.has(f.id)) return false;
+      if (globalExcludedSet.size > 0) {
+        const name = (f.result?.atendente || f.atendente || "").trim();
+        if (globalExcludedSet.has(name)) return false;
+      }
+      return true;
+    });
     const atendentesSet = new Set(
       analisados
         .map((f) => (f.result?.atendente || f.atendente || "").trim().toLowerCase())
@@ -1876,7 +1885,7 @@ const MentoriaLab = () => {
       naoAvaliavel: nonEvaluableIds.size,
       atendentes: atendentesSet.size,
     };
-  }, [filteredFiles]);
+  }, [filteredFiles, globalExcludedSet]);
 
   // Keep sideFile in sync with files state
   useEffect(() => {
@@ -2318,17 +2327,22 @@ const MentoriaLab = () => {
 
             {/* Bonus Panel */}
             {filteredFiles.some((f) => f.status === "analisado") && (
-              <MentoriaBonusPanel files={filteredFiles} />
+              <MentoriaBonusPanel
+                files={filteredFiles}
+                excludedNames={globalExcludedNames}
+                onExclude={excludeAttendants}
+                onRestore={restoreAttendants}
+              />
             )}
 
             {/* Charts section */}
             {filteredFiles.some((f) => f.status === "analisado") && (
-              <MentoriaCharts files={filteredFiles} />
+              <MentoriaCharts files={filteredFiles} excludedAttendants={globalExcludedSet} />
             )}
 
             {/* Insights do lote */}
             {filteredFiles.some((f) => f.status === "analisado") && (
-              <MentoriaInsights files={filteredFiles} />
+              <MentoriaInsights files={filteredFiles} excludedAttendants={globalExcludedSet} />
             )}
           </>
         )}

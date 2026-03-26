@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useExcludedAttendants } from "@/hooks/useExcludedAttendants";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, LogOut, BarChart3, Users2, TrendingUp, AlertTriangle,
@@ -103,6 +104,7 @@ const PerformanceDashboard = () => {
   const [period, setPeriod] = useState("current");
   const [searchAttendant, setSearchAttendant] = useState("");
   const [expandedAttendant, setExpandedAttendant] = useState<string | null>(null);
+  const { excludedSet } = useExcludedAttendants();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -151,6 +153,7 @@ const PerformanceDashboard = () => {
     const grouped = new Map<string, Array<EvalRow & { score: ScoringResult }>>();
     for (const e of scoredEvals) {
       const name = e.atendente || "Não identificado";
+      if (excludedSet.has(name)) continue;
       if (!grouped.has(name)) grouped.set(name, []);
       grouped.get(name)!.push(e);
     }
@@ -179,7 +182,7 @@ const PerformanceDashboard = () => {
         bonusPct: bonus.percentual,
       };
     }).sort((a, b) => b.notaMedia10 - a.notaMedia10);
-  }, [scoredEvals]);
+  }, [scoredEvals, excludedSet]);
 
   const filteredAttendants = useMemo(() => {
     if (!searchAttendant) return attendants;

@@ -39,6 +39,7 @@ interface AnalyzedFile {
 
 interface MentoriaInsightsProps {
   files: AnalyzedFile[];
+  excludedAttendants?: Set<string>;
 }
 
 function round1(n: number): number {
@@ -93,8 +94,15 @@ function countOccurrences(items: string[]): { text: string; count: number }[] {
     .sort((a, b) => b.count - a.count);
 }
 
-const MentoriaInsights = ({ files }: MentoriaInsightsProps) => {
-  const analyzed = useMemo(() => files.filter((f) => f.result && typeof f.result.notaFinal === "number" && !f.ineligible && !f.result._ineligible && !f.nonEvaluable), [files]);
+const MentoriaInsights = ({ files, excludedAttendants }: MentoriaInsightsProps) => {
+  const analyzed = useMemo(() => files.filter((f) => {
+    if (!f.result || typeof f.result.notaFinal !== "number" || f.ineligible || f.result._ineligible || f.nonEvaluable) return false;
+    if (excludedAttendants?.size) {
+      const name = (f.result?.atendente || f.atendente || "").trim();
+      if (excludedAttendants.has(name)) return false;
+    }
+    return true;
+  }), [files, excludedAttendants]);
   const ineligibleFiles = useMemo(() => files.filter((f) => f.result && (f.ineligible || f.result._ineligible)), [files]);
 
   const insights = useMemo(() => {

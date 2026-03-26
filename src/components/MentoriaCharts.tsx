@@ -35,6 +35,7 @@ interface ChartFile {
 
 interface MentoriaChartsProps {
   files: ChartFile[];
+  excludedAttendants?: Set<string>;
 }
 
 function parseDate(dateStr?: string): Date | null {
@@ -67,14 +68,21 @@ const COLORS = [
 
 type PeriodMode = "dia" | "mes" | "personalizado";
 
-const MentoriaCharts = ({ files }: MentoriaChartsProps) => {
+const MentoriaCharts = ({ files, excludedAttendants }: MentoriaChartsProps) => {
   const [periodMode, setPeriodMode] = useState<PeriodMode>("dia");
   const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
   const [appliedRange, setAppliedRange] = useState<{ from?: Date; to?: Date }>({});
   const [appliedPeriod, setAppliedPeriod] = useState<PeriodMode>("dia");
   const chartsRef = useRef<HTMLDivElement>(null);
 
-  const allAnalyzed = useMemo(() => files.filter(f => f.result && typeof f.result.notaFinal === "number" && !f.nonEvaluable && !f.ineligible), [files]);
+  const allAnalyzed = useMemo(() => files.filter(f => {
+    if (!f.result || typeof f.result.notaFinal !== "number" || f.nonEvaluable || f.ineligible) return false;
+    if (excludedAttendants?.size) {
+      const name = (f.result?.atendente || f.atendente || "").trim();
+      if (excludedAttendants.has(name)) return false;
+    }
+    return true;
+  }), [files, excludedAttendants]);
 
   // Apply date filter
   const analyzed = useMemo(() => {
