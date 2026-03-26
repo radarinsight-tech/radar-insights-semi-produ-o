@@ -35,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { ResetPasswordDialog } from "@/components/ResetPasswordDialog";
 
 type AppRole = "admin" | "auditoria" | "credito";
+type CreditSubRole = "credit_manual" | "credit_upload";
 
 const ROLE_LABELS: Record<AppRole, string> = {
   admin: "Admin",
@@ -46,6 +47,11 @@ const ROLE_COLORS: Record<AppRole, string> = {
   admin: "bg-primary/10 text-primary border-primary/20",
   auditoria: "bg-blue-500/10 text-blue-600 border-blue-500/20",
   credito: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+};
+
+const CREDIT_SUB_LABELS: Record<CreditSubRole, string> = {
+  credit_manual: "CPF/CNPJ",
+  credit_upload: "Upload PDF",
 };
 
 interface ProfileWithRole {
