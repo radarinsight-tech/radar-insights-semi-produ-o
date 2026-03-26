@@ -23,9 +23,10 @@ interface Props {
   usuarios: string[];
   filters: CreditFilterValues;
   onChange: (filters: CreditFilterValues) => void;
+  disabled?: boolean;
 }
 
-const CreditFilters = ({ usuarios, filters, onChange }: Props) => {
+const CreditFilters = ({ usuarios, filters, onChange, disabled = false }: Props) => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [calendarOpen, setCalendarOpen] = useState(false);
 

@@ -43,7 +43,7 @@ const CreditAnalysisLegado = () => {
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         <LegacyBanner
           message="⚠️ Versão legado — somente leitura"
-          description="Esta versão foi substituída pela Análise de Crédito unificada. Use o módulo principal para novas consultas."
+          description="Apenas visualização. Interações desabilitadas. Use o módulo principal para novas consultas."
         />
 
         <div className="text-center p-8 border border-dashed border-border rounded-xl bg-muted/30">
@@ -57,7 +57,7 @@ const CreditAnalysisLegado = () => {
 
         <section>
           <h2 className="text-sm font-semibold mb-3">Histórico de Análises (somente leitura)</h2>
-          <CreditHistoryTable refreshTrigger={0} />
+          <CreditHistoryTable refreshTrigger={0} readOnly />
         </section>
 
         <section>
