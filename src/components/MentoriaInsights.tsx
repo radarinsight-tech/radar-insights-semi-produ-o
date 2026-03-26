@@ -2,10 +2,12 @@ import { useMemo, useRef } from "react";
 import SectionPrintButton from "@/components/SectionPrintButton";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   TrendingUp, TrendingDown, Award, AlertTriangle, Users,
   Target, BookOpen, Star, BarChart3, MessageSquare, Lightbulb,
-  ChevronRight, DollarSign
+  ChevronRight, DollarSign, Printer
 } from "lucide-react";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
