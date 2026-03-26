@@ -321,7 +321,7 @@ const UsersPage = () => {
           </div>
           <h1 className="text-xl font-bold">Radar Insight</h1>
           <div className="ml-auto">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/hub")}>
               <ArrowLeft className="h-4 w-4" />
               Voltar
             </Button>

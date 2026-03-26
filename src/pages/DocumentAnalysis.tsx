@@ -875,7 +875,7 @@ const DocumentAnalysis = () => {
             <Button variant="outline" size="sm" onClick={() => navigate("/credit")}>
               <ArrowLeft className="h-4 w-4 mr-1" />Crédito
             </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate("/")}>
+            <Button variant="outline" size="sm" onClick={() => navigate("/hub")}>
               <ArrowLeft className="h-4 w-4 mr-1" />Hub
             </Button>
             <Button variant="ghost" size="sm" onClick={handleLogout}>

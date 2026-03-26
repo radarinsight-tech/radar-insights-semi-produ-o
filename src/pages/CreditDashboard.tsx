@@ -298,7 +298,7 @@ const CreditDashboard = () => {
               <ArrowLeft className="h-4 w-4 mr-1" />
               Análise
             </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate("/")}>
+            <Button variant="outline" size="sm" onClick={() => navigate("/hub")}>
               <ArrowLeft className="h-4 w-4 mr-1" />
               Hub
             </Button>

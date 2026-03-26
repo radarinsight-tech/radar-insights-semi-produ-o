@@ -272,7 +272,7 @@ const Atendentes = () => {
           <img src={logoSymbol} alt="Radar Insight" className="h-8 w-8 rounded-lg object-contain" />
           <h1 className="text-xl font-bold text-foreground">Atendentes</h1>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/hub")} className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-4 w-4 mr-1" /> Início
             </Button>
             <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground hover:text-foreground">
