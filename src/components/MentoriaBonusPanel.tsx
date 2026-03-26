@@ -329,6 +329,22 @@ const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore, onAuto
   const totalBonusAuto = validAuto.reduce((s, r) => s + (r.valor ?? 0), 0);
   const lowVolumeCount = validAuto.filter((a) => a.volumetria === "baixa_volumetria").length;
 
+  // Auto-approve: collect file IDs from top 6 selected per attendant that have evaluationId and aren't already approved
+  const autoApprovableFileIds = useMemo(() => {
+    if (!autoMode) return [];
+    const ids: string[] = [];
+    for (const att of validAuto) {
+      if (excludedNames.has(att.nome)) continue;
+      for (const sel of att.selecionados) {
+        const originalFile = files.find((f) => f.id === sel.id);
+        if (originalFile?.evaluationId && !originalFile.approvedAsOfficial) {
+          ids.push(sel.id);
+        }
+      }
+    }
+    return ids;
+  }, [autoMode, validAuto, files, excludedNames]);
+
   // Selection helpers
   const toggleSelect = useCallback((name: string) => {
     setSelectedNames((prev) => {
