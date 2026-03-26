@@ -202,29 +202,28 @@ const UsersPage = () => {
     setEditLoading(true);
 
     try {
-      // Only update role if it changed
-      const currentRole = editUser.role ?? "none";
-      if (editRole !== currentRole) {
-        if (editRole === "none") {
-          const { error } = await supabase
-            .from("user_roles")
-            .delete()
-            .eq("user_id", editUser.id);
-          if (error) throw error;
-        } else if (currentRole === "none") {
-          // No existing role, just insert
-          const { error } = await supabase
-            .from("user_roles")
-            .insert({ user_id: editUser.id, role: editRole });
-          if (error) throw error;
-        } else {
-          // Update existing role in place
-          const { error } = await supabase
-            .from("user_roles")
-            .update({ role: editRole })
-            .eq("user_id", editUser.id);
-          if (error) throw error;
-        }
+      // Delete all existing roles for this user, then re-insert
+      await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", editUser.id);
+
+      const rolesToInsert: string[] = [];
+      if (editRole !== "none") {
+        rolesToInsert.push(editRole);
+      }
+      // Add credit sub-permissions
+      editCreditSubs.forEach((sub) => rolesToInsert.push(sub));
+
+      if (rolesToInsert.length > 0) {
+        const rows = rolesToInsert.map((role) => ({
+          user_id: editUser.id,
+          role,
+        }));
+        const { error } = await supabase
+          .from("user_roles")
+          .insert(rows as any);
+        if (error) throw error;
       }
 
       // Save sectors: delete all then insert selected
