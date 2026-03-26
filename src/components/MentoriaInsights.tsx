@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
+import SectionPrintButton from "@/components/SectionPrintButton";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
