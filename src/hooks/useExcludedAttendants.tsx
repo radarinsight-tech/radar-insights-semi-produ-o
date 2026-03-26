@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 
 const STORAGE_KEY = "radar_excluded_attendants";
 
@@ -55,7 +55,7 @@ export function useExcludedAttendants() {
 
   const isExcluded = useCallback((name: string) => excludedNames.has(name), [excludedNames]);
 
-  const excludedSet = new Set(excludedNames.keys());
+  const excludedSet = useMemo(() => new Set(excludedNames.keys()), [excludedNames]);
 
   return {
     excludedNames,
