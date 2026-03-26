@@ -387,14 +387,21 @@ const UsersPage = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      {profile.role ? (
-                        <Badge variant="outline" className={ROLE_COLORS[profile.role]}>
-                          <Shield className="h-3 w-3 mr-1" />
-                          {ROLE_LABELS[profile.role]}
-                        </Badge>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">Sem permissão</span>
-                      )}
+                      <div className="flex flex-wrap gap-1">
+                        {profile.role ? (
+                          <Badge variant="outline" className={ROLE_COLORS[profile.role]}>
+                            <Shield className="h-3 w-3 mr-1" />
+                            {ROLE_LABELS[profile.role]}
+                          </Badge>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Sem permissão</span>
+                        )}
+                        {profile.creditSubRoles.map((sub) => (
+                          <Badge key={sub} variant="outline" className="text-[10px] bg-muted/50 border-border">
+                            {CREDIT_SUB_LABELS[sub]}
+                          </Badge>
+                        ))}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
