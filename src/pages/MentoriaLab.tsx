@@ -1863,7 +1863,14 @@ const MentoriaLab = () => {
         .filter((f) => resolvePersistedMentoriaIneligibility(f.result)?.ineligible === true || nonEvaluableIds.has(f.id))
         .map((f) => f.id)
     );
-    const analisados = source.filter((f) => f.status === "analisado" && !ineligibleIds.has(f.id));
+    const analisados = source.filter((f) => {
+      if (f.status !== "analisado" || ineligibleIds.has(f.id)) return false;
+      if (globalExcludedSet.size > 0) {
+        const name = (f.result?.atendente || f.atendente || "").trim();
+        if (globalExcludedSet.has(name)) return false;
+      }
+      return true;
+    });
     const atendentesSet = new Set(
       analisados
         .map((f) => (f.result?.atendente || f.atendente || "").trim().toLowerCase())
@@ -1878,7 +1885,7 @@ const MentoriaLab = () => {
       naoAvaliavel: nonEvaluableIds.size,
       atendentes: atendentesSet.size,
     };
-  }, [filteredFiles]);
+  }, [filteredFiles, globalExcludedSet]);
 
   // Keep sideFile in sync with files state
   useEffect(() => {
