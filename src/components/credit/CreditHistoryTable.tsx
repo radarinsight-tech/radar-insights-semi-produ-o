@@ -154,9 +154,10 @@ const exportSinglePdf = (data: CreditAnalysisData, cpfCnpj: string) => {
 
 interface Props {
   refreshTrigger: number;
+  readOnly?: boolean;
 }
 
-const CreditHistoryTable = ({ refreshTrigger }: Props) => {
+const CreditHistoryTable = ({ refreshTrigger, readOnly = false }: Props) => {
   const [entries, setEntries] = useState<CreditHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -259,8 +260,8 @@ const CreditHistoryTable = ({ refreshTrigger }: Props) => {
     <>
       <Card className="p-6">
         <h2 className="text-lg font-bold text-primary mb-4">Histórico de Consultas de Crédito</h2>
-        <div className="mb-4">
-          <CreditFilters usuarios={usuarios} filters={filters} onChange={setFilters} />
+        <div className={`mb-4 ${readOnly ? "opacity-50 pointer-events-none select-none" : ""}`}>
+          <CreditFilters usuarios={usuarios} filters={filters} onChange={setFilters} disabled={readOnly} />
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -303,14 +304,18 @@ const CreditHistoryTable = ({ refreshTrigger }: Props) => {
                     <TableCell className="text-sm font-semibold">{getTaxaTotal(e)}</TableCell>
                     <TableCell>{statusBadge(e.status, e.ajuste_manual)}</TableCell>
                     <TableCell className="text-center">
-                      <div className="inline-flex items-center gap-1">
-                        <ActionButton icon={FileSearch} tooltip="Ver análise completa" onClick={() => handleView(e)} />
-                        <ActionButton icon={Download} tooltip="Baixar PDF" disabled={!e.resultado} onClick={() => exportSinglePdf(e.resultado!, e.cpf_cnpj)} />
-                        <ActionButton icon={PenLine} tooltip="Ajustar decisão" onClick={() => setAdjustTarget(e)} />
-                        {isAdmin && (
-                          <ActionButton icon={Trash2} tooltip="Excluir" destructive onClick={() => setDeleteTarget(e)} />
-                        )}
-                      </div>
+                      {readOnly ? (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      ) : (
+                        <div className="inline-flex items-center gap-1">
+                          <ActionButton icon={FileSearch} tooltip="Ver análise completa" onClick={() => handleView(e)} />
+                          <ActionButton icon={Download} tooltip="Baixar PDF" disabled={!e.resultado} onClick={() => exportSinglePdf(e.resultado!, e.cpf_cnpj)} />
+                          <ActionButton icon={PenLine} tooltip="Ajustar decisão" onClick={() => setAdjustTarget(e)} />
+                          {isAdmin && (
+                            <ActionButton icon={Trash2} tooltip="Excluir" destructive onClick={() => setDeleteTarget(e)} />
+                          )}
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
