@@ -180,8 +180,15 @@ const UsersPage = () => {
   const openEditDialog = (profile: ProfileWithRole) => {
     setEditUser(profile);
     setEditRole(profile.role ?? "none");
+    setEditCreditSubs(profile.creditSubRoles ?? []);
     setEditSectorIds(profile.sectorIds ?? []);
     setEditOpen(true);
+  };
+
+  const toggleCreditSub = (sub: CreditSubRole) => {
+    setEditCreditSubs((prev) =>
+      prev.includes(sub) ? prev.filter((s) => s !== sub) : [...prev, sub]
+    );
   };
 
   const toggleEditSector = (sectorId: string) => {
