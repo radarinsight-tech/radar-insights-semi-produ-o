@@ -41,6 +41,7 @@ interface PipelineFile {
   nonEvaluable?: boolean;
   nonEvaluableReason?: string;
   approvedAsOfficial?: boolean;
+  approvalOrigin?: "manual" | "automatic";
   evaluationId?: string;
   analyzedAt?: Date;
   transferred?: boolean;

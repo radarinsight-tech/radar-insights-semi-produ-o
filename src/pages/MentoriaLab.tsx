@@ -98,6 +98,7 @@ interface LabFile {
   attendantMatch?: MatchResult;
   transferred?: boolean;
   approvedAsOfficial?: boolean;
+  approvalOrigin?: "manual" | "automatic";
   evaluationId?: string;
   uraContext?: UraContext;
   uraStatus?: UraStatus;
