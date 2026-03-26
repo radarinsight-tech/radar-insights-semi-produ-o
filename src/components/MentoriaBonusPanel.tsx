@@ -226,12 +226,14 @@ interface MentoriaBonusPanelProps {
     name?: string;
     file_name?: string;
   }>;
+  excludedNames: Map<string, ExcludedEntry>;
+  onExclude: (names: string[]) => void;
+  onRestore: (names: string[]) => void;
 }
 
 // ─── Main Component ─────────────────────────────────────────────────
-const MentoriaBonusPanel = ({ files }: MentoriaBonusPanelProps) => {
+const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore }: MentoriaBonusPanelProps) => {
   const [autoMode, setAutoMode] = useState(false);
-  const [excludedNames, setExcludedNames] = useState<Map<string, ExcludedEntry>>(new Map());
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
   const [panelFilter, setPanelFilter] = useState<PanelFilter>("valid");
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
