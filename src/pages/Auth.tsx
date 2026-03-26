@@ -60,7 +60,7 @@ const Auth = () => {
       toast.error(translateAuthError(error.message));
     } else {
       toast.success("Login realizado com sucesso!");
-      navigate("/attendance");
+      navigate("/hub");
     }
   };
 
