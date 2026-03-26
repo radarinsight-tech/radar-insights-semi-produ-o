@@ -27,12 +27,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Radar, ArrowLeft, UserPlus, Users, Loader2, Pencil, Shield, MapPin, KeyRound, CheckCircle2, Clock } from "lucide-react";
+import { Radar, ArrowLeft, UserPlus, Users, Loader2, Pencil, Shield, MapPin, KeyRound, CheckCircle2, Clock, Trash2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { ResetPasswordDialog } from "@/components/ResetPasswordDialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type AppRole = "admin" | "auditoria" | "credito";
 type CreditSubRole = "credit_manual" | "credit_upload";
@@ -83,11 +87,16 @@ const UsersPage = () => {
   const [editLoading, setEditLoading] = useState(false);
   const [resetPwOpen, setResetPwOpen] = useState(false);
   const [resetPwUser, setResetPwUser] = useState<ProfileWithRole | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteUser, setDeleteUser] = useState<ProfileWithRole | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const loadProfiles = async () => {
     const { data: profilesData, error } = await supabase
       .from("profiles")
-      .select("id, full_name, created_at, force_password_change")
+      .select("id, full_name, created_at, force_password_change, deleted_at")
+      .is("deleted_at", null)
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -144,6 +153,9 @@ const UsersPage = () => {
 
   useEffect(() => {
     loadProfiles();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setCurrentUserId(data.user.id);
+    });
   }, []);
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -253,6 +265,26 @@ const UsersPage = () => {
       toast.error("Erro ao salvar: " + (err.message || "erro desconhecido"));
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteUser) return;
+    setDeleteLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { targetUserId: deleteUser.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Usuário excluído com sucesso.");
+      setDeleteOpen(false);
+      setDeleteUser(null);
+      await loadProfiles();
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao excluir usuário.");
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -444,6 +476,20 @@ const UsersPage = () => {
                           <KeyRound className="h-4 w-4" />
                           Senha
                         </Button>
+                        {currentUserId !== profile.id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => {
+                              setDeleteUser(profile);
+                              setDeleteOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Excluir
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -569,6 +615,28 @@ const UsersPage = () => {
           onSuccess={loadProfiles}
         />
       )}
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir usuário</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o usuário{" "}
+              <strong>{deleteUser?.full_name || "Sem nome"}</strong>? Essa ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              disabled={deleteLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteLoading ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
