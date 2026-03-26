@@ -268,6 +268,26 @@ const UsersPage = () => {
     }
   };
 
+  const handleDeleteUser = async () => {
+    if (!deleteUser) return;
+    setDeleteLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { targetUserId: deleteUser.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Usuário excluído com sucesso.");
+      setDeleteOpen(false);
+      setDeleteUser(null);
+      await loadProfiles();
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao excluir usuário.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card">
