@@ -19,8 +19,8 @@ const SectionPrintButton = ({ sectionRef, title = "seção" }: SectionPrintButto
     // Clone the section content
     const clone = el.cloneNode(true) as HTMLElement;
 
-    // Remove all buttons, inputs, checkboxes, and interactive elements from the clone
-    clone.querySelectorAll("button, input, [role='checkbox'], [data-no-print]").forEach((node) => node.remove());
+    // Remove interactive elements and loading skeletons from the clone
+    clone.querySelectorAll("button, input, [role='checkbox'], [data-no-print], .animate-pulse, [data-skeleton]").forEach((node) => node.remove());
 
     // Copy computed styles from the main document
     const styles = Array.from(document.styleSheets)

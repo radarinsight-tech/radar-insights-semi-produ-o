@@ -201,6 +201,7 @@ const MentoriaInsights = ({ files, excludedAttendants }: MentoriaInsightsProps) 
   }, [analyzed]);
 
   const resumoRef = useRef<HTMLDivElement>(null);
+  const perfBonusRef = useRef<HTMLDivElement>(null);
   const perfRef = useRef<HTMLDivElement>(null);
   const recomRef = useRef<HTMLDivElement>(null);
   const padroesRef = useRef<HTMLDivElement>(null);
@@ -305,10 +306,13 @@ const MentoriaInsights = ({ files, excludedAttendants }: MentoriaInsightsProps) 
       </Card>
 
       {/* Performance & Bônus Cards */}
-      <Card className="p-5 rounded-xl border-border/60 shadow-sm">
-        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-4">
-          <DollarSign className="h-4 w-4 text-primary" /> 2. Performance & Bônus por Atendente
-        </h3>
+      <Card ref={perfBonusRef} className="p-5 rounded-xl border-border/60 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-primary" /> 2. Performance & Bônus por Atendente
+          </h3>
+          <SectionPrintButton sectionRef={perfBonusRef} title="Performance & Bônus" />
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {insights.atendenteStats.map((at) => {
             const bonus = calcularBonus(at.media);
