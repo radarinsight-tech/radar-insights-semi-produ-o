@@ -49,10 +49,17 @@ const ProtectedRoute = ({ children }: Props) => {
 
     supabase
       .from("profiles")
-      .select("force_password_change")
+      .select("force_password_change, active")
       .eq("id", session.user.id)
       .single()
       .then(({ data }) => {
+        // Block inactive users
+        if ((data as any)?.active === false) {
+          supabase.auth.signOut();
+          setSession(null);
+          setForceChange(null);
+          return;
+        }
         setForceChange((data as any)?.force_password_change === true);
       });
   }, [session?.user?.id]);
