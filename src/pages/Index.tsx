@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { formatDateTimeBR } from "@/lib/utils";
 import { useUserSectors } from "@/hooks/useUserSectors";
+import { useExcludedAttendants } from "@/hooks/useExcludedAttendants";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import HistoryTable from "@/components/HistoryTable";
 import Filters, { type FilterValues } from "@/components/Filters";
@@ -8,6 +9,7 @@ import StatsWidgets, { type StatusFilter } from "@/components/StatsWidgets";
 import { matchesStatusFilter, getStatusLabel } from "@/lib/auditStatus";
 import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeAttendantName } from "@/lib/officialEvaluations";
 import { LogOut, Users, Search, ArrowLeft, X, BarChart3, Info } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +30,7 @@ const parseDateBR = (str: string): Date | null => {
 const Index = () => {
   const navigate = useNavigate();
   const { sectors, isAdmin: isSectorAdmin, loading: sectorsLoading } = useUserSectors();
+  const { excludedSet } = useExcludedAttendants();
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [filters, setFilters] = useState<FilterValues>({
     atendente: "todos",
@@ -39,6 +42,10 @@ const Index = () => {
   const [showCharts, setShowCharts] = useState(false);
 
   const sectorIds = useMemo(() => sectors.map(s => s.id), [sectors]);
+  const normalizedExcludedAttendants = useMemo(
+    () => new Set(Array.from(excludedSet, (name) => normalizeAttendantName(name))),
+    [excludedSet]
+  );
 
   const loadHistory = useCallback(async () => {
     try {
@@ -46,6 +53,7 @@ const Index = () => {
         .from("evaluations")
         .select("*")
         .eq("resultado_validado", true)
+        .eq("excluded_from_ranking", false)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -53,11 +61,27 @@ const Index = () => {
         return;
       }
 
-      const rows = (data || []).filter((row: any) => {
+      const visibleRows = (data || []).filter((row: any) => {
         if (isSectorAdmin) return true;
         if (!row.sector_id) return true;
         return sectorIds.includes(row.sector_id);
+      }).filter((row: any) => {
+        return !normalizedExcludedAttendants.has(normalizeAttendantName(row.atendente));
       });
+
+      const rows = Array.from(
+        visibleRows.reduce((map: Map<string, any>, row: any) => {
+          const protocolKey = typeof row.protocolo === "string" && row.protocolo.trim().length > 0
+            ? row.protocolo.trim()
+            : row.id;
+
+          if (!map.has(protocolKey)) {
+            map.set(protocolKey, row);
+          }
+
+          return map;
+        }, new Map<string, any>()).values()
+      );
 
       setHistory(
         rows.map((row: any) => ({
@@ -76,12 +100,13 @@ const Index = () => {
           pontos_melhoria: Array.isArray(row.pontos_melhoria) ? row.pontos_melhoria : [],
           pdf_url: row.pdf_url || undefined,
           full_report: row.full_report || null,
+          audit_log: row.audit_log || null,
         }))
       );
     } catch (err) {
       console.error("Error loading history (uncaught):", err);
     }
-  }, [isSectorAdmin, sectorIds]);
+  }, [isSectorAdmin, normalizedExcludedAttendants, sectorIds]);
 
   useEffect(() => {
     loadHistory();
