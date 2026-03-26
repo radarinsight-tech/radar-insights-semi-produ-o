@@ -1941,12 +1941,12 @@ const MentoriaLab = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-4">
         {/* Limit tags */}
         <div className="flex items-center gap-2 flex-wrap text-[10px]">
-          <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 border border-blue-200 font-semibold px-2.5 py-0.5">
-            <Upload className="h-3 w-3 mr-1" />
+          <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground border border-border font-medium px-2.5 py-0.5 cursor-default select-none">
+            <Info className="h-3 w-3 mr-1 shrink-0" />
             Importar: até {IMPORT_RECOMMENDED}/mês
           </span>
-          <span className="inline-flex items-center rounded-full bg-accent/15 text-accent border border-accent/25 font-semibold px-2.5 py-0.5">
-            <Play className="h-3 w-3 mr-1" />
+          <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground border border-border font-medium px-2.5 py-0.5 cursor-default select-none">
+            <Info className="h-3 w-3 mr-1 shrink-0" />
             Analisar: até {ANALYZE_LIMIT}/vez
           </span>
         </div>
