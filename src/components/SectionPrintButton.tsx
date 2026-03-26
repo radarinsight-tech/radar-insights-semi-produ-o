@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 interface SectionPrintButtonProps {
   sectionRef: React.RefObject<HTMLElement>;
   title?: string;
+  expandAccordions?: boolean;
 }
 
 const SectionPrintButton = ({ sectionRef, title = "seção" }: SectionPrintButtonProps) => {
