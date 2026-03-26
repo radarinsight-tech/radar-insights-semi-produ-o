@@ -242,6 +242,8 @@ const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore, onAuto
   const [panelFilter, setPanelFilter] = useState<PanelFilter>("valid");
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+  const [autoApproveDialogOpen, setAutoApproveDialogOpen] = useState(false);
+  const [autoApproving, setAutoApproving] = useState(false);
   const [auditLog, setAuditLog] = useState<ExcludedEntry[]>([]);
 
   // Classic ranking (existing behavior)
