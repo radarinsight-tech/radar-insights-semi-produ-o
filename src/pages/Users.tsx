@@ -27,12 +27,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Radar, ArrowLeft, UserPlus, Users, Loader2, Pencil, Shield, MapPin, KeyRound, CheckCircle2, Clock } from "lucide-react";
+import { Radar, ArrowLeft, UserPlus, Users, Loader2, Pencil, Shield, MapPin, KeyRound, CheckCircle2, Clock, Trash2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { ResetPasswordDialog } from "@/components/ResetPasswordDialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type AppRole = "admin" | "auditoria" | "credito";
 type CreditSubRole = "credit_manual" | "credit_upload";
@@ -83,6 +87,10 @@ const UsersPage = () => {
   const [editLoading, setEditLoading] = useState(false);
   const [resetPwOpen, setResetPwOpen] = useState(false);
   const [resetPwUser, setResetPwUser] = useState<ProfileWithRole | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteUser, setDeleteUser] = useState<ProfileWithRole | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const loadProfiles = async () => {
     const { data: profilesData, error } = await supabase
