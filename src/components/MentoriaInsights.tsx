@@ -383,7 +383,8 @@ const MentoriaInsights = ({ files, excludedAttendants }: MentoriaInsightsProps) 
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Users className="h-4 w-4 text-primary" /> 3. Performance Detalhada
           </h3>
-          <SectionPrintButton sectionRef={perfRef} title="Performance Detalhada" expandAccordions />
+          {/* Print disabled temporarily – accordion content captured as skeleton */}
+          {/* <SectionPrintButton sectionRef={perfRef} title="Performance Detalhada" expandAccordions /> */}
         </div>
         <Accordion type="multiple" className="space-y-2">
           {insights.atendenteStats.map((at) => (
