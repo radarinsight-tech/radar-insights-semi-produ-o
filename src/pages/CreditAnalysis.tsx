@@ -21,7 +21,7 @@ import {
 
 const CreditAnalysis = () => {
   const navigate = useNavigate();
-  const { isAdmin } = useUserPermissions();
+  const { isAdmin, hasCreditManual, hasCreditUpload } = useUserPermissions();
 
   // Manual query state
   const [spcResult, setSpcResult] = useState<SpcQueryResult | null>(null);
