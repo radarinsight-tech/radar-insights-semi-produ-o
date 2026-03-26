@@ -1124,7 +1124,7 @@ const MentoriaLab = () => {
     const canReuseByProtocol = stableProtocol.length > 0 && stableProtocol !== "Não identificado";
     const selectColumns = "id, resultado_validado, audit_log, created_at";
 
-    let existingRows: Array<{ id: string; resultado_validado: boolean; audit_log: unknown; created_at: string }> = [];
+    const existingRowsMap = new Map<string, { id: string; resultado_validado: boolean; audit_log: unknown; created_at: string }>();
 
     if (currentEvaluationId) {
       const { data: currentRow, error } = await supabase
@@ -1134,10 +1134,10 @@ const MentoriaLab = () => {
         .maybeSingle();
 
       if (error) throw error;
-      if (currentRow) existingRows = [currentRow];
+      if (currentRow) existingRowsMap.set(currentRow.id, currentRow);
     }
 
-    if (existingRows.length === 0 && canReuseByProtocol) {
+    if (canReuseByProtocol) {
       const { data: rows, error } = await supabase
         .from("evaluations")
         .select(selectColumns)
@@ -1147,8 +1147,14 @@ const MentoriaLab = () => {
         .limit(20);
 
       if (error) throw error;
-      existingRows = rows || [];
+      for (const row of rows || []) {
+        existingRowsMap.set(row.id, row);
+      }
     }
+
+    const existingRows = Array.from(existingRowsMap.values()).sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
 
     const officialRow = existingRows.find((row) => row.resultado_validado === true);
     if (officialRow) {
