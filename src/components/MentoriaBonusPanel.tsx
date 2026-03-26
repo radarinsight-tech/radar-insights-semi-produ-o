@@ -528,10 +528,24 @@ const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore, onAuto
         {autoMode && (
           <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
             <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-            <p className="text-xs text-muted-foreground">
-              O sistema selecionou automaticamente até <strong>6 atendimentos mais representativos</strong> por atendente,
-              priorizando interação humana real, densidade de diálogo e recência. O bônus só é calculado quando há 6 mentorias válidas.
-            </p>
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground">
+                O sistema selecionou automaticamente até <strong>6 atendimentos mais representativos</strong> por atendente,
+                priorizando interação humana real, densidade de diálogo e recência. O bônus só é calculado quando há 6 mentorias válidas.
+              </p>
+              {onAutoApprove && autoApprovableFileIds.length > 0 && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="mt-2 gap-2 text-xs"
+                  onClick={() => setAutoApproveDialogOpen(true)}
+                  disabled={autoApproving}
+                >
+                  {autoApproving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                  Aprovar {autoApprovableFileIds.length} selecionado{autoApprovableFileIds.length !== 1 ? "s" : ""} como Oficial
+                </Button>
+              )}
+            </div>
           </div>
         )}
 
@@ -701,6 +715,26 @@ const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore, onAuto
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction onClick={handleRestore}>Restaurar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Confirm auto-approve dialog */}
+        <AlertDialog open={autoApproveDialogOpen} onOpenChange={setAutoApproveDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Aprovar selecionados como Avaliação Oficial</AlertDialogTitle>
+              <AlertDialogDescription>
+                Deseja aprovar <strong>{autoApprovableFileIds.length}</strong> atendimento{autoApprovableFileIds.length !== 1 ? "s" : ""} selecionado{autoApprovableFileIds.length !== 1 ? "s" : ""} como Avaliação Oficial (Automático)?
+                Eles serão incluídos no ranking, histórico e métricas. O limite de 6 por atendente/mês será respeitado.
+                Atendimentos já aprovados manualmente não serão duplicados.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={autoApproving}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleAutoApprove} disabled={autoApproving}>
+                {autoApproving ? "Aprovando..." : "Aprovar como Oficial"}
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
