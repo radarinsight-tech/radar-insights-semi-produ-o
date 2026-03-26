@@ -1,5 +1,6 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import type { ExcludedEntry } from "@/hooks/useExcludedAttendants";
+import SectionPrintButton from "@/components/SectionPrintButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -384,10 +385,12 @@ const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore }: Ment
   const selectedExcludable = [...selectedNames].filter((n) => !excludedNames.has(n)).length;
   const selectedRestorable = [...selectedNames].filter((n) => excludedNames.has(n)).length;
 
+  const bonusSectionRef = useRef<HTMLDivElement>(null);
+
   if (classicRanking.length === 0 && !autoMode) return null;
 
   return (
-    <Card>
+    <Card ref={bonusSectionRef}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
@@ -395,6 +398,7 @@ const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore }: Ment
             Painel de Bônus
           </CardTitle>
           <div className="flex items-center gap-2">
+            <SectionPrintButton sectionRef={bonusSectionRef} title="Painel de Bônus" />
             <Button
               variant={autoMode ? "default" : "outline"}
               size="sm"

@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
+import SectionPrintButton from "@/components/SectionPrintButton";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -199,6 +200,11 @@ const MentoriaInsights = ({ files, excludedAttendants }: MentoriaInsightsProps) 
     };
   }, [analyzed]);
 
+  const resumoRef = useRef<HTMLDivElement>(null);
+  const perfRef = useRef<HTMLDivElement>(null);
+  const recomRef = useRef<HTMLDivElement>(null);
+  const padroesRef = useRef<HTMLDivElement>(null);
+
   if (!insights) {
     return (
       <Card className="p-8 text-center">
@@ -233,11 +239,14 @@ const MentoriaInsights = ({ files, excludedAttendants }: MentoriaInsightsProps) 
       </div>
 
       {/* 1. Resumo Geral */}
-      <Card className="p-5 space-y-4 rounded-xl border-border/60 shadow-sm">
-        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-primary" />
-          <span>1. Resumo Geral</span>
-        </h3>
+      <Card ref={resumoRef} className="p-5 space-y-4 rounded-xl border-border/60 shadow-sm">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-primary" />
+            <span>1. Resumo Geral</span>
+          </h3>
+          <SectionPrintButton sectionRef={resumoRef} title="Resumo Geral" />
+        </div>
         <div className="grid grid-cols-3 gap-3">
           <div className="p-3 rounded-xl bg-accent/5 border border-accent/20 text-center">
             <Award className="h-5 w-5 text-accent mx-auto mb-1" />
@@ -365,10 +374,13 @@ const MentoriaInsights = ({ files, excludedAttendants }: MentoriaInsightsProps) 
       </Card>
 
       {/* 3. Performance detalhada por Atendente */}
-      <Card className="p-5 rounded-xl border-border/60 shadow-sm">
-        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-          <Users className="h-4 w-4 text-primary" /> 3. Performance Detalhada
-        </h3>
+      <Card ref={perfRef} className="p-5 rounded-xl border-border/60 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Users className="h-4 w-4 text-primary" /> 3. Performance Detalhada
+          </h3>
+          <SectionPrintButton sectionRef={perfRef} title="Performance Detalhada" />
+        </div>
         <Accordion type="multiple" className="space-y-2">
           {insights.atendenteStats.map((at) => (
             <AccordionItem key={at.name} value={at.name} className="border border-border rounded-lg px-4">
@@ -449,10 +461,13 @@ const MentoriaInsights = ({ files, excludedAttendants }: MentoriaInsightsProps) 
       </Card>
 
       {/* 4. Atendimentos Recomendados */}
-      <Card className="p-5 rounded-xl border-border/60 shadow-sm">
-        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-          <Target className="h-4 w-4 text-primary" /> 4. Atendimentos Recomendados
-        </h3>
+      <Card ref={recomRef} className="p-5 rounded-xl border-border/60 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Target className="h-4 w-4 text-primary" /> 4. Atendimentos Recomendados
+          </h3>
+          <SectionPrintButton sectionRef={recomRef} title="Atendimentos Recomendados" />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <RecommendedList
             title="Casos críticos"
@@ -483,10 +498,13 @@ const MentoriaInsights = ({ files, excludedAttendants }: MentoriaInsightsProps) 
 
       {/* 5. Padrões de Comportamento */}
       {insights.atendenteStats.some((a) => a.pontosFracos.length > 0) && (
-        <Card className="p-5 rounded-xl border-border/60 shadow-sm">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-            <MessageSquare className="h-4 w-4 text-primary" /> 5. Padrões de Comportamento
-          </h3>
+        <Card ref={padroesRef} className="p-5 rounded-xl border-border/60 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-primary" /> 5. Padrões de Comportamento
+            </h3>
+            <SectionPrintButton sectionRef={padroesRef} title="Padrões de Comportamento" />
+          </div>
           <div className="space-y-3">
             {insights.atendenteStats.filter((a) => a.pontosFracos.length > 0).map((at) => (
               <div key={at.name} className="p-3 rounded-lg bg-muted/30 border border-border">
