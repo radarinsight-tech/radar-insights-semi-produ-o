@@ -52,7 +52,6 @@ const Index = () => {
 
   const loadHistory = useCallback(async (excludedAttendants = normalizedExcludedAttendants) => {
     try {
-      setSyncStatus("stale");
       const { data, error } = await supabase
         .from("evaluations")
         .select("*")
@@ -88,8 +87,8 @@ const Index = () => {
       );
 
       console.log("[Atualizar] Dados recarregados do backend:", rows.length, "registros oficiais");
-      setSyncStatus("synced");
       lastLoadRef.current = Date.now();
+      setSyncStatus("synced");
       setHistory(
         rows.map((row: any) => ({
           id: row.id,
@@ -112,7 +111,6 @@ const Index = () => {
       );
     } catch (err) {
       console.error("Error loading history (uncaught):", err);
-      setSyncStatus("stale");
     }
   }, [isSectorAdmin, normalizedExcludedAttendants, sectorIds]);
 
