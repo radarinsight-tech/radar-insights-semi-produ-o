@@ -7,6 +7,7 @@ import { Download, FileSearch, Trash2, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { HistoryEntry } from "@/lib/mockData";
+import { getOfficialApprovalOrigin } from "@/lib/officialEvaluations";
 import FullReportDialog, { type FullReport } from "@/components/FullReportDialog";
 import ActionButton from "@/components/ActionButton";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,7 @@ import {
 
 interface Props {
   entries: HistoryEntry[];
-  onRefresh?: () => void;
+  onRefresh?: () => Promise<void> | void;
 }
 
 
@@ -170,9 +171,9 @@ const HistoryTable = ({ entries, onRefresh }: Props) => {
                         <Badge className={e.bonus ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"}>
                           {e.bonus ? "Sim" : "Não"}
                         </Badge>
-                        {e.audit_log && (e.audit_log as any).approvalType && (
+                        {getOfficialApprovalOrigin(e.audit_log) && (
                           <Badge variant="outline" className="text-[9px] px-1.5 py-0">
-                            {(e.audit_log as any).approvalType === "automatic" ? "Auto" : "Manual"}
+                            {getOfficialApprovalOrigin(e.audit_log) === "automatic" ? "Oficial (Automática)" : "Oficial (Manual)"}
                           </Badge>
                         )}
                       </div>

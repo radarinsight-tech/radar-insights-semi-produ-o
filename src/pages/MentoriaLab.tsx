@@ -122,6 +122,12 @@ import {
   resolvePersistedMentoriaIneligibility,
   resolvePersistedMentoriaEvaluability,
 } from "@/lib/mentoriaEvaluability";
+import {
+  buildOfficialAuditLog,
+  getOfficialApprovalOrigin,
+  normalizeAttendantName,
+  type OfficialApprovalOrigin,
+} from "@/lib/officialEvaluations";
 
 const IMPORT_LIMIT = 1000;
 const IMPORT_RECOMMENDED = 500;
@@ -173,6 +179,10 @@ const MentoriaLab = () => {
   const [batchProcessing, setBatchProcessing] = useState(false);
   const { isAdmin } = useUserPermissions();
   const { excludedNames: globalExcludedNames, excludedSet: globalExcludedSet, excludeAttendants, restoreAttendants } = useExcludedAttendants();
+  const normalizedExcludedAttendants = useMemo(
+    () => new Set(Array.from(globalExcludedSet, (name) => normalizeAttendantName(name))),
+    [globalExcludedSet]
+  );
   // Filters
   const [filterAtendente, setFilterAtendente] = useState("todos");
   const [filterPeriodoFrom, setFilterPeriodoFrom] = useState<Date | undefined>();
@@ -314,7 +324,7 @@ const MentoriaLab = () => {
             nonEvaluableReason: evaluabilityState.reason,
             approvedAsOfficial: matchedEval?.resultado_validado === true,
             approvalOrigin: matchedEval?.resultado_validado === true
-              ? ((matchedEval?.audit_log as any)?.approvalType === "automatic" ? "automatic" : "manual")
+              ? (getOfficialApprovalOrigin(matchedEval?.audit_log) ?? "manual")
               : undefined,
             evaluationId: matchedEval?.id,
             uraContext: uraCtx,
@@ -1095,6 +1105,99 @@ const MentoriaLab = () => {
     setWorkflowStatuses(prev => ({ ...prev, [f.id]: prev[f.id] === "finalizado" ? "finalizado" : "em_analise" }));
   }, []);
 
+  const persistEvaluationRecord = useCallback(async ({
+    userId,
+    currentEvaluationId,
+    protocolo,
+    payload,
+  }: {
+    userId: string;
+    currentEvaluationId?: string;
+    protocolo?: string;
+    payload: Record<string, unknown>;
+  }): Promise<{
+    id: string;
+    approvedAsOfficial: boolean;
+    approvalOrigin?: OfficialApprovalOrigin;
+  }> => {
+    const stableProtocol = (protocolo ?? "").trim();
+    const canReuseByProtocol = stableProtocol.length > 0 && stableProtocol !== "Não identificado";
+    const selectColumns = "id, resultado_validado, audit_log, created_at";
+
+    const existingRowsMap = new Map<string, { id: string; resultado_validado: boolean; audit_log: unknown; created_at: string }>();
+
+    if (currentEvaluationId) {
+      const { data: currentRow, error } = await supabase
+        .from("evaluations")
+        .select(selectColumns)
+        .eq("id", currentEvaluationId)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (currentRow) existingRowsMap.set(currentRow.id, currentRow);
+    }
+
+    if (canReuseByProtocol) {
+      const { data: rows, error } = await supabase
+        .from("evaluations")
+        .select(selectColumns)
+        .eq("user_id", userId)
+        .eq("protocolo", stableProtocol)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+      for (const row of rows || []) {
+        existingRowsMap.set(row.id, row);
+      }
+    }
+
+    const existingRows = Array.from(existingRowsMap.values()).sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    const officialRow = existingRows.find((row) => row.resultado_validado === true);
+    if (officialRow) {
+      return {
+        id: officialRow.id,
+        approvedAsOfficial: true,
+        approvalOrigin: getOfficialApprovalOrigin(officialRow.audit_log) ?? "manual",
+      };
+    }
+
+    const draftRow = existingRows[0];
+    if (draftRow) {
+      const { data, error } = await supabase
+        .from("evaluations")
+        .update(payload as any)
+        .eq("id", draftRow.id)
+        .select("id, resultado_validado, audit_log")
+        .single();
+
+      if (error || !data) throw error ?? new Error("Falha ao atualizar avaliação existente.");
+
+      return {
+        id: data.id,
+        approvedAsOfficial: data.resultado_validado === true,
+        approvalOrigin: getOfficialApprovalOrigin(data.audit_log),
+      };
+    }
+
+    const { data, error } = await supabase
+      .from("evaluations")
+      .insert(payload as any)
+      .select("id, resultado_validado, audit_log")
+      .single();
+
+    if (error || !data) throw error ?? new Error("Falha ao salvar avaliação.");
+
+    return {
+      id: data.id,
+      approvedAsOfficial: data.resultado_validado === true,
+      approvalOrigin: getOfficialApprovalOrigin(data.audit_log),
+    };
+  }, []);
+
   const analyzeFiles = useCallback(async (toAnalyze: LabFile[], options?: { openOnSuccessId?: string; clearSelection?: boolean }) => {
     if (toAnalyze.length === 0) {
       toast.warning("Não há atendimentos prontos para análise.");
@@ -1297,8 +1400,11 @@ const MentoriaLab = () => {
           ? (ineligibleReason || "Fora de Avaliação")
           : (data.classificacao || "Fora de Avaliação");
 
-        // Save evaluation as draft (NOT official yet — resultado_validado = false)
-        const { data: savedEval } = await supabase.from("evaluations").insert({
+        const persistedEvaluation = await persistEvaluationRecord({
+          userId: user.id,
+          currentEvaluationId: labFile.evaluationId,
+          protocolo: data.protocolo || labFile.protocolo,
+          payload: {
           data: data.data || new Date().toLocaleDateString("pt-BR"),
           data_avaliacao: new Date().toISOString(),
           protocolo: data.protocolo || "Não identificado",
@@ -1314,7 +1420,8 @@ const MentoriaLab = () => {
           full_report: persistedAnalysisResult,
           prompt_version: data.promptVersion || "auditor_v3",
           resultado_validado: false,
-        } as any).select("id").single();
+          },
+        });
 
         // Save result JSON to cloud: results/<batchCode>/
         if (labFile.batchId) {
@@ -1351,7 +1458,9 @@ const MentoriaLab = () => {
           ineligibleReason: persistedIneligibility.reason,
           nonEvaluable: isNonEvaluable,
           nonEvaluableReason: isNonEvaluable ? (evaluabilityState.reason || "Interação insuficiente") : undefined,
-          evaluationId: savedEval?.id,
+          evaluationId: persistedEvaluation.id,
+          approvedAsOfficial: persistedEvaluation.approvedAsOfficial,
+          approvalOrigin: persistedEvaluation.approvalOrigin,
         };
 
         setFiles((prev) => prev.map((f) => (f.id === labFile.id ? updatedFile : f)));
@@ -1405,7 +1514,7 @@ const MentoriaLab = () => {
     }
 
     return { success, errors, openedTarget };
-  }, [currentBatchId, ensureLocalFile, openMentoria, updateBatchStatus]);
+  }, [currentBatchId, ensureLocalFile, openMentoria, persistEvaluationRecord, updateBatchStatus]);
 
   // Batch analyze with cloud storage for results
   const analyzeSelectedCore = async () => {
@@ -1618,9 +1727,20 @@ const MentoriaLab = () => {
     if (!labFile.evaluationId || labFile.approvedAsOfficial) return;
     setApprovingIds((prev) => new Set(prev).add(labFile.id));
     try {
+      const { data: currentEvaluation, error: currentEvaluationError } = await supabase
+        .from("evaluations")
+        .select("audit_log")
+        .eq("id", labFile.evaluationId)
+        .maybeSingle();
+
+      if (currentEvaluationError) {
+        toast.error("Erro ao carregar avaliação: " + currentEvaluationError.message);
+        return;
+      }
+
       const { error } = await supabase.from("evaluations").update({
         resultado_validado: true,
-        audit_log: { approvalType: "manual", approvedAt: new Date().toISOString() },
+        audit_log: buildOfficialAuditLog("manual", currentEvaluation?.audit_log),
       } as any).eq("id", labFile.evaluationId);
       if (error) {
         toast.error("Erro ao aprovar avaliação: " + error.message);
@@ -1639,26 +1759,52 @@ const MentoriaLab = () => {
 
   const batchAutoApprove = useCallback(async (fileIds: string[]) => {
     const filesToApprove = files.filter(
-      (f) => fileIds.includes(f.id) && f.evaluationId && !f.approvedAsOfficial
+      (f) =>
+        fileIds.includes(f.id)
+        && f.evaluationId
+        && !f.approvedAsOfficial
+        && typeof f.result?.notaFinal === "number"
+        && Number.isFinite(f.result.notaFinal)
+        && !normalizedExcludedAttendants.has(normalizeAttendantName(f.result?.atendente || f.atendente))
     );
     if (filesToApprove.length === 0) return;
 
     const evaluationIds = filesToApprove.map((f) => f.evaluationId!);
-    const { error } = await supabase.from("evaluations").update({
-      resultado_validado: true,
-      audit_log: { approvalType: "automatic", approvedAt: new Date().toISOString() },
-    } as any).in("id", evaluationIds);
+    const { data: evaluations, error: loadError } = await supabase
+      .from("evaluations")
+      .select("id, protocolo, audit_log")
+      .in("id", evaluationIds);
 
-    if (error) {
-      toast.error("Erro ao aprovar avaliações: " + error.message);
-      throw error;
+    if (loadError) {
+      toast.error("Erro ao carregar avaliações: " + loadError.message);
+      throw loadError;
     }
 
-    const approvedIds = new Set(filesToApprove.map((f) => f.id));
+    const evaluationsById = new Map((evaluations || []).map((evaluation) => [evaluation.id, evaluation]));
+
+    const updateResults = await Promise.all(
+      filesToApprove.map(async (file) => {
+        const currentEvaluation = evaluationsById.get(file.evaluationId!);
+        if (!currentEvaluation) return null;
+
+        const { error } = await supabase.from("evaluations").update({
+          resultado_validado: true,
+          audit_log: buildOfficialAuditLog("automatic", currentEvaluation.audit_log),
+        } as any).eq("id", currentEvaluation.id);
+
+        if (error) throw error;
+
+        console.log("[Oficial] Avaliação automática registrada:", currentEvaluation.protocolo || file.protocolo || file.id);
+
+        return file.id;
+      })
+    );
+
+    const approvedIds = new Set(updateResults.filter((value): value is string => Boolean(value)));
     setFiles((prev) =>
       prev.map((f) => approvedIds.has(f.id) ? { ...f, approvedAsOfficial: true, approvalOrigin: "automatic" as const } : f)
     );
-  }, [files]);
+  }, [files, normalizedExcludedAttendants]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
