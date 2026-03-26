@@ -242,23 +242,26 @@ const CreditAnalysis = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* LEFT: Manual query (disabled) + Upload */}
             <div className="space-y-4">
-              <CreditQuerySection
-                onResult={handleSpcResult}
-                isLoading={isLoading}
-                setIsLoading={setIsLoading}
-                isAdmin={isAdmin}
-                disabled
-              />
+              {hasCreditManual && (
+                <CreditQuerySection
+                  onResult={handleSpcResult}
+                  isLoading={isLoading}
+                  setIsLoading={setIsLoading}
+                  isAdmin={isAdmin}
+                  disabled
+                />
+              )}
 
-              {/* Upload section below manual query */}
-              <CreditUploadSection
-              onAnalyze={handleUploadAnalyze}
-              isAnalyzing={isAnalyzingUpload}
-              uploadState={uploadState}
-              onStateChange={setUploadState}
-              analyzedFileName={analyzedFileName}
-              onNewAnalysis={handleNewUploadAnalysis}
-            />
+              {hasCreditUpload && (
+                <CreditUploadSection
+                  onAnalyze={handleUploadAnalyze}
+                  isAnalyzing={isAnalyzingUpload}
+                  uploadState={uploadState}
+                  onStateChange={setUploadState}
+                  analyzedFileName={analyzedFileName}
+                  onNewAnalysis={handleNewUploadAnalysis}
+                />
+              )}
           </div>
 
           {/* RIGHT: Result display */}
