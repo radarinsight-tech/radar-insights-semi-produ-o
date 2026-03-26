@@ -212,7 +212,7 @@ const MentoriaLab = () => {
 
         const { data: evaluations } = await supabase
           .from("evaluations")
-          .select("id, protocolo, atendente, resultado_validado, full_report, nota, classificacao")
+          .select("id, protocolo, atendente, resultado_validado, full_report, nota, classificacao, audit_log")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(1000);
