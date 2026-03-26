@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useExcludedAttendants } from "@/hooks/useExcludedAttendants";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, LogOut, BarChart3, Users2, TrendingUp, AlertTriangle,
@@ -103,6 +104,7 @@ const PerformanceDashboard = () => {
   const [period, setPeriod] = useState("current");
   const [searchAttendant, setSearchAttendant] = useState("");
   const [expandedAttendant, setExpandedAttendant] = useState<string | null>(null);
+  const { excludedSet } = useExcludedAttendants();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
