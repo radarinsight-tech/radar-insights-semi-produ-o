@@ -1617,13 +1617,14 @@ const MentoriaLab = () => {
     try {
       const { error } = await supabase.from("evaluations").update({
         resultado_validado: true,
+        audit_log: { approvalType: "manual", approvedAt: new Date().toISOString() },
       } as any).eq("id", labFile.evaluationId);
       if (error) {
         toast.error("Erro ao aprovar avaliação: " + error.message);
         return;
       }
       setFiles((prev) =>
-        prev.map((f) => f.id === labFile.id ? { ...f, approvedAsOfficial: true } : f)
+        prev.map((f) => f.id === labFile.id ? { ...f, approvedAsOfficial: true, approvalOrigin: "manual" as const } : f)
       );
       toast.success("Avaliação aprovada como oficial! Agora aparece no ranking e histórico.");
     } catch {
@@ -1632,6 +1633,29 @@ const MentoriaLab = () => {
       setApprovingIds((prev) => { const n = new Set(prev); n.delete(labFile.id); return n; });
     }
   };
+
+  const batchAutoApprove = useCallback(async (fileIds: string[]) => {
+    const filesToApprove = files.filter(
+      (f) => fileIds.includes(f.id) && f.evaluationId && !f.approvedAsOfficial
+    );
+    if (filesToApprove.length === 0) return;
+
+    const evaluationIds = filesToApprove.map((f) => f.evaluationId!);
+    const { error } = await supabase.from("evaluations").update({
+      resultado_validado: true,
+      audit_log: { approvalType: "automatic", approvedAt: new Date().toISOString() },
+    } as any).in("id", evaluationIds);
+
+    if (error) {
+      toast.error("Erro ao aprovar avaliações: " + error.message);
+      throw error;
+    }
+
+    const approvedIds = new Set(filesToApprove.map((f) => f.id));
+    setFiles((prev) =>
+      prev.map((f) => approvedIds.has(f.id) ? { ...f, approvedAsOfficial: true, approvalOrigin: "automatic" as const } : f)
+    );
+  }, [files]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
