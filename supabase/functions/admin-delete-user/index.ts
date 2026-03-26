@@ -6,53 +6,45 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function verifyCaller(req: Request) {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) return null;
+
+  const anonClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: { user } } = await anonClient.auth.getUser();
+  if (!user) return null;
+
+  const { data: roleData } = await anonClient
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .eq("role", "admin")
+    .maybeSingle();
+
+  if (!roleData) return null;
+  return user;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const anonClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user: caller } } = await anonClient.auth.getUser();
-
+    const caller = await verifyCaller(req);
     if (!caller) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), {
-        status: 401,
+      return new Response(JSON.stringify({ error: "Não autorizado ou sem permissão de administrador" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Check admin role
-    const { data: roleData } = await anonClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", caller.id)
-      .eq("role", "admin")
-      .maybeSingle();
-
-    if (!roleData) {
-      return new Response(
-        JSON.stringify({ error: "Apenas administradores podem excluir usuários" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const { targetUserId } = await req.json();
+    const body = await req.json();
+    const { targetUserId, action } = body;
 
     if (!targetUserId) {
       return new Response(
@@ -61,20 +53,20 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Prevent self-delete
     if (targetUserId === caller.id) {
       return new Response(
-        JSON.stringify({ error: "Não é permitido excluir o próprio usuário" }),
+        JSON.stringify({ error: "Não é permitido alterar o próprio usuário" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    // Check user exists
     const { data: profile, error: profileError } = await adminClient
       .from("profiles")
-      .select("id, deleted_at")
+      .select("id, deleted_at, active")
       .eq("id", targetUserId)
       .maybeSingle();
 
@@ -85,6 +77,39 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Handle toggle active/inactive
+    if (action === "toggle_active") {
+      if (profile.deleted_at) {
+        return new Response(
+          JSON.stringify({ error: "Usuário já foi excluído" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const newActive = !profile.active;
+      const { error: updateError } = await adminClient
+        .from("profiles")
+        .update({ active: newActive })
+        .eq("id", targetUserId);
+
+      if (updateError) {
+        return new Response(
+          JSON.stringify({ error: "Erro ao alterar status do usuário" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          active: newActive,
+          message: newActive ? "Usuário ativado com sucesso" : "Usuário inativado com sucesso",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Default action: soft delete
     if (profile.deleted_at) {
       return new Response(
         JSON.stringify({ error: "Usuário já foi excluído" }),
@@ -92,14 +117,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Soft delete: set deleted_at
     const { error: updateError } = await adminClient
       .from("profiles")
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", targetUserId);
 
     if (updateError) {
-      console.error("Soft delete error:", updateError);
       return new Response(
         JSON.stringify({ error: "Erro ao excluir usuário" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
