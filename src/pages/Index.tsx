@@ -30,9 +30,7 @@ const parseDateBR = (str: string): Date | null => {
 
 const Index = () => {
   const navigate = useNavigate();
-  useEffect(() => {
-    navigate("/login");
-  }, []);
+
   const { sectors, isAdmin: isSectorAdmin, loading: sectorsLoading } = useUserSectors();
   const { excludedSet, refreshExcludedAttendants } = useExcludedAttendants();
   const [history, setHistory] = useState<HistoryEntry[]>([]);
