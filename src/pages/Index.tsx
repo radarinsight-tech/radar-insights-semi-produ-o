@@ -87,6 +87,7 @@ const Index = () => {
         }, new Map<string, any>()).values()
       );
 
+      console.log("[Atualizar] Dados recarregados do backend:", rows.length, "registros oficiais");
       setSyncStatus("synced");
       lastLoadRef.current = Date.now();
       setHistory(
