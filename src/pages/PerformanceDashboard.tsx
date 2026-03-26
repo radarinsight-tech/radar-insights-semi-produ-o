@@ -182,7 +182,7 @@ const PerformanceDashboard = () => {
         bonusPct: bonus.percentual,
       };
     }).sort((a, b) => b.notaMedia10 - a.notaMedia10);
-  }, [scoredEvals]);
+  }, [scoredEvals, excludedSet]);
 
   const filteredAttendants = useMemo(() => {
     if (!searchAttendant) return attendants;
