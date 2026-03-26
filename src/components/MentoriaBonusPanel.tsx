@@ -353,43 +353,32 @@ const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore }: Ment
   // Exclude selected
   const handleExclude = useCallback(() => {
     const now = new Date().toISOString();
-    const newExcluded = new Map(excludedNames);
-    const excluded: string[] = [];
-    selectedNames.forEach((name) => {
-      if (!newExcluded.has(name)) {
-        const entry: ExcludedEntry = { nome: name, excludedAt: now, excludedBy: "admin" };
-        newExcluded.set(name, entry);
-        excluded.push(name);
-      }
-    });
-    setExcludedNames(newExcluded);
-    setAuditLog((prev) => [...prev, ...excluded.map((nome) => ({ nome, excludedAt: now, excludedBy: "admin" }))]);
+    const excluded = [...selectedNames].filter((name) => !excludedNames.has(name));
+    if (excluded.length > 0) {
+      onExclude(excluded);
+      setAuditLog((prev) => [...prev, ...excluded.map((nome) => ({ nome, excludedAt: now, excludedBy: "admin" }))]);
+    }
     setSelectedNames(new Set());
     setConfirmDialogOpen(false);
     toast({
       title: `${excluded.length} linha${excluded.length !== 1 ? "s" : ""} removida${excluded.length !== 1 ? "s" : ""} do painel`,
       description: `Nomes: ${excluded.join(", ")}`,
     });
-  }, [excludedNames, selectedNames]);
+  }, [excludedNames, selectedNames, onExclude]);
 
   // Restore selected
   const handleRestore = useCallback(() => {
-    const newExcluded = new Map(excludedNames);
-    const restored: string[] = [];
-    selectedNames.forEach((name) => {
-      if (newExcluded.has(name)) {
-        newExcluded.delete(name);
-        restored.push(name);
-      }
-    });
-    setExcludedNames(newExcluded);
+    const restored = [...selectedNames].filter((name) => excludedNames.has(name));
+    if (restored.length > 0) {
+      onRestore(restored);
+    }
     setSelectedNames(new Set());
     setRestoreDialogOpen(false);
     toast({
       title: `${restored.length} linha${restored.length !== 1 ? "s" : ""} restaurada${restored.length !== 1 ? "s" : ""} ao painel`,
       description: `Nomes: ${restored.join(", ")}`,
     });
-  }, [excludedNames, selectedNames]);
+  }, [excludedNames, selectedNames, onRestore]);
 
   // Count how many selected are excludable vs restorable
   const selectedExcludable = [...selectedNames].filter((n) => !excludedNames.has(n)).length;
