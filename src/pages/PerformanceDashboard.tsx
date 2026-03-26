@@ -153,6 +153,7 @@ const PerformanceDashboard = () => {
     const grouped = new Map<string, Array<EvalRow & { score: ScoringResult }>>();
     for (const e of scoredEvals) {
       const name = e.atendente || "Não identificado";
+      if (excludedSet.has(name)) continue;
       if (!grouped.has(name)) grouped.set(name, []);
       grouped.get(name)!.push(e);
     }
