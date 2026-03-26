@@ -95,7 +95,8 @@ const UsersPage = () => {
   const loadProfiles = async () => {
     const { data: profilesData, error } = await supabase
       .from("profiles")
-      .select("id, full_name, created_at, force_password_change")
+      .select("id, full_name, created_at, force_password_change, deleted_at")
+      .is("deleted_at", null)
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -152,6 +153,9 @@ const UsersPage = () => {
 
   useEffect(() => {
     loadProfiles();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setCurrentUserId(data.user.id);
+    });
   }, []);
 
   const handleInvite = async (e: React.FormEvent) => {
