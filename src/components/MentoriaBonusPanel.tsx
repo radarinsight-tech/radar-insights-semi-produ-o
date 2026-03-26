@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import type { ExcludedEntry } from "@/hooks/useExcludedAttendants";
 import SectionPrintButton from "@/components/SectionPrintButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -344,6 +344,37 @@ const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore, onAuto
     }
     return ids;
   }, [autoMode, validAuto, files, excludedNames]);
+
+  // Auto-persist: when auto-mode detects approvable files, approve them automatically
+  const autoApproveTriggeredRef = useRef(false);
+  const [autoPersistRunning, setAutoPersistRunning] = useState(false);
+
+  // Reset trigger when file list or mode changes
+  const autoApproveKey = useMemo(() => autoApprovableFileIds.join(","), [autoApprovableFileIds]);
+
+  // biome-ignore lint: intentional effect for auto-persist
+  useEffect(() => {
+    if (!autoMode || !onAutoApprove || autoApprovableFileIds.length === 0) {
+      autoApproveTriggeredRef.current = false;
+      return;
+    }
+    if (autoApproveTriggeredRef.current || autoPersistRunning) return;
+
+    autoApproveTriggeredRef.current = true;
+    setAutoPersistRunning(true);
+
+    console.log("[AUTO → OFICIAL] Persistindo automaticamente", autoApprovableFileIds.length, "avaliações selecionadas");
+
+    onAutoApprove(autoApprovableFileIds)
+      .then(() => {
+        console.log("[AUTO → OFICIAL] Registros criados com sucesso");
+      })
+      .catch((err) => {
+        console.error("[AUTO → OFICIAL] Erro ao persistir:", err);
+        autoApproveTriggeredRef.current = false; // allow retry
+      })
+      .finally(() => setAutoPersistRunning(false));
+  }, [autoMode, autoApproveKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Selection helpers
   const toggleSelect = useCallback((name: string) => {

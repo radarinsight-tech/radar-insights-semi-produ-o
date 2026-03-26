@@ -1802,7 +1802,7 @@ const MentoriaLab = () => {
 
         if (error) throw error;
 
-        console.log("[Oficial] Avaliação automática registrada:", currentEvaluation.protocolo || file.protocolo || file.id);
+        console.log("[AUTO → OFICIAL] Registro criado:", currentEvaluation.protocolo || file.protocolo || file.id);
 
         return file.id;
       })
