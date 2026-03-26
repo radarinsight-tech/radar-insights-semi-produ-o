@@ -59,6 +59,7 @@ interface ProfileWithRole {
   full_name: string | null;
   created_at: string;
   role: AppRole | null;
+  creditSubRoles: CreditSubRole[];
   sectorIds: string[];
   force_password_change: boolean;
 }
@@ -77,6 +78,7 @@ const UsersPage = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editUser, setEditUser] = useState<ProfileWithRole | null>(null);
   const [editRole, setEditRole] = useState<AppRole | "none">("none");
+  const [editCreditSubs, setEditCreditSubs] = useState<CreditSubRole[]>([]);
   const [editSectorIds, setEditSectorIds] = useState<string[]>([]);
   const [editLoading, setEditLoading] = useState(false);
   const [resetPwOpen, setResetPwOpen] = useState(false);
