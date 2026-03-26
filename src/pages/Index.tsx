@@ -30,6 +30,9 @@ const parseDateBR = (str: string): Date | null => {
 
 const Index = () => {
   const navigate = useNavigate();
+  useEffect(() => {
+    navigate("/login");
+  }, []);
   const { sectors, isAdmin: isSectorAdmin, loading: sectorsLoading } = useUserSectors();
   const { excludedSet, refreshExcludedAttendants } = useExcludedAttendants();
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -44,80 +47,84 @@ const Index = () => {
   const [syncStatus, setSyncStatus] = useState<"synced" | "stale">("synced");
   const lastLoadRef = useRef<number>(Date.now());
 
-  const sectorIds = useMemo(() => sectors.map(s => s.id), [sectors]);
+  const sectorIds = useMemo(() => sectors.map((s) => s.id), [sectors]);
   const normalizedExcludedAttendants = useMemo(
     () => new Set(Array.from(excludedSet, (name) => normalizeAttendantName(name))),
-    [excludedSet]
+    [excludedSet],
   );
 
-  const loadHistory = useCallback(async (excludedAttendants = normalizedExcludedAttendants) => {
-    try {
-      const { data, error } = await supabase
-        .from("evaluations")
-        .select("*")
-        .eq("resultado_validado", true)
-        .eq("excluded_from_ranking", false)
-        .order("created_at", { ascending: false });
+  const loadHistory = useCallback(
+    async (excludedAttendants = normalizedExcludedAttendants) => {
+      try {
+        const { data, error } = await supabase
+          .from("evaluations")
+          .select("*")
+          .eq("resultado_validado", true)
+          .eq("excluded_from_ranking", false)
+          .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error loading history:", error);
-        return;
+        if (error) {
+          console.error("Error loading history:", error);
+          return;
+        }
+
+        const visibleRows = (data || [])
+          .filter((row: any) => {
+            if (isSectorAdmin) return true;
+            if (!row.sector_id) return true;
+            return sectorIds.includes(row.sector_id);
+          })
+          .filter((row: any) => {
+            return !excludedAttendants.has(normalizeAttendantName(row.atendente));
+          });
+
+        const rows = Array.from(
+          visibleRows
+            .reduce((map: Map<string, any>, row: any) => {
+              const protocolKey =
+                typeof row.protocolo === "string" && row.protocolo.trim().length > 0 ? row.protocolo.trim() : row.id;
+
+              if (!map.has(protocolKey)) {
+                map.set(protocolKey, row);
+              }
+
+              return map;
+            }, new Map<string, any>())
+            .values(),
+        );
+
+        console.log("[Atualizar] Dados recarregados do backend:", rows.length, "registros oficiais");
+        lastLoadRef.current = Date.now();
+        setSyncStatus("synced");
+        setHistory(
+          rows.map((row: any) => ({
+            id: row.id,
+            data: row.data || "",
+            data_avaliacao: row.data_avaliacao ? formatDateTimeBR(row.data_avaliacao) : "",
+            protocolo: row.protocolo || "—",
+            atendente: row.atendente || "—",
+            nota: Number(row.nota) || 0,
+            classificacao: row.classificacao || "—",
+            bonus: row.bonus ?? false,
+            tipo: row.tipo || "—",
+            atualizacao_cadastral: row.atualizacao_cadastral || "Não",
+            pontos_melhoria: Array.isArray(row.pontos_melhoria) ? row.pontos_melhoria : [],
+            pdf_url: row.pdf_url || undefined,
+            full_report: row.full_report || null,
+            audit_log: row.audit_log || null,
+          })),
+        );
+      } catch (err) {
+        console.error("Error loading history (uncaught):", err);
       }
-
-      const visibleRows = (data || []).filter((row: any) => {
-        if (isSectorAdmin) return true;
-        if (!row.sector_id) return true;
-        return sectorIds.includes(row.sector_id);
-      }).filter((row: any) => {
-        return !excludedAttendants.has(normalizeAttendantName(row.atendente));
-      });
-
-      const rows = Array.from(
-        visibleRows.reduce((map: Map<string, any>, row: any) => {
-          const protocolKey = typeof row.protocolo === "string" && row.protocolo.trim().length > 0
-            ? row.protocolo.trim()
-            : row.id;
-
-          if (!map.has(protocolKey)) {
-            map.set(protocolKey, row);
-          }
-
-          return map;
-        }, new Map<string, any>()).values()
-      );
-
-      console.log("[Atualizar] Dados recarregados do backend:", rows.length, "registros oficiais");
-      lastLoadRef.current = Date.now();
-      setSyncStatus("synced");
-      setHistory(
-        rows.map((row: any) => ({
-          id: row.id,
-          data: row.data || "",
-          data_avaliacao: row.data_avaliacao
-            ? formatDateTimeBR(row.data_avaliacao)
-            : "",
-          protocolo: row.protocolo || "—",
-          atendente: row.atendente || "—",
-          nota: Number(row.nota) || 0,
-          classificacao: row.classificacao || "—",
-          bonus: row.bonus ?? false,
-          tipo: row.tipo || "—",
-          atualizacao_cadastral: row.atualizacao_cadastral || "Não",
-          pontos_melhoria: Array.isArray(row.pontos_melhoria) ? row.pontos_melhoria : [],
-          pdf_url: row.pdf_url || undefined,
-          full_report: row.full_report || null,
-          audit_log: row.audit_log || null,
-        }))
-      );
-    } catch (err) {
-      console.error("Error loading history (uncaught):", err);
-    }
-  }, [isSectorAdmin, normalizedExcludedAttendants, sectorIds]);
+    },
+    [isSectorAdmin, normalizedExcludedAttendants, sectorIds],
+  );
 
   const refreshOfficialData = useCallback(async () => {
     const freshExcludedNames = await refreshExcludedAttendants();
     const freshNormalizedExcluded = new Set(
-      Array.from(freshExcludedNames.values(), (entry) => normalizeAttendantName(entry.nome))
+      Array.from(freshExcludedNames.values(), (entry) => normalizeAttendantName(entry.nome)),
     );
     await loadHistory(freshNormalizedExcluded);
   }, [loadHistory, refreshExcludedAttendants]);
@@ -174,10 +181,7 @@ const Index = () => {
   const filtered = useMemo(() => {
     if (!statusFilter) return baseFiltered;
     return baseFiltered.filter((e) =>
-      matchesStatusFilter(
-        e.full_report as Record<string, unknown> | null | undefined,
-        statusFilter
-      )
+      matchesStatusFilter(e.full_report as Record<string, unknown> | null | undefined, statusFilter),
     );
   }, [baseFiltered, statusFilter]);
 
@@ -190,15 +194,21 @@ const Index = () => {
             Radar Insight — <span className="text-primary">Avaliação Oficial</span>
           </h1>
           {/* Sync indicator */}
-          <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full border ${
-            syncStatus === "synced"
-              ? "bg-accent/10 text-accent border-accent/20"
-              : "bg-warning/10 text-warning border-warning/20"
-          }`}>
+          <span
+            className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full border ${
+              syncStatus === "synced"
+                ? "bg-accent/10 text-accent border-accent/20"
+                : "bg-warning/10 text-warning border-warning/20"
+            }`}
+          >
             {syncStatus === "synced" ? (
-              <><CheckCircle2 className="h-3 w-3" /> Sincronizado</>
+              <>
+                <CheckCircle2 className="h-3 w-3" /> Sincronizado
+              </>
             ) : (
-              <><AlertTriangle className="h-3 w-3" /> Desatualizado</>
+              <>
+                <AlertTriangle className="h-3 w-3" /> Desatualizado
+              </>
             )}
           </span>
           <div className="ml-auto flex items-center gap-1">
@@ -226,9 +236,15 @@ const Index = () => {
             <div>
               <p className="text-sm font-semibold text-foreground">Avaliações Oficiais</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Este ambiente exibe apenas avaliações aprovadas no <strong>Mentoria Lab</strong>. Para importar e analisar novos atendimentos, acesse o Mentoria Lab.
+                Este ambiente exibe apenas avaliações aprovadas no <strong>Mentoria Lab</strong>. Para importar e
+                analisar novos atendimentos, acesse o Mentoria Lab.
               </p>
-              <Button variant="outline" size="sm" className="mt-2 text-xs h-7" onClick={() => navigate("/mentoria-lab")}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 text-xs h-7"
+                onClick={() => navigate("/mentoria-lab")}
+              >
                 Ir para o Mentoria Lab
               </Button>
             </div>
@@ -249,7 +265,9 @@ const Index = () => {
                 <h3 className="text-sm font-bold text-foreground">Ver Gráficos</h3>
                 <p className="text-xs text-muted-foreground">Evolução de notas e ranking de atendentes</p>
               </div>
-              <Badge variant="outline" className="text-[10px]">{filtered.length} registros</Badge>
+              <Badge variant="outline" className="text-[10px]">
+                {filtered.length} registros
+              </Badge>
             </div>
           </Card>
         )}
@@ -275,12 +293,7 @@ const Index = () => {
           <div className="space-y-4">
             <div className="flex flex-wrap gap-3 items-end">
               <ErrorBoundary fallbackTitle="Erro nos filtros">
-                <Filters
-                  atendentes={atendentes}
-                  tipos={tipos}
-                  filters={filters}
-                  onChange={setFilters}
-                />
+                <Filters atendentes={atendentes} tipos={tipos} filters={filters} onChange={setFilters} />
               </ErrorBoundary>
               <div className="relative w-[220px]">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -294,9 +307,7 @@ const Index = () => {
             </div>
             {statusFilter && (
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20">
-                <span className="text-sm font-medium text-foreground">
-                  Filtrando: {getStatusLabel(statusFilter)}
-                </span>
+                <span className="text-sm font-medium text-foreground">Filtrando: {getStatusLabel(statusFilter)}</span>
                 <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setStatusFilter(null)}>
                   <X className="h-3 w-3 mr-1" /> Limpar filtro
                 </Button>
@@ -307,7 +318,11 @@ const Index = () => {
             </ErrorBoundary>
           </div>
           <ErrorBoundary fallbackTitle="Erro nos indicadores">
-            <StatsWidgets entries={baseFiltered} activeStatusFilter={statusFilter} onStatusFilterChange={setStatusFilter} />
+            <StatsWidgets
+              entries={baseFiltered}
+              activeStatusFilter={statusFilter}
+              onStatusFilterChange={setStatusFilter}
+            />
           </ErrorBoundary>
         </div>
       </main>
