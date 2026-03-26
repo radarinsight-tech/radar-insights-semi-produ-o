@@ -9,7 +9,7 @@ interface SectionPrintButtonProps {
   expandAccordions?: boolean;
 }
 
-const SectionPrintButton = ({ sectionRef, title = "seção" }: SectionPrintButtonProps) => {
+const SectionPrintButton = ({ sectionRef, title = "seção", expandAccordions = false }: SectionPrintButtonProps) => {
   const handlePrint = useCallback(() => {
     const el = sectionRef.current;
     if (!el) return;
@@ -22,6 +22,28 @@ const SectionPrintButton = ({ sectionRef, title = "seção" }: SectionPrintButto
 
     // Remove interactive elements and loading skeletons from the clone
     clone.querySelectorAll("button, input, [role='checkbox'], [data-no-print], .animate-pulse, [data-skeleton]").forEach((node) => node.remove());
+
+    // Expand all accordions if requested
+    if (expandAccordions) {
+      clone.querySelectorAll('[data-state="closed"]').forEach((node) => {
+        (node as HTMLElement).setAttribute("data-state", "open");
+        (node as HTMLElement).style.removeProperty("display");
+      });
+      clone.querySelectorAll('[data-radix-collapsible-content]').forEach((node) => {
+        const htmlNode = node as HTMLElement;
+        htmlNode.setAttribute("data-state", "open");
+        htmlNode.style.height = "auto";
+        htmlNode.style.overflow = "visible";
+        htmlNode.style.display = "block";
+      });
+      // Also handle generic hidden content inside accordion items
+      clone.querySelectorAll('[role="region"][data-state="closed"]').forEach((node) => {
+        const htmlNode = node as HTMLElement;
+        htmlNode.setAttribute("data-state", "open");
+        htmlNode.style.height = "auto";
+        htmlNode.style.overflow = "visible";
+      });
+    }
 
     // Copy computed styles from the main document
     const styles = Array.from(document.styleSheets)
