@@ -35,6 +35,7 @@ interface ChartFile {
 
 interface MentoriaChartsProps {
   files: ChartFile[];
+  excludedAttendants?: Set<string>;
 }
 
 function parseDate(dateStr?: string): Date | null {
@@ -67,7 +68,7 @@ const COLORS = [
 
 type PeriodMode = "dia" | "mes" | "personalizado";
 
-const MentoriaCharts = ({ files }: MentoriaChartsProps) => {
+const MentoriaCharts = ({ files, excludedAttendants }: MentoriaChartsProps) => {
   const [periodMode, setPeriodMode] = useState<PeriodMode>("dia");
   const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
   const [appliedRange, setAppliedRange] = useState<{ from?: Date; to?: Date }>({});
