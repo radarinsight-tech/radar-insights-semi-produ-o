@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendant_exclusions: {
+        Row: {
+          attendant_name: string
+          company_id: string
+          created_at: string
+          excluded: boolean
+          excluded_at: string | null
+          excluded_by: string | null
+          id: string
+          normalized_name: string
+          origin: string
+          updated_at: string
+        }
+        Insert: {
+          attendant_name: string
+          company_id: string
+          created_at?: string
+          excluded?: boolean
+          excluded_at?: string | null
+          excluded_by?: string | null
+          id?: string
+          normalized_name: string
+          origin?: string
+          updated_at?: string
+        }
+        Update: {
+          attendant_name?: string
+          company_id?: string
+          created_at?: string
+          excluded?: boolean
+          excluded_at?: string | null
+          excluded_by?: string | null
+          id?: string
+          normalized_name?: string
+          origin?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendant_exclusions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendants: {
         Row: {
           active: boolean
