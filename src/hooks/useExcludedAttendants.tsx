@@ -152,9 +152,11 @@ async function fetchRemoteSnapshot(companyId: string): Promise<ExcludedStoreSnap
   return buildSnapshot(entries);
 }
 
-async function refreshPersistedSnapshot(): Promise<ExcludedStoreSnapshot> {
-  if (_refreshPromise) return _refreshPromise;
+async function refreshPersistedSnapshot(forceNew = false): Promise<ExcludedStoreSnapshot> {
+  // If there's an in-flight request and we're not forcing, reuse it
+  if (_refreshPromise && !forceNew) return _refreshPromise;
 
+  // Cancel any stale promise reference when forcing
   _refreshPromise = (async () => {
     const { data: authData, error: authError } = await supabase.auth.getUser();
     if (authError) throw authError;
@@ -190,7 +192,9 @@ export function useExcludedAttendants() {
   const refreshExcludedAttendants = useCallback(async () => {
     setLoading(true);
     try {
-      const nextSnapshot = await refreshPersistedSnapshot();
+      // Always force a fresh backend read — no cache, no stale promise
+      const nextSnapshot = await refreshPersistedSnapshot(true);
+      console.log("[Atualizar] Exclusões recarregadas do backend:", nextSnapshot.byNormalizedName.size, "atendentes excluídos");
       return new Map(nextSnapshot.byName);
     } finally {
       setLoading(false);
