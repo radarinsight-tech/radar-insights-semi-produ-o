@@ -170,6 +170,7 @@ const MentoriaLab = () => {
   const [batchStats, setBatchStats] = useState<{ analyzing: number; completed: number; failed: number }>({ analyzing: 0, completed: 0, failed: 0 });
   const [batchProcessing, setBatchProcessing] = useState(false);
   const { isAdmin } = useUserPermissions();
+  const { excludedNames: globalExcludedNames, excludedSet: globalExcludedSet, excludeAttendants, restoreAttendants } = useExcludedAttendants();
   // Filters
   const [filterAtendente, setFilterAtendente] = useState("todos");
   const [filterPeriodoFrom, setFilterPeriodoFrom] = useState<Date | undefined>();
