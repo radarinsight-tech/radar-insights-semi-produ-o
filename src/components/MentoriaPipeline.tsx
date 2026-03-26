@@ -41,6 +41,7 @@ interface PipelineFile {
   nonEvaluable?: boolean;
   nonEvaluableReason?: string;
   approvedAsOfficial?: boolean;
+  approvalOrigin?: "manual" | "automatic";
   evaluationId?: string;
   analyzedAt?: Date;
   transferred?: boolean;
@@ -257,7 +258,7 @@ const AttendanceCard = ({
         )}
         {file.approvedAsOfficial && (
           <Badge className="bg-accent/15 text-accent text-[9px] gap-0.5 px-1.5 py-0 h-auto">
-            <ShieldCheck className="h-2.5 w-2.5" /> Oficial
+            <ShieldCheck className="h-2.5 w-2.5" /> {file.approvalOrigin === "automatic" ? "Oficial (Auto)" : "Oficial (Manual)"}
           </Badge>
         )}
         {isIneligible && (

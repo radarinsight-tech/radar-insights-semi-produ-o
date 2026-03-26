@@ -147,9 +147,16 @@ const HistoryTable = ({ entries, onRefresh }: Props) => {
                       <Badge className={classColorFromClassificacao(classificarNota(e.nota))}>{classificarNota(e.nota)}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={e.bonus ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"}>
-                        {e.bonus ? "Sim" : "Não"}
-                      </Badge>
+                      <div className="flex items-center gap-1">
+                        <Badge className={e.bonus ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"}>
+                          {e.bonus ? "Sim" : "Não"}
+                        </Badge>
+                        {e.audit_log && (e.audit_log as any).approvalType && (
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0">
+                            {(e.audit_log as any).approvalType === "automatic" ? "Auto" : "Manual"}
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="inline-flex items-center gap-1">

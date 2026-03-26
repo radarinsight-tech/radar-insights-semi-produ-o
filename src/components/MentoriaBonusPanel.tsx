@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Trophy, TrendingUp, Users, Search, ChevronDown, ChevronUp,
   AlertTriangle, CheckCircle2, XCircle, MinusCircle, Info,
-  Trash2, RotateCcw, Filter, Eye, EyeOff, ShieldAlert,
+  Trash2, RotateCcw, Filter, Eye, EyeOff, ShieldAlert, ShieldCheck, Loader2,
 } from "lucide-react";
 import { cn, formatNota } from "@/lib/utils";
 import {
@@ -226,19 +226,24 @@ interface MentoriaBonusPanelProps {
     structuredConversation?: any;
     name?: string;
     file_name?: string;
+    evaluationId?: string;
+    approvedAsOfficial?: boolean;
   }>;
   excludedNames: Map<string, ExcludedEntry>;
   onExclude: (names: string[]) => void;
   onRestore: (names: string[]) => void;
+  onAutoApprove?: (fileIds: string[]) => Promise<void>;
 }
 
 // ─── Main Component ─────────────────────────────────────────────────
-const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore }: MentoriaBonusPanelProps) => {
+const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore, onAutoApprove }: MentoriaBonusPanelProps) => {
   const [autoMode, setAutoMode] = useState(false);
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
   const [panelFilter, setPanelFilter] = useState<PanelFilter>("valid");
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+  const [autoApproveDialogOpen, setAutoApproveDialogOpen] = useState(false);
+  const [autoApproving, setAutoApproving] = useState(false);
   const [auditLog, setAuditLog] = useState<ExcludedEntry[]>([]);
 
   // Classic ranking (existing behavior)
@@ -324,6 +329,22 @@ const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore }: Ment
   const totalBonusAuto = validAuto.reduce((s, r) => s + (r.valor ?? 0), 0);
   const lowVolumeCount = validAuto.filter((a) => a.volumetria === "baixa_volumetria").length;
 
+  // Auto-approve: collect file IDs from top 6 selected per attendant that have evaluationId and aren't already approved
+  const autoApprovableFileIds = useMemo(() => {
+    if (!autoMode) return [];
+    const ids: string[] = [];
+    for (const att of validAuto) {
+      if (excludedNames.has(att.nome)) continue;
+      for (const sel of att.selecionados) {
+        const originalFile = files.find((f) => f.id === sel.id);
+        if (originalFile?.evaluationId && !originalFile.approvedAsOfficial) {
+          ids.push(sel.id);
+        }
+      }
+    }
+    return ids;
+  }, [autoMode, validAuto, files, excludedNames]);
+
   // Selection helpers
   const toggleSelect = useCallback((name: string) => {
     setSelectedNames((prev) => {
@@ -384,6 +405,22 @@ const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore }: Ment
   // Count how many selected are excludable vs restorable
   const selectedExcludable = [...selectedNames].filter((n) => !excludedNames.has(n)).length;
   const selectedRestorable = [...selectedNames].filter((n) => excludedNames.has(n)).length;
+  // Auto-approve handler
+  const handleAutoApprove = useCallback(async () => {
+    if (!onAutoApprove || autoApprovableFileIds.length === 0) return;
+    setAutoApproving(true);
+    try {
+      await onAutoApprove(autoApprovableFileIds);
+      toast({
+        title: `${autoApprovableFileIds.length} avaliação${autoApprovableFileIds.length !== 1 ? "ões" : ""} aprovada${autoApprovableFileIds.length !== 1 ? "s" : ""} como Oficial (Automático)`,
+      });
+    } catch {
+      toast({ title: "Erro ao aprovar avaliações automaticamente", variant: "destructive" });
+    } finally {
+      setAutoApproving(false);
+      setAutoApproveDialogOpen(false);
+    }
+  }, [onAutoApprove, autoApprovableFileIds]);
 
   const bonusSectionRef = useRef<HTMLDivElement>(null);
 
@@ -491,10 +528,24 @@ const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore }: Ment
         {autoMode && (
           <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
             <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-            <p className="text-xs text-muted-foreground">
-              O sistema selecionou automaticamente até <strong>6 atendimentos mais representativos</strong> por atendente,
-              priorizando interação humana real, densidade de diálogo e recência. O bônus só é calculado quando há 6 mentorias válidas.
-            </p>
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground">
+                O sistema selecionou automaticamente até <strong>6 atendimentos mais representativos</strong> por atendente,
+                priorizando interação humana real, densidade de diálogo e recência. O bônus só é calculado quando há 6 mentorias válidas.
+              </p>
+              {onAutoApprove && autoApprovableFileIds.length > 0 && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="mt-2 gap-2 text-xs"
+                  onClick={() => setAutoApproveDialogOpen(true)}
+                  disabled={autoApproving}
+                >
+                  {autoApproving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                  Aprovar {autoApprovableFileIds.length} selecionado{autoApprovableFileIds.length !== 1 ? "s" : ""} como Oficial
+                </Button>
+              )}
+            </div>
           </div>
         )}
 
@@ -664,6 +715,26 @@ const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore }: Ment
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction onClick={handleRestore}>Restaurar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Confirm auto-approve dialog */}
+        <AlertDialog open={autoApproveDialogOpen} onOpenChange={setAutoApproveDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Aprovar selecionados como Avaliação Oficial</AlertDialogTitle>
+              <AlertDialogDescription>
+                Deseja aprovar <strong>{autoApprovableFileIds.length}</strong> atendimento{autoApprovableFileIds.length !== 1 ? "s" : ""} selecionado{autoApprovableFileIds.length !== 1 ? "s" : ""} como Avaliação Oficial (Automático)?
+                Eles serão incluídos no ranking, histórico e métricas. O limite de 6 por atendente/mês será respeitado.
+                Atendimentos já aprovados manualmente não serão duplicados.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={autoApproving}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleAutoApprove} disabled={autoApproving}>
+                {autoApproving ? "Aprovando..." : "Aprovar como Oficial"}
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

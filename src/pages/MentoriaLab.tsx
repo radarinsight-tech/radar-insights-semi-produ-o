@@ -98,6 +98,7 @@ interface LabFile {
   attendantMatch?: MatchResult;
   transferred?: boolean;
   approvedAsOfficial?: boolean;
+  approvalOrigin?: "manual" | "automatic";
   evaluationId?: string;
   uraContext?: UraContext;
   uraStatus?: UraStatus;
@@ -211,7 +212,7 @@ const MentoriaLab = () => {
 
         const { data: evaluations } = await supabase
           .from("evaluations")
-          .select("id, protocolo, atendente, resultado_validado, full_report, nota, classificacao")
+          .select("id, protocolo, atendente, resultado_validado, full_report, nota, classificacao, audit_log")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(1000);
@@ -312,6 +313,9 @@ const MentoriaLab = () => {
             nonEvaluable: evaluabilityState.nonEvaluable,
             nonEvaluableReason: evaluabilityState.reason,
             approvedAsOfficial: matchedEval?.resultado_validado === true,
+            approvalOrigin: matchedEval?.resultado_validado === true
+              ? ((matchedEval?.audit_log as any)?.approvalType === "automatic" ? "automatic" : "manual")
+              : undefined,
             evaluationId: matchedEval?.id,
             uraContext: uraCtx,
             uraStatus: uraCtx?.status,
@@ -1616,13 +1620,14 @@ const MentoriaLab = () => {
     try {
       const { error } = await supabase.from("evaluations").update({
         resultado_validado: true,
+        audit_log: { approvalType: "manual", approvedAt: new Date().toISOString() },
       } as any).eq("id", labFile.evaluationId);
       if (error) {
         toast.error("Erro ao aprovar avaliação: " + error.message);
         return;
       }
       setFiles((prev) =>
-        prev.map((f) => f.id === labFile.id ? { ...f, approvedAsOfficial: true } : f)
+        prev.map((f) => f.id === labFile.id ? { ...f, approvedAsOfficial: true, approvalOrigin: "manual" as const } : f)
       );
       toast.success("Avaliação aprovada como oficial! Agora aparece no ranking e histórico.");
     } catch {
@@ -1631,6 +1636,29 @@ const MentoriaLab = () => {
       setApprovingIds((prev) => { const n = new Set(prev); n.delete(labFile.id); return n; });
     }
   };
+
+  const batchAutoApprove = useCallback(async (fileIds: string[]) => {
+    const filesToApprove = files.filter(
+      (f) => fileIds.includes(f.id) && f.evaluationId && !f.approvedAsOfficial
+    );
+    if (filesToApprove.length === 0) return;
+
+    const evaluationIds = filesToApprove.map((f) => f.evaluationId!);
+    const { error } = await supabase.from("evaluations").update({
+      resultado_validado: true,
+      audit_log: { approvalType: "automatic", approvedAt: new Date().toISOString() },
+    } as any).in("id", evaluationIds);
+
+    if (error) {
+      toast.error("Erro ao aprovar avaliações: " + error.message);
+      throw error;
+    }
+
+    const approvedIds = new Set(filesToApprove.map((f) => f.id));
+    setFiles((prev) =>
+      prev.map((f) => approvedIds.has(f.id) ? { ...f, approvedAsOfficial: true, approvalOrigin: "automatic" as const } : f)
+    );
+  }, [files]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -2332,6 +2360,7 @@ const MentoriaLab = () => {
                 excludedNames={globalExcludedNames}
                 onExclude={excludeAttendants}
                 onRestore={restoreAttendants}
+                onAutoApprove={batchAutoApprove}
               />
             )}
 
