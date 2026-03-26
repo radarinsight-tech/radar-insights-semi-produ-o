@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 
 const STORAGE_KEY = "radar_excluded_attendants";
 
@@ -8,7 +8,12 @@ export interface ExcludedEntry {
   excludedBy: string;
 }
 
-function loadFromStorage(): Map<string, ExcludedEntry> {
+// ── Singleton store so every hook instance shares the same state ──
+
+let _cache: Map<string, ExcludedEntry> | null = null;
+const _listeners = new Set<() => void>();
+
+function readStorage(): Map<string, ExcludedEntry> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return new Map();
@@ -19,38 +24,57 @@ function loadFromStorage(): Map<string, ExcludedEntry> {
   }
 }
 
-function saveToStorage(map: Map<string, ExcludedEntry>) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([...map.values()]));
+function getSnapshot(): Map<string, ExcludedEntry> {
+  if (!_cache) _cache = readStorage();
+  return _cache;
+}
+
+function writeAndNotify(next: Map<string, ExcludedEntry>) {
+  _cache = next;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([...next.values()]));
+  _listeners.forEach((l) => l());
+}
+
+function subscribe(listener: () => void) {
+  _listeners.add(listener);
+
+  // Also react to changes from other tabs / HMR reloads
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === STORAGE_KEY) {
+      _cache = readStorage();
+      _listeners.forEach((l) => l());
+    }
+  };
+  window.addEventListener("storage", onStorage);
+
+  return () => {
+    _listeners.delete(listener);
+    window.removeEventListener("storage", onStorage);
+  };
 }
 
 export function useExcludedAttendants() {
-  const [excludedNames, setExcludedNames] = useState<Map<string, ExcludedEntry>>(() => loadFromStorage());
-
-  useEffect(() => {
-    saveToStorage(excludedNames);
-  }, [excludedNames]);
+  const excludedNames = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   const excludeAttendants = useCallback((names: string[], excludedBy = "admin") => {
     const now = new Date().toISOString();
-    setExcludedNames((prev) => {
-      const next = new Map(prev);
-      for (const nome of names) {
-        if (!next.has(nome)) {
-          next.set(nome, { nome, excludedAt: now, excludedBy });
-        }
+    const prev = getSnapshot();
+    const next = new Map(prev);
+    for (const nome of names) {
+      if (!next.has(nome)) {
+        next.set(nome, { nome, excludedAt: now, excludedBy });
       }
-      return next;
-    });
+    }
+    writeAndNotify(next);
   }, []);
 
   const restoreAttendants = useCallback((names: string[]) => {
-    setExcludedNames((prev) => {
-      const next = new Map(prev);
-      for (const nome of names) {
-        next.delete(nome);
-      }
-      return next;
-    });
+    const prev = getSnapshot();
+    const next = new Map(prev);
+    for (const nome of names) {
+      next.delete(nome);
+    }
+    writeAndNotify(next);
   }, []);
 
   const isExcluded = useCallback((name: string) => excludedNames.has(name), [excludedNames]);
