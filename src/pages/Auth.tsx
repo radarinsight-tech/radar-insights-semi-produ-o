@@ -60,17 +60,16 @@ const Auth = () => {
       toast.error(translateAuthError(error.message));
     } else {
       toast.success("Login realizado com sucesso!");
-      navigate("/");
+      navigate("/hub");
     }
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(
-      recoveryEmail.trim(),
-      { redirectTo: `${window.location.origin}/reset-password` }
-    );
+    const { error } = await supabase.auth.resetPasswordForEmail(recoveryEmail.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
     setLoading(false);
 
     if (error) {
@@ -133,12 +132,7 @@ const Auth = () => {
                 {loading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
                 Enviar link de redefinição
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full"
-                onClick={() => setView("login")}
-              >
+              <Button type="button" variant="ghost" className="w-full" onClick={() => setView("login")}>
                 <ArrowLeft className="h-4 w-4 mr-2" /> Voltar ao login
               </Button>
             </form>
@@ -195,9 +189,7 @@ const Auth = () => {
           </button>
         </form>
 
-        <p className="text-xs text-muted-foreground text-center">
-          Acesso liberado pelo administrador.
-        </p>
+        <p className="text-xs text-muted-foreground text-center">Acesso liberado pelo administrador.</p>
       </Card>
     </div>
   );
