@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import type { HistoryEntry } from "@/lib/mockData";
 import FullReportDialog, { type FullReport } from "@/components/FullReportDialog";
 import ActionButton from "@/components/ActionButton";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,6 +59,7 @@ const HistoryTable = ({ entries, onRefresh }: Props) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<HistoryEntry | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     const checkAdmin = async () => {
