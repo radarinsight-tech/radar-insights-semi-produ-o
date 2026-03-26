@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Trophy, TrendingUp, Users, Search, ChevronDown, ChevronUp,
   AlertTriangle, CheckCircle2, XCircle, MinusCircle, Info,
-  Trash2, RotateCcw, Filter, Eye, EyeOff, ShieldAlert,
+  Trash2, RotateCcw, Filter, Eye, EyeOff, ShieldAlert, ShieldCheck, Loader2,
 } from "lucide-react";
 import { cn, formatNota } from "@/lib/utils";
 import {
