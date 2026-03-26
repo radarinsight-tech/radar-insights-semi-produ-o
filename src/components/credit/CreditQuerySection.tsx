@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Search, ShieldAlert, AlertTriangle, Lock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
