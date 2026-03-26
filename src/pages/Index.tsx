@@ -210,7 +210,7 @@ const Index = () => {
             )}
           </span>
           <div className="ml-auto flex items-center gap-1">
-            <Button variant="outline" size="sm" onClick={() => navigate("/")}>
+            <Button variant="outline" size="sm" onClick={() => navigate("/hub")}>
               <ArrowLeft className="h-4 w-4" />
               Voltar
             </Button>
