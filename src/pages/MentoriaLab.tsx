@@ -313,6 +313,9 @@ const MentoriaLab = () => {
             nonEvaluable: evaluabilityState.nonEvaluable,
             nonEvaluableReason: evaluabilityState.reason,
             approvedAsOfficial: matchedEval?.resultado_validado === true,
+            approvalOrigin: matchedEval?.resultado_validado === true
+              ? ((matchedEval?.audit_log as any)?.approvalType === "automatic" ? "automatic" : "manual")
+              : undefined,
             evaluationId: matchedEval?.id,
             uraContext: uraCtx,
             uraStatus: uraCtx?.status,
