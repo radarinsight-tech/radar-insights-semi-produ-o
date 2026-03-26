@@ -494,6 +494,37 @@ const UsersPage = () => {
                   Define qual módulo o usuário pode acessar no sistema.
                 </p>
               </div>
+              {/* Credit sub-permissions (visible when role is credito or admin) */}
+              {(editRole === "credito" || editRole === "admin") && (
+                <div className="space-y-2">
+                  <Label>Permissões de Crédito</Label>
+                  <div className="space-y-2 border rounded-md p-3">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="credit_manual"
+                        checked={editCreditSubs.includes("credit_manual")}
+                        onCheckedChange={() => toggleCreditSub("credit_manual")}
+                      />
+                      <label htmlFor="credit_manual" className="text-sm cursor-pointer">
+                        Consulta manual (CPF/CNPJ)
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="credit_upload"
+                        checked={editCreditSubs.includes("credit_upload")}
+                        onCheckedChange={() => toggleCreditSub("credit_upload")}
+                      />
+                      <label htmlFor="credit_upload" className="text-sm cursor-pointer">
+                        Upload de documento (PDF/imagem)
+                      </label>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Define quais funcionalidades de crédito o usuário pode acessar.
+                  </p>
+                </div>
+              )}
               {allSectors.length > 0 && (
                 <div className="space-y-2">
                   <Label>Setores</Label>
