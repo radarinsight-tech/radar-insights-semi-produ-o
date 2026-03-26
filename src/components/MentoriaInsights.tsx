@@ -200,6 +200,11 @@ const MentoriaInsights = ({ files, excludedAttendants }: MentoriaInsightsProps) 
     };
   }, [analyzed]);
 
+  const resumoRef = useRef<HTMLDivElement>(null);
+  const perfRef = useRef<HTMLDivElement>(null);
+  const recomRef = useRef<HTMLDivElement>(null);
+  const padroesRef = useRef<HTMLDivElement>(null);
+
   if (!insights) {
     return (
       <Card className="p-8 text-center">
