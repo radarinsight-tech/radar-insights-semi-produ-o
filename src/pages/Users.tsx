@@ -102,9 +102,20 @@ const UsersPage = () => {
       .from("user_roles")
       .select("user_id, role");
 
+    const MAIN_ROLES: string[] = ["admin", "auditoria", "credito"];
+    const CREDIT_SUBS: string[] = ["credit_manual", "credit_upload"];
+
     const roleMap = new Map<string, AppRole>();
+    const creditSubMap = new Map<string, CreditSubRole[]>();
     (rolesData ?? []).forEach((r) => {
-      roleMap.set(r.user_id, r.role as AppRole);
+      if (MAIN_ROLES.includes(r.role)) {
+        roleMap.set(r.user_id, r.role as AppRole);
+      }
+      if (CREDIT_SUBS.includes(r.role)) {
+        const existing = creditSubMap.get(r.user_id) ?? [];
+        existing.push(r.role as CreditSubRole);
+        creditSubMap.set(r.user_id, existing);
+      }
     });
 
     // Load user_sectors for all users
@@ -122,6 +133,7 @@ const UsersPage = () => {
     const merged: ProfileWithRole[] = (profilesData || []).map((p) => ({
       ...p,
       role: roleMap.get(p.id) ?? null,
+      creditSubRoles: creditSubMap.get(p.id) ?? [],
       sectorIds: sectorMap.get(p.id) ?? [],
       force_password_change: (p as any).force_password_change ?? false,
     }));
