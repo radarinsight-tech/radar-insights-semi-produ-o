@@ -262,6 +262,20 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Check credit_manual or admin permission
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id);
+    const userRoles = (roles ?? []).map((r: any) => r.role);
+    const hasPermission = userRoles.includes("admin") || userRoles.includes("credit_manual");
+    if (!hasPermission) {
+      return new Response(JSON.stringify({ error: "PERMISSION_DENIED", message: "Você não tem permissão para consulta manual de crédito." }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const body = await req.json();
     const { cpfCnpj, nome, mode } = body as { cpfCnpj: string; nome?: string; mode?: string };
 
