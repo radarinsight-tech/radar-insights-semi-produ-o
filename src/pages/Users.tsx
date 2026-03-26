@@ -456,6 +456,20 @@ const UsersPage = () => {
                           <KeyRound className="h-4 w-4" />
                           Senha
                         </Button>
+                        {currentUserId !== profile.id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => {
+                              setDeleteUser(profile);
+                              setDeleteOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Excluir
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -581,6 +595,28 @@ const UsersPage = () => {
           onSuccess={loadProfiles}
         />
       )}
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir usuário</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o usuário{" "}
+              <strong>{deleteUser?.full_name || "Sem nome"}</strong>? Essa ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              disabled={deleteLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteLoading ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
