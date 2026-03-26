@@ -128,6 +128,7 @@ import {
   normalizeAttendantName,
   type OfficialApprovalOrigin,
 } from "@/lib/officialEvaluations";
+import { logAudit } from "@/lib/officialEvaluations";
 
 const IMPORT_LIMIT = 1000;
 const IMPORT_RECOMMENDED = 500;
@@ -1749,6 +1750,13 @@ const MentoriaLab = () => {
       setFiles((prev) =>
         prev.map((f) => f.id === labFile.id ? { ...f, approvedAsOfficial: true, approvalOrigin: "manual" as const } : f)
       );
+      logAudit({
+        protocolo: labFile.protocolo || "—",
+        atendente: labFile.atendente || "—",
+        acao: "aprovado",
+        origem: "manual",
+        data: new Date().toISOString(),
+      });
       toast.success("Avaliação aprovada como oficial! Agora aparece no ranking e histórico.");
     } catch {
       toast.error("Erro inesperado ao aprovar avaliação.");
