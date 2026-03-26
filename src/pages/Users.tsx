@@ -35,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { ResetPasswordDialog } from "@/components/ResetPasswordDialog";
 
 type AppRole = "admin" | "auditoria" | "credito";
+type CreditSubRole = "credit_manual" | "credit_upload";
 
 const ROLE_LABELS: Record<AppRole, string> = {
   admin: "Admin",
@@ -48,11 +49,17 @@ const ROLE_COLORS: Record<AppRole, string> = {
   credito: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
 };
 
+const CREDIT_SUB_LABELS: Record<CreditSubRole, string> = {
+  credit_manual: "CPF/CNPJ",
+  credit_upload: "Upload PDF",
+};
+
 interface ProfileWithRole {
   id: string;
   full_name: string | null;
   created_at: string;
   role: AppRole | null;
+  creditSubRoles: CreditSubRole[];
   sectorIds: string[];
   force_password_change: boolean;
 }
@@ -71,6 +78,7 @@ const UsersPage = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editUser, setEditUser] = useState<ProfileWithRole | null>(null);
   const [editRole, setEditRole] = useState<AppRole | "none">("none");
+  const [editCreditSubs, setEditCreditSubs] = useState<CreditSubRole[]>([]);
   const [editSectorIds, setEditSectorIds] = useState<string[]>([]);
   const [editLoading, setEditLoading] = useState(false);
   const [resetPwOpen, setResetPwOpen] = useState(false);
@@ -94,9 +102,20 @@ const UsersPage = () => {
       .from("user_roles")
       .select("user_id, role");
 
+    const MAIN_ROLES: string[] = ["admin", "auditoria", "credito"];
+    const CREDIT_SUBS: string[] = ["credit_manual", "credit_upload"];
+
     const roleMap = new Map<string, AppRole>();
+    const creditSubMap = new Map<string, CreditSubRole[]>();
     (rolesData ?? []).forEach((r) => {
-      roleMap.set(r.user_id, r.role as AppRole);
+      if (MAIN_ROLES.includes(r.role)) {
+        roleMap.set(r.user_id, r.role as AppRole);
+      }
+      if (CREDIT_SUBS.includes(r.role)) {
+        const existing = creditSubMap.get(r.user_id) ?? [];
+        existing.push(r.role as CreditSubRole);
+        creditSubMap.set(r.user_id, existing);
+      }
     });
 
     // Load user_sectors for all users
@@ -114,6 +133,7 @@ const UsersPage = () => {
     const merged: ProfileWithRole[] = (profilesData || []).map((p) => ({
       ...p,
       role: roleMap.get(p.id) ?? null,
+      creditSubRoles: creditSubMap.get(p.id) ?? [],
       sectorIds: sectorMap.get(p.id) ?? [],
       force_password_change: (p as any).force_password_change ?? false,
     }));
@@ -160,8 +180,15 @@ const UsersPage = () => {
   const openEditDialog = (profile: ProfileWithRole) => {
     setEditUser(profile);
     setEditRole(profile.role ?? "none");
+    setEditCreditSubs(profile.creditSubRoles ?? []);
     setEditSectorIds(profile.sectorIds ?? []);
     setEditOpen(true);
+  };
+
+  const toggleCreditSub = (sub: CreditSubRole) => {
+    setEditCreditSubs((prev) =>
+      prev.includes(sub) ? prev.filter((s) => s !== sub) : [...prev, sub]
+    );
   };
 
   const toggleEditSector = (sectorId: string) => {
@@ -175,29 +202,28 @@ const UsersPage = () => {
     setEditLoading(true);
 
     try {
-      // Only update role if it changed
-      const currentRole = editUser.role ?? "none";
-      if (editRole !== currentRole) {
-        if (editRole === "none") {
-          const { error } = await supabase
-            .from("user_roles")
-            .delete()
-            .eq("user_id", editUser.id);
-          if (error) throw error;
-        } else if (currentRole === "none") {
-          // No existing role, just insert
-          const { error } = await supabase
-            .from("user_roles")
-            .insert({ user_id: editUser.id, role: editRole });
-          if (error) throw error;
-        } else {
-          // Update existing role in place
-          const { error } = await supabase
-            .from("user_roles")
-            .update({ role: editRole })
-            .eq("user_id", editUser.id);
-          if (error) throw error;
-        }
+      // Delete all existing roles for this user, then re-insert
+      await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", editUser.id);
+
+      const rolesToInsert: string[] = [];
+      if (editRole !== "none") {
+        rolesToInsert.push(editRole);
+      }
+      // Add credit sub-permissions
+      editCreditSubs.forEach((sub) => rolesToInsert.push(sub));
+
+      if (rolesToInsert.length > 0) {
+        const rows = rolesToInsert.map((role) => ({
+          user_id: editUser.id,
+          role,
+        }));
+        const { error } = await supabase
+          .from("user_roles")
+          .insert(rows as any);
+        if (error) throw error;
       }
 
       // Save sectors: delete all then insert selected
@@ -361,14 +387,21 @@ const UsersPage = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      {profile.role ? (
-                        <Badge variant="outline" className={ROLE_COLORS[profile.role]}>
-                          <Shield className="h-3 w-3 mr-1" />
-                          {ROLE_LABELS[profile.role]}
-                        </Badge>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">Sem permissão</span>
-                      )}
+                      <div className="flex flex-wrap gap-1">
+                        {profile.role ? (
+                          <Badge variant="outline" className={ROLE_COLORS[profile.role]}>
+                            <Shield className="h-3 w-3 mr-1" />
+                            {ROLE_LABELS[profile.role]}
+                          </Badge>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Sem permissão</span>
+                        )}
+                        {profile.creditSubRoles.map((sub) => (
+                          <Badge key={sub} variant="outline" className="text-[10px] bg-muted/50 border-border">
+                            {CREDIT_SUB_LABELS[sub]}
+                          </Badge>
+                        ))}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
@@ -461,6 +494,37 @@ const UsersPage = () => {
                   Define qual módulo o usuário pode acessar no sistema.
                 </p>
               </div>
+              {/* Credit sub-permissions (visible when role is credito or admin) */}
+              {(editRole === "credito" || editRole === "admin") && (
+                <div className="space-y-2">
+                  <Label>Permissões de Crédito</Label>
+                  <div className="space-y-2 border rounded-md p-3">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="credit_manual"
+                        checked={editCreditSubs.includes("credit_manual")}
+                        onCheckedChange={() => toggleCreditSub("credit_manual")}
+                      />
+                      <label htmlFor="credit_manual" className="text-sm cursor-pointer">
+                        Consulta manual (CPF/CNPJ)
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="credit_upload"
+                        checked={editCreditSubs.includes("credit_upload")}
+                        onCheckedChange={() => toggleCreditSub("credit_upload")}
+                      />
+                      <label htmlFor="credit_upload" className="text-sm cursor-pointer">
+                        Upload de documento (PDF/imagem)
+                      </label>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Define quais funcionalidades de crédito o usuário pode acessar.
+                  </p>
+                </div>
+              )}
               {allSectors.length > 0 && (
                 <div className="space-y-2">
                   <Label>Setores</Label>

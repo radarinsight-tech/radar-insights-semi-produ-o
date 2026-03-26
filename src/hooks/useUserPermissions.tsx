@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isTest } from "@/lib/appMode";
 
-export type ModulePermission = "auditoria" | "credito" | "admin";
+export type ModulePermission = "auditoria" | "credito" | "admin" | "credit_manual" | "credit_upload";
 
 interface UserPermissions {
   roles: ModulePermission[];
   loading: boolean;
   canAccess: (module: ModulePermission) => boolean;
   isAdmin: boolean;
+  hasCreditManual: boolean;
+  hasCreditUpload: boolean;
 }
 
 async function bootstrapTestAccess() {
@@ -68,10 +70,17 @@ export function useUserPermissions(): UserPermissions {
 
   const isAdmin = roles.includes("admin");
 
+  const hasCreditManual = isAdmin || roles.includes("credit_manual");
+  const hasCreditUpload = isAdmin || roles.includes("credit_upload");
+
   const canAccess = (module: ModulePermission): boolean => {
     if (isAdmin) return true;
+    if (module === "credito") {
+      // User has credit access if they have the base 'credito' role OR any credit sub-permission
+      return roles.includes("credito") || roles.includes("credit_manual") || roles.includes("credit_upload");
+    }
     return roles.includes(module);
   };
 
-  return { roles, loading, canAccess, isAdmin };
+  return { roles, loading, canAccess, isAdmin, hasCreditManual, hasCreditUpload };
 }

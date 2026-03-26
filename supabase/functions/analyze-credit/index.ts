@@ -125,6 +125,30 @@ serve(async (req) => {
   }
 
   try {
+    // Validate permission: credit_upload or admin
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+      const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id);
+        const userRoles = (roles ?? []).map((r: any) => r.role);
+        const hasPermission = userRoles.includes("admin") || userRoles.includes("credit_upload");
+        if (!hasPermission) {
+          return new Response(JSON.stringify({ error: "PERMISSION_DENIED", message: "Você não tem permissão para análise via upload." }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    }
+
     const { text } = await req.json();
     if (!text || typeof text !== "string") {
       return new Response(JSON.stringify({ error: "Texto da consulta é obrigatório" }), {
