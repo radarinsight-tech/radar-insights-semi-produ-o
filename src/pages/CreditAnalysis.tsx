@@ -216,7 +216,7 @@ const CreditAnalysis = () => {
             <span className="text-sm font-bold text-primary tracking-tight">Nova Consulta de Crédito</span>
             <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-medium border-primary/30 text-primary">
               <Layers className="h-2.5 w-2.5 mr-0.5" />
-              Modo híbrido (CPF + Documento)
+              Upload de documento
             </Badge>
           </div>
           <div className="flex items-center gap-2">
@@ -240,17 +240,18 @@ const CreditAnalysis = () => {
         <CreditDailySummary refreshTrigger={historyRefresh} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* LEFT: Manual query */}
-          <div className="space-y-4">
-            <CreditQuerySection
-              onResult={handleSpcResult}
-              isLoading={isLoading}
-              setIsLoading={setIsLoading}
-              isAdmin={isAdmin}
-            />
+          {/* LEFT: Manual query (disabled) + Upload */}
+            <div className="space-y-4">
+              <CreditQuerySection
+                onResult={handleSpcResult}
+                isLoading={isLoading}
+                setIsLoading={setIsLoading}
+                isAdmin={isAdmin}
+                disabled
+              />
 
-            {/* Upload section below manual query */}
-            <CreditUploadSection
+              {/* Upload section below manual query */}
+              <CreditUploadSection
               onAnalyze={handleUploadAnalyze}
               isAnalyzing={isAnalyzingUpload}
               uploadState={uploadState}

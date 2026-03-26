@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Search, ShieldAlert, AlertTriangle, Lock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -36,9 +37,10 @@ interface Props {
   isLoading: boolean;
   setIsLoading: (v: boolean) => void;
   isAdmin: boolean;
+  disabled?: boolean;
 }
 
-const CreditQuerySection = ({ onResult, isLoading, setIsLoading, isAdmin }: Props) => {
+const CreditQuerySection = ({ onResult, isLoading, setIsLoading, isAdmin, disabled = false }: Props) => {
   const [cpfCnpj, setCpfCnpj] = useState("");
   const [nomeCliente, setNomeCliente] = useState("");
   const [mode, setMode] = useState<ConsultaMode>("simulacao");
@@ -151,10 +153,25 @@ const CreditQuerySection = ({ onResult, isLoading, setIsLoading, isAdmin }: Prop
         <CardTitle className="text-lg flex items-center gap-2">
           <ShieldAlert className="h-5 w-5 text-primary" />
           Nova Consulta de Crédito
+          {disabled && (
+            <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-medium border-warning/50 text-warning ml-1">
+              Manual (em manutenção)
+            </Badge>
+          )}
         </CardTitle>
         <CardDescription>Informe o CPF ou CNPJ do cliente para consultar no SPC — Opção 643</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className={`space-y-4 ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
+        {/* Maintenance notice */}
+        {disabled && (
+          <div className="flex items-center gap-2 rounded-lg border border-warning/50 bg-warning/10 px-3 py-2 text-sm pointer-events-auto">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
+            <span className="text-xs text-warning font-medium">
+              Consulta manual temporariamente indisponível. Utilize upload de documento.
+            </span>
+          </div>
+        )}
+
         {/* Mode toggle */}
         <div className="flex items-center justify-between">
           <TooltipProvider>
