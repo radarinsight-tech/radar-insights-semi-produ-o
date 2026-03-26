@@ -31,7 +31,7 @@ const parseDateBR = (str: string): Date | null => {
 const Index = () => {
   const navigate = useNavigate();
   const { sectors, isAdmin: isSectorAdmin, loading: sectorsLoading } = useUserSectors();
-  const { excludedSet } = useExcludedAttendants();
+  const { excludedSet, refreshExcludedAttendants } = useExcludedAttendants();
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [filters, setFilters] = useState<FilterValues>({
     atendente: "todos",
@@ -50,7 +50,7 @@ const Index = () => {
     [excludedSet]
   );
 
-  const loadHistory = useCallback(async () => {
+  const loadHistory = useCallback(async (excludedAttendants = normalizedExcludedAttendants) => {
     try {
       setSyncStatus("stale");
       const { data, error } = await supabase
@@ -70,7 +70,7 @@ const Index = () => {
         if (!row.sector_id) return true;
         return sectorIds.includes(row.sector_id);
       }).filter((row: any) => {
-        return !normalizedExcludedAttendants.has(normalizeAttendantName(row.atendente));
+        return !excludedAttendants.has(normalizeAttendantName(row.atendente));
       });
 
       const rows = Array.from(
@@ -115,9 +115,17 @@ const Index = () => {
     }
   }, [isSectorAdmin, normalizedExcludedAttendants, sectorIds]);
 
+  const refreshOfficialData = useCallback(async () => {
+    const freshExcludedNames = await refreshExcludedAttendants();
+    const freshNormalizedExcluded = new Set(
+      Array.from(freshExcludedNames.values(), (entry) => normalizeAttendantName(entry.nome))
+    );
+    await loadHistory(freshNormalizedExcluded);
+  }, [loadHistory, refreshExcludedAttendants]);
+
   useEffect(() => {
-    loadHistory();
-  }, [loadHistory]);
+    void refreshOfficialData();
+  }, [refreshOfficialData]);
 
   // Mark stale after 5 minutes of inactivity
   useEffect(() => {
@@ -296,7 +304,7 @@ const Index = () => {
               </div>
             )}
             <ErrorBoundary fallbackTitle="Erro na tabela de histórico">
-              <HistoryTable entries={filtered} onRefresh={loadHistory} />
+              <HistoryTable entries={filtered} onRefresh={refreshOfficialData} />
             </ErrorBoundary>
           </div>
           <ErrorBoundary fallbackTitle="Erro nos indicadores">
