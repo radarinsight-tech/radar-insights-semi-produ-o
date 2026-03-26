@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import type { ExcludedEntry } from "@/hooks/useExcludedAttendants";
 import SectionPrintButton from "@/components/SectionPrintButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -353,7 +353,7 @@ const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore, onAuto
   const autoApproveKey = useMemo(() => autoApprovableFileIds.join(","), [autoApprovableFileIds]);
 
   // biome-ignore lint: intentional effect for auto-persist
-  React.useEffect(() => {
+  useEffect(() => {
     if (!autoMode || !onAutoApprove || autoApprovableFileIds.length === 0) {
       autoApproveTriggeredRef.current = false;
       return;
