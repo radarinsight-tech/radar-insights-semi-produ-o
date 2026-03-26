@@ -746,6 +746,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active: boolean
           company_id: string | null
           created_at: string
           deleted_at: string | null
@@ -754,6 +755,7 @@ export type Database = {
           id: string
         }
         Insert: {
+          active?: boolean
           company_id?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -762,6 +764,7 @@ export type Database = {
           id: string
         }
         Update: {
+          active?: boolean
           company_id?: string | null
           created_at?: string
           deleted_at?: string | null

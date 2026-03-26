@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN active boolean NOT NULL DEFAULT true;
