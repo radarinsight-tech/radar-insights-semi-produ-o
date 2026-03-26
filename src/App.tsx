@@ -27,9 +27,13 @@ import CreditAnalysisLegado from "./pages/CreditAnalysisLegado.tsx";
 import CreditDashboardLegado from "./pages/CreditDashboardLegado.tsx";
 import CreditDocsLegado from "./pages/CreditDocsLegado.tsx";
 
+console.log("[Radar] Etapa 6 — App.tsx módulo carregado");
+
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  console.log("[Radar] Etapa 7 — App() renderizando");
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AppModeBanner />
@@ -194,6 +198,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
