@@ -115,7 +115,24 @@ const HistoryTable = ({ entries, onRefresh }: Props) => {
   return (
     <>
       <Card className="p-6">
-        <h2 className="text-lg font-bold text-primary mb-4">Histórico de Avaliações</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-primary">Histórico de Avaliações</h2>
+          {onRefresh && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 text-xs"
+              disabled={refreshing}
+              onClick={async () => {
+                setRefreshing(true);
+                try { await onRefresh(); } finally { setRefreshing(false); }
+              }}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              {refreshing ? "Atualizando..." : "Atualizar"}
+            </Button>
+          )}
+        </div>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
