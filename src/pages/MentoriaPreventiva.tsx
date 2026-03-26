@@ -299,7 +299,7 @@ const MentoriaPreventiva = () => {
             <h1 className="text-lg font-bold text-primary">Mentoria Preventiva</h1>
             <Badge variant="outline" className="text-xs">Beta</Badge>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/hub")}>
             <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
           </Button>
         </div>
