@@ -162,26 +162,28 @@ const UsersPage = () => {
     }
     setInviteLoading(true);
 
-    const { error } = await supabase.auth.signUp({
-      email: inviteEmail,
-      password: invitePassword,
-      options: {
-        data: { full_name: inviteName },
-        emailRedirectTo: window.location.origin,
-      },
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-create-user", {
+        body: {
+          email: inviteEmail.trim(),
+          password: invitePassword,
+          fullName: inviteName,
+        },
+      });
 
-    setInviteLoading(false);
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success("Convite enviado! O usuário receberá um e-mail de confirmação.");
+      toast.success("Usuário criado com sucesso! Ele poderá acessar com e-mail e senha provisória.");
       setInviteEmail("");
       setInviteName("");
       setInvitePassword("");
       setInviteOpen(false);
-      setTimeout(loadProfiles, 2000);
+      setTimeout(loadProfiles, 1500);
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao criar usuário.");
+    } finally {
+      setInviteLoading(false);
     }
   };
 
@@ -372,7 +374,8 @@ const UsersPage = () => {
                   Criar conta
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
-                  O usuário receberá um e-mail para confirmar a conta.
+                  O usuário poderá acessar imediatamente com o e-mail e senha informados.
+                  No primeiro login, será obrigado a trocar a senha.
                 </p>
               </form>
             </DialogContent>
