@@ -8,6 +8,7 @@ import {
   ChevronLeft, ChevronRight, Info, CalendarIcon, BarChart3, ShieldCheck, Bug
 } from "lucide-react";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
+import { useExcludedAttendants } from "@/hooks/useExcludedAttendants";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -2319,17 +2320,22 @@ const MentoriaLab = () => {
 
             {/* Bonus Panel */}
             {filteredFiles.some((f) => f.status === "analisado") && (
-              <MentoriaBonusPanel files={filteredFiles} />
+              <MentoriaBonusPanel
+                files={filteredFiles}
+                excludedNames={globalExcludedNames}
+                onExclude={excludeAttendants}
+                onRestore={restoreAttendants}
+              />
             )}
 
             {/* Charts section */}
             {filteredFiles.some((f) => f.status === "analisado") && (
-              <MentoriaCharts files={filteredFiles} />
+              <MentoriaCharts files={filteredFiles} excludedAttendants={globalExcludedSet} />
             )}
 
             {/* Insights do lote */}
             {filteredFiles.some((f) => f.status === "analisado") && (
-              <MentoriaInsights files={filteredFiles} />
+              <MentoriaInsights files={filteredFiles} excludedAttendants={globalExcludedSet} />
             )}
           </>
         )}
