@@ -3,7 +3,7 @@ import { formatNota, classificarNota, classColorFromClassificacao, formatDateBR 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Download, FileSearch, Trash2 } from "lucide-react";
+import { Download, FileSearch, Trash2, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { HistoryEntry } from "@/lib/mockData";
