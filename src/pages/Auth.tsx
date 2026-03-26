@@ -4,21 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Radar, Loader2, CheckCircle2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { APP_MODE } from "@/lib/appMode";
 
 const translateAuthError = (message: string): string => {
   if (message.includes("Invalid login credentials")) {
-    return "E-mail ou senha incorretos. Verifique seus dados e tente novamente.";
+    return "Usuário ou senha inválidos.";
   }
   if (message.includes("Email not confirmed")) {
     return "E-mail ainda não confirmado. Verifique sua caixa de entrada.";
-  }
-  if (message.includes("User already registered")) {
-    return "Já existe um usuário cadastrado com este e-mail.";
   }
   if (message.includes("Password should be at least")) {
     return "A senha deve ter no mínimo 6 caracteres.";
@@ -38,21 +33,16 @@ const translateAuthError = (message: string): string => {
   return message;
 };
 
-type AuthView = "login-signup" | "forgot-password";
+type AuthView = "login" | "forgot-password";
 
 const Auth = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [view, setView] = useState<AuthView>("login-signup");
+  const [view, setView] = useState<AuthView>("login");
 
   // Login
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-
-  // Signup
-  const [signupEmail, setSignupEmail] = useState("");
-  const [signupPassword, setSignupPassword] = useState("");
-  const [signupName, setSignupName] = useState("");
 
   // Forgot password
   const [recoveryEmail, setRecoveryEmail] = useState("");
@@ -71,39 +61,6 @@ const Auth = () => {
     } else {
       toast.success("Login realizado com sucesso!");
       navigate("/");
-    }
-  };
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    const { data, error } = await supabase.auth.signUp({
-      email: signupEmail.trim(),
-      password: signupPassword,
-      options: {
-        data: { full_name: signupName.trim() },
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    setLoading(false);
-
-    if (error) {
-      toast.error(translateAuthError(error.message));
-      return;
-    }
-
-    if (data.user && data.user.identities && data.user.identities.length === 0) {
-      toast.error("Já existe um usuário cadastrado com este e-mail.");
-      return;
-    }
-
-    // In test mode (auto-confirm enabled), session is created immediately
-    if (data.session) {
-      toast.success("Conta criada com sucesso! Entrando...");
-      navigate("/");
-    } else {
-      toast.success("Cadastro realizado! Verifique seu e-mail para confirmar a conta.");
     }
   };
 
@@ -151,7 +108,7 @@ const Auth = () => {
                 variant="outline"
                 className="w-full"
                 onClick={() => {
-                  setView("login-signup");
+                  setView("login");
                   setRecoverySent(false);
                   setRecoveryEmail("");
                 }}
@@ -180,7 +137,7 @@ const Auth = () => {
                 type="button"
                 variant="ghost"
                 className="w-full"
-                onClick={() => setView("login-signup")}
+                onClick={() => setView("login")}
               >
                 <ArrowLeft className="h-4 w-4 mr-2" /> Voltar ao login
               </Button>
@@ -200,100 +157,47 @@ const Auth = () => {
           </div>
           <h1 className="text-2xl font-bold text-foreground">Radar Insight</h1>
           <p className="text-sm text-muted-foreground">Análise inteligente de atendimentos</p>
-          {APP_MODE !== "production" && (
-            <span className="text-xs px-2 py-0.5 rounded bg-accent text-accent-foreground font-medium">
-              Modo {APP_MODE === "test" ? "teste" : "demo"} — confirmação de e-mail desativada
-            </span>
-          )}
         </div>
 
-        <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Entrar</TabsTrigger>
-            <TabsTrigger value="signup">Cadastrar</TabsTrigger>
-          </TabsList>
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="login-email">E-mail</Label>
+            <Input
+              id="login-email"
+              type="email"
+              required
+              value={loginEmail}
+              onChange={(e) => setLoginEmail(e.target.value)}
+              placeholder="seu@email.com"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="login-password">Senha</Label>
+            <Input
+              id="login-password"
+              type="password"
+              required
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+              placeholder="••••••••"
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
+            Entrar
+          </Button>
+          <button
+            type="button"
+            onClick={() => setView("forgot-password")}
+            className="w-full text-sm text-primary hover:underline text-center"
+          >
+            Esqueci minha senha
+          </button>
+        </form>
 
-          <TabsContent value="login">
-            <form onSubmit={handleLogin} className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label htmlFor="login-email">E-mail</Label>
-                <Input
-                  id="login-email"
-                  type="email"
-                  required
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="seu@email.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="login-password">Senha</Label>
-                <Input
-                  id="login-password"
-                  type="password"
-                  required
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="••••••••"
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
-                Entrar
-              </Button>
-              <button
-                type="button"
-                onClick={() => setView("forgot-password")}
-                className="w-full text-sm text-primary hover:underline text-center"
-              >
-                Esqueci minha senha
-              </button>
-            </form>
-          </TabsContent>
-
-          <TabsContent value="signup">
-            <form onSubmit={handleSignup} className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label htmlFor="signup-name">Nome completo</Label>
-                <Input
-                  id="signup-name"
-                  type="text"
-                  required
-                  value={signupName}
-                  onChange={(e) => setSignupName(e.target.value)}
-                  placeholder="Seu nome"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-email">E-mail</Label>
-                <Input
-                  id="signup-email"
-                  type="email"
-                  required
-                  value={signupEmail}
-                  onChange={(e) => setSignupEmail(e.target.value)}
-                  placeholder="seu@email.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-password">Senha</Label>
-                <Input
-                  id="signup-password"
-                  type="password"
-                  required
-                  minLength={6}
-                  value={signupPassword}
-                  onChange={(e) => setSignupPassword(e.target.value)}
-                  placeholder="Mínimo 6 caracteres"
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
-                Criar conta
-              </Button>
-            </form>
-          </TabsContent>
-        </Tabs>
+        <p className="text-xs text-muted-foreground text-center">
+          Acesso liberado pelo administrador.
+        </p>
       </Card>
     </div>
   );

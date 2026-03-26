@@ -193,6 +193,10 @@ const App = () => {
               </ProtectedRoute>
             }
           />
+          {/* Block public signup routes */}
+          <Route path="/signup" element={<Auth />} />
+          <Route path="/register" element={<Auth />} />
+          <Route path="/cadastrar" element={<Auth />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
