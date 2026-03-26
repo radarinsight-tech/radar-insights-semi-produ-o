@@ -2,10 +2,12 @@ import { useMemo, useRef } from "react";
 import SectionPrintButton from "@/components/SectionPrintButton";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   TrendingUp, TrendingDown, Award, AlertTriangle, Users,
   Target, BookOpen, Star, BarChart3, MessageSquare, Lightbulb,
-  ChevronRight, DollarSign
+  ChevronRight, DollarSign, Printer
 } from "lucide-react";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
@@ -383,8 +385,20 @@ const MentoriaInsights = ({ files, excludedAttendants }: MentoriaInsightsProps) 
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Users className="h-4 w-4 text-primary" /> 3. Performance Detalhada
           </h3>
-          {/* Print disabled temporarily – accordion content captured as skeleton */}
-          {/* <SectionPrintButton sectionRef={perfRef} title="Performance Detalhada" expandAccordions /> */}
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex">
+                  <Button variant="ghost" size="icon" className="h-7 w-7 opacity-40 cursor-not-allowed" disabled>
+                    <Printer className="h-3.5 w-3.5" />
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                <p className="text-xs">Impressão temporariamente indisponível</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
         <Accordion type="multiple" className="space-y-2">
           {insights.atendenteStats.map((at) => (
