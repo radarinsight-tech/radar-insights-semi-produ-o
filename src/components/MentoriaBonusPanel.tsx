@@ -405,6 +405,22 @@ const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore, onAuto
   // Count how many selected are excludable vs restorable
   const selectedExcludable = [...selectedNames].filter((n) => !excludedNames.has(n)).length;
   const selectedRestorable = [...selectedNames].filter((n) => excludedNames.has(n)).length;
+  // Auto-approve handler
+  const handleAutoApprove = useCallback(async () => {
+    if (!onAutoApprove || autoApprovableFileIds.length === 0) return;
+    setAutoApproving(true);
+    try {
+      await onAutoApprove(autoApprovableFileIds);
+      toast({
+        title: `${autoApprovableFileIds.length} avaliação${autoApprovableFileIds.length !== 1 ? "ões" : ""} aprovada${autoApprovableFileIds.length !== 1 ? "s" : ""} como Oficial (Automático)`,
+      });
+    } catch {
+      toast({ title: "Erro ao aprovar avaliações automaticamente", variant: "destructive" });
+    } finally {
+      setAutoApproving(false);
+      setAutoApproveDialogOpen(false);
+    }
+  }, [onAutoApprove, autoApprovableFileIds]);
 
   const bonusSectionRef = useRef<HTMLDivElement>(null);
 
