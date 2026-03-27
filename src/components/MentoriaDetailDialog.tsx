@@ -275,7 +275,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[96vh] p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[96vh] p-0 gap-0 overflow-hidden flex flex-col">
         {/* ═══ TOOLBAR ═══ */}
         <DialogHeader className="px-8 py-5 border-b border-border/60 bg-gradient-to-r from-muted/40 to-muted/20">
           <div className="flex items-center justify-between">
