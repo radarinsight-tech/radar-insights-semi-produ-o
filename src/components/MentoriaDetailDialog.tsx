@@ -327,7 +327,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
         <div className="flex-1 min-h-0">
           {/* STEP: PRÉ-ANÁLISE */}
           {currentStep === "pre-analise" && preAnalysis && (
-            <ScrollArea className="max-h-[calc(96vh-200px)]">
+            <ScrollArea className="max-h-[calc(96vh-260px)]">
               <div className="px-8 py-8">
                 <PreAnalysisPanel analysis={preAnalysis} />
               </div>
@@ -336,7 +336,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
 
           {/* STEP: SEMI-AUTOMÁTICO */}
           {currentStep === "semi-auto" && preAnalysis && (
-            <ScrollArea className="max-h-[calc(96vh-200px)]">
+            <ScrollArea className="max-h-[calc(96vh-260px)]">
               <div className="px-8 py-8">
                 <SemiAutoPanel
                   analysis={preAnalysis}
@@ -350,7 +350,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
 
           {/* STEP: RELATÓRIO */}
           {currentStep === "relatorio" && (
-            <ScrollArea className="max-h-[calc(96vh-200px)]">
+            <ScrollArea className="max-h-[calc(96vh-260px)]">
           <div ref={printRef} className="px-8 py-8 space-y-0">
 
             {/* ═══ 1. HERO — Nota + Classificação + Bônus ═══ */}
