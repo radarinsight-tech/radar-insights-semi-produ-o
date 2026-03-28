@@ -1683,6 +1683,9 @@ const MentoriaLab = () => {
 
           setFiles((prev) => prev.map((f) => (f.id === labFile.id ? updatedFile : f)));
 
+          // Auto-finalize: move card to "Finalizados" after successful analysis
+          setWorkflowStatuses((prev) => ({ ...prev, [labFile.id]: "finalizado" }));
+
           if (!openedTarget && options?.openOnSuccessId === labFile.id) {
             openMentoria(updatedFile);
             openedTarget = true;
