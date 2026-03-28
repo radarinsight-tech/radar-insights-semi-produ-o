@@ -573,9 +573,9 @@ const MentoriaPipeline = ({
                   </div>
                 )}
                 {items.map((f, idx) => (
-                  <div key={f.id}>
+                  <div key={f.id} className={idx > 0 ? "mt-2.5" : ""}>
                     {idx > 0 && col.key === "nao_iniciado" && (
-                      <div className="border-b border-border/50 my-2.5" />
+                      <div className="border-b border-border/50 mb-2.5" />
                     )}
                   <AttendanceCard
                     key={f.id}
