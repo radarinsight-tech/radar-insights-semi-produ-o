@@ -430,8 +430,8 @@ const MentoriaPipeline = ({
     }
     // Sort "nao_iniciado" by newest first (most recently added on top)
     groups.nao_iniciado.sort((a, b) => {
-      const dateA = (a as any).addedAt instanceof Date ? (a as any).addedAt.getTime() : 0;
-      const dateB = (b as any).addedAt instanceof Date ? (b as any).addedAt.getTime() : 0;
+      const dateA = a.addedAt instanceof Date ? a.addedAt.getTime() : 0;
+      const dateB = b.addedAt instanceof Date ? b.addedAt.getTime() : 0;
       return dateB - dateA;
     });
     return groups;
