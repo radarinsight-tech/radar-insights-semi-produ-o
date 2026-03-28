@@ -2108,7 +2108,119 @@ const MentoriaLab = () => {
     navigate("/auth");
   };
 
-  const handleClearTestData = async () => {
+  // === Clear: only pending (no result) ===
+  const handleClearPending = async () => {
+    setClearing(true);
+    try {
+      const pendingFiles = files.filter(
+        (f) => (f.status === "pendente" || f.status === "lido") && !f.result,
+      );
+      if (pendingFiles.length === 0) {
+        toast.info("Não há atendimentos pendentes para remover.");
+        setShowClearConfirm(false);
+        return;
+      }
+
+      // Delete from DB
+      const batchFileIds = pendingFiles.map((f) => f.batchFileId).filter(Boolean) as string[];
+      if (batchFileIds.length > 0) {
+        await supabase.from("mentoria_batch_files").delete().in("id", batchFileIds);
+      }
+
+      // Update local state
+      const removedIds = new Set(pendingFiles.map((f) => f.id));
+      setFiles((prev) => prev.filter((f) => !removedIds.has(f.id)));
+      setSelected((prev) => {
+        const next = new Set(prev);
+        for (const id of removedIds) next.delete(id);
+        return next;
+      });
+      setWorkflowStatuses((prev) => {
+        const next = { ...prev };
+        for (const id of removedIds) delete next[id];
+        return next;
+      });
+      setShowClearConfirm(false);
+      toast.success(`${pendingFiles.length} atendimento(s) pendente(s) removido(s).`);
+    } catch (err) {
+      console.error("Erro ao limpar pendentes:", err);
+      toast.error("Erro ao limpar pendentes. Tente novamente.");
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  // === Clear: current batch only ===
+  const handleClearCurrentBatch = async () => {
+    setClearing(true);
+    try {
+      if (!currentBatchId) {
+        toast.info("Nenhum lote ativo para limpar.");
+        setShowClearConfirm(false);
+        return;
+      }
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get batch files
+      const { data: batchFiles } = await supabase
+        .from("mentoria_batch_files")
+        .select("id, protocolo")
+        .eq("batch_id", currentBatchId);
+
+      if (batchFiles) {
+        // Delete only non-official evaluations
+        const protocols = batchFiles.map((f) => f.protocolo).filter(Boolean) as string[];
+        if (protocols.length > 0) {
+          await supabase
+            .from("evaluations")
+            .delete()
+            .eq("user_id", user.id)
+            .in("protocolo", protocols)
+            .eq("resultado_validado", false);
+        }
+        await supabase.from("mentoria_batch_files").delete().eq("batch_id", currentBatchId);
+      }
+
+      await supabase.from("mentoria_batches").delete().eq("id", currentBatchId);
+
+      // Remove only files from this batch from local state
+      const batchFileIds = new Set((batchFiles || []).map((f) => f.id));
+      setFiles((prev) => prev.filter((f) => !batchFileIds.has(f.batchFileId || "")));
+      setSelected((prev) => {
+        const next = new Set(prev);
+        for (const f of files) {
+          if (batchFileIds.has(f.batchFileId || "")) next.delete(f.id);
+        }
+        return next;
+      });
+      setWorkflowStatuses((prev) => {
+        const next = { ...prev };
+        for (const f of files) {
+          if (batchFileIds.has(f.batchFileId || "")) delete next[f.id];
+        }
+        return next;
+      });
+      setCurrentBatchId(null);
+      setBatchInfo(null);
+      setSideFile(null);
+      setMentoriaFile(null);
+      setHighlightedFileId(null);
+      setShowClearConfirm(false);
+      toast.success("Lote atual removido com sucesso.");
+    } catch (err) {
+      console.error("Erro ao limpar lote:", err);
+      toast.error("Erro ao limpar lote. Tente novamente.");
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  // === Clear: everything EXCEPT official evaluations ===
+  const handleClearAllPreserveOfficial = async () => {
     setClearing(true);
     try {
       const {
@@ -2116,48 +2228,89 @@ const MentoriaLab = () => {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get all batch IDs for this user
-      const { data: batches } = await supabase.from("mentoria_batches").select("id, batch_code").eq("user_id", user.id);
+      const { data: batches } = await supabase
+        .from("mentoria_batches")
+        .select("id, batch_code")
+        .eq("user_id", user.id);
 
       if (batches && batches.length > 0) {
         const batchIds = batches.map((b) => b.id);
 
-        // Get all batch file protocols to delete related evaluations
         const { data: batchFiles } = await supabase
           .from("mentoria_batch_files")
           .select("id, protocolo")
           .in("batch_id", batchIds);
 
-        // Delete related evaluations (draft ones from mentoria lab)
+        // Delete ONLY non-official evaluations (resultado_validado = false)
         if (batchFiles) {
           const protocols = batchFiles.map((f) => f.protocolo).filter(Boolean) as string[];
           if (protocols.length > 0) {
-            await supabase.from("evaluations").delete().eq("user_id", user.id).in("protocolo", protocols);
+            await supabase
+              .from("evaluations")
+              .delete()
+              .eq("user_id", user.id)
+              .in("protocolo", protocols)
+              .eq("resultado_validado", false);
           }
-
-          // Delete batch files
           await supabase.from("mentoria_batch_files").delete().in("batch_id", batchIds);
         }
 
-        // Delete batches
         for (const bId of batchIds) {
           await supabase.from("mentoria_batches").delete().eq("id", bId);
         }
       }
 
-      // Reset local state
       setFiles([]);
       setSelected(new Set());
+      setWorkflowStatuses({});
       setCurrentBatchId(null);
       setBatchInfo(null);
       setSideFile(null);
       setMentoriaFile(null);
       setHighlightedFileId(null);
       setShowClearConfirm(false);
-      toast.success("Todos os dados de teste foram removidos com sucesso.");
+      toast.success("Dados limpos. Avaliações oficiais foram preservadas.");
     } catch (err) {
       console.error("Erro ao limpar dados:", err);
       toast.error("Erro ao limpar dados. Tente novamente.");
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  // === Discard pending (local + DB, used from pipeline area) ===
+  const handleDiscardPending = async () => {
+    const pendingFiles = files.filter(
+      (f) => (f.status === "pendente" || f.status === "lido") && !f.result,
+    );
+    if (pendingFiles.length === 0) {
+      toast.info("Não há atendimentos pendentes para descartar.");
+      return;
+    }
+
+    setClearing(true);
+    try {
+      const batchFileIds = pendingFiles.map((f) => f.batchFileId).filter(Boolean) as string[];
+      if (batchFileIds.length > 0) {
+        await supabase.from("mentoria_batch_files").delete().in("id", batchFileIds);
+      }
+
+      const removedIds = new Set(pendingFiles.map((f) => f.id));
+      setFiles((prev) => prev.filter((f) => !removedIds.has(f.id)));
+      setSelected((prev) => {
+        const next = new Set(prev);
+        for (const id of removedIds) next.delete(id);
+        return next;
+      });
+      setWorkflowStatuses((prev) => {
+        const next = { ...prev };
+        for (const id of removedIds) delete next[id];
+        return next;
+      });
+      toast.success(`${pendingFiles.length} atendimento(s) pendente(s) descartado(s).`);
+    } catch (err) {
+      console.error("Erro ao descartar pendentes:", err);
+      toast.error("Erro ao descartar pendentes.");
     } finally {
       setClearing(false);
     }
@@ -2408,24 +2561,53 @@ const MentoriaLab = () => {
       </header>
 
       <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>Limpar todos os dados de teste?</AlertDialogTitle>
+            <AlertDialogTitle>Opções de Limpeza de Dados</AlertDialogTitle>
             <AlertDialogDescription>
-              Essa ação é irreversível. Todos os atendimentos, lotes e análises do Mentoria Lab serão removidos
-              permanentemente.
+              Escolha o tipo de limpeza. Avaliações oficiais (<span className="font-semibold">resultado validado</span>) são sempre preservadas.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="flex flex-col gap-2 py-2">
+            <Button
+              variant="outline"
+              className="justify-start gap-2 h-auto py-3 px-4 text-left"
+              onClick={handleClearPending}
+              disabled={clearing}
+            >
+              {clearing ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <Filter className="h-4 w-4 shrink-0 text-primary" />}
+              <div>
+                <p className="font-semibold text-sm">Limpar Apenas Pendentes</p>
+                <p className="text-xs text-muted-foreground font-normal">Remove atendimentos com status "pendente" ou "lido" sem resultado de análise.</p>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="justify-start gap-2 h-auto py-3 px-4 text-left"
+              onClick={handleClearCurrentBatch}
+              disabled={clearing || !currentBatchId}
+            >
+              {clearing ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <Archive className="h-4 w-4 shrink-0 text-warning" />}
+              <div>
+                <p className="font-semibold text-sm">Limpar Lote Atual</p>
+                <p className="text-xs text-muted-foreground font-normal">Remove apenas os arquivos do lote ativo{batchInfo ? ` (${batchInfo.batchCode})` : ""}. Preserva avaliações oficiais.</p>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="justify-start gap-2 h-auto py-3 px-4 text-left border-destructive/30 hover:bg-destructive/5"
+              onClick={handleClearAllPreserveOfficial}
+              disabled={clearing}
+            >
+              {clearing ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <Trash2 className="h-4 w-4 shrink-0 text-destructive" />}
+              <div>
+                <p className="font-semibold text-sm text-destructive">Limpar Tudo (Preservar Oficiais)</p>
+                <p className="text-xs text-muted-foreground font-normal">Remove todos os dados do Lab, exceto avaliações com resultado validado.</p>
+              </div>
+            </Button>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={clearing}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleClearTestData}
-              disabled={clearing}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {clearing ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}
-              Confirmar limpeza
-            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -2825,6 +3007,31 @@ const MentoriaLab = () => {
                 </span>
               </div>
             </Card>
+
+            {/* Pending discard bar */}
+            {(() => {
+              const pendingCount = files.filter(
+                (f) => (f.status === "pendente" || f.status === "lido") && !f.result,
+              ).length;
+              if (pendingCount === 0) return null;
+              return (
+                <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-2.5">
+                  <span className="text-sm text-muted-foreground">
+                    <span className="font-semibold text-foreground">{pendingCount}</span> atendimento(s) aguardando revisão
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10"
+                    onClick={handleDiscardPending}
+                    disabled={clearing}
+                  >
+                    {clearing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                    Descartar Pendentes
+                  </Button>
+                </div>
+              );
+            })()}
 
             {/* Pipeline View */}
             <MentoriaPipeline
