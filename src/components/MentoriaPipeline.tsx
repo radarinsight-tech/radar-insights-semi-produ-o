@@ -188,7 +188,7 @@ const AttendanceCard = ({
   return (
     <div
       className={cn(
-        "rounded-xl border p-3.5 transition-all group",
+        "rounded-xl border overflow-hidden transition-all group",
         hasResult ? "cursor-pointer" : "",
         highlighted
           ? "ring-2 ring-primary/30 border-primary/40 bg-primary/5 shadow-sm"
@@ -198,9 +198,10 @@ const AttendanceCard = ({
       )}
       onClick={handleCardClick}
     >
-      <div className="flex items-start justify-between gap-2 mb-2">
+      <div className="p-4 space-y-3">
+      <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 mt-0.5">
             <User className="h-3 w-3 text-muted-foreground shrink-0" />
             <p className="text-sm font-semibold text-foreground truncate">
               {file.atendente || <span className="italic text-muted-foreground">Não identificado</span>}
@@ -238,7 +239,7 @@ const AttendanceCard = ({
         )}
       </div>
 
-      <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-2.5">
+      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
         {file.data && (
           <span className="flex items-center gap-1">
             <Calendar className="h-2.5 w-2.5" />
@@ -251,7 +252,7 @@ const AttendanceCard = ({
         )}
       </div>
 
-      <div className="flex items-center gap-1.5 flex-wrap mb-2">
+      <div className="flex items-center gap-1.5 flex-wrap">
         {isNonEvaluable && (
           <Badge className="bg-warning/15 text-warning text-[9px] gap-0.5 px-1.5 py-0 h-auto border border-warning/30">
             <AlertTriangle className="h-2.5 w-2.5" /> Não avaliável
@@ -291,11 +292,11 @@ const AttendanceCard = ({
       </div>
 
       {/* Action buttons — separated: Iniciar análise vs Abrir mentoria */}
-      <div className="flex items-center gap-1.5 mb-2.5">
+      <div className="flex items-center gap-1.5">
         {!isNonEvaluable && !hasResult && (
           <Button
             size="sm"
-            className="flex-1 gap-1.5 font-semibold"
+            className="w-full gap-2 font-semibold justify-center"
             onClick={handleStartAnalysis}
             disabled={!canStartAnalysis}
           >
@@ -311,7 +312,7 @@ const AttendanceCard = ({
           <Button
             size="sm"
             variant="outline"
-            className="flex-1 gap-1.5 font-semibold border-accent/30 text-accent hover:bg-accent/10"
+            className="w-full gap-2 font-semibold justify-center border-accent/30 text-accent hover:bg-accent/10"
             onClick={handleOpenMentoria}
           >
             <BookOpen className="h-3.5 w-3.5" />
@@ -320,7 +321,9 @@ const AttendanceCard = ({
         )}
       </div>
 
-      <div className="flex items-center gap-1 pt-2 border-t border-border/40 opacity-80 group-hover:opacity-100 transition-opacity">
+      </div>{/* end p-4 space-y-3 */}
+
+      <div className="flex items-center gap-1 px-4 py-2 border-t border-border/40 opacity-80 group-hover:opacity-100 transition-opacity bg-muted/30">
         <TooltipProvider delayDuration={200}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -563,13 +566,17 @@ const MentoriaPipeline = ({
                 </span>
               </div>
 
-              <div className="flex-1 overflow-y-auto min-h-0 max-h-[calc(100vh-480px)] pr-1 space-y-2.5 scrollbar-thin">
+              <div className="flex-1 overflow-y-auto min-h-0 max-h-[calc(100vh-480px)] pr-1 scrollbar-thin">
                 {items.length === 0 && (
                   <div className="text-center py-8">
                     <p className="text-xs text-muted-foreground/60 italic">{col.emptyText}</p>
                   </div>
                 )}
-                {items.map((f) => (
+                {items.map((f, idx) => (
+                  <div key={f.id} className={idx > 0 ? "mt-2.5" : ""}>
+                    {idx > 0 && col.key === "nao_iniciado" && (
+                      <div className="border-b border-border/50 mb-2.5" />
+                    )}
                   <AttendanceCard
                     key={f.id}
                     file={f}
@@ -586,7 +593,8 @@ const MentoriaPipeline = ({
                     onApproveOfficial={onApproveOfficial}
                     onRemoveFile={onRemoveFile}
                     onOpenDiagnostic={onOpenDiagnostic}
-                  />
+                    />
+                  </div>
                 ))}
               </div>
             </div>
