@@ -50,6 +50,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn, formatDateBR, notaToScale10, formatNota } from "@/lib/utils";
@@ -2714,35 +2715,58 @@ const MentoriaLab = () => {
       </AlertDialog>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-4">
-        {/* Limit tags */}
-        <div className="flex items-center gap-2 flex-wrap text-[10px]">
-          <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground border border-border font-medium px-2.5 py-0.5 cursor-default select-none">
-            <Info className="h-3 w-3 mr-1 shrink-0" />
-            Importar: até {IMPORT_RECOMMENDED}/mês
-          </span>
-          <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground border border-border font-medium px-2.5 py-0.5 cursor-default select-none">
-            <Info className="h-3 w-3 mr-1 shrink-0" />
-            Analisar: até {ANALYZE_LIMIT}/vez
-          </span>
-        </div>
+        {/* Tabs navigation */}
+        <Tabs defaultValue="operacao" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="operacao">Operação</TabsTrigger>
+            <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+            <TabsTrigger value="performance">Performance</TabsTrigger>
+          </TabsList>
 
-        {/* Stats */}
-        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-          {[
-            { label: "Total", value: counts.total, color: "text-foreground" },
-            { label: "Pendentes", value: counts.pendente, color: "text-muted-foreground" },
-            { label: "Lidos", value: counts.lido, color: "text-primary" },
-            { label: "Analisados", value: counts.analisado, color: "text-accent" },
-            { label: "Não avaliáveis", value: counts.naoAvaliavel, color: "text-warning" },
-            { label: "Atendentes", value: counts.atendentes, color: "text-primary" },
-            { label: "Erros", value: counts.erro, color: "text-destructive" },
-          ].map((s) => (
-            <Card key={s.label} className="p-2.5 text-center">
-              <span className={`text-xl font-bold tracking-tight ${s.color}`}>{s.value}</span>
-              <p className="text-[10px] text-muted-foreground">{s.label}</p>
-            </Card>
-          ))}
-        </div>
+          <TabsContent value="operacao" className="space-y-4 mt-4">
+            {/* Limit tags */}
+            <div className="flex items-center gap-2 flex-wrap text-[10px]">
+              <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground border border-border font-medium px-2.5 py-0.5 cursor-default select-none">
+                <Info className="h-3 w-3 mr-1 shrink-0" />
+                Importar: até {IMPORT_RECOMMENDED}/mês
+              </span>
+              <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground border border-border font-medium px-2.5 py-0.5 cursor-default select-none">
+                <Info className="h-3 w-3 mr-1 shrink-0" />
+                Analisar: até {ANALYZE_LIMIT}/vez
+              </span>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+              {[
+                { label: "Total", value: counts.total, color: "text-foreground" },
+                { label: "Pendentes", value: counts.pendente, color: "text-muted-foreground" },
+                { label: "Lidos", value: counts.lido, color: "text-primary" },
+                { label: "Analisados", value: counts.analisado, color: "text-accent" },
+                { label: "Não avaliáveis", value: counts.naoAvaliavel, color: "text-warning" },
+                { label: "Atendentes", value: counts.atendentes, color: "text-primary" },
+                { label: "Erros", value: counts.erro, color: "text-destructive" },
+              ].map((s) => (
+                <Card key={s.label} className="p-2.5 text-center">
+                  <span className={`text-xl font-bold tracking-tight ${s.color}`}>{s.value}</span>
+                  <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="pipeline">
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              O conteúdo do Pipeline será movido para esta aba em breve.
+            </div>
+          </TabsContent>
+
+          <TabsContent value="performance">
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              O conteúdo de Performance será movido para esta aba em breve.
+            </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Batch Info Card */}
         {batchInfo && (
