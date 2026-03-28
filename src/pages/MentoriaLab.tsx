@@ -2141,7 +2141,7 @@ const MentoriaLab = () => {
         return next;
       });
 
-      logAudit("limpeza_pendentes", {
+      console.log("[Auditoria][Limpeza]", {
         tipo: "Limpar Apenas Pendentes",
         registros_removidos: pendingFiles.length,
         data: new Date().toISOString(),
@@ -2176,6 +2176,7 @@ const MentoriaLab = () => {
       if (!currentBatchId) {
         toast.info("Nenhum lote ativo para limpar.");
         setShowClearConfirm(false);
+        setClearConfirmStep(null);
         return;
       }
 
@@ -2184,52 +2185,70 @@ const MentoriaLab = () => {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get batch files
+      // Get batch files with status
       const { data: batchFiles } = await supabase
         .from("mentoria_batch_files")
-        .select("id, protocolo")
+        .select("id, protocolo, status")
         .eq("batch_id", currentBatchId);
 
-      if (batchFiles) {
-        // Delete only non-official evaluations
-        const protocols = batchFiles.map((f) => f.protocolo).filter(Boolean) as string[];
-        if (protocols.length > 0) {
-          await supabase
-            .from("evaluations")
-            .delete()
-            .eq("user_id", user.id)
-            .in("protocolo", protocols)
-            .eq("resultado_validado", false);
+      if (batchFiles && batchFiles.length > 0) {
+        const pendingBatchFiles = batchFiles.filter(
+          (f) => f.status === "pending" || f.status === "read",
+        );
+        const analyzedCount = batchFiles.length - pendingBatchFiles.length;
+
+        if (pendingBatchFiles.length > 0) {
+          const pendingIds = pendingBatchFiles.map((f) => f.id);
+          await supabase.from("mentoria_batch_files").delete().in("id", pendingIds);
         }
-        await supabase.from("mentoria_batch_files").delete().eq("batch_id", currentBatchId);
+
+        // Update batch total_pdfs or delete batch if empty
+        if (analyzedCount > 0) {
+          await supabase
+            .from("mentoria_batches")
+            .update({ total_pdfs: analyzedCount } as any)
+            .eq("id", currentBatchId);
+          if (batchInfo) {
+            setBatchInfo({ ...batchInfo, totalPdfs: analyzedCount });
+          }
+        } else {
+          await supabase.from("mentoria_batches").delete().eq("id", currentBatchId);
+          setCurrentBatchId(null);
+          setBatchInfo(null);
+        }
+
+        const removedDbIds = new Set(pendingBatchFiles.map((f) => f.id));
+        setFiles((prev) => prev.filter((f) => !removedDbIds.has(f.batchFileId || "")));
+        setSelected((prev) => {
+          const next = new Set(prev);
+          for (const f of files) {
+            if (removedDbIds.has(f.batchFileId || "")) next.delete(f.id);
+          }
+          return next;
+        });
+        setWorkflowStatuses((prev) => {
+          const next = { ...prev };
+          for (const f of files) {
+            if (removedDbIds.has(f.batchFileId || "")) delete next[f.id];
+          }
+          return next;
+        });
+
+        console.log("[Auditoria][Limpeza]", {
+          tipo: "Limpar Lote Atual (pendentes)",
+          batch_id: currentBatchId,
+          registros_removidos: pendingBatchFiles.length,
+          registros_preservados: analyzedCount,
+          data: new Date().toISOString(),
+        });
       }
 
-      await supabase.from("mentoria_batches").delete().eq("id", currentBatchId);
-
-      // Remove only files from this batch from local state
-      const batchFileIds = new Set((batchFiles || []).map((f) => f.id));
-      setFiles((prev) => prev.filter((f) => !batchFileIds.has(f.batchFileId || "")));
-      setSelected((prev) => {
-        const next = new Set(prev);
-        for (const f of files) {
-          if (batchFileIds.has(f.batchFileId || "")) next.delete(f.id);
-        }
-        return next;
-      });
-      setWorkflowStatuses((prev) => {
-        const next = { ...prev };
-        for (const f of files) {
-          if (batchFileIds.has(f.batchFileId || "")) delete next[f.id];
-        }
-        return next;
-      });
-      setCurrentBatchId(null);
-      setBatchInfo(null);
       setSideFile(null);
       setMentoriaFile(null);
       setHighlightedFileId(null);
       setShowClearConfirm(false);
-      toast.success("Lote atual removido com sucesso.");
+      setClearConfirmStep(null);
+      toast.success("Pendentes do lote atual removidos. Análises concluídas foram preservadas.");
     } catch (err) {
       console.error("Erro ao limpar lote:", err);
       toast.error("Erro ao limpar lote. Tente novamente.");
@@ -2238,8 +2257,19 @@ const MentoriaLab = () => {
     }
   };
 
+  const handleClearCurrentBatch = () => {
+    const batchPendingCount = files.filter(
+      (f) => f.batchId === currentBatchId && (f.status === "pendente" || f.status === "lido"),
+    ).length;
+    if (batchPendingCount === 0) {
+      toast.info("Não há pendentes no lote atual.");
+      return;
+    }
+    setClearConfirmStep({ action: executeClearCurrentBatch, count: batchPendingCount, label: "pendentes do lote atual" });
+  };
+
   // === Clear: everything EXCEPT official evaluations ===
-  const handleClearAllPreserveOfficial = async () => {
+  const executeClearAllPreserveOfficial = async () => {
     setClearing(true);
     try {
       const {
@@ -2252,6 +2282,8 @@ const MentoriaLab = () => {
         .select("id, batch_code")
         .eq("user_id", user.id);
 
+      let totalRemoved = 0;
+
       if (batches && batches.length > 0) {
         const batchIds = batches.map((b) => b.id);
 
@@ -2260,8 +2292,8 @@ const MentoriaLab = () => {
           .select("id, protocolo")
           .in("batch_id", batchIds);
 
-        // Delete ONLY non-official evaluations (resultado_validado = false)
         if (batchFiles) {
+          totalRemoved = batchFiles.length;
           const protocols = batchFiles.map((f) => f.protocolo).filter(Boolean) as string[];
           if (protocols.length > 0) {
             await supabase
@@ -2279,6 +2311,12 @@ const MentoriaLab = () => {
         }
       }
 
+      console.log("[Auditoria][Limpeza]", {
+        tipo: "Limpar Tudo (Preservar Oficiais)",
+        registros_removidos: totalRemoved,
+        data: new Date().toISOString(),
+      });
+
       setFiles([]);
       setSelected(new Set());
       setWorkflowStatuses({});
@@ -2288,6 +2326,7 @@ const MentoriaLab = () => {
       setMentoriaFile(null);
       setHighlightedFileId(null);
       setShowClearConfirm(false);
+      setClearConfirmStep(null);
       toast.success("Dados limpos. Avaliações oficiais foram preservadas.");
     } catch (err) {
       console.error("Erro ao limpar dados:", err);
@@ -2295,6 +2334,15 @@ const MentoriaLab = () => {
     } finally {
       setClearing(false);
     }
+  };
+
+  const handleClearAllPreserveOfficial = () => {
+    const count = files.length;
+    if (count === 0) {
+      toast.info("Não há dados para limpar.");
+      return;
+    }
+    setClearConfirmStep({ action: executeClearAllPreserveOfficial, count, label: "registros do Lab (preservando oficiais)" });
   };
 
   // === Discard pending (local + DB, used from pipeline area) ===
