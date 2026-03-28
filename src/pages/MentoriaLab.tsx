@@ -2752,6 +2752,8 @@ const MentoriaLab = () => {
                   <p className="text-[10px] text-muted-foreground">{s.label}</p>
                 </Card>
               ))}
+            </div>
+
             {/* Batch Info Card */}
             {batchInfo && (
               <Card className="p-5 border-l-4 border-l-accent bg-accent/5">
