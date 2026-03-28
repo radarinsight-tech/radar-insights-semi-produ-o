@@ -1259,6 +1259,7 @@ const MentoriaLab = () => {
     searchTerm,
     filterAtendente,
     filterCanal,
+    filterAudio,
     filterMonth,
     filterPeriodoFrom,
     filterPeriodoTo,
