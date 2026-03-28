@@ -2744,6 +2744,27 @@ const MentoriaLab = () => {
       </AlertDialog>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-4">
+        {/* Global month filter */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <CalendarIcon className="h-4 w-4" />
+            <span className="font-medium text-foreground">Competência:</span>
+            <Select value={filterMonth} onValueChange={setFilterMonth}>
+              <SelectTrigger className="w-[180px] h-9 text-sm">
+                <SelectValue placeholder="Mês de referência" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os meses</SelectItem>
+                {monthOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         {/* Tabs navigation */}
         <Tabs defaultValue="operacao" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
