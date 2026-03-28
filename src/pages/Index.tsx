@@ -368,7 +368,7 @@ const Index = () => {
             <StatsWidgets
               entries={baseFiltered}
               activeStatusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
+              onStatusFilterChange={(s) => { setStatusFilter(s); if (s) setTableVisible(true); }}
             />
           </ErrorBoundary>
         </div>
