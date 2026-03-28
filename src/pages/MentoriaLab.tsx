@@ -1371,7 +1371,7 @@ const MentoriaLab = () => {
   );
 
   const analyzeFiles = useCallback(
-    async (toAnalyze: LabFile[], options?: { openOnSuccessId?: string; clearSelection?: boolean }) => {
+    async (toAnalyze: LabFile[], options?: { openOnSuccessId?: string; clearSelection?: boolean; autoFinalize?: boolean }) => {
       if (toAnalyze.length === 0) {
         toast.warning("Não há atendimentos prontos para análise.");
         return { success: 0, errors: 0 };
@@ -1667,10 +1667,11 @@ const MentoriaLab = () => {
             ...sourceFile,
             status: "analisado",
             result: persistedAnalysisResult,
-            protocolo: data.protocolo || sourceFile.protocolo,
-            atendente: data.atendente || sourceFile.atendente,
-            data: data.data || sourceFile.data,
-            tipo: data.tipo || sourceFile.tipo,
+            protocolo: sourceFile.protocolo || data.protocolo || labFile.protocolo,
+            atendente: sourceFile.atendente || data.atendente || labFile.atendente,
+            data: sourceFile.data || data.data || labFile.data,
+            tipo: data.tipo || sourceFile.tipo || labFile.tipo,
+            canal: sourceFile.canal || labFile.canal,
             analyzedAt: new Date(),
             ineligible: persistedIneligibility.ineligible,
             ineligibleReason: persistedIneligibility.reason,
@@ -1683,8 +1684,10 @@ const MentoriaLab = () => {
 
           setFiles((prev) => prev.map((f) => (f.id === labFile.id ? updatedFile : f)));
 
-          // Auto-finalize: move card to "Finalizados" after successful analysis
-          setWorkflowStatuses((prev) => ({ ...prev, [labFile.id]: "finalizado" }));
+          // Auto-finalize: move card to "Finalizados" ONLY for batch analysis
+          if (options?.autoFinalize) {
+            setWorkflowStatuses((prev) => ({ ...prev, [labFile.id]: "finalizado" }));
+          }
 
           if (!openedTarget && options?.openOnSuccessId === labFile.id) {
             openMentoria(updatedFile);
@@ -2290,7 +2293,7 @@ const MentoriaLab = () => {
               }
             }
 
-            await analyzeFiles([preparedFile], { clearSelection: false });
+            await analyzeFiles([preparedFile], { clearSelection: false, autoFinalize: true });
             completed++;
             setBatchStats((prev) => ({ ...prev, analyzing: prev.analyzing - 1, completed: prev.completed + 1 }));
           } catch (err: any) {
