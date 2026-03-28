@@ -427,6 +427,12 @@ const MentoriaPipeline = ({
       const ws = getWorkflowStatus(f.id);
       groups[ws].push(f);
     }
+    // Sort "nao_iniciado" by newest first (most recently added on top)
+    groups.nao_iniciado.sort((a, b) => {
+      const dateA = (a as any).addedAt instanceof Date ? (a as any).addedAt.getTime() : 0;
+      const dateB = (b as any).addedAt instanceof Date ? (b as any).addedAt.getTime() : 0;
+      return dateB - dateA;
+    });
     return groups;
   }, [files, getWorkflowStatus]);
 
@@ -446,13 +452,16 @@ const MentoriaPipeline = ({
     <div className="space-y-3" id="mentoria-table">
       {/* Batch action bar */}
       {eligibleForBatch > 0 && onBatchAnalyze && (
-        <div className="flex items-center justify-between flex-wrap gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-foreground">
-              {eligibleForBatch} atendimento(s) prontos para análise
-            </span>
+        <div className="flex flex-col gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-foreground">
+                {eligibleForBatch} atendimento(s) prontos para análise
+              </span>
+            </div>
           </div>
+          <p className="text-xs font-semibold text-primary uppercase tracking-wide">Ações de Análise Automática (IA)</p>
           <div className="flex items-center gap-2 flex-wrap">
             {eligibleForBatch >= 1 && (
               <Button size="sm" variant="outline" className="gap-1.5 font-semibold" onClick={() => onBatchAnalyze(10)} disabled={isBusy}>
