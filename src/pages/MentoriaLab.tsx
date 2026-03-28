@@ -2561,24 +2561,53 @@ const MentoriaLab = () => {
       </header>
 
       <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>Limpar todos os dados de teste?</AlertDialogTitle>
+            <AlertDialogTitle>Opções de Limpeza de Dados</AlertDialogTitle>
             <AlertDialogDescription>
-              Essa ação é irreversível. Todos os atendimentos, lotes e análises do Mentoria Lab serão removidos
-              permanentemente.
+              Escolha o tipo de limpeza. Avaliações oficiais (<span className="font-semibold">resultado validado</span>) são sempre preservadas.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="flex flex-col gap-2 py-2">
+            <Button
+              variant="outline"
+              className="justify-start gap-2 h-auto py-3 px-4 text-left"
+              onClick={handleClearPending}
+              disabled={clearing}
+            >
+              {clearing ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <Filter className="h-4 w-4 shrink-0 text-primary" />}
+              <div>
+                <p className="font-semibold text-sm">Limpar Apenas Pendentes</p>
+                <p className="text-xs text-muted-foreground font-normal">Remove atendimentos com status "pendente" ou "lido" sem resultado de análise.</p>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="justify-start gap-2 h-auto py-3 px-4 text-left"
+              onClick={handleClearCurrentBatch}
+              disabled={clearing || !currentBatchId}
+            >
+              {clearing ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <Archive className="h-4 w-4 shrink-0 text-warning" />}
+              <div>
+                <p className="font-semibold text-sm">Limpar Lote Atual</p>
+                <p className="text-xs text-muted-foreground font-normal">Remove apenas os arquivos do lote ativo{batchInfo ? ` (${batchInfo.batchCode})` : ""}. Preserva avaliações oficiais.</p>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="justify-start gap-2 h-auto py-3 px-4 text-left border-destructive/30 hover:bg-destructive/5"
+              onClick={handleClearAllPreserveOfficial}
+              disabled={clearing}
+            >
+              {clearing ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <Trash2 className="h-4 w-4 shrink-0 text-destructive" />}
+              <div>
+                <p className="font-semibold text-sm text-destructive">Limpar Tudo (Preservar Oficiais)</p>
+                <p className="text-xs text-muted-foreground font-normal">Remove todos os dados do Lab, exceto avaliações com resultado validado.</p>
+              </div>
+            </Button>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={clearing}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleClearTestData}
-              disabled={clearing}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {clearing ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}
-              Confirmar limpeza
-            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
