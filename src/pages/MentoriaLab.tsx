@@ -28,6 +28,7 @@ import {
   CalendarIcon,
   BarChart3,
   ShieldCheck,
+  ShieldAlert,
   Bug,
 } from "lucide-react";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
@@ -2627,55 +2628,88 @@ const MentoriaLab = () => {
         </div>
       </header>
 
-      <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+      <AlertDialog open={showClearConfirm} onOpenChange={(open) => { setShowClearConfirm(open); if (!open) setClearConfirmStep(null); }}>
         <AlertDialogContent className="max-w-lg">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Opções de Limpeza de Dados</AlertDialogTitle>
-            <AlertDialogDescription>
-              Escolha o tipo de limpeza. Avaliações oficiais (<span className="font-semibold">resultado validado</span>) são sempre preservadas.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex flex-col gap-2 py-2">
-            <Button
-              variant="outline"
-              className="justify-start gap-2 h-auto py-3 px-4 text-left"
-              onClick={handleClearPending}
-              disabled={clearing}
-            >
-              {clearing ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <Filter className="h-4 w-4 shrink-0 text-primary" />}
-              <div>
-                <p className="font-semibold text-sm">Limpar Apenas Pendentes</p>
-                <p className="text-xs text-muted-foreground font-normal">Remove atendimentos com status "pendente" ou "lido" sem resultado de análise.</p>
+          {!clearConfirmStep ? (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <ShieldAlert className="h-5 w-5 text-warning" />
+                  Área restrita — Limpeza de Dados
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Escolha o tipo de limpeza. Avaliações oficiais (<span className="font-semibold">resultado validado</span>) são sempre preservadas.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="flex flex-col gap-3 py-3">
+                <Button
+                  variant="outline"
+                  className="justify-start gap-3 h-auto py-4 px-4 text-left"
+                  onClick={handleClearPending}
+                  disabled={clearing}
+                >
+                  <Filter className="h-4 w-4 shrink-0 text-primary" />
+                  <div>
+                    <p className="font-semibold text-sm">Limpar Apenas Pendentes</p>
+                    <p className="text-xs text-muted-foreground font-normal mt-0.5">Remove atendimentos com status "pendente" ou "lido" sem resultado de análise.</p>
+                  </div>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start gap-3 h-auto py-4 px-4 text-left"
+                  onClick={handleClearCurrentBatch}
+                  disabled={clearing || !currentBatchId}
+                >
+                  <Archive className="h-4 w-4 shrink-0 text-warning" />
+                  <div>
+                    <p className="font-semibold text-sm">Limpar Lote Atual</p>
+                    <p className="text-xs text-muted-foreground font-normal mt-0.5">Remove apenas pendentes do lote ativo{batchInfo ? ` (${batchInfo.batchCode})` : ""}. Mantém análises concluídas.</p>
+                  </div>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start gap-3 h-auto py-4 px-4 text-left border-destructive/30 hover:bg-destructive/5"
+                  onClick={handleClearAllPreserveOfficial}
+                  disabled={clearing}
+                >
+                  <Trash2 className="h-4 w-4 shrink-0 text-destructive" />
+                  <div>
+                    <p className="font-semibold text-sm text-destructive">Limpar Tudo (Preservar Oficiais)</p>
+                    <p className="text-xs text-muted-foreground font-normal mt-0.5">Remove todos os dados do Lab, exceto avaliações com resultado validado.</p>
+                  </div>
+                </Button>
               </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start gap-2 h-auto py-3 px-4 text-left"
-              onClick={handleClearCurrentBatch}
-              disabled={clearing || !currentBatchId}
-            >
-              {clearing ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <Archive className="h-4 w-4 shrink-0 text-warning" />}
-              <div>
-                <p className="font-semibold text-sm">Limpar Lote Atual</p>
-                <p className="text-xs text-muted-foreground font-normal">Remove apenas os arquivos do lote ativo{batchInfo ? ` (${batchInfo.batchCode})` : ""}. Preserva avaliações oficiais.</p>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start gap-2 h-auto py-3 px-4 text-left border-destructive/30 hover:bg-destructive/5"
-              onClick={handleClearAllPreserveOfficial}
-              disabled={clearing}
-            >
-              {clearing ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <Trash2 className="h-4 w-4 shrink-0 text-destructive" />}
-              <div>
-                <p className="font-semibold text-sm text-destructive">Limpar Tudo (Preservar Oficiais)</p>
-                <p className="text-xs text-muted-foreground font-normal">Remove todos os dados do Lab, exceto avaliações com resultado validado.</p>
-              </div>
-            </Button>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={clearing}>Cancelar</AlertDialogCancel>
-          </AlertDialogFooter>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={clearing}>Cancelar</AlertDialogCancel>
+              </AlertDialogFooter>
+            </>
+          ) : (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="h-5 w-5" />
+                  Confirmar exclusão
+                </AlertDialogTitle>
+                <AlertDialogDescription className="space-y-2">
+                  <p>
+                    Você tem certeza? Esta ação excluirá <span className="font-bold text-foreground">{clearConfirmStep.count}</span> {clearConfirmStep.label} permanentemente e será registrada no log do sistema.
+                  </p>
+                  <p className="text-xs font-medium text-destructive">Esta ação não pode ser desfeita.</p>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={clearing} onClick={() => setClearConfirmStep(null)}>Voltar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={clearConfirmStep.action}
+                  disabled={clearing}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {clearing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {clearing ? "Excluindo..." : `Confirmar exclusão de ${clearConfirmStep.count} registro(s)`}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
         </AlertDialogContent>
       </AlertDialog>
 
