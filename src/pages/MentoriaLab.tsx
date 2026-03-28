@@ -237,6 +237,23 @@ const MentoriaLab = () => {
   const [filterCanal, setFilterCanal] = useState("todos");
   const [filterAudio, setFilterAudio] = useState("todos");
 
+  // Global month filter (competência)
+  const now = new Date();
+  const [filterMonth, setFilterMonth] = useState(() => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+
+  const monthOptions = useMemo(() => {
+    const options: { value: string; label: string }[] = [];
+    const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    // Generate last 12 months + current
+    const today = new Date();
+    for (let i = 0; i < 13; i++) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      options.push({ value: val, label: `${months[d.getMonth()]}/${d.getFullYear()}` });
+    }
+    return options;
+  }, []);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const [loadingFromDb, setLoadingFromDb] = useState(true);
 
@@ -1183,6 +1200,17 @@ const MentoriaLab = () => {
 
   const filteredFiles = useMemo(() => {
     return files.filter((f) => {
+      // Global month filter (competência)
+      if (filterMonth && filterMonth !== "todos") {
+        if (!f.data) return false;
+        const parts = f.data.split("/");
+        if (parts.length !== 3) return false;
+        const [filterYear, filterMon] = filterMonth.split("-").map(Number);
+        const fileMonth = +parts[1];
+        const fileYear = +parts[2];
+        if (fileYear !== filterYear || fileMonth !== filterMon) return false;
+      }
+
       if (searchTerm) {
         const q = searchTerm.toLowerCase();
         if (
@@ -1232,6 +1260,7 @@ const MentoriaLab = () => {
     filterAtendente,
     filterCanal,
     filterAudio,
+    filterMonth,
     filterPeriodoFrom,
     filterPeriodoTo,
     filterAuditoriaFrom,
@@ -1246,6 +1275,7 @@ const MentoriaLab = () => {
     filterAtendente,
     filterCanal,
     filterAudio,
+    filterMonth,
     filterPeriodoFrom,
     filterPeriodoTo,
     filterAuditoriaFrom,
@@ -2715,6 +2745,27 @@ const MentoriaLab = () => {
       </AlertDialog>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-4">
+        {/* Global month filter */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <CalendarIcon className="h-4 w-4" />
+            <span className="font-medium text-foreground">Competência:</span>
+            <Select value={filterMonth} onValueChange={setFilterMonth}>
+              <SelectTrigger className="w-[180px] h-9 text-sm">
+                <SelectValue placeholder="Mês de referência" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os meses</SelectItem>
+                {monthOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         {/* Tabs navigation */}
         <Tabs defaultValue="operacao" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
