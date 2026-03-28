@@ -85,7 +85,7 @@ const columnStyles: Record<WorkflowStatus, { header: string; border: string; bg:
   nao_iniciado: {
     header: "text-muted-foreground",
     border: "border-border/60",
-    bg: "bg-muted/20",
+    bg: "bg-muted/40",
     badge: "bg-muted text-muted-foreground",
     countBg: "bg-muted/60 text-muted-foreground",
   },
@@ -192,7 +192,7 @@ const AttendanceCard = ({
         hasResult ? "cursor-pointer" : "",
         highlighted
           ? "ring-2 ring-primary/30 border-primary/40 bg-primary/5 shadow-sm"
-          : "bg-background border-border/60",
+          : "bg-card border-border/60 shadow-sm",
         "hover:shadow-sm",
         file.approvedAsOfficial && "border-l-[3px] border-l-accent"
       )}
