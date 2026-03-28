@@ -2660,12 +2660,12 @@ const MentoriaLab = () => {
       </header>
 
       <AlertDialog open={showClearConfirm} onOpenChange={(open) => { setShowClearConfirm(open); if (!open) setClearConfirmStep(null); }}>
-        <AlertDialogContent className="max-w-lg">
+        <AlertDialogContent className="max-w-md">
           {!clearConfirmStep ? (
             <>
               <AlertDialogHeader>
-                <AlertDialogTitle className="flex items-center gap-2">
-                  <ShieldAlert className="h-5 w-5 text-warning" />
+                <AlertDialogTitle className="flex items-center gap-3 text-base">
+                  <ShieldAlert className="h-5 w-5 text-warning shrink-0" />
                   Área restrita — Limpeza de Dados
                 </AlertDialogTitle>
                 <AlertDialogDescription>
@@ -2675,38 +2675,38 @@ const MentoriaLab = () => {
               <div className="flex flex-col gap-3 py-3">
                 <Button
                   variant="outline"
-                  className="justify-start gap-3 h-auto py-4 px-4 text-left"
+                  className="justify-start gap-3 h-auto py-4 px-4 text-left whitespace-normal"
                   onClick={handleClearPending}
                   disabled={clearing}
                 >
                   <Filter className="h-4 w-4 shrink-0 text-primary" />
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-semibold text-sm">Limpar Apenas Pendentes</p>
-                    <p className="text-xs text-muted-foreground font-normal mt-0.5">Remove atendimentos com status "pendente" ou "lido" sem resultado de análise.</p>
+                    <p className="text-xs text-muted-foreground font-normal mt-0.5 break-words">Remove atendimentos com status "pendente" ou "lido" sem resultado de análise.</p>
                   </div>
                 </Button>
                 <Button
                   variant="outline"
-                  className="justify-start gap-3 h-auto py-4 px-4 text-left"
+                  className="justify-start gap-3 h-auto py-4 px-4 text-left whitespace-normal"
                   onClick={handleClearCurrentBatch}
                   disabled={clearing || !currentBatchId}
                 >
                   <Archive className="h-4 w-4 shrink-0 text-warning" />
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-semibold text-sm">Limpar Lote Atual</p>
-                    <p className="text-xs text-muted-foreground font-normal mt-0.5">Remove apenas pendentes do lote ativo{batchInfo ? ` (${batchInfo.batchCode})` : ""}. Mantém análises concluídas.</p>
+                    <p className="text-xs text-muted-foreground font-normal mt-0.5 break-words">Remove apenas pendentes do lote ativo{batchInfo ? ` (${batchInfo.batchCode})` : ""}. Mantém análises concluídas.</p>
                   </div>
                 </Button>
                 <Button
                   variant="outline"
-                  className="justify-start gap-3 h-auto py-4 px-4 text-left border-destructive/30 hover:bg-destructive/5"
+                  className="justify-start gap-3 h-auto py-4 px-4 text-left whitespace-normal border-destructive/30 hover:bg-destructive/5"
                   onClick={handleClearAllPreserveOfficial}
                   disabled={clearing}
                 >
                   <Trash2 className="h-4 w-4 shrink-0 text-destructive" />
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-semibold text-sm text-destructive">Limpar Tudo (Preservar Oficiais)</p>
-                    <p className="text-xs text-muted-foreground font-normal mt-0.5">Remove todos os dados do Lab, exceto avaliações com resultado validado.</p>
+                    <p className="text-xs text-muted-foreground font-normal mt-0.5 break-words">Remove todos os dados do Lab, exceto avaliações com resultado validado.</p>
                   </div>
                 </Button>
               </div>
@@ -2768,10 +2768,10 @@ const MentoriaLab = () => {
 
         {/* Tabs navigation */}
         <Tabs defaultValue="operacao" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="operacao">Operação</TabsTrigger>
-            <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
-            <TabsTrigger value="performance">Performance</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 border border-border bg-muted/60 p-1 rounded-lg">
+            <TabsTrigger value="operacao" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-accent/60 transition-colors rounded-md font-medium">Operação</TabsTrigger>
+            <TabsTrigger value="pipeline" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-accent/60 transition-colors rounded-md font-medium">Pipeline</TabsTrigger>
+            <TabsTrigger value="performance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-accent/60 transition-colors rounded-md font-medium">Performance</TabsTrigger>
           </TabsList>
 
           <TabsContent value="operacao" className="space-y-4 mt-4">
