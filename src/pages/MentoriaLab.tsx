@@ -2110,7 +2110,7 @@ const MentoriaLab = () => {
   };
 
   // === Clear: only pending (no result) ===
-  const handleClearPending = async () => {
+  const executeClearPending = async () => {
     setClearing(true);
     try {
       const pendingFiles = files.filter(
@@ -2119,16 +2119,15 @@ const MentoriaLab = () => {
       if (pendingFiles.length === 0) {
         toast.info("Não há atendimentos pendentes para remover.");
         setShowClearConfirm(false);
+        setClearConfirmStep(null);
         return;
       }
 
-      // Delete from DB
       const batchFileIds = pendingFiles.map((f) => f.batchFileId).filter(Boolean) as string[];
       if (batchFileIds.length > 0) {
         await supabase.from("mentoria_batch_files").delete().in("id", batchFileIds);
       }
 
-      // Update local state
       const removedIds = new Set(pendingFiles.map((f) => f.id));
       setFiles((prev) => prev.filter((f) => !removedIds.has(f.id)));
       setSelected((prev) => {
@@ -2141,7 +2140,15 @@ const MentoriaLab = () => {
         for (const id of removedIds) delete next[id];
         return next;
       });
+
+      logAudit("limpeza_pendentes", {
+        tipo: "Limpar Apenas Pendentes",
+        registros_removidos: pendingFiles.length,
+        data: new Date().toISOString(),
+      });
+
       setShowClearConfirm(false);
+      setClearConfirmStep(null);
       toast.success(`${pendingFiles.length} atendimento(s) pendente(s) removido(s).`);
     } catch (err) {
       console.error("Erro ao limpar pendentes:", err);
@@ -2151,8 +2158,19 @@ const MentoriaLab = () => {
     }
   };
 
-  // === Clear: current batch only ===
-  const handleClearCurrentBatch = async () => {
+  const handleClearPending = () => {
+    const count = files.filter(
+      (f) => (f.status === "pendente" || f.status === "lido") && !f.result,
+    ).length;
+    if (count === 0) {
+      toast.info("Não há atendimentos pendentes para remover.");
+      return;
+    }
+    setClearConfirmStep({ action: executeClearPending, count, label: "pendentes sem análise" });
+  };
+
+  // === Clear: current batch — only pending/lido files ===
+  const executeClearCurrentBatch = async () => {
     setClearing(true);
     try {
       if (!currentBatchId) {
