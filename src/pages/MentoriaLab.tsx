@@ -3008,6 +3008,31 @@ const MentoriaLab = () => {
               </div>
             </Card>
 
+            {/* Pending discard bar */}
+            {(() => {
+              const pendingCount = files.filter(
+                (f) => (f.status === "pendente" || f.status === "lido") && !f.result,
+              ).length;
+              if (pendingCount === 0) return null;
+              return (
+                <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-2.5">
+                  <span className="text-sm text-muted-foreground">
+                    <span className="font-semibold text-foreground">{pendingCount}</span> atendimento(s) aguardando revisão
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10"
+                    onClick={handleDiscardPending}
+                    disabled={clearing}
+                  >
+                    {clearing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                    Descartar Pendentes
+                  </Button>
+                </div>
+              );
+            })()}
+
             {/* Pipeline View */}
             <MentoriaPipeline
               files={filteredFiles}
