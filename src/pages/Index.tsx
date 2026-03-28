@@ -292,7 +292,7 @@ const Index = () => {
           <div className="space-y-4">
             <div className="flex flex-wrap gap-3 items-end">
               <ErrorBoundary fallbackTitle="Erro nos filtros">
-                <Filters atendentes={atendentes} tipos={tipos} filters={filters} onChange={setFilters} />
+                <Filters atendentes={atendentes} tipos={tipos} filters={filters} onChange={(f) => { setFilters(f); if (f.atendente !== "todos" || f.tipo !== "todos" || f.periodo) setTableVisible(true); }} />
               </ErrorBoundary>
               <div className="relative w-[220px]">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
