@@ -11,7 +11,7 @@ import { matchesStatusFilter, getStatusLabel } from "@/lib/auditStatus";
 import ScoreEvolutionChart from "@/components/ScoreEvolutionChart";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeAttendantName } from "@/lib/officialEvaluations";
-import { LogOut, Users, Search, ArrowLeft, X, BarChart3, Info, CheckCircle2, AlertTriangle } from "lucide-react";
+import { LogOut, Users, Search, ArrowLeft, X, BarChart3, Info, CheckCircle2, AlertTriangle, EyeOff, ListFilter } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import logoSymbol from "@/assets/logo-symbol.png";
@@ -43,6 +43,7 @@ const Index = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(null);
   const [showCharts, setShowCharts] = useState(false);
   const [syncStatus, setSyncStatus] = useState<"synced" | "stale">("synced");
+  const [tableVisible, setTableVisible] = useState(true);
   const lastLoadRef = useRef<number>(Date.now());
 
   const sectorIds = useMemo(() => sectors.map((s) => s.id), [sectors]);
@@ -298,10 +299,40 @@ const Index = () => {
                 <Input
                   placeholder="Buscar protocolo..."
                   value={protocolSearch}
-                  onChange={(e) => setProtocolSearch(e.target.value)}
+                  onChange={(e) => {
+                    setProtocolSearch(e.target.value);
+                    if (e.target.value) setTableVisible(true);
+                  }}
                   className="pl-8 bg-card"
                 />
               </div>
+              {/* Limpar Filtros button */}
+              {(filters.atendente !== "todos" || filters.tipo !== "todos" || filters.periodo || filters.periodoInicio || protocolSearch || statusFilter) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 gap-1.5 text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
+                  onClick={() => {
+                    setFilters({ atendente: "todos", periodo: "", tipo: "todos" });
+                    setProtocolSearch("");
+                    setStatusFilter(null);
+                    setTableVisible(false);
+                  }}
+                >
+                  <X className="h-3.5 w-3.5" /> Limpar Filtros
+                </Button>
+              )}
+              {/* Esconder/Mostrar lista */}
+              {tableVisible && !statusFilter && filters.atendente === "todos" && !protocolSearch && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 gap-1.5 text-xs text-muted-foreground"
+                  onClick={() => setTableVisible(false)}
+                >
+                  <EyeOff className="h-3.5 w-3.5" /> Recolher lista
+                </Button>
+              )}
             </div>
             {statusFilter && (
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20">
@@ -311,9 +342,27 @@ const Index = () => {
                 </Button>
               </div>
             )}
-            <ErrorBoundary fallbackTitle="Erro na tabela de histórico">
-              <HistoryTable entries={filtered} onRefresh={refreshOfficialData} />
-            </ErrorBoundary>
+            {tableVisible ? (
+              <ErrorBoundary fallbackTitle="Erro na tabela de histórico">
+                <HistoryTable entries={filtered} onRefresh={refreshOfficialData} />
+              </ErrorBoundary>
+            ) : (
+              <Card className="flex flex-col items-center justify-center py-16 px-6 text-center border-dashed border-2 border-muted-foreground/20 bg-muted/30">
+                <ListFilter className="h-10 w-10 text-muted-foreground/40 mb-4" />
+                <h3 className="text-base font-semibold text-foreground mb-1">Selecione um filtro para visualizar</h3>
+                <p className="text-sm text-muted-foreground max-w-md">
+                  Escolha um atendente, use a busca por protocolo ou clique em um dos cards laterais para exibir as avaliações.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-4 gap-1.5"
+                  onClick={() => setTableVisible(true)}
+                >
+                  Mostrar todos os registros
+                </Button>
+              </Card>
+            )}
           </div>
           <ErrorBoundary fallbackTitle="Erro nos indicadores">
             <StatsWidgets
