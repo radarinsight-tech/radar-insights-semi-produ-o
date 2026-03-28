@@ -49,7 +49,10 @@ const StatsWidgets = ({ entries, activeStatusFilter, onStatusFilterChange }: Pro
   return (
     <div className="space-y-4">
       {/* Auditados */}
-      <Card className="p-5">
+      <Card
+        className={`p-5 cursor-pointer transition-all hover:ring-2 hover:ring-primary/40 ${activeStatusFilter === "auditado" ? "ring-2 ring-primary" : ""}`}
+        onClick={() => toggleFilter("auditado")}
+      >
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 rounded-lg bg-primary/10">
             <ClipboardCheck className="h-4 w-4 text-primary" />
