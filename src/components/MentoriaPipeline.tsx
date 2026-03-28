@@ -44,6 +44,7 @@ interface PipelineFile {
   approvalOrigin?: "manual" | "automatic";
   evaluationId?: string;
   analyzedAt?: Date;
+  addedAt?: Date;
   transferred?: boolean;
   attendantMatch?: any;
 }
