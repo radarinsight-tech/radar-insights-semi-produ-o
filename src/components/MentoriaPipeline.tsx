@@ -84,22 +84,22 @@ const COLUMNS: { key: WorkflowStatus; label: string; icon: typeof Clock; emptyTe
 const columnStyles: Record<WorkflowStatus, { header: string; border: string; bg: string; badge: string; countBg: string }> = {
   nao_iniciado: {
     header: "text-muted-foreground",
-    border: "border-border/60",
-    bg: "bg-muted/40",
+    border: "border-border/40",
+    bg: "bg-muted/60",
     badge: "bg-muted text-muted-foreground",
     countBg: "bg-muted/60 text-muted-foreground",
   },
   em_analise: {
     header: "text-primary",
-    border: "border-primary/30",
-    bg: "bg-primary/5",
+    border: "border-border/40",
+    bg: "bg-muted/60",
     badge: "bg-primary/15 text-primary",
     countBg: "bg-primary/15 text-primary",
   },
   finalizado: {
     header: "text-accent",
-    border: "border-accent/30",
-    bg: "bg-accent/5",
+    border: "border-border/40",
+    bg: "bg-muted/60",
     badge: "bg-accent/15 text-accent",
     countBg: "bg-accent/15 text-accent",
   },
@@ -191,8 +191,8 @@ const AttendanceCard = ({
         "rounded-xl border overflow-hidden transition-all group",
         hasResult ? "cursor-pointer" : "",
         highlighted
-          ? "ring-2 ring-primary/30 border-primary/40 bg-primary/5 shadow-sm"
-          : "bg-card border-border/60 shadow-sm",
+          ? "ring-2 ring-primary/30 border-primary/40 bg-primary/5 shadow-md"
+          : "bg-white border-border/60 shadow-md",
         "hover:shadow-sm",
         file.approvedAsOfficial && "border-l-[3px] border-l-accent"
       )}
