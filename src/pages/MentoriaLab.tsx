@@ -2929,296 +2929,293 @@ const MentoriaLab = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="pipeline">
-            <div className="py-8 text-center text-sm text-muted-foreground">
-              O conteúdo do Pipeline será movido para esta aba em breve.
-            </div>
+          <TabsContent value="pipeline" className="space-y-4 mt-4">
+            {files.length > 0 ? (
+              <>
+                <Card className="p-4">
+                  <h3 className="text-sm font-semibold text-foreground mb-3">📂 Atendimentos importados</h3>
+                  <div className="flex flex-wrap items-center gap-3">
+                    {/* Search */}
+                    <div className="relative flex-1 min-w-[180px]">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Buscar arquivo, protocolo ou atendente..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-9"
+                      />
+                      {searchTerm && (
+                        <button onClick={() => setSearchTerm("")} className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <X className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Atendente */}
+                    <Select value={filterAtendente} onValueChange={setFilterAtendente}>
+                      <SelectTrigger className="w-[160px]">
+                        <SelectValue placeholder="Atendente" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos atendentes</SelectItem>
+                        <SelectItem value="sem_atendente">Sem atendente</SelectItem>
+                        {atendentes.map((a) => (
+                          <SelectItem key={a} value={a}>
+                            {a}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    {/* Período do atendimento */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-[200px] justify-start text-left text-xs font-normal h-10",
+                            !filterPeriodoFrom && "text-muted-foreground",
+                          )}
+                        >
+                          <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+                          {filterPeriodoFrom
+                            ? filterPeriodoTo
+                              ? `${format(filterPeriodoFrom, "dd/MM")} – ${format(filterPeriodoTo, "dd/MM/yy")}`
+                              : `A partir de ${format(filterPeriodoFrom, "dd/MM/yy")}`
+                            : "Período atendimento"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="range"
+                          selected={
+                            filterPeriodoFrom && filterPeriodoTo
+                              ? { from: filterPeriodoFrom, to: filterPeriodoTo }
+                              : filterPeriodoFrom
+                                ? { from: filterPeriodoFrom, to: undefined }
+                                : undefined
+                          }
+                          onSelect={(range) => {
+                            setFilterPeriodoFrom(range?.from);
+                            setFilterPeriodoTo(range?.to);
+                          }}
+                          numberOfMonths={2}
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                        {(filterPeriodoFrom || filterPeriodoTo) && (
+                          <div className="px-3 pb-3">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full text-xs"
+                              onClick={() => {
+                                setFilterPeriodoFrom(undefined);
+                                setFilterPeriodoTo(undefined);
+                              }}
+                            >
+                              Limpar período
+                            </Button>
+                          </div>
+                        )}
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* Data da auditoria */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-[200px] justify-start text-left text-xs font-normal h-10",
+                            !filterAuditoriaFrom && "text-muted-foreground",
+                          )}
+                        >
+                          <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+                          {filterAuditoriaFrom
+                            ? filterAuditoriaTo
+                              ? `${format(filterAuditoriaFrom, "dd/MM")} – ${format(filterAuditoriaTo, "dd/MM/yy")}`
+                              : `A partir de ${format(filterAuditoriaFrom, "dd/MM/yy")}`
+                            : "Data da auditoria"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="range"
+                          selected={
+                            filterAuditoriaFrom && filterAuditoriaTo
+                              ? { from: filterAuditoriaFrom, to: filterAuditoriaTo }
+                              : filterAuditoriaFrom
+                                ? { from: filterAuditoriaFrom, to: undefined }
+                                : undefined
+                          }
+                          onSelect={(range) => {
+                            setFilterAuditoriaFrom(range?.from);
+                            setFilterAuditoriaTo(range?.to);
+                          }}
+                          numberOfMonths={2}
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                        {(filterAuditoriaFrom || filterAuditoriaTo) && (
+                          <div className="px-3 pb-3">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full text-xs"
+                              onClick={() => {
+                                setFilterAuditoriaFrom(undefined);
+                                setFilterAuditoriaTo(undefined);
+                              }}
+                            >
+                              Limpar período
+                            </Button>
+                          </div>
+                        )}
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* Áudio */}
+                    <Select value={filterAudio} onValueChange={setFilterAudio}>
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue placeholder="Áudio" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos</SelectItem>
+                        <SelectItem value="com">Com áudio</SelectItem>
+                        <SelectItem value="sem">Sem áudio</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Action bar */}
+                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border">
+                    <PreflightCheck onReady={analyzeSelected} batchSize={selected.size} autoAdvance>
+                      <Button disabled={selected.size === 0 || processing} size="lg" className="gap-2 font-semibold">
+                        {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                        {processing
+                          ? "Analisando..."
+                          : `Analisar ${selected.size} selecionado${selected.size !== 1 ? "s" : ""}`}
+                      </Button>
+                    </PreflightCheck>
+                    {selected.size > 0 && (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={removeSelected} className="text-destructive">
+                          <Trash2 className="h-4 w-4 mr-1" /> Remover selecionados
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelected(new Set())}
+                          className="text-muted-foreground"
+                        >
+                          <X className="h-4 w-4 mr-1" /> Limpar seleção
+                        </Button>
+                      </>
+                    )}
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {filteredFiles.length} de {files.length} exibidos
+                    </span>
+                  </div>
+                </Card>
+
+                {/* Pending discard bar */}
+                {(() => {
+                  const pendingCount = files.filter(
+                    (f) => (f.status === "pendente" || f.status === "lido") && !f.result,
+                  ).length;
+                  if (pendingCount === 0) return null;
+                  return (
+                    <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-2.5">
+                      <span className="text-sm text-muted-foreground">
+                        <span className="font-semibold text-foreground">{pendingCount}</span> atendimento(s) aguardando revisão
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10"
+                        onClick={handleDiscardPending}
+                        disabled={clearing}
+                      >
+                        {clearing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                        Descartar Pendentes
+                      </Button>
+                    </div>
+                  );
+                })()}
+
+                {/* Pipeline View */}
+                <MentoriaPipeline
+                  files={filteredFiles}
+                  getWorkflowStatus={getWorkflowStatus}
+                  highlightedFileId={highlightedFileId}
+                  readingIds={readingIds}
+                  approvingIds={approvingIds}
+                  processing={processing}
+                  batchProcessing={batchProcessing}
+                  batchStats={batchStats}
+                  isAdmin={isAdmin}
+                  onOpenFile={(f) => {
+                    setMentoriaFile(null);
+                    setSideFile(f as any);
+                    setHighlightedFileId(f.id);
+                  }}
+                  onOpenMentoria={(f) => openMentoria(f as any)}
+                  onStartMentoria={(f) => handleStartMentoria(f as any)}
+                  onApproveOfficial={(f) => approveAsOfficial(f as any)}
+                  onRemoveFile={removeFile}
+                  onOpenDiagnostic={(f) => setDiagnosticFile(f as any)}
+                  onAnalyzeNext={handleAnalyzeNextFromPipeline}
+                  onBatchAnalyze={handleBatchAnalyze}
+                />
+
+                {/* Batch history */}
+                <MentoriaBatchHistory />
+
+                {/* Selection warning */}
+                {selected.size > ANALYZE_LIMIT && (
+                  <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
+                    <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Muitos atendimentos selecionados</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Você selecionou {selected.size} atendimentos. Recomendamos analisar em blocos de até {ANALYZE_LIMIT}{" "}
+                        para melhor desempenho.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                Importe atendimentos na aba "Operação" para visualizar o pipeline.
+              </div>
+            )}
           </TabsContent>
 
-          <TabsContent value="performance">
-            <div className="py-8 text-center text-sm text-muted-foreground">
-              O conteúdo de Performance será movido para esta aba em breve.
-            </div>
+          <TabsContent value="performance" className="space-y-4 mt-4">
+            {files.length > 0 && filteredFiles.some((f) => f.status === "analisado") ? (
+              <>
+                {/* Bonus Panel */}
+                <MentoriaBonusPanel
+                  files={filteredFiles}
+                  excludedNames={globalExcludedNames}
+                  onExclude={excludeAttendants}
+                  onRestore={restoreAttendants}
+                  onAutoApprove={batchAutoApprove}
+                />
+
+                {/* Charts section */}
+                <MentoriaCharts files={filteredFiles} excludedAttendants={globalExcludedSet} />
+
+                {/* Insights do lote */}
+                <MentoriaInsights files={filteredFiles} excludedAttendants={globalExcludedSet} />
+              </>
+            ) : (
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                Analise atendimentos para visualizar dados de performance.
+              </div>
+            )}
           </TabsContent>
         </Tabs>
-
-        {/* Atendimentos importados — populated */}
-        {files.length > 0 && (
-          <>
-            <Card className="p-4">
-              <h3 className="text-sm font-semibold text-foreground mb-3">📂 Atendimentos importados</h3>
-              <div className="flex flex-wrap items-center gap-3">
-                {/* Search */}
-                <div className="relative flex-1 min-w-[180px]">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar arquivo, protocolo ou atendente..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9"
-                  />
-                  {searchTerm && (
-                    <button onClick={() => setSearchTerm("")} className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <X className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Atendente */}
-                <Select value={filterAtendente} onValueChange={setFilterAtendente}>
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue placeholder="Atendente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos atendentes</SelectItem>
-                    <SelectItem value="sem_atendente">Sem atendente</SelectItem>
-                    {atendentes.map((a) => (
-                      <SelectItem key={a} value={a}>
-                        {a}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {/* Período do atendimento */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-[200px] justify-start text-left text-xs font-normal h-10",
-                        !filterPeriodoFrom && "text-muted-foreground",
-                      )}
-                    >
-                      <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
-                      {filterPeriodoFrom
-                        ? filterPeriodoTo
-                          ? `${format(filterPeriodoFrom, "dd/MM")} – ${format(filterPeriodoTo, "dd/MM/yy")}`
-                          : `A partir de ${format(filterPeriodoFrom, "dd/MM/yy")}`
-                        : "Período atendimento"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="range"
-                      selected={
-                        filterPeriodoFrom && filterPeriodoTo
-                          ? { from: filterPeriodoFrom, to: filterPeriodoTo }
-                          : filterPeriodoFrom
-                            ? { from: filterPeriodoFrom, to: undefined }
-                            : undefined
-                      }
-                      onSelect={(range) => {
-                        setFilterPeriodoFrom(range?.from);
-                        setFilterPeriodoTo(range?.to);
-                      }}
-                      numberOfMonths={2}
-                      className={cn("p-3 pointer-events-auto")}
-                    />
-                    {(filterPeriodoFrom || filterPeriodoTo) && (
-                      <div className="px-3 pb-3">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full text-xs"
-                          onClick={() => {
-                            setFilterPeriodoFrom(undefined);
-                            setFilterPeriodoTo(undefined);
-                          }}
-                        >
-                          Limpar período
-                        </Button>
-                      </div>
-                    )}
-                  </PopoverContent>
-                </Popover>
-
-                {/* Data da auditoria */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-[200px] justify-start text-left text-xs font-normal h-10",
-                        !filterAuditoriaFrom && "text-muted-foreground",
-                      )}
-                    >
-                      <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
-                      {filterAuditoriaFrom
-                        ? filterAuditoriaTo
-                          ? `${format(filterAuditoriaFrom, "dd/MM")} – ${format(filterAuditoriaTo, "dd/MM/yy")}`
-                          : `A partir de ${format(filterAuditoriaFrom, "dd/MM/yy")}`
-                        : "Data da auditoria"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="range"
-                      selected={
-                        filterAuditoriaFrom && filterAuditoriaTo
-                          ? { from: filterAuditoriaFrom, to: filterAuditoriaTo }
-                          : filterAuditoriaFrom
-                            ? { from: filterAuditoriaFrom, to: undefined }
-                            : undefined
-                      }
-                      onSelect={(range) => {
-                        setFilterAuditoriaFrom(range?.from);
-                        setFilterAuditoriaTo(range?.to);
-                      }}
-                      numberOfMonths={2}
-                      className={cn("p-3 pointer-events-auto")}
-                    />
-                    {(filterAuditoriaFrom || filterAuditoriaTo) && (
-                      <div className="px-3 pb-3">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full text-xs"
-                          onClick={() => {
-                            setFilterAuditoriaFrom(undefined);
-                            setFilterAuditoriaTo(undefined);
-                          }}
-                        >
-                          Limpar período
-                        </Button>
-                      </div>
-                    )}
-                  </PopoverContent>
-                </Popover>
-
-                {/* Áudio */}
-                <Select value={filterAudio} onValueChange={setFilterAudio}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="Áudio" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="com">Com áudio</SelectItem>
-                    <SelectItem value="sem">Sem áudio</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Action bar */}
-              <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border">
-                <PreflightCheck onReady={analyzeSelected} batchSize={selected.size} autoAdvance>
-                  <Button disabled={selected.size === 0 || processing} size="lg" className="gap-2 font-semibold">
-                    {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                    {processing
-                      ? "Analisando..."
-                      : `Analisar ${selected.size} selecionado${selected.size !== 1 ? "s" : ""}`}
-                  </Button>
-                </PreflightCheck>
-                {selected.size > 0 && (
-                  <>
-                    <Button variant="ghost" size="sm" onClick={removeSelected} className="text-destructive">
-                      <Trash2 className="h-4 w-4 mr-1" /> Remover selecionados
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelected(new Set())}
-                      className="text-muted-foreground"
-                    >
-                      <X className="h-4 w-4 mr-1" /> Limpar seleção
-                    </Button>
-                  </>
-                )}
-                <span className="ml-auto text-xs text-muted-foreground">
-                  {filteredFiles.length} de {files.length} exibidos
-                </span>
-              </div>
-            </Card>
-
-            {/* Pending discard bar */}
-            {(() => {
-              const pendingCount = files.filter(
-                (f) => (f.status === "pendente" || f.status === "lido") && !f.result,
-              ).length;
-              if (pendingCount === 0) return null;
-              return (
-                <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-2.5">
-                  <span className="text-sm text-muted-foreground">
-                    <span className="font-semibold text-foreground">{pendingCount}</span> atendimento(s) aguardando revisão
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10"
-                    onClick={handleDiscardPending}
-                    disabled={clearing}
-                  >
-                    {clearing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                    Descartar Pendentes
-                  </Button>
-                </div>
-              );
-            })()}
-
-            {/* Pipeline View */}
-            <MentoriaPipeline
-              files={filteredFiles}
-              getWorkflowStatus={getWorkflowStatus}
-              highlightedFileId={highlightedFileId}
-              readingIds={readingIds}
-              approvingIds={approvingIds}
-              processing={processing}
-              batchProcessing={batchProcessing}
-              batchStats={batchStats}
-              isAdmin={isAdmin}
-              onOpenFile={(f) => {
-                setMentoriaFile(null);
-                setSideFile(f as any);
-                setHighlightedFileId(f.id);
-              }}
-              onOpenMentoria={(f) => openMentoria(f as any)}
-              onStartMentoria={(f) => handleStartMentoria(f as any)}
-              onApproveOfficial={(f) => approveAsOfficial(f as any)}
-              onRemoveFile={removeFile}
-              onOpenDiagnostic={(f) => setDiagnosticFile(f as any)}
-              onAnalyzeNext={handleAnalyzeNextFromPipeline}
-              onBatchAnalyze={handleBatchAnalyze}
-            />
-
-            {/* Batch history */}
-            <MentoriaBatchHistory />
-
-            {/* Selection warning */}
-            {selected.size > ANALYZE_LIMIT && (
-              <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
-                <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">Muitos atendimentos selecionados</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Você selecionou {selected.size} atendimentos. Recomendamos analisar em blocos de até {ANALYZE_LIMIT}{" "}
-                    para melhor desempenho.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Bonus Panel */}
-            {filteredFiles.some((f) => f.status === "analisado") && (
-              <MentoriaBonusPanel
-                files={filteredFiles}
-                excludedNames={globalExcludedNames}
-                onExclude={excludeAttendants}
-                onRestore={restoreAttendants}
-                onAutoApprove={batchAutoApprove}
-              />
-            )}
-
-            {/* Charts section */}
-            {filteredFiles.some((f) => f.status === "analisado") && (
-              <MentoriaCharts files={filteredFiles} excludedAttendants={globalExcludedSet} />
-            )}
-
-            {/* Insights do lote */}
-            {filteredFiles.some((f) => f.status === "analisado") && (
-              <MentoriaInsights files={filteredFiles} excludedAttendants={globalExcludedSet} />
-            )}
-          </>
-        )}
       </main>
 
       {/* Side panel */}
