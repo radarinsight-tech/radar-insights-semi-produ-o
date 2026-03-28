@@ -237,6 +237,23 @@ const MentoriaLab = () => {
   const [filterCanal, setFilterCanal] = useState("todos");
   const [filterAudio, setFilterAudio] = useState("todos");
 
+  // Global month filter (competência)
+  const now = new Date();
+  const [filterMonth, setFilterMonth] = useState(() => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+
+  const monthOptions = useMemo(() => {
+    const options: { value: string; label: string }[] = [];
+    const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    // Generate last 12 months + current
+    const today = new Date();
+    for (let i = 0; i < 13; i++) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      options.push({ value: val, label: `${months[d.getMonth()]}/${d.getFullYear()}` });
+    }
+    return options;
+  }, []);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const [loadingFromDb, setLoadingFromDb] = useState(true);
 
