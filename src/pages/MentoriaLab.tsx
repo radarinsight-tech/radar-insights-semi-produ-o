@@ -1200,6 +1200,17 @@ const MentoriaLab = () => {
 
   const filteredFiles = useMemo(() => {
     return files.filter((f) => {
+      // Global month filter (competência)
+      if (filterMonth && filterMonth !== "todos") {
+        if (!f.data) return false;
+        const parts = f.data.split("/");
+        if (parts.length !== 3) return false;
+        const [filterYear, filterMon] = filterMonth.split("-").map(Number);
+        const fileMonth = +parts[1];
+        const fileYear = +parts[2];
+        if (fileYear !== filterYear || fileMonth !== filterMon) return false;
+      }
+
       if (searchTerm) {
         const q = searchTerm.toLowerCase();
         if (
@@ -1248,7 +1259,7 @@ const MentoriaLab = () => {
     searchTerm,
     filterAtendente,
     filterCanal,
-    filterAudio,
+    filterMonth,
     filterPeriodoFrom,
     filterPeriodoTo,
     filterAuditoriaFrom,
