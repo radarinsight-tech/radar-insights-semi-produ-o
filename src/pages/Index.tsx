@@ -312,17 +312,7 @@ const Index = () => {
               </div>
             )}
             <ErrorBoundary fallbackTitle="Erro na tabela de histórico">
-              {filters.atendente === "todos" && !statusFilter && !protocolSearch && !filters.periodo && !filters.periodoInicio ? (
-                <Card className="p-8 text-center">
-                  <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                    <Search className="h-8 w-8 opacity-40" />
-                    <p className="text-sm font-medium">Selecione um atendente ou filtro lateral para visualizar os dados.</p>
-                    <p className="text-xs">Use os filtros acima ou clique nos cards à direita para começar.</p>
-                  </div>
-                </Card>
-              ) : (
-                <HistoryTable entries={filtered} onRefresh={refreshOfficialData} />
-              )}
+              <HistoryTable entries={filtered} onRefresh={refreshOfficialData} />
             </ErrorBoundary>
           </div>
           <ErrorBoundary fallbackTitle="Erro nos indicadores">
