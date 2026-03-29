@@ -236,22 +236,53 @@ const PerformanceSections = ({
           />
         );
       case "resumo":
-        return <MentoriaCharts files={files} excludedAttendants={globalExcludedSet} />;
-      case "bonus":
-        return (
-          <MentoriaBonusPanel
-            files={files}
-            excludedNames={globalExcludedNames}
-            onExclude={excludeAttendants}
-            onRestore={restoreAttendants}
-            onAutoApprove={batchAutoApprove}
-          />
-        );
-      case "detalhada":
-      case "recomendados":
-      case "padroes":
-      case "roteiro":
         return <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} />;
+      case "bonus":
+        return <MentoriaCharts files={files} excludedAttendants={globalExcludedSet} />;
+      case "detalhada":
+        return (
+          <Card className="p-6 rounded-xl border-border/60 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-lg">👤</span>
+              <h3 className="text-sm font-semibold text-foreground">Performance Detalhada por Atendente</h3>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">Detalhamento de notas por critério de cada atendente do lote.</p>
+            <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} />
+          </Card>
+        );
+      case "recomendados":
+        return (
+          <Card className="p-6 rounded-xl border-border/60 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-lg">⭐</span>
+              <h3 className="text-sm font-semibold text-foreground">Atendimentos Recomendados para Mentoria</h3>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">Atendimentos selecionados com base em critérios de melhoria e impacto.</p>
+            <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} />
+          </Card>
+        );
+      case "padroes":
+        return (
+          <Card className="p-6 rounded-xl border-border/60 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-lg">💬</span>
+              <h3 className="text-sm font-semibold text-foreground">Padrões de Comportamento</h3>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">Padrões recorrentes identificados pela IA nas auditorias do lote.</p>
+            <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} />
+          </Card>
+        );
+      case "roteiro":
+        return (
+          <Card className="p-6 rounded-xl border-border/60 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-lg">📋</span>
+              <h3 className="text-sm font-semibold text-foreground">Roteiro de Mentoria</h3>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">Roteiro estruturado gerado pela IA para sessões de mentoria.</p>
+            <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} />
+          </Card>
+        );
       default:
         return null;
     }
