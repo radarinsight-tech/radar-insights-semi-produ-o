@@ -268,6 +268,7 @@ const MentoriaUnifiedTable = ({
         </div>
       ) : (
         <div className="rounded-xl border border-border/40 overflow-hidden">
+          <div className="max-h-[380px] overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
