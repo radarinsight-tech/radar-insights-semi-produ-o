@@ -691,7 +691,16 @@ const MentoriaPreventiva = () => {
                     </div>
                   </Card>
 
-                  {/* Resumo */}
+                  {/* Unofficial note badge for atendente */}
+                  {isAttendenteMode && (
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                      <span className="text-base">📌</span>
+                      <p className="text-xs text-amber-700">
+                        Esta nota é para sua mentoria pessoal e não tem caráter oficial.
+                        Ela não afeta seu bônus nem sua avaliação formal.
+                      </p>
+                    </div>
+                  )
                   <Card className="p-5 space-y-2">
                     <h3 className="text-sm font-bold text-foreground">Resumo Geral</h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">{activeResult.resumoGeral}</p>
