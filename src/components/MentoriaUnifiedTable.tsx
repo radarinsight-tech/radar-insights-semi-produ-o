@@ -362,6 +362,15 @@ const MentoriaUnifiedTable = ({
                       </div>
                     </TableCell>
 
+                    {/* Aptos IA */}
+                    <TableCell className="py-3 text-center">
+                      {f.isAutoEligible ? (
+                        <Zap className="h-4 w-4 text-accent inline-block" />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+
                     {/* Nota */}
                     <TableCell className="py-3">
                       {nota10 != null ? (
