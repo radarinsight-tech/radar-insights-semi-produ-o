@@ -5,7 +5,7 @@ import {
   ArrowLeft, ShieldCheck, Upload, Loader2, FileText,
   CheckCircle2, AlertTriangle, ThumbsUp, Lightbulb, ChevronDown, ChevronUp,
   Hash, User, Calendar, Tag, Info, Shuffle, Volume2, VolumeX, X, Play,
-  Eye, BarChart3
+  Eye, BarChart3, ShieldAlert
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,6 +17,9 @@ import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { extractAllMetadata, type PdfMetadata } from "@/lib/mentoriaMetadata";
 import logoSymbol from "@/assets/logo-symbol.png";
 import PreventiveInsights from "@/components/PreventiveInsights";
+import { useUserPermissions } from "@/hooks/useUserPermissions";
+import MentoriaAttendenteHeader from "@/components/MentoriaAttendenteHeader";
+import MentoriaAttendenteHistory from "@/components/MentoriaAttendenteHistory";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
