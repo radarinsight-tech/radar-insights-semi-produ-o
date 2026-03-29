@@ -5,7 +5,7 @@ import {
   ArrowLeft, ShieldCheck, Upload, Loader2, FileText,
   CheckCircle2, AlertTriangle, ThumbsUp, Lightbulb, ChevronDown, ChevronUp,
   Hash, User, Calendar, Tag, Info, Shuffle, Volume2, VolumeX, X, Play,
-  Eye, BarChart3
+  Eye, BarChart3, ShieldAlert
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,6 +17,9 @@ import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { extractAllMetadata, type PdfMetadata } from "@/lib/mentoriaMetadata";
 import logoSymbol from "@/assets/logo-symbol.png";
 import PreventiveInsights from "@/components/PreventiveInsights";
+import { useUserPermissions } from "@/hooks/useUserPermissions";
+import MentoriaAttendenteHeader from "@/components/MentoriaAttendenteHeader";
+import MentoriaAttendenteHistory from "@/components/MentoriaAttendenteHistory";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -114,6 +117,10 @@ const statusConfig: Record<FileStatus, { label: string; color: string }> = {
 
 const MentoriaPreventiva = () => {
   const navigate = useNavigate();
+  const { loading: permLoading, canAccess, isMentoriaAtendente, isAdmin, attendantId, attendantName } = useUserPermissions();
+  const isAttendenteMode = isMentoriaAtendente && !isAdmin;
+  const MONTHLY_LIMIT = 10;
+
   const [files, setFiles] = useState<LabFile[]>([]);
   const [readingIds, setReadingIds] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState(false);
@@ -122,6 +129,42 @@ const MentoriaPreventiva = () => {
   const [sampled, setSampled] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [monthlyCount, setMonthlyCount] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Load monthly count for atendente mode
+  useEffect(() => {
+    if (!isAttendenteMode) return;
+    const loadCount = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      setCurrentUserId(user.id);
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      const { count } = await supabase
+        .from("preventive_mentorings")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", startOfMonth.toISOString());
+      setMonthlyCount(count ?? 0);
+    };
+    loadCount();
+  }, [isAttendenteMode]);
+
+  // Also get currentUserId for non-atendente mode
+  useEffect(() => {
+    if (isAttendenteMode) return;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setCurrentUserId(user.id);
+    });
+  }, [isAttendenteMode]);
+
+  const isMonthlyLimitReached = isAttendenteMode && monthlyCount >= MONTHLY_LIMIT;
+
+  // ── Name normalization for ownership check ─────────────────────────
+  const normalizeName = (name: string) =>
+    name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
   // ── File reading ─────────────────────────────────────────────────────
   const readFile = useCallback(async (labFile: LabFile) => {
@@ -133,13 +176,25 @@ const MentoriaPreventiva = () => {
         return;
       }
       const metadata = extractAllMetadata(text);
+
+      // PDF ownership validation for atendente mode
+      if (isAttendenteMode && attendantName && metadata.atendente) {
+        const pdfName = normalizeName(metadata.atendente);
+        const linkedName = normalizeName(attendantName);
+        if (!pdfName.includes(linkedName) && !linkedName.includes(pdfName)) {
+          setFiles((prev) => prev.map((f) => f.id === labFile.id ? { ...f, status: "erro" as FileStatus, error: "Este atendimento pertence a outro colaborador." } : f));
+          toast.error("⚠️ Este atendimento pertence a outro colaborador e não pode ser importado aqui. Você só pode analisar seus próprios atendimentos.");
+          return;
+        }
+      }
+
       setFiles((prev) => prev.map((f) => f.id === labFile.id ? { ...f, status: "lido" as FileStatus, text, ...metadata } : f));
     } catch {
       setFiles((prev) => prev.map((f) => f.id === labFile.id ? { ...f, status: "erro" as FileStatus, error: "Falha na leitura." } : f));
     } finally {
       setReadingIds((prev) => { const n = new Set(prev); n.delete(labFile.id); return n; });
     }
-  }, []);
+  }, [isAttendenteMode, attendantName]);
 
   // ── Upload handler (PDF + ZIP) ───────────────────────────────────────
   const handleFiles = useCallback(async (newFiles: FileList | File[]) => {
@@ -238,6 +293,12 @@ const MentoriaPreventiva = () => {
       return;
     }
 
+    // Check monthly limit for atendente mode
+    if (isAttendenteMode && (monthlyCount + toAnalyze.length) > MONTHLY_LIMIT) {
+      toast.error(`Limite mensal de ${MONTHLY_LIMIT} mentorias será excedido. Você pode analisar mais ${Math.max(0, MONTHLY_LIMIT - monthlyCount)} atendimento(s).`);
+      return;
+    }
+
     setAnalyzing(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast.error("Não autenticado."); setAnalyzing(false); return; }
@@ -246,7 +307,10 @@ const MentoriaPreventiva = () => {
     for (const f of toAnalyze) {
       try {
         const { data: fnData, error: fnError } = await supabase.functions.invoke("analyze-preventive", {
-          body: { text: f.text },
+          body: {
+            text: f.text,
+            ...(isAttendenteMode ? { attendant_id: attendantId } : {}),
+          },
         });
         if (fnError) throw fnError;
         const res = fnData as PreventiveResult;
@@ -270,6 +334,7 @@ const MentoriaPreventiva = () => {
         } as any);
 
         successCount++;
+        if (isAttendenteMode) setMonthlyCount((prev) => prev + 1);
       } catch (err: any) {
         console.error(err);
         setFiles((prev) => prev.map((x) => x.id === f.id ? { ...x, status: "erro" as FileStatus, error: err.message } : x));
@@ -288,22 +353,57 @@ const MentoriaPreventiva = () => {
     return "text-destructive";
   };
 
+  // ── Access guard ──────────────────────────────────────────────────────
+  if (permLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Check access: must have auditoria, admin, or mentoria_atendente
+  if (!canAccess("auditoria") && !canAccess("mentoria_atendente")) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card className="p-8 max-w-md w-full mx-4 text-center space-y-4">
+          <div className="p-3 rounded-full bg-destructive/10 w-fit mx-auto">
+            <ShieldAlert className="h-8 w-8 text-destructive" />
+          </div>
+          <h2 className="text-lg font-bold text-foreground">Acesso restrito</h2>
+          <p className="text-sm text-muted-foreground">
+            Você não possui permissão para acessar este módulo.
+          </p>
+          <Button onClick={() => navigate("/hub")} className="w-full">Voltar ao início</Button>
+        </Card>
+      </div>
+    );
+  }
+
   // ── Render ───────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="border-b border-border bg-card px-6 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={logoSymbol} alt="Radar Insight" className="h-7 w-7 rounded-lg object-contain" />
-            <h1 className="text-lg font-bold text-primary">Mentoria Preventiva</h1>
-            <Badge variant="outline" className="text-xs">Beta</Badge>
+      {/* Header — different for atendente mode */}
+      {isAttendenteMode ? (
+        <MentoriaAttendenteHeader
+          attendantName={attendantName || "Atendente"}
+          monthlyCount={monthlyCount}
+          monthlyLimit={MONTHLY_LIMIT}
+        />
+      ) : (
+        <header className="border-b border-border bg-card px-6 py-3">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img src={logoSymbol} alt="Radar Insight" className="h-7 w-7 rounded-lg object-contain" />
+              <h1 className="text-lg font-bold text-primary">Mentoria Preventiva</h1>
+              <Badge variant="outline" className="text-xs">Beta</Badge>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/hub")}>
+              <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/hub")}>
-            <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
-          </Button>
-        </div>
-      </header>
+        </header>
+      )}
 
       <main className="flex-1 px-6 py-6">
         <div className="max-w-7xl mx-auto space-y-5">
@@ -319,7 +419,7 @@ const MentoriaPreventiva = () => {
           </div>
 
           {/* Upload zone */}
-          {files.length === 0 && (
+          {files.length === 0 && !isMonthlyLimitReached && (
             <Card
               className="p-8 text-center cursor-pointer border-2 border-dashed border-border hover:border-primary/40 transition-colors"
               onDrop={handleDrop}
@@ -591,6 +691,17 @@ const MentoriaPreventiva = () => {
                     </div>
                   </Card>
 
+                  {/* Unofficial note badge for atendente */}
+                  {isAttendenteMode && (
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                      <span className="text-base">📌</span>
+                      <p className="text-xs text-amber-700">
+                        Esta nota é para sua mentoria pessoal e não tem caráter oficial.
+                        Ela não afeta seu bônus nem sua avaliação formal.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Resumo */}
                   <Card className="p-5 space-y-2">
                     <h3 className="text-sm font-bold text-foreground">Resumo Geral</h3>
@@ -668,6 +779,11 @@ const MentoriaPreventiva = () => {
                 </>
               )}
             </div>
+          )}
+
+          {/* Atendente History Section */}
+          {isAttendenteMode && currentUserId && !activeResult && (
+            <MentoriaAttendenteHistory userId={currentUserId} />
           )}
         </div>
       </main>

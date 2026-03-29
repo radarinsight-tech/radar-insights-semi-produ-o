@@ -747,6 +747,7 @@ export type Database = {
       profiles: {
         Row: {
           active: boolean
+          attendant_id: string | null
           company_id: string | null
           created_at: string
           deleted_at: string | null
@@ -756,6 +757,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          attendant_id?: string | null
           company_id?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -765,6 +767,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          attendant_id?: string | null
           company_id?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -773,6 +776,13 @@ export type Database = {
           id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_attendant_id_fkey"
+            columns: ["attendant_id"]
+            isOneToOne: false
+            referencedRelation: "attendants"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_company_id_fkey"
             columns: ["company_id"]
@@ -881,6 +891,7 @@ export type Database = {
         | "credito"
         | "credit_manual"
         | "credit_upload"
+        | "mentoria_atendente"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1015,6 +1026,7 @@ export const Constants = {
         "credito",
         "credit_manual",
         "credit_upload",
+        "mentoria_atendente",
       ],
     },
   },

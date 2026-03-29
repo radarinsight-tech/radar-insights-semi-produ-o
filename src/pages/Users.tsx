@@ -31,19 +31,21 @@ import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-type AppRole = "admin" | "auditoria" | "credito";
+type AppRole = "admin" | "auditoria" | "credito" | "mentoria_atendente";
 type CreditSubRole = "credit_manual" | "credit_upload";
 
 const ROLE_LABELS: Record<AppRole, string> = {
   admin: "Admin",
   auditoria: "Auditoria",
   credito: "Crédito",
+  mentoria_atendente: "Mentoria (Atendente)",
 };
 
 const ROLE_COLORS: Record<AppRole, string> = {
   admin: "bg-primary/10 text-primary border-primary/20",
   auditoria: "bg-blue-500/10 text-blue-600 border-blue-500/20",
   credito: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+  mentoria_atendente: "bg-amber-500/10 text-amber-600 border-amber-500/20",
 };
 
 const CREDIT_SUB_LABELS: Record<CreditSubRole, string> = {
@@ -60,6 +62,7 @@ interface ProfileWithRole {
   sectorIds: string[];
   force_password_change: boolean;
   active: boolean;
+  attendant_id: string | null;
 }
 
 const UsersPage = () => {
@@ -78,6 +81,8 @@ const UsersPage = () => {
   const [editRole, setEditRole] = useState<AppRole | "none">("none");
   const [editCreditSubs, setEditCreditSubs] = useState<CreditSubRole[]>([]);
   const [editSectorIds, setEditSectorIds] = useState<string[]>([]);
+  const [editAttendantId, setEditAttendantId] = useState<string>("");
+  const [attendantsList, setAttendantsList] = useState<Array<{ id: string; name: string }>>([]);
   const [editLoading, setEditLoading] = useState(false);
   const [resetPwOpen, setResetPwOpen] = useState(false);
   const [resetPwUser, setResetPwUser] = useState<ProfileWithRole | null>(null);
@@ -92,7 +97,7 @@ const UsersPage = () => {
   const loadProfiles = async () => {
     const { data: profilesData, error } = await supabase
       .from("profiles")
-      .select("id, full_name, created_at, force_password_change, deleted_at, active")
+      .select("id, full_name, created_at, force_password_change, deleted_at, active, attendant_id")
       .is("deleted_at", null)
       .order("created_at", { ascending: true });
 
@@ -107,7 +112,7 @@ const UsersPage = () => {
       .from("user_roles")
       .select("user_id, role");
 
-    const MAIN_ROLES: string[] = ["admin", "auditoria", "credito"];
+    const MAIN_ROLES: string[] = ["admin", "auditoria", "credito", "mentoria_atendente"];
     const CREDIT_SUBS: string[] = ["credit_manual", "credit_upload"];
 
     const roleMap = new Map<string, AppRole>();
@@ -141,6 +146,7 @@ const UsersPage = () => {
       sectorIds: sectorMap.get(p.id) ?? [],
       force_password_change: (p as any).force_password_change ?? false,
       active: (p as any).active !== false,
+      attendant_id: (p as any).attendant_id ?? null,
     }));
 
     setProfiles(merged);
@@ -187,11 +193,15 @@ const UsersPage = () => {
     }
   };
 
-  const openEditDialog = (profile: ProfileWithRole) => {
+  const openEditDialog = async (profile: ProfileWithRole) => {
     setEditUser(profile);
     setEditRole(profile.role ?? "none");
     setEditCreditSubs(profile.creditSubRoles ?? []);
     setEditSectorIds(profile.sectorIds ?? []);
+    setEditAttendantId(profile.attendant_id ?? "");
+    // Load attendants list
+    const { data: atts } = await supabase.from("attendants").select("id, name").eq("active", true).order("name");
+    setAttendantsList(atts ?? []);
     setEditOpen(true);
   };
 
@@ -209,6 +219,13 @@ const UsersPage = () => {
 
   const handleSaveRole = async () => {
     if (!editUser) return;
+
+    // Validate: mentoria_atendente requires attendant
+    if (editRole === "mentoria_atendente" && !editAttendantId) {
+      toast.error("Selecione o atendente vinculado.");
+      return;
+    }
+
     setEditLoading(true);
 
     try {
@@ -231,6 +248,14 @@ const UsersPage = () => {
         const { error: secError } = await supabase.from("user_sectors").insert(rows as any);
         if (secError) throw secError;
       }
+
+      // Save attendant_id on profile
+      const attId = editRole === "mentoria_atendente" ? editAttendantId : null;
+      const { error: profError } = await supabase
+        .from("profiles")
+        .update({ attendant_id: attId } as any)
+        .eq("id", editUser.id);
+      if (profError) throw profError;
 
       toast.success("Permissões e setores atualizados.");
       setEditOpen(false);
@@ -539,11 +564,26 @@ const UsersPage = () => {
                     <SelectItem value="none">Sem permissão</SelectItem>
                     <SelectItem value="auditoria">Auditoria de Atendimento</SelectItem>
                     <SelectItem value="credito">Análise de Crédito</SelectItem>
+                    <SelectItem value="mentoria_atendente">Mentoria Preventiva (Atendente)</SelectItem>
                     <SelectItem value="admin">Admin (acesso total)</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">Define qual módulo o usuário pode acessar no sistema.</p>
               </div>
+              {editRole === "mentoria_atendente" && (
+                <div className="space-y-2">
+                  <Label>Atendente vinculado <span className="text-destructive">*</span></Label>
+                  <Select value={editAttendantId} onValueChange={setEditAttendantId}>
+                    <SelectTrigger><SelectValue placeholder="Selecione o atendente" /></SelectTrigger>
+                    <SelectContent>
+                      {attendantsList.map((att) => (
+                        <SelectItem key={att.id} value={att.id}>{att.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">O usuário só poderá analisar atendimentos deste atendente.</p>
+                </div>
+              )}
               {(editRole === "credito" || editRole === "admin") && (
                 <div className="space-y-2">
                   <Label>Permissões de Crédito</Label>

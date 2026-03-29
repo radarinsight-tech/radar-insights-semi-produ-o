@@ -79,12 +79,67 @@ serve(async (req) => {
   }
 
   try {
-    const { text } = await req.json();
+    const { text, attendant_id } = await req.json();
     if (!text || typeof text !== "string") {
       return new Response(JSON.stringify({ error: "Texto do atendimento é obrigatório" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Backend validation for mentoria_atendente users
+    if (attendant_id) {
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+      const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+      // Get the authenticated user from the request
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: "Não autenticado" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Verify attendant_id matches the user's profile
+      const profileRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${attendant_id}&select=id`, {
+        headers: {
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          apikey: SUPABASE_SERVICE_ROLE_KEY,
+        },
+      });
+
+      // Check monthly limit (10 per month)
+      const jwt = authHeader.replace("Bearer ", "");
+      // Decode JWT to get user_id (simple base64 decode of payload)
+      const payload = JSON.parse(atob(jwt.split(".")[1]));
+      const userId = payload.sub;
+
+      if (userId) {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const countRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/preventive_mentorings?user_id=eq.${userId}&created_at=gte.${startOfMonth.toISOString()}&select=id`,
+          {
+            headers: {
+              Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+              apikey: SUPABASE_SERVICE_ROLE_KEY,
+              Prefer: "count=exact",
+            },
+          }
+        );
+        const countHeader = countRes.headers.get("content-range");
+        const total = countHeader ? parseInt(countHeader.split("/")[1] || "0") : 0;
+
+        if (total >= 10) {
+          return new Response(JSON.stringify({ error: "Limite mensal de 10 mentorias preventivas atingido." }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
