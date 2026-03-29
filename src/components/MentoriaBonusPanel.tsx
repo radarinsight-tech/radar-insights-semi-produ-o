@@ -692,11 +692,10 @@ const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore, onAuto
           <p className="text-[10px] text-muted-foreground mb-2 font-semibold uppercase tracking-wider">Régua progressiva (base R$ 1.200)</p>
           <div className="flex flex-wrap gap-2">
             {[
-              { faixa: "95–100", label: "Excelente", valor: "R$ 1.200", color: "text-accent bg-accent/10 border-accent/20" },
-              { faixa: "85–94", label: "Muito bom", valor: "R$ 1.080", color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
-              { faixa: "70–84", label: "Bom", valor: "R$ 840", color: "text-primary bg-primary/10 border-primary/20" },
-              { faixa: "50–69", label: "Em desenv.", valor: "R$ 360", color: "text-warning bg-warning/10 border-warning/20" },
-              { faixa: "0–49", label: "Abaixo", valor: "R$ 0", color: "text-destructive bg-destructive/10 border-destructive/20" },
+              { faixa: "90–100", label: "Excelente", valor: "R$ 1.200", color: "text-accent bg-accent/10 border-accent/20" },
+              { faixa: "80–89", label: "Ótimo", valor: "R$ 700", color: "text-primary bg-primary/10 border-primary/20" },
+              { faixa: "60–79", label: "Bom", valor: "R$ 300", color: "text-warning bg-warning/10 border-warning/20" },
+              { faixa: "0–59", label: "Fraco", valor: "R$ 0", color: "text-destructive bg-destructive/10 border-destructive/20" },
             ].map((t) => (
               <span key={t.faixa} className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold", t.color)}>
                 {t.faixa}: {t.label} ({t.valor})
