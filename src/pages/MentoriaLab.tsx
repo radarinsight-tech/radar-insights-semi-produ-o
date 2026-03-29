@@ -238,7 +238,7 @@ const PerformanceSections = ({
       case "resumo":
         return <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} section="resumo" />;
       case "bonus":
-        return <MentoriaCharts files={files} excludedAttendants={globalExcludedSet} />;
+        return <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} section="perf_bonus" />;
       case "detalhada":
         return <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} section="detalhada" />;
       case "recomendados":
