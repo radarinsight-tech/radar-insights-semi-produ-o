@@ -264,10 +264,14 @@ const MentoriaUnifiedTable = ({
                     statusFilter === sf.key
                       ? sf.color === "indigo"
                         ? "bg-indigo-600 text-white shadow-sm"
-                        : "bg-primary text-primary-foreground shadow-sm"
+                        : sf.color === "amber"
+                          ? "bg-amber-500 text-white shadow-sm"
+                          : "bg-primary text-primary-foreground shadow-sm"
                       : sf.color === "indigo"
                         ? "text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/40"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background/60"
+                        : sf.color === "amber"
+                          ? "text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/40"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background/60"
                   )}
                 >
                   {sf.label}
@@ -331,23 +335,7 @@ const MentoriaUnifiedTable = ({
               {displayedItems.map((f) => {
                 const daysPending = !f.hasResult ? getDaysPending(f.addedAt) : 0;
                 const isOverdue = daysPending >= 7;
-
-                // Detect audio-only attendance (analyzed but not truly evaluable)
-                const isAudioOnly = (() => {
-                  if (f.hasAudio) {
-                    const reason = f.nonEvaluableReason || f.ineligibleReason || f.result?.motivo_nao_avaliavel || f.result?.motivo_inelegivel || f.result?._nonEvaluableReason || f.result?._ineligibleReason || "";
-                    const reasonStr = String(reason).toLowerCase();
-                    if (reasonStr.includes("áudio") || reasonStr.includes("audio") || reasonStr.includes("gravacao") || reasonStr.includes("gravação")) return true;
-                  }
-                  // Also check if result has nota 0 with audio markers
-                  if (f.hasAudio && f.hasResult && f.result?.notaFinal === 0) return true;
-                  // Check status text in result
-                  const statusResult = String(f.result?.status_auditoria || f.result?.statusAuditoria || "").toLowerCase();
-                  if (f.hasAudio && (statusResult.includes("não realizada") || statusResult.includes("nao_auditavel"))) return true;
-                  return false;
-                })();
-
-                const nota = (!isAudioOnly && f.hasResult) ? f.result?.notaFinal : null;
+                const nota = f.hasResult ? f.result?.notaFinal : null;
                 const nota10 = nota != null ? notaToScale10(nota) : null;
                 const isReading = readingIds.has(f.id);
                 const isProcessingThis = (processing || batchProcessing) && f.workflowStatus === "em_analise" && !f.hasResult;
