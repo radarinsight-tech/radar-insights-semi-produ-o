@@ -780,6 +780,11 @@ const MentoriaPreventiva = () => {
               )}
             </div>
           )}
+
+          {/* Atendente History Section */}
+          {isAttendenteMode && currentUserId && !activeResult && (
+            <MentoriaAttendenteHistory userId={currentUserId} />
+          )}
         </div>
       </main>
     </div>
