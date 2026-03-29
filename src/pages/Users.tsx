@@ -193,11 +193,15 @@ const UsersPage = () => {
     }
   };
 
-  const openEditDialog = (profile: ProfileWithRole) => {
+  const openEditDialog = async (profile: ProfileWithRole) => {
     setEditUser(profile);
     setEditRole(profile.role ?? "none");
     setEditCreditSubs(profile.creditSubRoles ?? []);
     setEditSectorIds(profile.sectorIds ?? []);
+    setEditAttendantId(profile.attendant_id ?? "");
+    // Load attendants list
+    const { data: atts } = await supabase.from("attendants").select("id, name").eq("active", true).order("name");
+    setAttendantsList(atts ?? []);
     setEditOpen(true);
   };
 
