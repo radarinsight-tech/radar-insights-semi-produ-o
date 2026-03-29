@@ -280,11 +280,11 @@ const MentoriaUnifiedTable = ({
                     className={cn(eligibleIds.size === 0 && "opacity-30 pointer-events-none")}
                   />
                 </TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-wide">Atendente</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-wide">Data</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-wide">Status</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-wide">Nota</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-wide text-right">Ação</TableHead>
+                <TableHead className="w-[30%] text-xs font-bold uppercase tracking-wide">Atendente</TableHead>
+                <TableHead className="w-[12%] text-xs font-bold uppercase tracking-wide">Data</TableHead>
+                <TableHead className="w-[15%] text-xs font-bold uppercase tracking-wide">Status</TableHead>
+                <TableHead className="w-[10%] text-xs font-bold uppercase tracking-wide text-center">Nota</TableHead>
+                <TableHead className="w-[20%] text-xs font-bold uppercase tracking-wide text-right">Ação</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -319,9 +319,9 @@ const MentoriaUnifiedTable = ({
                     </TableCell>
 
                     {/* Atendente + protocolo */}
-                    <TableCell className="py-3">
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate max-w-[200px]">
+                    <TableCell className="py-3 w-[30%]">
+                      <div className="min-w-0 overflow-hidden">
+                        <p className="text-sm font-semibold text-foreground truncate">
                           {f.atendente || <span className="italic text-muted-foreground">Não identificado</span>}
                         </p>
                         {f.protocolo && (
@@ -331,12 +331,12 @@ const MentoriaUnifiedTable = ({
                     </TableCell>
 
                     {/* Data */}
-                    <TableCell className="py-3">
+                    <TableCell className="py-3 w-[12%]">
                       <p className="text-xs text-foreground">{f.data ? formatDateBR(f.data) : "—"}</p>
                     </TableCell>
 
                     {/* Status dot + label */}
-                    <TableCell className="py-3">
+                    <TableCell className="py-3 w-[15%]">
                       <div className="flex items-center gap-1.5">
                         <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(f.category, isProcessingThis))} />
                         <span className="text-[10px] text-muted-foreground whitespace-nowrap">
@@ -354,7 +354,7 @@ const MentoriaUnifiedTable = ({
                     </TableCell>
 
                     {/* Nota */}
-                    <TableCell className="py-3">
+                    <TableCell className="py-3 w-[10%] text-center">
                       {nota10 != null ? (
                         <span className={cn(
                           "text-sm font-bold",
@@ -368,8 +368,8 @@ const MentoriaUnifiedTable = ({
                     </TableCell>
 
                     {/* Ação — main button + overflow menu */}
-                    <TableCell className="py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
+                    <TableCell className="py-3 w-[20%] text-right">
+                      <div className="flex items-center justify-end gap-1 flex-nowrap">
                         {!f.isNonEval && !f.hasResult && (
                           <Button
                             size="sm"
