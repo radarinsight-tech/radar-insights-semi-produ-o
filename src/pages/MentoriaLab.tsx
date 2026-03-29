@@ -2810,107 +2810,90 @@ const MentoriaLab = () => {
           </TabsList>
 
           <TabsContent value="operacao" className="space-y-4 mt-4">
-            {/* Limit tags */}
-            <div className="flex items-center gap-2 flex-wrap text-[10px]">
-              <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground border border-border font-medium px-2.5 py-0.5 cursor-default select-none">
-                <Info className="h-3 w-3 mr-1 shrink-0" />
-                Importar: até {IMPORT_RECOMMENDED}/mês
-              </span>
-              <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground border border-border font-medium px-2.5 py-0.5 cursor-default select-none">
-                <Info className="h-3 w-3 mr-1 shrink-0" />
-                Analisar: até {ANALYZE_LIMIT}/vez
-              </span>
-            </div>
-
-
-            {/* Batch Info Card */}
-            {batchInfo && (
-              <Card className="p-5 border-l-4 border-l-accent bg-accent/5">
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-lg bg-accent/10">
-                      <CheckCircle2 className="h-5 w-5 text-accent" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-foreground">Lote importado com sucesso</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Importado em {batchInfo.createdAt.toLocaleDateString("pt-BR")} às{" "}
-                        {batchInfo.createdAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                      </p>
-                    </div>
-                  </div>
-                  {(() => {
-                    const cfg = batchStatusConfig[batchInfo.status];
-                    const Icon = cfg.icon;
-                    const isAnimated =
-                      batchInfo.status === "extraindo_arquivos" ||
-                      batchInfo.status === "organizando_atendimentos" ||
-                      batchInfo.status === "em_analise";
-                    const isActionable = batchInfo.status === "pronto_para_curadoria";
-                    const readyFiles = isActionable ? files.filter((f) => f.status === "lido") : [];
-                    const handleBadgeClick = () => {
-                      if (!isActionable || readyFiles.length === 0) return;
-                      setSelected(new Set(readyFiles.map((f) => f.id)));
-                      document.getElementById("mentoria-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                      toast.success(
-                        `${readyFiles.length} atendimento${readyFiles.length !== 1 ? "s" : ""} pronto${readyFiles.length !== 1 ? "s" : ""} selecionado${readyFiles.length !== 1 ? "s" : ""}. Clique em "Analisar" para iniciar.`,
-                      );
-                    };
-                    return (
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold shrink-0",
-                          cfg.color,
-                          isActionable && "cursor-pointer hover:bg-accent/10 border-accent/40",
-                        )}
-                        onClick={handleBadgeClick}
-                      >
-                        <Icon className={cn("h-3.5 w-3.5", isAnimated && "animate-spin")} />
-                        {cfg.label}
-                        {isActionable && readyFiles.length > 0 && (
-                          <span className="ml-1 text-accent">({readyFiles.length} prontos)</span>
-                        )}
-                      </Badge>
-                    );
-                  })()}
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm border-t border-border pt-3">
-                  <div className="flex justify-between sm:flex-col sm:text-center">
-                    <span className="text-muted-foreground text-xs">ID do lote</span>
-                    <span className="font-mono font-semibold text-foreground text-xs">{batchInfo.batchCode}</span>
-                  </div>
-                  <div className="flex justify-between sm:flex-col sm:text-center">
-                    <span className="text-muted-foreground text-xs">Entrada</span>
-                    <span className="font-semibold text-foreground text-xs">
-                      {batchInfo.sourceType === "zip" ? "ZIP" : "Múltiplos PDFs"}
-                      {batchInfo.originalFileName ? ` (${batchInfo.originalFileName})` : ""}
-                    </span>
-                  </div>
-                  <div className="flex justify-between sm:flex-col sm:text-center">
-                    <span className="text-muted-foreground text-xs">Arquivos recebidos</span>
-                    <span className="font-bold text-foreground text-xs">{batchInfo.totalFilesInSource}</span>
-                  </div>
-                  <div className="flex justify-between sm:flex-col sm:text-center">
-                    <span className="text-muted-foreground text-xs">PDFs válidos</span>
-                    <span className="font-bold text-primary text-xs">{batchInfo.totalPdfs}</span>
-                  </div>
-                  <div className="flex justify-between sm:flex-col sm:text-center">
-                    <span className="text-muted-foreground text-xs">Ignorados</span>
-                    <span className="font-bold text-muted-foreground text-xs">{batchInfo.ignoredFiles}</span>
-                  </div>
-                  <div className="flex justify-between sm:flex-col sm:text-center">
-                    <span className="text-muted-foreground text-xs">Status</span>
-                    <span className={`font-semibold text-xs ${batchStatusConfig[batchInfo.status].color}`}>
-                      {batchStatusConfig[batchInfo.status].label}
-                    </span>
-                  </div>
-                </div>
+            {/* Loading state */}
+            {loadingFromDb && files.length === 0 && (
+              <Card className="p-12 text-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">Carregando atendimentos salvos...</p>
               </Card>
             )}
 
-            {/* Import Summary Card */}
+            {/* Empty state */}
+            {!loadingFromDb && files.length === 0 && (
+              <Card
+                className="p-8 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group text-center"
+                onClick={() => inputRef.current?.click()}
+              >
+                <Upload className="h-8 w-8 text-primary mx-auto mb-3" />
+                <h3 className="text-sm font-bold text-foreground mb-1">Importar Atendimentos</h3>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  Envie PDFs ou um ZIP com atendimentos para iniciar a curadoria.
+                </p>
+              </Card>
+            )}
+
+            {/* Grid: Upload (60%) + Último Lote (40%) */}
+            {(files.length > 0 || (!loadingFromDb && files.length === 0)) && files.length > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                {/* Upload card — compact */}
+                <Card className="lg:col-span-3 p-4">
+                  <div
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={handleDrop}
+                    onClick={() => inputRef.current?.click()}
+                    className="border-2 border-dashed border-primary/30 rounded-lg h-[100px] flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                  >
+                    <Upload className="h-5 w-5 text-primary/60 mb-1.5" />
+                    <p className="text-sm text-muted-foreground">Arraste PDFs ou ZIP aqui</p>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2.5 text-[10px]">
+                    <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground border border-border font-medium px-2 py-0.5 cursor-default select-none">
+                      <Info className="h-2.5 w-2.5 mr-1 shrink-0" />
+                      Importar: até {IMPORT_RECOMMENDED}/mês
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground border border-border font-medium px-2 py-0.5 cursor-default select-none">
+                      <Info className="h-2.5 w-2.5 mr-1 shrink-0" />
+                      Analisar: até {ANALYZE_LIMIT}/vez
+                    </span>
+                  </div>
+                </Card>
+
+                {/* Último lote — compact */}
+                <Card className="lg:col-span-2 p-4 flex flex-col justify-center">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Último lote</p>
+                  {batchInfo ? (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-semibold text-foreground">{batchInfo.batchCode}</span>
+                        {(() => {
+                          const cfg = batchStatusConfig[batchInfo.status];
+                          return (
+                            <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 h-auto shrink-0", cfg.color)}>
+                              {cfg.label}
+                            </Badge>
+                          );
+                        })()}
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                        <span>{batchInfo.createdAt.toLocaleDateString("pt-BR")} {batchInfo.createdAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                        <span>·</span>
+                        <span className="font-semibold text-foreground">{batchInfo.totalPdfs}</span> PDFs válidos
+                        {batchInfo.ignoredFiles > 0 && (
+                          <>
+                            <span>·</span>
+                            <span>{batchInfo.ignoredFiles} ignorados</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">Nenhum lote importado ainda.</p>
+                  )}
+                </Card>
+              </div>
+            )}
+
+            {/* Import Summary — inline bar */}
             {files.length > 0 && (
               <MentoriaImportSummary
                 files={filteredFiles}
@@ -2920,62 +2903,8 @@ const MentoriaLab = () => {
               />
             )}
 
-            {/* 3 Main Action Cards */}
-            {loadingFromDb && files.length === 0 && (
-              <Card className="p-12 text-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">Carregando atendimentos salvos...</p>
-              </Card>
-            )}
-
-            {!loadingFromDb && files.length === 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Card
-                  className="p-6 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group"
-                  onClick={() => inputRef.current?.click()}
-                >
-                  <div className="flex flex-col items-center text-center gap-3">
-                    <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors">
-                      <Upload className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-foreground mb-1">Importar Atendimentos</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Envie PDFs ou um ZIP com atendimentos para iniciar a curadoria.
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card className="p-6 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group opacity-60 pointer-events-none">
-                  <div className="flex flex-col items-center text-center gap-3">
-                    <div className="p-3 rounded-xl bg-accent/10 group-hover:bg-accent/15 transition-colors">
-                      <Play className="h-6 w-6 text-accent" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-foreground mb-1">Analisar Lote</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Selecione atendimentos importados e gere análises automáticas em lote.
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card className="p-6 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group opacity-60 pointer-events-none">
-                  <div className="flex flex-col items-center text-center gap-3">
-                    <div className="p-3 rounded-xl bg-secondary/50 group-hover:bg-secondary/70 transition-colors">
-                      <BookOpen className="h-6 w-6 text-secondary-foreground" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-foreground mb-1">Ver Insights</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Visualize tendências, pontos de melhoria e evolução dos atendentes.
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-            )}
+            {/* Batch History accordion */}
+            {files.length > 0 && <MentoriaBatchHistory />}
 
             {/* Upload input (hidden) */}
             <input
@@ -2989,23 +2918,6 @@ const MentoriaLab = () => {
               }}
               className="hidden"
             />
-
-            {/* Upload drop zone — only when files exist (inline re-import) */}
-            {files.length > 0 && (
-              <Card className="p-4">
-                <div
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={handleDrop}
-                  onClick={() => inputRef.current?.click()}
-                  className="border-2 border-dashed border-primary/30 rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
-                >
-                  <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
-                    <Upload className="h-4 w-4 text-primary/60" />
-                    Arraste PDFs ou ZIP aqui para adicionar ao lote
-                  </p>
-                </div>
-              </Card>
-            )}
           </TabsContent>
 
           <TabsContent value="pipeline" className="space-y-4 mt-4">
