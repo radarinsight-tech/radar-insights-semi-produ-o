@@ -419,7 +419,7 @@ const MentoriaPreventiva = () => {
           </div>
 
           {/* Upload zone */}
-          {files.length === 0 && (
+          {files.length === 0 && !isMonthlyLimitReached && (
             <Card
               className="p-8 text-center cursor-pointer border-2 border-dashed border-border hover:border-primary/40 transition-colors"
               onDrop={handleDrop}
