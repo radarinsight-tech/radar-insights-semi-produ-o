@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -453,24 +454,33 @@ const MentoriaReportExport = ({ files, batchInfo }: MentoriaReportExportProps) =
   if (!hasAnalyzed) return null;
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2 text-xs" disabled={generating}>
-          {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
-          Exportar relatório
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => handleExport(false)} className="gap-2">
-          <FileText className="h-4 w-4" />
-          Relatório completo
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleExport(true)} className="gap-2">
-          <ClipboardList className="h-4 w-4" />
-          Apenas resumo
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2 text-xs" disabled={generating}>
+                  {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
+                  Exportar relatório
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport(false)} className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  Relatório completo
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport(true)} className="gap-2">
+                  <ClipboardList className="h-4 w-4" />
+                  Apenas resumo
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="bottom"><p>Baixar relatório completo do lote em PDF ou Excel</p></TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 
