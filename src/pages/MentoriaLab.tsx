@@ -3233,9 +3233,6 @@ const MentoriaLab = () => {
                     <TooltipContent side="bottom"><p>Ocultar ou exibir a tabela de atendimentos</p></TooltipContent>
                   </Tooltip>
                   </TooltipProvider>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
                 </div>
 
                 {/* Table section (hideable) */}
