@@ -5,12 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import {
   FileText,
   Zap,
-  Hand,
   Copy,
   AlertTriangle,
   Loader2,
   Eye,
   CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import {
   resolvePersistedMentoriaEvaluability,
@@ -27,6 +27,7 @@ interface ImportSummaryFile {
 interface MentoriaImportSummaryProps {
   files: ImportSummaryFile[];
   duplicateCount: number;
+  errorCount?: number;
   onStartAutoAnalysis: () => void;
   onViewAll: () => void;
   isProcessing: boolean;
@@ -36,6 +37,7 @@ interface MentoriaImportSummaryProps {
 const MentoriaImportSummary = ({
   files,
   duplicateCount,
+  errorCount = 0,
   onStartAutoAnalysis,
   onViewAll,
   isProcessing,
@@ -51,20 +53,14 @@ const MentoriaImportSummary = ({
 
     const analyzed = files.filter((f) => f.status === "analisado").length;
 
-    // Eligible for auto IA: read or pending, not non-evaluable, not already analyzed
     const eligibleForAuto = files.filter((f) => {
       const ev = resolvePersistedMentoriaEvaluability(f.result);
       const isNonEval = ev?.nonEvaluable === true;
       return !isNonEval && (f.status === "lido" || f.status === "pendente") && !f.result;
     }).length;
 
-    // Manual = has result but needs human review (analyzed but not yet validated)
-    const manualReview = files.filter((f) => {
-      return f.status === "analisado" && f.result && !f.result?.resultado_validado;
-    }).length;
-
-    return { total, eligibleForAuto, manualReview, nonEvaluable, analyzed, duplicates: duplicateCount };
-  }, [files, duplicateCount]);
+    return { total, eligibleForAuto, nonEvaluable, analyzed, duplicates: duplicateCount, errors: errorCount };
+  }, [files, duplicateCount, errorCount]);
 
   if (stats.total === 0) return null;
 
@@ -106,7 +102,17 @@ const MentoriaImportSummary = ({
       value: stats.duplicates,
       color: "text-warning",
       bg: "bg-warning/10",
+      badgeColor: "bg-orange-500 text-white",
       hide: stats.duplicates === 0,
+    },
+    {
+      icon: XCircle,
+      label: "Erros",
+      value: stats.errors,
+      color: "text-destructive",
+      bg: "bg-destructive/10",
+      badgeColor: "bg-destructive text-destructive-foreground",
+      hide: stats.errors === 0,
     },
   ];
 
@@ -119,7 +125,7 @@ const MentoriaImportSummary = ({
         </Badge>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-5">
         {items.filter((i) => !i.hide).map((item) => {
           const Icon = item.icon;
           return (
@@ -129,9 +135,16 @@ const MentoriaImportSummary = ({
             >
               <Icon className={`h-4 w-4 ${item.color} shrink-0`} />
               <div>
-                <p className={`text-lg font-bold leading-none ${item.color}`}>
-                  {item.value}
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className={`text-lg font-bold leading-none ${item.color}`}>
+                    {item.value}
+                  </p>
+                  {item.badgeColor && (
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${item.badgeColor}`}>
+                      {item.value}
+                    </span>
+                  )}
+                </div>
                 <p className="text-[10px] text-muted-foreground mt-0.5">
                   {item.label}
                 </p>

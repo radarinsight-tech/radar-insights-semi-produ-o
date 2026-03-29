@@ -2822,23 +2822,6 @@ const MentoriaLab = () => {
               </span>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-              {[
-                { label: "Total", value: counts.total, color: "text-foreground" },
-                { label: "Pendentes", value: counts.pendente, color: "text-muted-foreground" },
-                { label: "Lidos", value: counts.lido, color: "text-primary" },
-                { label: "Analisados", value: counts.analisado, color: "text-accent" },
-                { label: "Não avaliáveis", value: counts.naoAvaliavel, color: "text-warning" },
-                { label: "Atendentes", value: counts.atendentes, color: "text-primary" },
-                { label: "Erros", value: counts.erro, color: "text-destructive" },
-              ].map((s) => (
-                <Card key={s.label} className="p-2.5 text-center">
-                  <span className={`text-xl font-bold tracking-tight ${s.color}`}>{s.value}</span>
-                  <p className="text-[10px] text-muted-foreground">{s.label}</p>
-                </Card>
-              ))}
-            </div>
 
             {/* Batch Info Card */}
             {batchInfo && (
@@ -2932,6 +2915,7 @@ const MentoriaLab = () => {
               <MentoriaImportSummary
                 files={filteredFiles}
                 duplicateCount={duplicateCount}
+                errorCount={counts.erro}
                 onStartAutoAnalysis={() => handleBatchAnalyze("all")}
                 onViewAll={() => setActiveTab("pipeline")}
                 isProcessing={processing}
