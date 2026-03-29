@@ -335,30 +335,22 @@ const MentoriaUnifiedTable = ({
                       <p className="text-xs text-foreground">{f.data ? formatDateBR(f.data) : "—"}</p>
                     </TableCell>
 
-                    {/* Status dot */}
-                    <TableCell className="py-3 text-center">
-                      <TooltipProvider delayDuration={200}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="flex items-center justify-center gap-1.5">
-                              <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(f.category, isProcessingThis))} />
-                              {isOverdue && (
-                                <Badge className="bg-destructive/15 text-destructive text-[8px] px-1 py-0 h-auto gap-0.5">
-                                  <Clock className="h-2 w-2" />{daysPending}d
-                                </Badge>
-                              )}
-                              {f.approvedAsOfficial && (
-                                <ShieldCheck className="h-3 w-3 text-accent" />
-                              )}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs">
-                              {f.isNonEval ? "Não avaliável" : isProcessingThis ? "Processando..." : f.hasResult ? "Analisado" : f.category === "em_analise" ? "Em análise" : "Pendente"}
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                    {/* Status dot + label */}
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(f.category, isProcessingThis))} />
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                          {f.isNonEval ? "N/A" : isProcessingThis ? "Processando" : f.hasResult ? "Analisado" : f.category === "em_analise" ? "Em análise" : "Pendente"}
+                        </span>
+                        {isOverdue && (
+                          <Badge className="bg-destructive/15 text-destructive text-[8px] px-1 py-0 h-auto gap-0.5">
+                            <Clock className="h-2 w-2" />{daysPending}d
+                          </Badge>
+                        )}
+                        {f.approvedAsOfficial && (
+                          <ShieldCheck className="h-3 w-3 text-accent" />
+                        )}
+                      </div>
                     </TableCell>
 
                     {/* Nota */}
