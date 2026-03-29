@@ -353,22 +353,57 @@ const MentoriaPreventiva = () => {
     return "text-destructive";
   };
 
+  // ── Access guard ──────────────────────────────────────────────────────
+  if (permLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Check access: must have auditoria, admin, or mentoria_atendente
+  if (!canAccess("auditoria") && !canAccess("mentoria_atendente")) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card className="p-8 max-w-md w-full mx-4 text-center space-y-4">
+          <div className="p-3 rounded-full bg-destructive/10 w-fit mx-auto">
+            <ShieldAlert className="h-8 w-8 text-destructive" />
+          </div>
+          <h2 className="text-lg font-bold text-foreground">Acesso restrito</h2>
+          <p className="text-sm text-muted-foreground">
+            Você não possui permissão para acessar este módulo.
+          </p>
+          <Button onClick={() => navigate("/hub")} className="w-full">Voltar ao início</Button>
+        </Card>
+      </div>
+    );
+  }
+
   // ── Render ───────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="border-b border-border bg-card px-6 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={logoSymbol} alt="Radar Insight" className="h-7 w-7 rounded-lg object-contain" />
-            <h1 className="text-lg font-bold text-primary">Mentoria Preventiva</h1>
-            <Badge variant="outline" className="text-xs">Beta</Badge>
+      {/* Header — different for atendente mode */}
+      {isAttendenteMode ? (
+        <MentoriaAttendenteHeader
+          attendantName={attendantName || "Atendente"}
+          monthlyCount={monthlyCount}
+          monthlyLimit={MONTHLY_LIMIT}
+        />
+      ) : (
+        <header className="border-b border-border bg-card px-6 py-3">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img src={logoSymbol} alt="Radar Insight" className="h-7 w-7 rounded-lg object-contain" />
+              <h1 className="text-lg font-bold text-primary">Mentoria Preventiva</h1>
+              <Badge variant="outline" className="text-xs">Beta</Badge>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/hub")}>
+              <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/hub")}>
-            <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
-          </Button>
-        </div>
-      </header>
+        </header>
+      )}
 
       <main className="flex-1 px-6 py-6">
         <div className="max-w-7xl mx-auto space-y-5">
