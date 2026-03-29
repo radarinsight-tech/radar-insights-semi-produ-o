@@ -20,7 +20,7 @@ import {
 } from "@/lib/mentoriaEvaluability";
 import type { WorkflowStatus } from "@/components/MentoriaDetailDialog";
 
-type StatusFilter = "todos" | "pendentes" | "em_analise" | "finalizados" | "nao_avaliaveis" | "aptos_ia";
+type StatusFilter = "todos" | "pendentes" | "em_analise" | "finalizados" | "nao_avaliaveis" | "aptos_ia" | "audio";
 
 interface UnifiedFile {
   id: string;
@@ -79,6 +79,7 @@ const STATUS_FILTERS: { key: StatusFilter; label: string; color?: string; toolti
   { key: "aptos_ia", label: "⚡ Aptos IA", color: "indigo", tooltip: "PDFs válidos prontos para análise automática. Clique em Analisar para processar" },
   { key: "em_analise", label: "Em análise", tooltip: "Atendimentos sendo processados pela IA no momento" },
   { key: "nao_avaliaveis", label: "Não avaliáveis", tooltip: "PDFs sem conteúdo válido para auditoria (áudio, sem interação, duplicados)" },
+  { key: "audio", label: "🎙️ Áudio", color: "amber", tooltip: "Atendimentos com áudio — auditoria não realizada por conteúdo de voz" },
 ];
 
 const getDaysPending = (addedAt?: Date): number => {
@@ -130,13 +131,23 @@ const MentoriaUnifiedTable = ({
       const hasResult = f.status === "analisado" && f.result;
       const isAutoEligible = !isNonEval && (f.status === "lido" || f.status === "pendente") && !hasResult;
 
+      // Detect audio-only attendance
+      const isAudio = Boolean(f.hasAudio) && (() => {
+        const reason = String(f.nonEvaluableReason || f.ineligibleReason || f.result?.motivo_nao_avaliavel || f.result?.motivo_inelegivel || f.result?._nonEvaluableReason || f.result?._ineligibleReason || "").toLowerCase();
+        if (reason.includes("áudio") || reason.includes("audio") || reason.includes("gravacao") || reason.includes("gravação")) return true;
+        if (hasResult && f.result?.notaFinal === 0) return true;
+        const statusResult = String(f.result?.status_auditoria || f.result?.statusAuditoria || "").toLowerCase();
+        if (statusResult.includes("não realizada") || statusResult.includes("nao_auditavel")) return true;
+        return false;
+      })();
+
       let category: StatusFilter;
       if (isNonEval) category = "nao_avaliaveis";
       else if (ws === "finalizado" || hasResult) category = "finalizados";
       else if (ws === "em_analise") category = "em_analise";
       else category = "pendentes";
 
-      return { ...f, category, isNonEval, hasResult, isAutoEligible, workflowStatus: ws };
+      return { ...f, category, isNonEval, hasResult, isAutoEligible, isAudio, workflowStatus: ws };
     });
   }, [files, getWorkflowStatus]);
 
@@ -150,6 +161,7 @@ const MentoriaUnifiedTable = ({
   const filtered = useMemo(() => {
     if (statusFilter === "todos") return visibleItems;
     if (statusFilter === "aptos_ia") return visibleItems.filter((f) => f.isAutoEligible);
+    if (statusFilter === "audio") return visibleItems.filter((f) => f.isAudio);
     return visibleItems.filter((f) => f.category === statusFilter);
   }, [visibleItems, statusFilter]);
 
@@ -166,12 +178,14 @@ const MentoriaUnifiedTable = ({
       finalizados: categorized.filter((f) => f.category === "finalizados").length,
       nao_avaliaveis: 0,
       aptos_ia: 0,
+      audio: 0,
     };
     for (const f of visibleItems) {
       if (f.category === "pendentes") counts.pendentes++;
       else if (f.category === "em_analise") counts.em_analise++;
       else if (f.category === "nao_avaliaveis") counts.nao_avaliaveis++;
       if (f.isAutoEligible) counts.aptos_ia++;
+      if (f.isAudio) counts.audio++;
     }
     return counts;
   }, [visibleItems, categorized]);
@@ -250,10 +264,14 @@ const MentoriaUnifiedTable = ({
                     statusFilter === sf.key
                       ? sf.color === "indigo"
                         ? "bg-indigo-600 text-white shadow-sm"
-                        : "bg-primary text-primary-foreground shadow-sm"
+                        : sf.color === "amber"
+                          ? "bg-amber-500 text-white shadow-sm"
+                          : "bg-primary text-primary-foreground shadow-sm"
                       : sf.color === "indigo"
                         ? "text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/40"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background/60"
+                        : sf.color === "amber"
+                          ? "text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/40"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background/60"
                   )}
                 >
                   {sf.label}
@@ -317,23 +335,7 @@ const MentoriaUnifiedTable = ({
               {displayedItems.map((f) => {
                 const daysPending = !f.hasResult ? getDaysPending(f.addedAt) : 0;
                 const isOverdue = daysPending >= 7;
-
-                // Detect audio-only attendance (analyzed but not truly evaluable)
-                const isAudioOnly = (() => {
-                  if (f.hasAudio) {
-                    const reason = f.nonEvaluableReason || f.ineligibleReason || f.result?.motivo_nao_avaliavel || f.result?.motivo_inelegivel || f.result?._nonEvaluableReason || f.result?._ineligibleReason || "";
-                    const reasonStr = String(reason).toLowerCase();
-                    if (reasonStr.includes("áudio") || reasonStr.includes("audio") || reasonStr.includes("gravacao") || reasonStr.includes("gravação")) return true;
-                  }
-                  // Also check if result has nota 0 with audio markers
-                  if (f.hasAudio && f.hasResult && f.result?.notaFinal === 0) return true;
-                  // Check status text in result
-                  const statusResult = String(f.result?.status_auditoria || f.result?.statusAuditoria || "").toLowerCase();
-                  if (f.hasAudio && (statusResult.includes("não realizada") || statusResult.includes("nao_auditavel"))) return true;
-                  return false;
-                })();
-
-                const nota = (!isAudioOnly && f.hasResult) ? f.result?.notaFinal : null;
+                const nota = f.hasResult ? f.result?.notaFinal : null;
                 const nota10 = nota != null ? notaToScale10(nota) : null;
                 const isReading = readingIds.has(f.id);
                 const isProcessingThis = (processing || batchProcessing) && f.workflowStatus === "em_analise" && !f.hasResult;
@@ -380,19 +382,11 @@ const MentoriaUnifiedTable = ({
                     {/* Status dot + label */}
                     <TableCell className="py-3 w-[15%]">
                       <div className="flex items-center gap-1.5">
-                        {isAudioOnly ? (
-                          <Badge className="bg-warning/20 text-warning text-[10px] px-1.5 py-0.5 h-auto gap-1 border border-warning/30">
-                            🎙️ Áudio
-                          </Badge>
-                        ) : (
-                          <>
-                            <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(f.category, isProcessingThis))} />
-                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                              {f.isNonEval ? "N/A" : isProcessingThis ? "Processando" : f.hasResult ? "Analisado" : f.category === "em_analise" ? "Em análise" : "Pendente"}
-                            </span>
-                          </>
-                        )}
-                        {isOverdue && !isAudioOnly && (
+                        <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(f.category, isProcessingThis))} />
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                          {f.isNonEval ? "N/A" : isProcessingThis ? "Processando" : f.hasResult ? "Analisado" : f.category === "em_analise" ? "Em análise" : "Pendente"}
+                        </span>
+                        {isOverdue && (
                           <Badge className="bg-destructive/15 text-destructive text-[8px] px-1 py-0 h-auto gap-0.5">
                             <Clock className="h-2 w-2" />{daysPending}d
                           </Badge>
@@ -405,14 +399,7 @@ const MentoriaUnifiedTable = ({
 
                     {/* Nota */}
                     <TableCell className="py-3 w-[10%] text-center">
-                      {isAudioOnly ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="text-sm cursor-default">🎙️</span>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom"><p>Atendimento com áudio — nota não aplicável</p></TooltipContent>
-                        </Tooltip>
-                      ) : nota10 != null ? (
+                      {nota10 != null ? (
                         <span className={cn(
                           "text-sm font-bold",
                           nota10 >= 9 ? "text-accent" : nota10 >= 7 ? "text-primary" : nota10 >= 5 ? "text-warning" : "text-destructive"
