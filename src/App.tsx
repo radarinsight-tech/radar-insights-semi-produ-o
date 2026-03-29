@@ -119,9 +119,7 @@ const App = () => {
               path="/mentoria-preventiva"
               element={
                 <ProtectedRoute>
-                  <ModuleGuard module="auditoria">
-                    <MentoriaPreventiva />
-                  </ModuleGuard>
+                  <MentoriaPreventiva />
                 </ProtectedRoute>
               }
             />
