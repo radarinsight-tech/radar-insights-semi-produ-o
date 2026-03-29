@@ -270,7 +270,7 @@ const PerformanceSections = ({
   );
 };
 
-
+const MentoriaLab = () => {
   const navigate = useNavigate();
   const [files, setFiles] = useState<LabFile[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
