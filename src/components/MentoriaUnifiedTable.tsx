@@ -244,6 +244,7 @@ const MentoriaUnifiedTable = ({
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Data</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Status</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Tipo</TableHead>
+                <TableHead className="text-xs font-bold uppercase tracking-wide text-center">Aptos IA</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Nota</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide text-right">Ação</TableHead>
               </TableRow>
@@ -359,6 +360,15 @@ const MentoriaUnifiedTable = ({
                           </Badge>
                         )}
                       </div>
+                    </TableCell>
+
+                    {/* Aptos IA */}
+                    <TableCell className="py-3 text-center">
+                      {f.isAutoEligible ? (
+                        <Zap className="h-4 w-4 text-accent inline-block" />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </TableCell>
 
                     {/* Nota */}
