@@ -546,14 +546,14 @@ const MentoriaPipeline = ({
         ) : null;
       })()}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="flex flex-col lg:flex-row gap-4">
         {COLUMNS.map((col) => {
           const items = grouped[col.key];
           const style = columnStyles[col.key];
           const Icon = col.icon;
 
           return (
-            <div key={col.key} className={cn("rounded-2xl border p-4 flex flex-col", style.border, style.bg)}>
+            <div key={col.key} className={cn("flex-1 min-w-[280px] rounded-2xl border p-4 flex flex-col", style.border, style.bg)}>
               <div className="flex items-center justify-between mb-4 shrink-0">
                 <div className="flex items-center gap-2">
                   <Icon className={cn("h-4 w-4", style.header)} />
