@@ -104,8 +104,8 @@ const MentoriaImportSummary = ({
       icon: Copy,
       label: "Duplicatas",
       value: stats.duplicates,
-      color: "text-orange-600",
-      bg: "bg-orange-100",
+      color: "text-warning",
+      bg: "bg-warning/10",
       hide: stats.duplicates === 0,
     },
   ];
@@ -142,8 +142,8 @@ const MentoriaImportSummary = ({
       </div>
 
       {stats.duplicates > 0 && (
-        <div className="flex items-center gap-2.5 rounded-xl border border-orange-300/50 bg-orange-50 px-4 py-2.5 mb-4">
-          <Copy className="h-4 w-4 text-orange-600 shrink-0" />
+        <div className="flex items-center gap-2.5 rounded-xl border border-warning/30 bg-warning/5 px-4 py-2.5 mb-4">
+          <Copy className="h-4 w-4 text-warning shrink-0" />
           <span className="text-xs text-foreground">
             <strong className="font-semibold">{stats.duplicates}</strong> arquivo(s) já importado(s) anteriormente foram detectados como duplicata(s).
           </span>
