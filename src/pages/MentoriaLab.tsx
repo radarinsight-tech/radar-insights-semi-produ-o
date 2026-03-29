@@ -193,7 +193,7 @@ const isFatalPdfReadError = (error: unknown) => {
 };
 
 // ─── Performance Sub-Sections ───────────────────────────────────────
-type PerformanceSection = "bonus_panel" | "resumo" | "bonus" | "detalhada" | "recomendados" | "padroes" | "roteiro";
+type PerformanceSection = "bonus_panel" | "resumo" | "bonus" | "detalhada" | "recomendados" | "padroes" | "roteiro" | "graficos";
 
 const PERF_NAV: { key: PerformanceSection; label: string; icon: string; tooltip: string }[] = [
   { key: "bonus_panel", label: "Painel de Bônus", icon: "🏆", tooltip: "Ranking de bônus por atendente com régua progressiva" },
@@ -203,6 +203,7 @@ const PERF_NAV: { key: PerformanceSection; label: string; icon: string; tooltip:
   { key: "recomendados", label: "Recomendados", icon: "⭐", tooltip: "Atendimentos indicados para sessão de mentoria" },
   { key: "padroes", label: "Padrões", icon: "💬", tooltip: "Padrões de comportamento recorrentes identificados pela IA" },
   { key: "roteiro", label: "Roteiro", icon: "📋", tooltip: "Roteiro de mentoria gerado automaticamente pela IA" },
+  { key: "graficos", label: "Gráficos de Evolução", icon: "📈", tooltip: "Evolução da nota média e volume de auditorias ao longo do tempo" },
 ];
 
 const PerformanceSections = ({
@@ -247,6 +248,8 @@ const PerformanceSections = ({
         return <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} section="padroes" />;
       case "roteiro":
         return <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} section="roteiro" />;
+      case "graficos":
+        return <MentoriaCharts files={files} excludedAttendants={globalExcludedSet} />;
       default:
         return null;
     }
@@ -2963,7 +2966,7 @@ const MentoriaLab = () => {
             <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="operacao" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-accent/60 transition-colors rounded-md font-medium">Operação</TabsTrigger>
+                  <TabsTrigger value="operacao" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground hover:bg-accent/60 transition-colors rounded-md font-medium">Operação</TabsTrigger>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-[300px] text-center">
                   <p>Esteira de trabalho: importe, analise e gerencie os atendimentos do lote atual</p>
@@ -2971,7 +2974,7 @@ const MentoriaLab = () => {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="performance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-accent/60 transition-colors rounded-md font-medium">Performance</TabsTrigger>
+                  <TabsTrigger value="performance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground hover:bg-accent/60 transition-colors rounded-md font-medium">Performance</TabsTrigger>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-[300px] text-center">
                   <p>Visualize métricas, bônus e evolução dos atendentes da competência selecionada</p>
