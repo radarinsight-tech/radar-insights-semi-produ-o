@@ -275,24 +275,42 @@ const MentoriaUnifiedTable = ({
           Nenhum atendimento nesta categoria.
         </div>
       ) : (
+        <TooltipProvider delayDuration={300}>
         <div className="rounded-xl border border-border/40 overflow-hidden">
           <div className="max-h-[380px] overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
                 <TableHead className="w-10 text-center">
-                  <Checkbox
-                    checked={allEligibleSelected}
-                    onCheckedChange={(checked) => handleSelectAll(!!checked)}
-                    aria-label="Selecionar todos elegíveis"
-                    className={cn(eligibleIds.size === 0 && "opacity-30 pointer-events-none")}
-                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex">
+                        <Checkbox
+                          checked={allEligibleSelected}
+                          onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                          aria-label="Selecionar todos elegíveis"
+                          className={cn(eligibleIds.size === 0 && "opacity-30 pointer-events-none")}
+                        />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom"><p>Selecionar todos os atendimentos da página</p></TooltipContent>
+                  </Tooltip>
                 </TableHead>
-                <TableHead className="w-[30%] text-xs font-bold uppercase tracking-wide">Atendente</TableHead>
-                <TableHead className="w-[12%] text-xs font-bold uppercase tracking-wide">Data</TableHead>
-                <TableHead className="w-[15%] text-xs font-bold uppercase tracking-wide">Status</TableHead>
-                <TableHead className="w-[10%] text-xs font-bold uppercase tracking-wide text-center">Nota</TableHead>
-                <TableHead className="w-[20%] text-xs font-bold uppercase tracking-wide text-right">Ação</TableHead>
+                <TableHead className="w-[30%] text-xs font-bold uppercase tracking-wide">
+                  <Tooltip><TooltipTrigger asChild><span className="cursor-default">Atendente</span></TooltipTrigger><TooltipContent side="bottom"><p>Nome do atendente e protocolo do atendimento</p></TooltipContent></Tooltip>
+                </TableHead>
+                <TableHead className="w-[12%] text-xs font-bold uppercase tracking-wide">
+                  <Tooltip><TooltipTrigger asChild><span className="cursor-default">Data</span></TooltipTrigger><TooltipContent side="bottom"><p>Data de realização do atendimento</p></TooltipContent></Tooltip>
+                </TableHead>
+                <TableHead className="w-[15%] text-xs font-bold uppercase tracking-wide">
+                  <Tooltip><TooltipTrigger asChild><span className="cursor-default">Status</span></TooltipTrigger><TooltipContent side="bottom"><p>Situação atual da análise (Pendente, Analisado, Em análise, Não avaliável)</p></TooltipContent></Tooltip>
+                </TableHead>
+                <TableHead className="w-[10%] text-xs font-bold uppercase tracking-wide text-center">
+                  <Tooltip><TooltipTrigger asChild><span className="cursor-default">Nota</span></TooltipTrigger><TooltipContent side="bottom"><p>Nota final atribuída pela IA após análise</p></TooltipContent></Tooltip>
+                </TableHead>
+                <TableHead className="w-[20%] text-xs font-bold uppercase tracking-wide text-right">
+                  <Tooltip><TooltipTrigger asChild><span className="cursor-default">Ação</span></TooltipTrigger><TooltipContent side="bottom"><p>Ações disponíveis para este atendimento</p></TooltipContent></Tooltip>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
