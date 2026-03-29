@@ -97,7 +97,7 @@ const UsersPage = () => {
   const loadProfiles = async () => {
     const { data: profilesData, error } = await supabase
       .from("profiles")
-      .select("id, full_name, created_at, force_password_change, deleted_at, active")
+      .select("id, full_name, created_at, force_password_change, deleted_at, active, attendant_id")
       .is("deleted_at", null)
       .order("created_at", { ascending: true });
 
@@ -112,7 +112,7 @@ const UsersPage = () => {
       .from("user_roles")
       .select("user_id, role");
 
-    const MAIN_ROLES: string[] = ["admin", "auditoria", "credito"];
+    const MAIN_ROLES: string[] = ["admin", "auditoria", "credito", "mentoria_atendente"];
     const CREDIT_SUBS: string[] = ["credit_manual", "credit_upload"];
 
     const roleMap = new Map<string, AppRole>();
@@ -146,6 +146,7 @@ const UsersPage = () => {
       sectorIds: sectorMap.get(p.id) ?? [],
       force_password_change: (p as any).force_password_change ?? false,
       active: (p as any).active !== false,
+      attendant_id: (p as any).attendant_id ?? null,
     }));
 
     setProfiles(merged);
