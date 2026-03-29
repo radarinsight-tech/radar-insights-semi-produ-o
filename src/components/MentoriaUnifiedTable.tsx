@@ -4,26 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Eye,
-  ShieldCheck,
-  Bug,
-  Trash2,
-  Loader2,
-  PlayCircle,
-  CheckCircle2,
-  AlertTriangle,
-  BookOpen,
-  Zap,
-  Clock,
-  UserCheck,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Eye, ShieldCheck, Bug, Trash2, Loader2, PlayCircle, CheckCircle2,
+  AlertTriangle, BookOpen, Zap, Clock, MoreHorizontal,
 } from "lucide-react";
 import { cn, formatDateBR, notaToScale10 } from "@/lib/utils";
 import {
@@ -90,15 +78,24 @@ const STATUS_FILTERS: { key: StatusFilter; label: string; color?: string }[] = [
   { key: "pendentes", label: "Pendentes" },
   { key: "aptos_ia", label: "⚡ Aptos IA", color: "indigo" },
   { key: "em_analise", label: "Em análise" },
-  { key: "finalizados", label: "Finalizados" },
   { key: "nao_avaliaveis", label: "Não avaliáveis" },
 ];
 
 const getDaysPending = (addedAt?: Date): number => {
   if (!addedAt) return 0;
   const now = new Date();
-  const diff = now.getTime() - addedAt.getTime();
-  return Math.floor(diff / (1000 * 60 * 60 * 24));
+  return Math.floor((now.getTime() - addedAt.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+// Status dot colors
+const statusDot = (category: string, isProcessing: boolean) => {
+  if (isProcessing) return "bg-primary animate-pulse";
+  switch (category) {
+    case "finalizados": return "bg-accent";
+    case "em_analise": return "bg-blue-500";
+    case "nao_avaliaveis": return "bg-warning";
+    default: return "bg-muted-foreground/40";
+  }
 };
 
 const MentoriaUnifiedTable = ({
@@ -143,7 +140,7 @@ const MentoriaUnifiedTable = ({
     });
   }, [files, getWorkflowStatus]);
 
-  // Hide already-analyzed items from main table (they exit the queue)
+  // Hide already-analyzed items from main table
   const visibleItems = useMemo(() => {
     return categorized.filter((f) => f.category !== "finalizados");
   }, [categorized]);
@@ -172,13 +169,11 @@ const MentoriaUnifiedTable = ({
     return counts;
   }, [visibleItems, categorized]);
 
-  // Eligible items for checkbox selection (status lido + auditable content)
   const eligibleIds = useMemo(() => {
     return new Set(filtered.filter((f) => f.isAutoEligible).map((f) => f.id));
   }, [filtered]);
 
   const allEligibleSelected = eligibleIds.size > 0 && [...eligibleIds].every((id) => selectedIds.has(id));
-  const someEligibleSelected = [...eligibleIds].some((id) => selectedIds.has(id));
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -209,7 +204,7 @@ const MentoriaUnifiedTable = ({
 
   return (
     <div className="space-y-3" id="mentoria-table">
-      {/* Batch progress counters */}
+      {/* Batch progress */}
       {batchProcessing && (
         <div className="flex items-center gap-4 rounded-xl border border-primary/25 bg-primary/5 px-4 py-2.5">
           <Loader2 className="h-4 w-4 text-primary animate-spin shrink-0" />
@@ -233,43 +228,10 @@ const MentoriaUnifiedTable = ({
         </div>
       )}
 
-      {/* Floating action bar for selected items */}
-      {selectedCount > 0 && (
-        <div className="flex items-center justify-between gap-2 rounded-xl border border-indigo-400/30 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-3 sticky top-0 z-10">
-          <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-            <span className="text-sm font-medium text-foreground">
-              {selectedCount} selecionado(s)
-            </span>
-          </div>
-          <Button
-            size="sm"
-            className="gap-1.5 font-semibold bg-indigo-600 hover:bg-indigo-700 text-white"
-            onClick={() => {
-              const ids = [...selectedIds].filter((id) =>
-                categorized.some((f) => f.id === id && f.isAutoEligible)
-              );
-              if (onAnalyzeSelected) {
-                onAnalyzeSelected(ids);
-              } else if (onBatchAnalyze) {
-                onBatchAnalyze(ids.length);
-              }
-              setSelectedIds(new Set());
-            }}
-            disabled={isBusy}
-          >
-            {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
-            ⚡ Analisar selecionados ({selectedCount})
-          </Button>
-        </div>
-      )}
-
-      {/* Status filter tabs */}
+      {/* Status filter chips */}
       <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-1 border border-border/40 flex-wrap">
         {STATUS_FILTERS.map((sf) => {
           const count = filterCounts[sf.key];
-          // Hide finalizados chip since they're auto-removed from the queue
-          if (sf.key === "finalizados") return null;
           return (
             <button
               key={sf.key}
@@ -307,15 +269,12 @@ const MentoriaUnifiedTable = ({
                     checked={allEligibleSelected}
                     onCheckedChange={(checked) => handleSelectAll(!!checked)}
                     aria-label="Selecionar todos elegíveis"
-                    className={cn(
-                      eligibleIds.size === 0 && "opacity-30 pointer-events-none"
-                    )}
+                    className={cn(eligibleIds.size === 0 && "opacity-30 pointer-events-none")}
                   />
                 </TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Atendente</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Data</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-wide">Status</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-wide">Tipo</TableHead>
+                <TableHead className="text-xs font-bold uppercase tracking-wide w-16 text-center">Status</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Nota</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide text-right">Ação</TableHead>
               </TableRow>
@@ -329,7 +288,6 @@ const MentoriaUnifiedTable = ({
                 const isReading = readingIds.has(f.id);
                 const isProcessingThis = (processing || batchProcessing) && f.workflowStatus === "em_analise" && !f.hasResult;
                 const canStartAnalysis = !processing && !batchProcessing && !isReading && f.status !== "erro" && !f.isNonEval && !f.hasResult;
-                const ineligibility = resolvePersistedMentoriaIneligibility(f.result);
                 const isEligible = eligibleIds.has(f.id);
 
                 return (
@@ -352,10 +310,10 @@ const MentoriaUnifiedTable = ({
                       ) : null}
                     </TableCell>
 
-                    {/* Atendente */}
+                    {/* Atendente + protocolo */}
                     <TableCell className="py-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate max-w-[180px]">
+                        <p className="text-sm font-semibold text-foreground truncate max-w-[200px]">
                           {f.atendente || <span className="italic text-muted-foreground">Não identificado</span>}
                         </p>
                         {f.protocolo && (
@@ -366,99 +324,42 @@ const MentoriaUnifiedTable = ({
 
                     {/* Data */}
                     <TableCell className="py-3">
-                      <div>
-                        <p className="text-xs text-foreground">{f.data ? formatDateBR(f.data) : "—"}</p>
-                        {f.canal && <p className="text-[10px] text-muted-foreground">{f.canal}</p>}
-                      </div>
+                      <p className="text-xs text-foreground">{f.data ? formatDateBR(f.data) : "—"}</p>
                     </TableCell>
 
-                    {/* Status */}
-                    <TableCell className="py-3">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {f.isNonEval && (
-                          <Badge className="bg-warning/15 text-warning text-[9px] gap-0.5 px-1.5 py-0 h-auto border border-warning/30">
-                            <AlertTriangle className="h-2.5 w-2.5" /> Não avaliável
-                          </Badge>
-                        )}
-                        {f.hasResult && (
-                          <Badge className="bg-accent/15 text-accent text-[9px] gap-0.5 px-1.5 py-0 h-auto">
-                            <CheckCircle2 className="h-2.5 w-2.5" /> Analisado
-                          </Badge>
-                        )}
-                        {f.approvedAsOfficial && (
-                          <Badge className="bg-accent/15 text-accent text-[9px] gap-0.5 px-1.5 py-0 h-auto">
-                            <ShieldCheck className="h-2.5 w-2.5" /> Oficial
-                          </Badge>
-                        )}
-                        {isProcessingThis && (
-                          <Badge className="bg-primary/15 text-primary text-[9px] gap-0.5 px-1.5 py-0 h-auto animate-pulse">
-                            <Loader2 className="h-2.5 w-2.5 animate-spin" /> Processando
-                          </Badge>
-                        )}
-                        {f.status === "erro" && (
-                          <Badge className="bg-destructive/15 text-destructive text-[9px] gap-0.5 px-1.5 py-0 h-auto">
-                            <AlertTriangle className="h-2.5 w-2.5" /> Erro
-                          </Badge>
-                        )}
-                        {!f.hasResult && !f.isNonEval && !isProcessingThis && f.status !== "erro" && (
-                          <Badge className="bg-muted text-muted-foreground text-[9px] px-1.5 py-0 h-auto">
-                            Pendente
-                          </Badge>
-                        )}
-                        {!f.hasResult && !f.isNonEval && daysPending > 0 && (
-                          <Badge
-                            className={cn(
-                              "text-[9px] gap-0.5 px-1.5 py-0 h-auto",
-                              isOverdue
-                                ? "bg-destructive/15 text-destructive border border-destructive/30"
-                                : "bg-muted text-muted-foreground"
-                            )}
-                          >
-                            <Clock className="h-2.5 w-2.5" />
-                            {daysPending}d
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-
-                    {/* Tipo */}
-                    <TableCell className="py-3">
-                      <div className="flex items-center gap-1">
-                        {f.isAutoEligible ? (
-                          <Badge className="bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-[9px] px-1.5 py-0 h-auto gap-0.5">
-                            <Zap className="h-2.5 w-2.5" /> Auto IA
-                          </Badge>
-                        ) : f.hasResult ? (
-                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-auto">
-                            {f.result?.classificacao || "—"}
-                          </Badge>
-                        ) : f.isNonEval ? (
-                          <span className="text-[10px] text-muted-foreground">
-                            {ineligibility?.reason || "N/A"}
-                          </span>
-                        ) : (
-                          <Badge className="bg-muted text-muted-foreground text-[9px] px-1.5 py-0 h-auto gap-0.5">
-                            <UserCheck className="h-2.5 w-2.5" /> Manual
-                          </Badge>
-                        )}
-                      </div>
+                    {/* Status dot */}
+                    <TableCell className="py-3 text-center">
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(f.category, isProcessingThis))} />
+                              {isOverdue && (
+                                <Badge className="bg-destructive/15 text-destructive text-[8px] px-1 py-0 h-auto gap-0.5">
+                                  <Clock className="h-2 w-2" />{daysPending}d
+                                </Badge>
+                              )}
+                              {f.approvedAsOfficial && (
+                                <ShieldCheck className="h-3 w-3 text-accent" />
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">
+                              {f.isNonEval ? "Não avaliável" : isProcessingThis ? "Processando..." : f.hasResult ? "Analisado" : f.category === "em_analise" ? "Em análise" : "Pendente"}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </TableCell>
 
                     {/* Nota */}
                     <TableCell className="py-3">
                       {nota10 != null ? (
-                        <span
-                          className={cn(
-                            "text-sm font-bold",
-                            nota10 >= 9
-                              ? "text-accent"
-                              : nota10 >= 7
-                                ? "text-primary"
-                                : nota10 >= 5
-                                  ? "text-warning"
-                                  : "text-destructive"
-                          )}
-                        >
+                        <span className={cn(
+                          "text-sm font-bold",
+                          nota10 >= 9 ? "text-accent" : nota10 >= 7 ? "text-primary" : nota10 >= 5 ? "text-warning" : "text-destructive"
+                        )}>
                           {nota10.toFixed(1).replace(".", ",")}
                         </span>
                       ) : (
@@ -466,7 +367,7 @@ const MentoriaUnifiedTable = ({
                       )}
                     </TableCell>
 
-                    {/* Ação */}
+                    {/* Ação — main button + overflow menu */}
                     <TableCell className="py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
                         {!f.isNonEval && !f.hasResult && (
@@ -496,68 +397,38 @@ const MentoriaUnifiedTable = ({
                           </Button>
                         )}
 
-                        <TooltipProvider delayDuration={200}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onOpenFile(f)}>
-                                <Eye className="h-3.5 w-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p className="text-xs">Preview</p></TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-
-                        {f.hasResult && !f.approvedAsOfficial && f.evaluationId && (
-                          <TooltipProvider delayDuration={200}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  className="h-7 w-7 text-accent border-accent/30 hover:bg-accent/10"
-                                  onClick={() => onApproveOfficial(f)}
-                                  disabled={approvingIds.has(f.id)}
-                                >
-                                  {approvingIds.has(f.id) ? (
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                  ) : (
-                                    <ShieldCheck className="h-3.5 w-3.5" />
-                                  )}
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent><p className="text-xs">Aprovar como Oficial</p></TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-
-                        {isAdmin && (
-                          <TooltipProvider delayDuration={200}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={() => onOpenDiagnostic(f)}>
-                                  <Bug className="h-3.5 w-3.5" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent><p className="text-xs">Diagnóstico</p></TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-
-                        <TooltipProvider delayDuration={200}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-destructive/70 hover:text-destructive"
-                                onClick={() => onRemoveFile(f.id)}
+                        {/* Overflow menu */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                              <MoreHorizontal className="h-3.5 w-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem onClick={() => onOpenFile(f)}>
+                              <Eye className="h-3.5 w-3.5 mr-2" /> Preview
+                            </DropdownMenuItem>
+                            {f.hasResult && !f.approvedAsOfficial && f.evaluationId && (
+                              <DropdownMenuItem
+                                onClick={() => onApproveOfficial(f)}
+                                disabled={approvingIds.has(f.id)}
                               >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p className="text-xs">Remover</p></TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                                <ShieldCheck className="h-3.5 w-3.5 mr-2" /> Aprovar Oficial
+                              </DropdownMenuItem>
+                            )}
+                            {isAdmin && (
+                              <DropdownMenuItem onClick={() => onOpenDiagnostic(f)}>
+                                <Bug className="h-3.5 w-3.5 mr-2" /> Diagnóstico
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => onRemoveFile(f.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 mr-2" /> Remover
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -565,6 +436,35 @@ const MentoriaUnifiedTable = ({
               })}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+      {/* Floating action bar */}
+      {selectedCount > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl border border-indigo-400/30 bg-indigo-50 dark:bg-indigo-950/90 px-5 py-3 shadow-xl backdrop-blur-sm">
+          <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+          <span className="text-sm font-medium text-foreground">
+            {selectedCount} selecionado(s)
+          </span>
+          <Button
+            size="sm"
+            className="gap-1.5 font-semibold bg-indigo-600 hover:bg-indigo-700 text-white"
+            onClick={() => {
+              const ids = [...selectedIds].filter((id) =>
+                categorized.some((f) => f.id === id && f.isAutoEligible)
+              );
+              if (onAnalyzeSelected) {
+                onAnalyzeSelected(ids);
+              } else if (onBatchAnalyze) {
+                onBatchAnalyze(ids.length);
+              }
+              setSelectedIds(new Set());
+            }}
+            disabled={isBusy}
+          >
+            {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+            ⚡ Analisar selecionados ({selectedCount})
+          </Button>
         </div>
       )}
     </div>

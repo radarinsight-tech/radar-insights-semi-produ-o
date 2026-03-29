@@ -192,6 +192,84 @@ const isFatalPdfReadError = (error: unknown) => {
   return FATAL_PDF_READ_ERROR_PATTERNS.some((pattern) => pattern.test(message));
 };
 
+// ─── Performance Sub-Sections ───────────────────────────────────────
+type PerformanceSection = "resumo" | "bonus" | "detalhada" | "recomendados" | "padroes" | "roteiro";
+
+const PERF_TABS: { key: PerformanceSection; label: string }[] = [
+  { key: "resumo", label: "Resumo Geral" },
+  { key: "bonus", label: "Performance & Bônus" },
+  { key: "detalhada", label: "Performance Detalhada" },
+  { key: "recomendados", label: "Recomendados" },
+  { key: "padroes", label: "Padrões" },
+  { key: "roteiro", label: "Roteiro" },
+];
+
+const PerformanceSections = ({
+  files,
+  globalExcludedNames,
+  globalExcludedSet,
+  excludeAttendants,
+  restoreAttendants,
+  batchAutoApprove,
+}: {
+  files: any[];
+  globalExcludedNames: Map<string, any>;
+  globalExcludedSet: Set<string>;
+  excludeAttendants: (names: string[]) => void;
+  restoreAttendants: (names: string[]) => void;
+  batchAutoApprove: (ids: string[]) => Promise<void>;
+}) => {
+  const [activeSection, setActiveSection] = useState<PerformanceSection>("resumo");
+
+  return (
+    <div className="space-y-4">
+      {/* Bonus Panel — always visible */}
+      <MentoriaBonusPanel
+        files={files}
+        excludedNames={globalExcludedNames}
+        onExclude={excludeAttendants}
+        onRestore={restoreAttendants}
+        onAutoApprove={batchAutoApprove}
+      />
+
+      {/* Section navigation */}
+      <div className="flex items-center gap-1 overflow-x-auto rounded-lg bg-muted/60 p-1 border border-border/40">
+        {PERF_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveSection(tab.key)}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap",
+              activeSection === tab.key
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/60"
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Active section content */}
+      {activeSection === "resumo" && (
+        <MentoriaCharts files={files} excludedAttendants={globalExcludedSet} />
+      )}
+      {activeSection === "bonus" && (
+        <MentoriaBonusPanel
+          files={files}
+          excludedNames={globalExcludedNames}
+          onExclude={excludeAttendants}
+          onRestore={restoreAttendants}
+          onAutoApprove={batchAutoApprove}
+        />
+      )}
+      {(activeSection === "detalhada" || activeSection === "recomendados" || activeSection === "padroes" || activeSection === "roteiro") && (
+        <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} />
+      )}
+    </div>
+  );
+};
+
 const MentoriaLab = () => {
   const navigate = useNavigate();
   const [files, setFiles] = useState<LabFile[]>([]);
@@ -2810,120 +2888,7 @@ const MentoriaLab = () => {
           </TabsList>
 
           <TabsContent value="operacao" className="space-y-4 mt-4">
-            {/* Limit tags */}
-            <div className="flex items-center gap-2 flex-wrap text-[10px]">
-              <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground border border-border font-medium px-2.5 py-0.5 cursor-default select-none">
-                <Info className="h-3 w-3 mr-1 shrink-0" />
-                Importar: até {IMPORT_RECOMMENDED}/mês
-              </span>
-              <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground border border-border font-medium px-2.5 py-0.5 cursor-default select-none">
-                <Info className="h-3 w-3 mr-1 shrink-0" />
-                Analisar: até {ANALYZE_LIMIT}/vez
-              </span>
-            </div>
-
-
-            {/* Batch Info Card */}
-            {batchInfo && (
-              <Card className="p-5 border-l-4 border-l-accent bg-accent/5">
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-lg bg-accent/10">
-                      <CheckCircle2 className="h-5 w-5 text-accent" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-foreground">Lote importado com sucesso</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Importado em {batchInfo.createdAt.toLocaleDateString("pt-BR")} às{" "}
-                        {batchInfo.createdAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                      </p>
-                    </div>
-                  </div>
-                  {(() => {
-                    const cfg = batchStatusConfig[batchInfo.status];
-                    const Icon = cfg.icon;
-                    const isAnimated =
-                      batchInfo.status === "extraindo_arquivos" ||
-                      batchInfo.status === "organizando_atendimentos" ||
-                      batchInfo.status === "em_analise";
-                    const isActionable = batchInfo.status === "pronto_para_curadoria";
-                    const readyFiles = isActionable ? files.filter((f) => f.status === "lido") : [];
-                    const handleBadgeClick = () => {
-                      if (!isActionable || readyFiles.length === 0) return;
-                      setSelected(new Set(readyFiles.map((f) => f.id)));
-                      document.getElementById("mentoria-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                      toast.success(
-                        `${readyFiles.length} atendimento${readyFiles.length !== 1 ? "s" : ""} pronto${readyFiles.length !== 1 ? "s" : ""} selecionado${readyFiles.length !== 1 ? "s" : ""}. Clique em "Analisar" para iniciar.`,
-                      );
-                    };
-                    return (
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold shrink-0",
-                          cfg.color,
-                          isActionable && "cursor-pointer hover:bg-accent/10 border-accent/40",
-                        )}
-                        onClick={handleBadgeClick}
-                      >
-                        <Icon className={cn("h-3.5 w-3.5", isAnimated && "animate-spin")} />
-                        {cfg.label}
-                        {isActionable && readyFiles.length > 0 && (
-                          <span className="ml-1 text-accent">({readyFiles.length} prontos)</span>
-                        )}
-                      </Badge>
-                    );
-                  })()}
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm border-t border-border pt-3">
-                  <div className="flex justify-between sm:flex-col sm:text-center">
-                    <span className="text-muted-foreground text-xs">ID do lote</span>
-                    <span className="font-mono font-semibold text-foreground text-xs">{batchInfo.batchCode}</span>
-                  </div>
-                  <div className="flex justify-between sm:flex-col sm:text-center">
-                    <span className="text-muted-foreground text-xs">Entrada</span>
-                    <span className="font-semibold text-foreground text-xs">
-                      {batchInfo.sourceType === "zip" ? "ZIP" : "Múltiplos PDFs"}
-                      {batchInfo.originalFileName ? ` (${batchInfo.originalFileName})` : ""}
-                    </span>
-                  </div>
-                  <div className="flex justify-between sm:flex-col sm:text-center">
-                    <span className="text-muted-foreground text-xs">Arquivos recebidos</span>
-                    <span className="font-bold text-foreground text-xs">{batchInfo.totalFilesInSource}</span>
-                  </div>
-                  <div className="flex justify-between sm:flex-col sm:text-center">
-                    <span className="text-muted-foreground text-xs">PDFs válidos</span>
-                    <span className="font-bold text-primary text-xs">{batchInfo.totalPdfs}</span>
-                  </div>
-                  <div className="flex justify-between sm:flex-col sm:text-center">
-                    <span className="text-muted-foreground text-xs">Ignorados</span>
-                    <span className="font-bold text-muted-foreground text-xs">{batchInfo.ignoredFiles}</span>
-                  </div>
-                  <div className="flex justify-between sm:flex-col sm:text-center">
-                    <span className="text-muted-foreground text-xs">Status</span>
-                    <span className={`font-semibold text-xs ${batchStatusConfig[batchInfo.status].color}`}>
-                      {batchStatusConfig[batchInfo.status].label}
-                    </span>
-                  </div>
-                </div>
-              </Card>
-            )}
-
-            {/* Import Summary Card */}
-            {files.length > 0 && (
-              <MentoriaImportSummary
-                files={filteredFiles}
-                duplicateCount={duplicateCount}
-                errorCount={counts.erro}
-                onStartAutoAnalysis={() => handleBatchAnalyze("all")}
-                onViewAll={() => setActiveTab("pipeline")}
-                isProcessing={processing}
-                batchProcessing={batchProcessing}
-              />
-            )}
-
-            {/* 3 Main Action Cards */}
+            {/* Loading state */}
             {loadingFromDb && files.length === 0 && (
               <Card className="p-12 text-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
@@ -2931,54 +2896,93 @@ const MentoriaLab = () => {
               </Card>
             )}
 
+            {/* Empty state */}
             {!loadingFromDb && files.length === 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Card
-                  className="p-6 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group"
-                  onClick={() => inputRef.current?.click()}
-                >
-                  <div className="flex flex-col items-center text-center gap-3">
-                    <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors">
-                      <Upload className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-foreground mb-1">Importar Atendimentos</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Envie PDFs ou um ZIP com atendimentos para iniciar a curadoria.
-                      </p>
-                    </div>
+              <Card
+                className="p-8 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group text-center"
+                onClick={() => inputRef.current?.click()}
+              >
+                <Upload className="h-8 w-8 text-primary mx-auto mb-3" />
+                <h3 className="text-sm font-bold text-foreground mb-1">Importar Atendimentos</h3>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  Envie PDFs ou um ZIP com atendimentos para iniciar a curadoria.
+                </p>
+              </Card>
+            )}
+
+            {/* Grid: Upload (60%) + Último Lote (40%) */}
+            {(files.length > 0 || (!loadingFromDb && files.length === 0)) && files.length > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                {/* Upload card — compact */}
+                <Card className="lg:col-span-3 p-4">
+                  <div
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={handleDrop}
+                    onClick={() => inputRef.current?.click()}
+                    className="border-2 border-dashed border-primary/30 rounded-lg h-[100px] flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                  >
+                    <Upload className="h-5 w-5 text-primary/60 mb-1.5" />
+                    <p className="text-sm text-muted-foreground">Arraste PDFs ou ZIP aqui</p>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2.5 text-[10px]">
+                    <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground border border-border font-medium px-2 py-0.5 cursor-default select-none">
+                      <Info className="h-2.5 w-2.5 mr-1 shrink-0" />
+                      Importar: até {IMPORT_RECOMMENDED}/mês
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground border border-border font-medium px-2 py-0.5 cursor-default select-none">
+                      <Info className="h-2.5 w-2.5 mr-1 shrink-0" />
+                      Analisar: até {ANALYZE_LIMIT}/vez
+                    </span>
                   </div>
                 </Card>
 
-                <Card className="p-6 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group opacity-60 pointer-events-none">
-                  <div className="flex flex-col items-center text-center gap-3">
-                    <div className="p-3 rounded-xl bg-accent/10 group-hover:bg-accent/15 transition-colors">
-                      <Play className="h-6 w-6 text-accent" />
+                {/* Último lote — compact */}
+                <Card className="lg:col-span-2 p-4 flex flex-col justify-center">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Último lote</p>
+                  {batchInfo ? (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-semibold text-foreground">{batchInfo.batchCode}</span>
+                        {(() => {
+                          const cfg = batchStatusConfig[batchInfo.status];
+                          return (
+                            <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 h-auto shrink-0", cfg.color)}>
+                              {cfg.label}
+                            </Badge>
+                          );
+                        })()}
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                        <span>{batchInfo.createdAt.toLocaleDateString("pt-BR")} {batchInfo.createdAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                        <span>·</span>
+                        <span className="font-semibold text-foreground">{batchInfo.totalPdfs}</span> PDFs válidos
+                        {batchInfo.ignoredFiles > 0 && (
+                          <>
+                            <span>·</span>
+                            <span>{batchInfo.ignoredFiles} ignorados</span>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-foreground mb-1">Analisar Lote</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Selecione atendimentos importados e gere análises automáticas em lote.
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card className="p-6 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group opacity-60 pointer-events-none">
-                  <div className="flex flex-col items-center text-center gap-3">
-                    <div className="p-3 rounded-xl bg-secondary/50 group-hover:bg-secondary/70 transition-colors">
-                      <BookOpen className="h-6 w-6 text-secondary-foreground" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-foreground mb-1">Ver Insights</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Visualize tendências, pontos de melhoria e evolução dos atendentes.
-                      </p>
-                    </div>
-                  </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">Nenhum lote importado ainda.</p>
+                  )}
                 </Card>
               </div>
             )}
+
+            {/* Import Summary — inline bar */}
+            {files.length > 0 && (
+              <MentoriaImportSummary
+                files={filteredFiles}
+                duplicateCount={duplicateCount}
+                errorCount={counts.erro}
+                onViewAll={() => setActiveTab("pipeline")}
+              />
+            )}
+
+            {/* Batch History accordion */}
+            {files.length > 0 && <MentoriaBatchHistory />}
 
             {/* Upload input (hidden) */}
             <input
@@ -2992,237 +2996,114 @@ const MentoriaLab = () => {
               }}
               className="hidden"
             />
-
-            {/* Upload drop zone — only when files exist (inline re-import) */}
-            {files.length > 0 && (
-              <Card className="p-4">
-                <div
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={handleDrop}
-                  onClick={() => inputRef.current?.click()}
-                  className="border-2 border-dashed border-primary/30 rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
-                >
-                  <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
-                    <Upload className="h-4 w-4 text-primary/60" />
-                    Arraste PDFs ou ZIP aqui para adicionar ao lote
-                  </p>
-                </div>
-              </Card>
-            )}
           </TabsContent>
 
           <TabsContent value="pipeline" className="space-y-4 mt-4">
             {files.length > 0 ? (
               <>
-                <Card className="p-4">
-                  <h3 className="text-sm font-semibold text-foreground mb-3">📂 Atendimentos importados</h3>
-                  <div className="flex flex-wrap items-center gap-3">
-                    {/* Search */}
-                    <div className="relative flex-1 min-w-[180px]">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Buscar arquivo, protocolo ou atendente..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-9"
-                      />
-                      {searchTerm && (
-                        <button onClick={() => setSearchTerm("")} className="absolute right-3 top-1/2 -translate-y-1/2">
-                          <X className="h-4 w-4 text-muted-foreground" />
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Atendente */}
-                    <Select value={filterAtendente} onValueChange={setFilterAtendente}>
-                      <SelectTrigger className="w-[160px]">
-                        <SelectValue placeholder="Atendente" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">Todos atendentes</SelectItem>
-                        <SelectItem value="sem_atendente">Sem atendente</SelectItem>
-                        {atendentes.map((a) => (
-                          <SelectItem key={a} value={a}>
-                            {a}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    {/* Período do atendimento */}
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-[200px] justify-start text-left text-xs font-normal h-10",
-                            !filterPeriodoFrom && "text-muted-foreground",
-                          )}
-                        >
-                          <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
-                          {filterPeriodoFrom
-                            ? filterPeriodoTo
-                              ? `${format(filterPeriodoFrom, "dd/MM")} – ${format(filterPeriodoTo, "dd/MM/yy")}`
-                              : `A partir de ${format(filterPeriodoFrom, "dd/MM/yy")}`
-                            : "Período atendimento"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="range"
-                          selected={
-                            filterPeriodoFrom && filterPeriodoTo
-                              ? { from: filterPeriodoFrom, to: filterPeriodoTo }
-                              : filterPeriodoFrom
-                                ? { from: filterPeriodoFrom, to: undefined }
-                                : undefined
-                          }
-                          onSelect={(range) => {
-                            setFilterPeriodoFrom(range?.from);
-                            setFilterPeriodoTo(range?.to);
-                          }}
-                          numberOfMonths={2}
-                          className={cn("p-3 pointer-events-auto")}
-                        />
-                        {(filterPeriodoFrom || filterPeriodoTo) && (
-                          <div className="px-3 pb-3">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="w-full text-xs"
-                              onClick={() => {
-                                setFilterPeriodoFrom(undefined);
-                                setFilterPeriodoTo(undefined);
-                              }}
-                            >
-                              Limpar período
-                            </Button>
-                          </div>
-                        )}
-                      </PopoverContent>
-                    </Popover>
-
-                    {/* Data da auditoria */}
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-[200px] justify-start text-left text-xs font-normal h-10",
-                            !filterAuditoriaFrom && "text-muted-foreground",
-                          )}
-                        >
-                          <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
-                          {filterAuditoriaFrom
-                            ? filterAuditoriaTo
-                              ? `${format(filterAuditoriaFrom, "dd/MM")} – ${format(filterAuditoriaTo, "dd/MM/yy")}`
-                              : `A partir de ${format(filterAuditoriaFrom, "dd/MM/yy")}`
-                            : "Data da auditoria"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="range"
-                          selected={
-                            filterAuditoriaFrom && filterAuditoriaTo
-                              ? { from: filterAuditoriaFrom, to: filterAuditoriaTo }
-                              : filterAuditoriaFrom
-                                ? { from: filterAuditoriaFrom, to: undefined }
-                                : undefined
-                          }
-                          onSelect={(range) => {
-                            setFilterAuditoriaFrom(range?.from);
-                            setFilterAuditoriaTo(range?.to);
-                          }}
-                          numberOfMonths={2}
-                          className={cn("p-3 pointer-events-auto")}
-                        />
-                        {(filterAuditoriaFrom || filterAuditoriaTo) && (
-                          <div className="px-3 pb-3">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="w-full text-xs"
-                              onClick={() => {
-                                setFilterAuditoriaFrom(undefined);
-                                setFilterAuditoriaTo(undefined);
-                              }}
-                            >
-                              Limpar período
-                            </Button>
-                          </div>
-                        )}
-                      </PopoverContent>
-                    </Popover>
-
-                    {/* Áudio */}
-                    <Select value={filterAudio} onValueChange={setFilterAudio}>
-                      <SelectTrigger className="w-[140px]">
-                        <SelectValue placeholder="Áudio" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">Todos</SelectItem>
-                        <SelectItem value="com">Com áudio</SelectItem>
-                        <SelectItem value="sem">Sem áudio</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Action bar */}
-                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border">
-                    <PreflightCheck onReady={analyzeSelected} batchSize={selected.size} autoAdvance>
-                      <Button disabled={selected.size === 0 || processing} size="lg" className="gap-2 font-semibold">
-                        {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                        {processing
-                          ? "Analisando..."
-                          : `Analisar ${selected.size} selecionado${selected.size !== 1 ? "s" : ""}`}
-                      </Button>
-                    </PreflightCheck>
-                    {selected.size > 0 && (
-                      <>
-                        <Button variant="ghost" size="sm" onClick={removeSelected} className="text-destructive">
-                          <Trash2 className="h-4 w-4 mr-1" /> Remover selecionados
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelected(new Set())}
-                          className="text-muted-foreground"
-                        >
-                          <X className="h-4 w-4 mr-1" /> Limpar seleção
-                        </Button>
-                      </>
+                {/* Filters — directly on top, no wrapper card */}
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Search */}
+                  <div className="relative flex-1 min-w-[180px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-9"
+                    />
+                    {searchTerm && (
+                      <button onClick={() => setSearchTerm("")} className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <X className="h-4 w-4 text-muted-foreground" />
+                      </button>
                     )}
-                    <span className="ml-auto text-xs text-muted-foreground">
-                      {filteredFiles.length} de {files.length} exibidos
-                    </span>
                   </div>
-                </Card>
 
-                {/* Pending discard bar */}
-                {(() => {
-                  const pendingCount = files.filter(
-                    (f) => (f.status === "pendente" || f.status === "lido") && !f.result,
-                  ).length;
-                  if (pendingCount === 0) return null;
-                  return (
-                    <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-2.5">
-                      <span className="text-sm text-muted-foreground">
-                        <span className="font-semibold text-foreground">{pendingCount}</span> atendimento(s) aguardando revisão
-                      </span>
+                  {/* Atendente */}
+                  <Select value={filterAtendente} onValueChange={setFilterAtendente}>
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue placeholder="Atendente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos atendentes</SelectItem>
+                      <SelectItem value="sem_atendente">Sem atendente</SelectItem>
+                      {atendentes.map((a) => (
+                        <SelectItem key={a} value={a}>
+                          {a}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Data auditoria */}
+                  <Popover>
+                    <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        size="sm"
-                        className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10"
-                        onClick={handleDiscardPending}
-                        disabled={clearing}
+                        className={cn(
+                          "w-[180px] justify-start text-left text-xs font-normal h-10",
+                          !filterAuditoriaFrom && "text-muted-foreground",
+                        )}
                       >
-                        {clearing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                        Descartar Pendentes
+                        <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+                        {filterAuditoriaFrom
+                          ? filterAuditoriaTo
+                            ? `${format(filterAuditoriaFrom, "dd/MM")} – ${format(filterAuditoriaTo, "dd/MM/yy")}`
+                            : `A partir de ${format(filterAuditoriaFrom, "dd/MM/yy")}`
+                          : "Data auditoria"}
                       </Button>
-                    </div>
-                  );
-                })()}
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="range"
+                        selected={
+                          filterAuditoriaFrom && filterAuditoriaTo
+                            ? { from: filterAuditoriaFrom, to: filterAuditoriaTo }
+                            : filterAuditoriaFrom
+                              ? { from: filterAuditoriaFrom, to: undefined }
+                              : undefined
+                        }
+                        onSelect={(range) => {
+                          setFilterAuditoriaFrom(range?.from);
+                          setFilterAuditoriaTo(range?.to);
+                        }}
+                        numberOfMonths={2}
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                      {(filterAuditoriaFrom || filterAuditoriaTo) && (
+                        <div className="px-3 pb-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full text-xs"
+                            onClick={() => {
+                              setFilterAuditoriaFrom(undefined);
+                              setFilterAuditoriaTo(undefined);
+                            }}
+                          >
+                            Limpar período
+                          </Button>
+                        </div>
+                      )}
+                    </PopoverContent>
+                  </Popover>
+
+                  {/* Atendente filter select */}
+                  <Select value={filterAudio} onValueChange={setFilterAudio}>
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Áudio" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="com">Com áudio</SelectItem>
+                      <SelectItem value="sem">Sem áudio</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {filteredFiles.length} de {files.length}
+                  </span>
+                </div>
 
                 {/* Unified Table View */}
                 <MentoriaUnifiedTable
@@ -3248,23 +3129,6 @@ const MentoriaLab = () => {
                   onAnalyzeNext={handleAnalyzeNextFromPipeline}
                   onBatchAnalyze={handleBatchAnalyze}
                 />
-
-                {/* Batch history */}
-                <MentoriaBatchHistory />
-
-                {/* Selection warning */}
-                {selected.size > ANALYZE_LIMIT && (
-                  <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
-                    <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Muitos atendimentos selecionados</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Você selecionou {selected.size} atendimentos. Recomendamos analisar em blocos de até {ANALYZE_LIMIT}{" "}
-                        para melhor desempenho.
-                      </p>
-                    </div>
-                  </div>
-                )}
               </>
             ) : (
               <div className="py-8 text-center text-sm text-muted-foreground">
@@ -3275,22 +3139,14 @@ const MentoriaLab = () => {
 
           <TabsContent value="performance" className="space-y-4 mt-4">
             {files.length > 0 && filteredFiles.some((f) => f.status === "analisado") ? (
-              <>
-                {/* Bonus Panel */}
-                <MentoriaBonusPanel
-                  files={filteredFiles}
-                  excludedNames={globalExcludedNames}
-                  onExclude={excludeAttendants}
-                  onRestore={restoreAttendants}
-                  onAutoApprove={batchAutoApprove}
-                />
-
-                {/* Charts section */}
-                <MentoriaCharts files={filteredFiles} excludedAttendants={globalExcludedSet} />
-
-                {/* Insights do lote */}
-                <MentoriaInsights files={filteredFiles} excludedAttendants={globalExcludedSet} />
-              </>
+              <PerformanceSections
+                files={filteredFiles}
+                globalExcludedNames={globalExcludedNames}
+                globalExcludedSet={globalExcludedSet}
+                excludeAttendants={excludeAttendants}
+                restoreAttendants={restoreAttendants}
+                batchAutoApprove={batchAutoApprove}
+              />
             ) : (
               <div className="py-8 text-center text-sm text-muted-foreground">
                 Analise atendimentos para visualizar dados de performance.
