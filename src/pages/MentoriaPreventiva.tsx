@@ -293,6 +293,12 @@ const MentoriaPreventiva = () => {
       return;
     }
 
+    // Check monthly limit for atendente mode
+    if (isAttendenteMode && (monthlyCount + toAnalyze.length) > MONTHLY_LIMIT) {
+      toast.error(`Limite mensal de ${MONTHLY_LIMIT} mentorias será excedido. Você pode analisar mais ${Math.max(0, MONTHLY_LIMIT - monthlyCount)} atendimento(s).`);
+      return;
+    }
+
     setAnalyzing(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast.error("Não autenticado."); setAnalyzing(false); return; }
@@ -301,7 +307,10 @@ const MentoriaPreventiva = () => {
     for (const f of toAnalyze) {
       try {
         const { data: fnData, error: fnError } = await supabase.functions.invoke("analyze-preventive", {
-          body: { text: f.text },
+          body: {
+            text: f.text,
+            ...(isAttendenteMode ? { attendant_id: attendantId } : {}),
+          },
         });
         if (fnError) throw fnError;
         const res = fnData as PreventiveResult;
@@ -325,6 +334,7 @@ const MentoriaPreventiva = () => {
         } as any);
 
         successCount++;
+        if (isAttendenteMode) setMonthlyCount((prev) => prev + 1);
       } catch (err: any) {
         console.error(err);
         setFiles((prev) => prev.map((x) => x.id === f.id ? { ...x, status: "erro" as FileStatus, error: err.message } : x));
