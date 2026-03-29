@@ -2935,8 +2935,24 @@ const MentoriaLab = () => {
         {/* Tabs navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 max-w-xs border border-border bg-muted/60 p-1 rounded-lg">
-            <TabsTrigger value="operacao" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-accent/60 transition-colors rounded-md font-medium">Operação</TabsTrigger>
-            <TabsTrigger value="performance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-accent/60 transition-colors rounded-md font-medium">Performance</TabsTrigger>
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="operacao" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-accent/60 transition-colors rounded-md font-medium">Operação</TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[300px] text-center">
+                  <p>Esteira de trabalho: importe, analise e gerencie os atendimentos do lote atual</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="performance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-accent/60 transition-colors rounded-md font-medium">Performance</TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[300px] text-center">
+                  <p>Visualize métricas, bônus e evolução dos atendentes da competência selecionada</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </TabsList>
 
           <TabsContent value="operacao" className="space-y-4 mt-4">
