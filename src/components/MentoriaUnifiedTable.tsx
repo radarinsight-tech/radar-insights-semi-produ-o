@@ -355,7 +355,7 @@ const MentoriaUnifiedTable = ({
                           </span>
                         ) : (
                           <Badge className="bg-muted text-muted-foreground text-[9px] px-1.5 py-0 h-auto gap-0.5">
-                            <Hand className="h-2.5 w-2.5" /> Manual
+                            <UserCheck className="h-2.5 w-2.5" /> Manual
                           </Badge>
                         )}
                       </div>
