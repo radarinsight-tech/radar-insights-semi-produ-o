@@ -67,6 +67,8 @@ import ConversationView from "@/components/ConversationView";
 import MentoriaDetailDialog from "@/components/MentoriaDetailDialog";
 import ParserDiagnosticDialog from "@/components/ParserDiagnosticDialog";
 import MentoriaPipeline from "@/components/MentoriaPipeline";
+import MentoriaUnifiedTable from "@/components/MentoriaUnifiedTable";
+import MentoriaImportSummary from "@/components/MentoriaImportSummary";
 import MentoriaBatchHistory from "@/components/MentoriaBatchHistory";
 import MentoriaBonusPanel from "@/components/MentoriaBonusPanel";
 import MentoriaReportExport from "@/components/MentoriaReportExport";
