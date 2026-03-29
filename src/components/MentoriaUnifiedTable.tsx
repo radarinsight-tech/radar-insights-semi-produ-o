@@ -317,7 +317,23 @@ const MentoriaUnifiedTable = ({
               {displayedItems.map((f) => {
                 const daysPending = !f.hasResult ? getDaysPending(f.addedAt) : 0;
                 const isOverdue = daysPending >= 7;
-                const nota = f.hasResult ? f.result?.notaFinal : null;
+
+                // Detect audio-only attendance (analyzed but not truly evaluable)
+                const isAudioOnly = (() => {
+                  if (f.hasAudio) {
+                    const reason = f.nonEvaluableReason || f.ineligibleReason || f.result?.motivo_nao_avaliavel || f.result?.motivo_inelegivel || f.result?._nonEvaluableReason || f.result?._ineligibleReason || "";
+                    const reasonStr = String(reason).toLowerCase();
+                    if (reasonStr.includes("áudio") || reasonStr.includes("audio") || reasonStr.includes("gravacao") || reasonStr.includes("gravação")) return true;
+                  }
+                  // Also check if result has nota 0 with audio markers
+                  if (f.hasAudio && f.hasResult && f.result?.notaFinal === 0) return true;
+                  // Check status text in result
+                  const statusResult = String(f.result?.status_auditoria || f.result?.statusAuditoria || "").toLowerCase();
+                  if (f.hasAudio && (statusResult.includes("não realizada") || statusResult.includes("nao_auditavel"))) return true;
+                  return false;
+                })();
+
+                const nota = (!isAudioOnly && f.hasResult) ? f.result?.notaFinal : null;
                 const nota10 = nota != null ? notaToScale10(nota) : null;
                 const isReading = readingIds.has(f.id);
                 const isProcessingThis = (processing || batchProcessing) && f.workflowStatus === "em_analise" && !f.hasResult;
