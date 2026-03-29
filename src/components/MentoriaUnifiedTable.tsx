@@ -140,9 +140,11 @@ const MentoriaUnifiedTable = ({
     });
   }, [files, getWorkflowStatus]);
 
-  // Hide already-analyzed items from main table
+  const [showAll, setShowAll] = useState(false);
+  const INITIAL_VISIBLE = 10;
+
   const visibleItems = useMemo(() => {
-    return categorized.filter((f) => f.category !== "finalizados");
+    return categorized;
   }, [categorized]);
 
   const filtered = useMemo(() => {
@@ -150,6 +152,11 @@ const MentoriaUnifiedTable = ({
     if (statusFilter === "aptos_ia") return visibleItems.filter((f) => f.isAutoEligible);
     return visibleItems.filter((f) => f.category === statusFilter);
   }, [visibleItems, statusFilter]);
+
+  const displayedItems = useMemo(() => {
+    if (showAll) return filtered;
+    return filtered.slice(0, INITIAL_VISIBLE);
+  }, [filtered, showAll]);
 
   const filterCounts = useMemo(() => {
     const counts: Record<StatusFilter, number> = {
