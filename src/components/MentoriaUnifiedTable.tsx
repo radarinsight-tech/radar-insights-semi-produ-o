@@ -140,9 +140,11 @@ const MentoriaUnifiedTable = ({
     });
   }, [files, getWorkflowStatus]);
 
-  // Hide already-analyzed items from main table
+  const [showAll, setShowAll] = useState(false);
+  const INITIAL_VISIBLE = 10;
+
   const visibleItems = useMemo(() => {
-    return categorized.filter((f) => f.category !== "finalizados");
+    return categorized;
   }, [categorized]);
 
   const filtered = useMemo(() => {
@@ -150,6 +152,11 @@ const MentoriaUnifiedTable = ({
     if (statusFilter === "aptos_ia") return visibleItems.filter((f) => f.isAutoEligible);
     return visibleItems.filter((f) => f.category === statusFilter);
   }, [visibleItems, statusFilter]);
+
+  const displayedItems = useMemo(() => {
+    if (showAll) return filtered;
+    return filtered.slice(0, INITIAL_VISIBLE);
+  }, [filtered, showAll]);
 
   const filterCounts = useMemo(() => {
     const counts: Record<StatusFilter, number> = {
@@ -261,6 +268,7 @@ const MentoriaUnifiedTable = ({
         </div>
       ) : (
         <div className="rounded-xl border border-border/40 overflow-hidden">
+          <div className="max-h-[380px] overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
@@ -274,13 +282,13 @@ const MentoriaUnifiedTable = ({
                 </TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Atendente</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Data</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-wide w-16 text-center">Status</TableHead>
+                <TableHead className="text-xs font-bold uppercase tracking-wide">Status</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Nota</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide text-right">Ação</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((f) => {
+              {displayedItems.map((f) => {
                 const daysPending = !f.hasResult ? getDaysPending(f.addedAt) : 0;
                 const isOverdue = daysPending >= 7;
                 const nota = f.hasResult ? f.result?.notaFinal : null;
@@ -327,30 +335,22 @@ const MentoriaUnifiedTable = ({
                       <p className="text-xs text-foreground">{f.data ? formatDateBR(f.data) : "—"}</p>
                     </TableCell>
 
-                    {/* Status dot */}
-                    <TableCell className="py-3 text-center">
-                      <TooltipProvider delayDuration={200}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="flex items-center justify-center gap-1.5">
-                              <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(f.category, isProcessingThis))} />
-                              {isOverdue && (
-                                <Badge className="bg-destructive/15 text-destructive text-[8px] px-1 py-0 h-auto gap-0.5">
-                                  <Clock className="h-2 w-2" />{daysPending}d
-                                </Badge>
-                              )}
-                              {f.approvedAsOfficial && (
-                                <ShieldCheck className="h-3 w-3 text-accent" />
-                              )}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs">
-                              {f.isNonEval ? "Não avaliável" : isProcessingThis ? "Processando..." : f.hasResult ? "Analisado" : f.category === "em_analise" ? "Em análise" : "Pendente"}
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                    {/* Status dot + label */}
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(f.category, isProcessingThis))} />
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                          {f.isNonEval ? "N/A" : isProcessingThis ? "Processando" : f.hasResult ? "Analisado" : f.category === "em_analise" ? "Em análise" : "Pendente"}
+                        </span>
+                        {isOverdue && (
+                          <Badge className="bg-destructive/15 text-destructive text-[8px] px-1 py-0 h-auto gap-0.5">
+                            <Clock className="h-2 w-2" />{daysPending}d
+                          </Badge>
+                        )}
+                        {f.approvedAsOfficial && (
+                          <ShieldCheck className="h-3 w-3 text-accent" />
+                        )}
+                      </div>
                     </TableCell>
 
                     {/* Nota */}
@@ -436,19 +436,33 @@ const MentoriaUnifiedTable = ({
               })}
             </TableBody>
           </Table>
+          </div>
+
+          {/* Expand / collapse footer */}
+          {filtered.length > INITIAL_VISIBLE && (
+            <div className="border-t border-border/40 text-center py-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs gap-1 text-primary"
+                onClick={() => setShowAll(!showAll)}
+              >
+                {showAll ? "▲ Recolher" : `▼ Ver todos os ${filtered.length} atendimentos`}
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
       {/* Floating action bar */}
       {selectedCount > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl border border-indigo-400/30 bg-indigo-50 dark:bg-indigo-950/90 px-5 py-3 shadow-xl backdrop-blur-sm">
-          <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-          <span className="text-sm font-medium text-foreground">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl border border-border/30 bg-[#1a1a2e] px-5 py-3 shadow-xl">
+          <span className="text-sm font-medium text-white">
             {selectedCount} selecionado(s)
           </span>
           <Button
             size="sm"
-            className="gap-1.5 font-semibold bg-indigo-600 hover:bg-indigo-700 text-white"
+            className="gap-1.5 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => {
               const ids = [...selectedIds].filter((id) =>
                 categorized.some((f) => f.id === id && f.isAutoEligible)
@@ -464,6 +478,14 @@ const MentoriaUnifiedTable = ({
           >
             {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
             ⚡ Analisar selecionados ({selectedCount})
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-white/20 text-white hover:bg-white/10"
+            onClick={() => setSelectedIds(new Set())}
+          >
+            Cancelar
           </Button>
         </div>
       )}

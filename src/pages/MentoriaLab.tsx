@@ -199,7 +199,7 @@ const PERF_NAV: { key: PerformanceSection; label: string; icon: string }[] = [
   { key: "bonus_panel", label: "Painel de Bônus", icon: "🏆" },
   { key: "resumo", label: "Resumo Geral", icon: "📊" },
   { key: "bonus", label: "Performance & Bônus", icon: "💰" },
-  { key: "detalhada", label: "Performance Detalhada", icon: "👤" },
+  { key: "detalhada", label: "Perf. Detalhada", icon: "👤" },
   { key: "recomendados", label: "Recomendados", icon: "⭐" },
   { key: "padroes", label: "Padrões", icon: "💬" },
   { key: "roteiro", label: "Roteiro", icon: "📋" },
@@ -285,7 +285,8 @@ const PerformanceSections = ({
   return (
     <div className="flex gap-4 min-h-[400px]">
       {/* Sidebar */}
-      <nav className="w-[180px] shrink-0 rounded-lg border border-border/50 bg-muted/30 p-2 space-y-0.5">
+      <nav className="w-[200px] shrink-0 rounded-lg border border-border/50 bg-[hsl(210,20%,98%)] dark:bg-muted/20 p-2 space-y-0.5">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-3 py-1.5">Seções</p>
         {PERF_NAV.map((nav) => (
           <button
             key={nav.key}
@@ -293,7 +294,7 @@ const PerformanceSections = ({
             className={cn(
               "w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-colors text-left",
               activeSection === nav.key
-                ? "bg-primary text-primary-foreground shadow-sm"
+                ? "bg-primary/10 text-primary border-l-[3px] border-l-primary font-semibold"
                 : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
             )}
           >
@@ -2922,9 +2923,8 @@ const MentoriaLab = () => {
 
         {/* Tabs navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 border border-border bg-muted/60 p-1 rounded-lg">
+          <TabsList className="grid w-full grid-cols-2 max-w-xs border border-border bg-muted/60 p-1 rounded-lg">
             <TabsTrigger value="operacao" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-accent/60 transition-colors rounded-md font-medium">Operação</TabsTrigger>
-            <TabsTrigger value="pipeline" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-accent/60 transition-colors rounded-md font-medium">Pipeline</TabsTrigger>
             <TabsTrigger value="performance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-accent/60 transition-colors rounded-md font-medium">Performance</TabsTrigger>
           </TabsList>
 
@@ -2951,8 +2951,8 @@ const MentoriaLab = () => {
               </Card>
             )}
 
-            {/* Grid: Upload (60%) + Último Lote (40%) */}
-            {(files.length > 0 || (!loadingFromDb && files.length === 0)) && files.length > 0 && (
+            {/* Grid: Upload (left) + Último Lote + Resumo (right) */}
+            {files.length > 0 && (
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
                 {/* Upload card — compact */}
                 <Card className="lg:col-span-3 p-4">
@@ -2960,70 +2960,83 @@ const MentoriaLab = () => {
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={handleDrop}
                     onClick={() => inputRef.current?.click()}
-                    className="border-2 border-dashed border-primary/30 rounded-lg h-[100px] flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                    className="border-2 border-dashed border-primary/30 rounded-lg h-[110px] flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
                   >
                     <Upload className="h-5 w-5 text-primary/60 mb-1.5" />
-                    <p className="text-sm text-muted-foreground">Arraste PDFs ou ZIP aqui</p>
-                  </div>
-                  <div className="flex items-center gap-2 mt-2.5 text-[10px]">
-                    <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground border border-border font-medium px-2 py-0.5 cursor-default select-none">
-                      <Info className="h-2.5 w-2.5 mr-1 shrink-0" />
-                      Importar: até {IMPORT_RECOMMENDED}/mês
-                    </span>
-                    <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground border border-border font-medium px-2 py-0.5 cursor-default select-none">
-                      <Info className="h-2.5 w-2.5 mr-1 shrink-0" />
-                      Analisar: até {ANALYZE_LIMIT}/vez
-                    </span>
+                    <p className="text-sm font-medium text-muted-foreground">Arraste PDFs ou ZIP aqui</p>
+                    <p className="text-[10px] text-muted-foreground/70 mt-0.5">ou clique para selecionar</p>
                   </div>
                 </Card>
 
-                {/* Último lote — compact */}
-                <Card className="lg:col-span-2 p-4 flex flex-col justify-center">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Último lote</p>
-                  {batchInfo ? (
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-semibold text-foreground">{batchInfo.batchCode}</span>
-                        {(() => {
-                          const cfg = batchStatusConfig[batchInfo.status];
-                          return (
-                            <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 h-auto shrink-0", cfg.color)}>
-                              {cfg.label}
-                            </Badge>
-                          );
-                        })()}
+                {/* Último Lote + Resumo — combined */}
+                <Card className="lg:col-span-2 p-4 flex flex-col justify-between">
+                  <div>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Último lote</p>
+                    {batchInfo ? (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono font-semibold text-foreground">{batchInfo.batchCode}</span>
+                          {(() => {
+                            const cfg = batchStatusConfig[batchInfo.status];
+                            return (
+                              <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 h-auto shrink-0", cfg.color)}>
+                                {cfg.label}
+                              </Badge>
+                            );
+                          })()}
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                          <span>{batchInfo.createdAt.toLocaleDateString("pt-BR")} {batchInfo.createdAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                          <span>·</span>
+                          <span className="font-semibold text-foreground">{batchInfo.totalPdfs}</span> PDFs válidos
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                        <span>{batchInfo.createdAt.toLocaleDateString("pt-BR")} {batchInfo.createdAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
-                        <span>·</span>
-                        <span className="font-semibold text-foreground">{batchInfo.totalPdfs}</span> PDFs válidos
-                        {batchInfo.ignoredFiles > 0 && (
-                          <>
-                            <span>·</span>
-                            <span>{batchInfo.ignoredFiles} ignorados</span>
-                          </>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">Nenhum lote importado ainda.</p>
+                    )}
+                  </div>
+
+                  {/* Divider + Summary counters */}
+                  {files.length > 0 && (
+                    <>
+                      <div className="border-t border-border/50 my-2.5" />
+                      <div className="flex items-center gap-3 flex-wrap text-[11px]">
+                        <span className="font-semibold text-foreground">{counts.total} Total</span>
+                        {counts.lido > 0 && (
+                          <span className="text-primary font-medium">⚡ {counts.lido} Aptos IA</span>
+                        )}
+                        {counts.analisado > 0 && (
+                          <span className="text-accent font-medium">✓ {counts.analisado} Analisados</span>
+                        )}
+                        {counts.naoAvaliavel > 0 && (
+                          <span className="text-warning font-medium">{counts.naoAvaliavel} N/A</span>
+                        )}
+                        {counts.erro > 0 && (
+                          <span className="text-destructive font-medium">{counts.erro} Erros</span>
                         )}
                       </div>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground italic">Nenhum lote importado ainda.</p>
+                    </>
                   )}
+
+                  {/* Batch history link → popup */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="mt-2 text-[11px] text-primary hover:underline font-medium text-left flex items-center gap-1">
+                        📦 Ver histórico de lotes →
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-[380px] max-h-[400px] p-0">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                        <span className="text-sm font-semibold text-foreground">Histórico de Lotes</span>
+                      </div>
+                      <div className="overflow-y-auto max-h-[340px] px-3 py-2 space-y-2" style={{ scrollbarWidth: "thin" }}>
+                        <MentoriaBatchHistory />
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </Card>
               </div>
             )}
-
-            {/* Import Summary — inline bar */}
-            {files.length > 0 && (
-              <MentoriaImportSummary
-                files={filteredFiles}
-                duplicateCount={duplicateCount}
-                errorCount={counts.erro}
-                onViewAll={() => setActiveTab("pipeline")}
-              />
-            )}
-
-            {/* Batch History accordion */}
-            {files.length > 0 && <MentoriaBatchHistory />}
 
             {/* Upload input (hidden) */}
             <input
@@ -3037,18 +3050,17 @@ const MentoriaLab = () => {
               }}
               className="hidden"
             />
-          </TabsContent>
 
-          <TabsContent value="pipeline" className="space-y-4 mt-4">
-            {files.length > 0 ? (
+            {/* ═══ Inline Filters + Table (was Pipeline tab) ═══ */}
+            {files.length > 0 && (
               <>
-                {/* Filters — directly on top, no wrapper card */}
+                {/* Filters — directly visible, no wrapper */}
                 <div className="flex flex-wrap items-center gap-3">
                   {/* Search */}
                   <div className="relative flex-1 min-w-[180px]">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Buscar..."
+                      placeholder="Buscar atendente ou protocolo..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-9"
@@ -3091,7 +3103,7 @@ const MentoriaLab = () => {
                           ? filterAuditoriaTo
                             ? `${format(filterAuditoriaFrom, "dd/MM")} – ${format(filterAuditoriaTo, "dd/MM/yy")}`
                             : `A partir de ${format(filterAuditoriaFrom, "dd/MM/yy")}`
-                          : "Data auditoria"}
+                          : "Período"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -3129,52 +3141,56 @@ const MentoriaLab = () => {
                     </PopoverContent>
                   </Popover>
 
-                  {/* Atendente filter select */}
-                  <Select value={filterAudio} onValueChange={setFilterAudio}>
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder="Áudio" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos</SelectItem>
-                      <SelectItem value="com">Com áudio</SelectItem>
-                      <SelectItem value="sem">Sem áudio</SelectItem>
-                    </SelectContent>
-                  </Select>
-
+                  {/* Counter + visibility toggle */}
                   <span className="ml-auto text-xs text-muted-foreground">
                     {filteredFiles.length} de {files.length}
                   </span>
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={cn("h-9 w-9", !showCharts && "text-primary")}
+                          onClick={() => setShowCharts(!showCharts)}
+                        >
+                          {showCharts ? <Eye className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">{showCharts ? "Mostrar tabela" : "Ocultar tabela"}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
 
-                {/* Unified Table View */}
-                <MentoriaUnifiedTable
-                  files={filteredFiles}
-                  getWorkflowStatus={getWorkflowStatus}
-                  highlightedFileId={highlightedFileId}
-                  readingIds={readingIds}
-                  approvingIds={approvingIds}
-                  processing={processing}
-                  batchProcessing={batchProcessing}
-                  batchStats={batchStats}
-                  isAdmin={isAdmin}
-                  onOpenFile={(f) => {
-                    setMentoriaFile(null);
-                    setSideFile(f as any);
-                    setHighlightedFileId(f.id);
-                  }}
-                  onOpenMentoria={(f) => openMentoria(f as any)}
-                  onStartMentoria={(f) => handleStartMentoria(f as any)}
-                  onApproveOfficial={(f) => approveAsOfficial(f as any)}
-                  onRemoveFile={removeFile}
-                  onOpenDiagnostic={(f) => setDiagnosticFile(f as any)}
-                  onAnalyzeNext={handleAnalyzeNextFromPipeline}
-                  onBatchAnalyze={handleBatchAnalyze}
-                />
+                {/* Table section (hideable) */}
+                {!showCharts && (
+                  <MentoriaUnifiedTable
+                    files={filteredFiles}
+                    getWorkflowStatus={getWorkflowStatus}
+                    highlightedFileId={highlightedFileId}
+                    readingIds={readingIds}
+                    approvingIds={approvingIds}
+                    processing={processing}
+                    batchProcessing={batchProcessing}
+                    batchStats={batchStats}
+                    isAdmin={isAdmin}
+                    onOpenFile={(f) => {
+                      setMentoriaFile(null);
+                      setSideFile(f as any);
+                      setHighlightedFileId(f.id);
+                    }}
+                    onOpenMentoria={(f) => openMentoria(f as any)}
+                    onStartMentoria={(f) => handleStartMentoria(f as any)}
+                    onApproveOfficial={(f) => approveAsOfficial(f as any)}
+                    onRemoveFile={removeFile}
+                    onOpenDiagnostic={(f) => setDiagnosticFile(f as any)}
+                    onAnalyzeNext={handleAnalyzeNextFromPipeline}
+                    onBatchAnalyze={handleBatchAnalyze}
+                  />
+                )}
               </>
-            ) : (
-              <div className="py-8 text-center text-sm text-muted-foreground">
-                Importe atendimentos na aba "Operação" para visualizar o pipeline.
-              </div>
             )}
           </TabsContent>
 
