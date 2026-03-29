@@ -192,7 +192,85 @@ const isFatalPdfReadError = (error: unknown) => {
   return FATAL_PDF_READ_ERROR_PATTERNS.some((pattern) => pattern.test(message));
 };
 
-const MentoriaLab = () => {
+// ─── Performance Sub-Sections ───────────────────────────────────────
+type PerformanceSection = "resumo" | "bonus" | "detalhada" | "recomendados" | "padroes" | "roteiro";
+
+const PERF_TABS: { key: PerformanceSection; label: string }[] = [
+  { key: "resumo", label: "Resumo Geral" },
+  { key: "bonus", label: "Performance & Bônus" },
+  { key: "detalhada", label: "Performance Detalhada" },
+  { key: "recomendados", label: "Recomendados" },
+  { key: "padroes", label: "Padrões" },
+  { key: "roteiro", label: "Roteiro" },
+];
+
+const PerformanceSections = ({
+  files,
+  globalExcludedNames,
+  globalExcludedSet,
+  excludeAttendants,
+  restoreAttendants,
+  batchAutoApprove,
+}: {
+  files: any[];
+  globalExcludedNames: Map<string, any>;
+  globalExcludedSet: Set<string>;
+  excludeAttendants: (names: string[]) => void;
+  restoreAttendants: (names: string[]) => void;
+  batchAutoApprove: (ids: string[]) => Promise<void>;
+}) => {
+  const [activeSection, setActiveSection] = useState<PerformanceSection>("resumo");
+
+  return (
+    <div className="space-y-4">
+      {/* Bonus Panel — always visible */}
+      <MentoriaBonusPanel
+        files={files}
+        excludedNames={globalExcludedNames}
+        onExclude={excludeAttendants}
+        onRestore={restoreAttendants}
+        onAutoApprove={batchAutoApprove}
+      />
+
+      {/* Section navigation */}
+      <div className="flex items-center gap-1 overflow-x-auto rounded-lg bg-muted/60 p-1 border border-border/40">
+        {PERF_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveSection(tab.key)}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap",
+              activeSection === tab.key
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/60"
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Active section content */}
+      {activeSection === "resumo" && (
+        <MentoriaCharts files={files} excludedAttendants={globalExcludedSet} />
+      )}
+      {activeSection === "bonus" && (
+        <MentoriaBonusPanel
+          files={files}
+          excludedNames={globalExcludedNames}
+          onExclude={excludeAttendants}
+          onRestore={restoreAttendants}
+          onAutoApprove={batchAutoApprove}
+        />
+      )}
+      {(activeSection === "detalhada" || activeSection === "recomendados" || activeSection === "padroes" || activeSection === "roteiro") && (
+        <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} />
+      )}
+    </div>
+  );
+};
+
+
   const navigate = useNavigate();
   const [files, setFiles] = useState<LabFile[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
