@@ -2926,6 +2926,21 @@ const MentoriaLab = () => {
               </Card>
             )}
 
+            {/* Import Summary Card */}
+            {files.length > 0 && (
+              <MentoriaImportSummary
+                files={filteredFiles}
+                duplicateCount={duplicateCount}
+                onStartAutoAnalysis={() => handleBatchAnalyze("all")}
+                onViewAll={() => {
+                  const tabsEl = document.querySelector('[value="pipeline"]') as HTMLElement;
+                  tabsEl?.click();
+                }}
+                isProcessing={processing}
+                batchProcessing={batchProcessing}
+              />
+            )}
+
             {/* 3 Main Action Cards */}
             {loadingFromDb && files.length === 0 && (
               <Card className="p-12 text-center">
