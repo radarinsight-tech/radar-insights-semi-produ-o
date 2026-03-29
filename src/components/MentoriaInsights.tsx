@@ -40,9 +40,12 @@ interface AnalyzedFile {
   };
 }
 
+type InsightSection = "resumo" | "perf_bonus" | "detalhada" | "recomendados" | "padroes" | "roteiro" | "all";
+
 interface MentoriaInsightsProps {
   files: AnalyzedFile[];
   excludedAttendants?: Set<string>;
+  section?: InsightSection;
 }
 
 function round1(n: number): number {
@@ -97,7 +100,7 @@ function countOccurrences(items: string[]): { text: string; count: number }[] {
     .sort((a, b) => b.count - a.count);
 }
 
-const MentoriaInsights = ({ files, excludedAttendants }: MentoriaInsightsProps) => {
+const MentoriaInsights = ({ files, excludedAttendants, section = "all" }: MentoriaInsightsProps) => {
   const analyzed = useMemo(() => files.filter((f) => {
     if (!f.result || typeof f.result.notaFinal !== "number" || f.ineligible || f.result._ineligible || f.nonEvaluable) return false;
     if (excludedAttendants?.size) {
