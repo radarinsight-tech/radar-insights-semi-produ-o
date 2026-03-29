@@ -236,6 +236,7 @@ const MentoriaUnifiedTable = ({
       )}
 
       {/* Status filter chips */}
+      <TooltipProvider delayDuration={300}>
       <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-1 border border-border/40 flex-wrap">
         {STATUS_FILTERS.map((sf) => {
           const count = filterCounts[sf.key];
