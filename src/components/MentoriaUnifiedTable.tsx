@@ -353,13 +353,11 @@ const MentoriaUnifiedTable = ({
                   >
                     {/* Checkbox */}
                     <TableCell className="py-3 text-center w-10">
-                      {isEligible ? (
-                        <Checkbox
-                          checked={selectedIds.has(f.id)}
-                          onCheckedChange={(checked) => handleToggle(f.id, !!checked)}
-                          aria-label={`Selecionar ${f.atendente || f.name}`}
-                        />
-                      ) : null}
+                      <Checkbox
+                        checked={selectedIds.has(f.id)}
+                        onCheckedChange={(checked) => handleToggle(f.id, !!checked)}
+                        aria-label={`Selecionar ${f.atendente || f.name}`}
+                      />
                     </TableCell>
 
                     {/* Atendente + protocolo */}

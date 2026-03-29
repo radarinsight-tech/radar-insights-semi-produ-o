@@ -2791,25 +2791,47 @@ const MentoriaLab = () => {
           <PreflightStatusBadge />
           <div className="ml-auto flex items-center gap-1">
             <MentoriaReportExport files={filteredFiles} batchInfo={batchInfo} />
-            <Button variant="outline" size="sm" onClick={() => navigate("/attendance")}>
-              <ShieldCheck className="h-4 w-4" /> Avaliações Oficiais
-            </Button>
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={() => navigate("/attendance")}>
+                    <ShieldCheck className="h-4 w-4" /> Avaliações Oficiais
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom"><p>Ir para o módulo de Avaliação Oficial — exibe apenas avaliações aprovadas</p></TooltipContent>
+              </Tooltip>
             {isAdmin && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                onClick={() => setShowClearConfirm(true)}
-              >
-                <Trash2 className="h-4 w-4" /> Limpar dados
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                    onClick={() => setShowClearConfirm(true)}
+                  >
+                    <Trash2 className="h-4 w-4" /> Limpar dados
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom"><p>Remover todos os atendimentos do lote atual (ação irreversível)</p></TooltipContent>
+              </Tooltip>
             )}
-            <Button variant="outline" size="sm" onClick={() => navigate("/hub")}>
-              <ArrowLeft className="h-4 w-4" /> Voltar
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4" /> Sair
-            </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={() => navigate("/hub")}>
+                    <ArrowLeft className="h-4 w-4" /> Voltar
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom"><p>Voltar para a tela anterior</p></TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" onClick={handleLogout}>
+                    <LogOut className="h-4 w-4" /> Sair
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom"><p>Encerrar sessão e sair do sistema</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
       </header>
