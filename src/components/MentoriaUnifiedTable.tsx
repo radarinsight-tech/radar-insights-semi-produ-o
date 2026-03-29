@@ -73,12 +73,12 @@ interface MentoriaUnifiedTableProps {
   onAnalyzeSelected?: (ids: string[]) => void;
 }
 
-const STATUS_FILTERS: { key: StatusFilter; label: string; color?: string }[] = [
-  { key: "todos", label: "Todos" },
-  { key: "pendentes", label: "Pendentes" },
-  { key: "aptos_ia", label: "⚡ Aptos IA", color: "indigo" },
-  { key: "em_analise", label: "Em análise" },
-  { key: "nao_avaliaveis", label: "Não avaliáveis" },
+const STATUS_FILTERS: { key: StatusFilter; label: string; color?: string; tooltip: string }[] = [
+  { key: "todos", label: "Todos", tooltip: "Exibe todos os atendimentos importados no lote atual" },
+  { key: "pendentes", label: "Pendentes", tooltip: "Atendimentos aguardando análise da IA" },
+  { key: "aptos_ia", label: "⚡ Aptos IA", color: "indigo", tooltip: "PDFs válidos prontos para análise automática. Clique em Analisar para processar" },
+  { key: "em_analise", label: "Em análise", tooltip: "Atendimentos sendo processados pela IA no momento" },
+  { key: "nao_avaliaveis", label: "Não avaliáveis", tooltip: "PDFs sem conteúdo válido para auditoria (áudio, sem interação, duplicados)" },
 ];
 
 const getDaysPending = (addedAt?: Date): number => {
@@ -240,23 +240,29 @@ const MentoriaUnifiedTable = ({
         {STATUS_FILTERS.map((sf) => {
           const count = filterCounts[sf.key];
           return (
-            <button
-              key={sf.key}
-              onClick={() => setStatusFilter(sf.key)}
-              className={cn(
-                "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-                statusFilter === sf.key
-                  ? sf.color === "indigo"
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "bg-primary text-primary-foreground shadow-sm"
-                  : sf.color === "indigo"
-                    ? "text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/40"
-                    : "text-muted-foreground hover:text-foreground hover:bg-background/60"
-              )}
-            >
-              {sf.label}
-              <span className="ml-1.5 opacity-70">({count})</span>
-            </button>
+            <Tooltip key={sf.key}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setStatusFilter(sf.key)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                    statusFilter === sf.key
+                      ? sf.color === "indigo"
+                        ? "bg-indigo-600 text-white shadow-sm"
+                        : "bg-primary text-primary-foreground shadow-sm"
+                      : sf.color === "indigo"
+                        ? "text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/40"
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/60"
+                  )}
+                >
+                  {sf.label}
+                  <span className="ml-1.5 opacity-70">({count})</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[260px] text-center">
+                <p>{sf.tooltip}</p>
+              </TooltipContent>
+            </Tooltip>
           );
         })}
       </div>
