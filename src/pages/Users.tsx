@@ -31,19 +31,21 @@ import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-type AppRole = "admin" | "auditoria" | "credito";
+type AppRole = "admin" | "auditoria" | "credito" | "mentoria_atendente";
 type CreditSubRole = "credit_manual" | "credit_upload";
 
 const ROLE_LABELS: Record<AppRole, string> = {
   admin: "Admin",
   auditoria: "Auditoria",
   credito: "Crédito",
+  mentoria_atendente: "Mentoria (Atendente)",
 };
 
 const ROLE_COLORS: Record<AppRole, string> = {
   admin: "bg-primary/10 text-primary border-primary/20",
   auditoria: "bg-blue-500/10 text-blue-600 border-blue-500/20",
   credito: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+  mentoria_atendente: "bg-amber-500/10 text-amber-600 border-amber-500/20",
 };
 
 const CREDIT_SUB_LABELS: Record<CreditSubRole, string> = {
@@ -60,6 +62,7 @@ interface ProfileWithRole {
   sectorIds: string[];
   force_password_change: boolean;
   active: boolean;
+  attendant_id: string | null;
 }
 
 const UsersPage = () => {
