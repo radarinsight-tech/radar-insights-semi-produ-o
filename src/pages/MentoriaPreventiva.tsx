@@ -117,6 +117,10 @@ const statusConfig: Record<FileStatus, { label: string; color: string }> = {
 
 const MentoriaPreventiva = () => {
   const navigate = useNavigate();
+  const { loading: permLoading, canAccess, isMentoriaAtendente, isAdmin, attendantId, attendantName } = useUserPermissions();
+  const isAttendenteMode = isMentoriaAtendente && !isAdmin;
+  const MONTHLY_LIMIT = 10;
+
   const [files, setFiles] = useState<LabFile[]>([]);
   const [readingIds, setReadingIds] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState(false);
@@ -125,6 +129,38 @@ const MentoriaPreventiva = () => {
   const [sampled, setSampled] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [monthlyCount, setMonthlyCount] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Load monthly count for atendente mode
+  useEffect(() => {
+    if (!isAttendenteMode) return;
+    const loadCount = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      setCurrentUserId(user.id);
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      const { count } = await supabase
+        .from("preventive_mentorings")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", startOfMonth.toISOString());
+      setMonthlyCount(count ?? 0);
+    };
+    loadCount();
+  }, [isAttendenteMode]);
+
+  // Also get currentUserId for non-atendente mode
+  useEffect(() => {
+    if (isAttendenteMode) return;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setCurrentUserId(user.id);
+    });
+  }, [isAttendenteMode]);
+
+  const isMonthlyLimitReached = isAttendenteMode && monthlyCount >= MONTHLY_LIMIT;
 
   // ── File reading ─────────────────────────────────────────────────────
   const readFile = useCallback(async (labFile: LabFile) => {
