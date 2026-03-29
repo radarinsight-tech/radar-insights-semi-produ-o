@@ -198,6 +198,7 @@ const MentoriaLab = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [processing, setProcessing] = useState(false);
   const [readingIds, setReadingIds] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState("operacao");
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
   const [batchInfo, setBatchInfo] = useState<BatchInfo | null>(null);
   const [sideFile, setSideFile] = useState<LabFile | null>(null);
@@ -2801,7 +2802,7 @@ const MentoriaLab = () => {
         </div>
 
         {/* Tabs navigation */}
-        <Tabs defaultValue="operacao" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 border border-border bg-muted/60 p-1 rounded-lg">
             <TabsTrigger value="operacao" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-accent/60 transition-colors rounded-md font-medium">Operação</TabsTrigger>
             <TabsTrigger value="pipeline" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-accent/60 transition-colors rounded-md font-medium">Pipeline</TabsTrigger>
