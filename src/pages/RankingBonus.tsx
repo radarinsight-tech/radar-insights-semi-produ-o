@@ -591,7 +591,7 @@ const RankingBonus = () => {
                   <p><strong>Regras de elegibilidade:</strong> mínimo de <strong>{MIN_MENTORIAS} mentorias válidas</strong> no mês.</p>
                   <p><strong>Exclusões automáticas:</strong> atendimentos com áudio, sem interação do cliente e mentorias preventivas não entram no cálculo.</p>
                   <p><strong>Exclusões manuais:</strong> clique no ícone <Ban className="h-3 w-3 inline" /> para excluir uma mentoria da apuração com justificativa. Mentorias excluídas podem ser restauradas.</p>
-                  <p><strong>Régua:</strong> 95–100 Excelente (100% / R$ 1.200) · 85–94 Muito bom (90% / R$ 1.080) · 70–84 Bom (70% / R$ 840) · 50–69 Em desenvolvimento (30% / R$ 360) · 0–49 Abaixo do esperado (0% / R$ 0)</p>
+                  <p><strong>Régua:</strong> 90–100 Excelente (100% / R$ 1.200) · 80–89 Ótimo (58% / R$ 700) · 60–79 Bom (25% / R$ 300) · 0–59 Fraco (0% / R$ 0)</p>
                 </div>
               </div>
             </Card>
