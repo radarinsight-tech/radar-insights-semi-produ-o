@@ -382,19 +382,11 @@ const MentoriaUnifiedTable = ({
                     {/* Status dot + label */}
                     <TableCell className="py-3 w-[15%]">
                       <div className="flex items-center gap-1.5">
-                        {isAudioOnly ? (
-                          <Badge className="bg-warning/20 text-warning text-[10px] px-1.5 py-0.5 h-auto gap-1 border border-warning/30">
-                            🎙️ Áudio
-                          </Badge>
-                        ) : (
-                          <>
-                            <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(f.category, isProcessingThis))} />
-                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                              {f.isNonEval ? "N/A" : isProcessingThis ? "Processando" : f.hasResult ? "Analisado" : f.category === "em_analise" ? "Em análise" : "Pendente"}
-                            </span>
-                          </>
-                        )}
-                        {isOverdue && !isAudioOnly && (
+                        <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(f.category, isProcessingThis))} />
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                          {f.isNonEval ? "N/A" : isProcessingThis ? "Processando" : f.hasResult ? "Analisado" : f.category === "em_analise" ? "Em análise" : "Pendente"}
+                        </span>
+                        {isOverdue && (
                           <Badge className="bg-destructive/15 text-destructive text-[8px] px-1 py-0 h-auto gap-0.5">
                             <Clock className="h-2 w-2" />{daysPending}d
                           </Badge>
@@ -407,14 +399,7 @@ const MentoriaUnifiedTable = ({
 
                     {/* Nota */}
                     <TableCell className="py-3 w-[10%] text-center">
-                      {isAudioOnly ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="text-sm cursor-default">🎙️</span>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom"><p>Atendimento com áudio — nota não aplicável</p></TooltipContent>
-                        </Tooltip>
-                      ) : nota10 != null ? (
+                      {nota10 != null ? (
                         <span className={cn(
                           "text-sm font-bold",
                           nota10 >= 9 ? "text-accent" : nota10 >= 7 ? "text-primary" : nota10 >= 5 ? "text-warning" : "text-destructive"
