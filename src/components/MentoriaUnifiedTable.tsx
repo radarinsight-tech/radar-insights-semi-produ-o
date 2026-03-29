@@ -161,6 +161,7 @@ const MentoriaUnifiedTable = ({
   const filtered = useMemo(() => {
     if (statusFilter === "todos") return visibleItems;
     if (statusFilter === "aptos_ia") return visibleItems.filter((f) => f.isAutoEligible);
+    if (statusFilter === "audio") return visibleItems.filter((f) => f.isAudio);
     return visibleItems.filter((f) => f.category === statusFilter);
   }, [visibleItems, statusFilter]);
 
@@ -177,12 +178,14 @@ const MentoriaUnifiedTable = ({
       finalizados: categorized.filter((f) => f.category === "finalizados").length,
       nao_avaliaveis: 0,
       aptos_ia: 0,
+      audio: 0,
     };
     for (const f of visibleItems) {
       if (f.category === "pendentes") counts.pendentes++;
       else if (f.category === "em_analise") counts.em_analise++;
       else if (f.category === "nao_avaliaveis") counts.nao_avaliaveis++;
       if (f.isAutoEligible) counts.aptos_ia++;
+      if (f.isAudio) counts.audio++;
     }
     return counts;
   }, [visibleItems, categorized]);
