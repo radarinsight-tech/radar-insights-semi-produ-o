@@ -79,6 +79,7 @@ const STATUS_FILTERS: { key: StatusFilter; label: string; color?: string; toolti
   { key: "aptos_ia", label: "⚡ Aptos IA", color: "indigo", tooltip: "PDFs válidos prontos para análise automática. Clique em Analisar para processar" },
   { key: "em_analise", label: "Em análise", tooltip: "Atendimentos sendo processados pela IA no momento" },
   { key: "nao_avaliaveis", label: "Não avaliáveis", tooltip: "PDFs sem conteúdo válido para auditoria (áudio, sem interação, duplicados)" },
+  { key: "audio", label: "🎙️ Áudio", color: "amber", tooltip: "Atendimentos com áudio — auditoria não realizada por conteúdo de voz" },
 ];
 
 const getDaysPending = (addedAt?: Date): number => {
