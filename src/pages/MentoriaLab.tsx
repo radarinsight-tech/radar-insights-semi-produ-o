@@ -199,7 +199,7 @@ const PERF_NAV: { key: PerformanceSection; label: string; icon: string }[] = [
   { key: "bonus_panel", label: "Painel de Bônus", icon: "🏆" },
   { key: "resumo", label: "Resumo Geral", icon: "📊" },
   { key: "bonus", label: "Performance & Bônus", icon: "💰" },
-  { key: "detalhada", label: "Performance Detalhada", icon: "👤" },
+  { key: "detalhada", label: "Perf. Detalhada", icon: "👤" },
   { key: "recomendados", label: "Recomendados", icon: "⭐" },
   { key: "padroes", label: "Padrões", icon: "💬" },
   { key: "roteiro", label: "Roteiro", icon: "📋" },
@@ -285,7 +285,8 @@ const PerformanceSections = ({
   return (
     <div className="flex gap-4 min-h-[400px]">
       {/* Sidebar */}
-      <nav className="w-[180px] shrink-0 rounded-lg border border-border/50 bg-muted/30 p-2 space-y-0.5">
+      <nav className="w-[200px] shrink-0 rounded-lg border border-border/50 bg-[hsl(210,20%,98%)] dark:bg-muted/20 p-2 space-y-0.5">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-3 py-1.5">Seções</p>
         {PERF_NAV.map((nav) => (
           <button
             key={nav.key}
@@ -293,7 +294,7 @@ const PerformanceSections = ({
             className={cn(
               "w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-colors text-left",
               activeSection === nav.key
-                ? "bg-primary text-primary-foreground shadow-sm"
+                ? "bg-primary/10 text-primary border-l-[3px] border-l-primary font-semibold"
                 : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
             )}
           >
