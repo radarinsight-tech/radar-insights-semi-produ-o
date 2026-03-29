@@ -583,7 +583,7 @@ const UsersPage = () => {
                   </Select>
                   <p className="text-xs text-muted-foreground">O usuário só poderá analisar atendimentos deste atendente.</p>
                 </div>
-              )
+              )}
               {(editRole === "credito" || editRole === "admin") && (
                 <div className="space-y-2">
                   <Label>Permissões de Crédito</Label>
