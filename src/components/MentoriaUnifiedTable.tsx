@@ -430,29 +430,59 @@ const MentoriaUnifiedTable = ({
                               <MoreHorizontal className="h-3.5 w-3.5" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuItem onClick={() => onOpenFile(f)}>
-                              <Eye className="h-3.5 w-3.5 mr-2" /> Preview
-                            </DropdownMenuItem>
+                          <DropdownMenuContent align="end" className="w-52">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <DropdownMenuItem onClick={() => onOpenFile(f)}>
+                                  <Eye className="h-3.5 w-3.5 mr-2" /> Preview
+                                </DropdownMenuItem>
+                              </TooltipTrigger>
+                              <TooltipContent side="left"><p>Pré-visualizar o PDF do atendimento</p></TooltipContent>
+                            </Tooltip>
+                            {f.hasResult && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <DropdownMenuItem onClick={() => onOpenMentoria(f)}>
+                                    <BookOpen className="h-3.5 w-3.5 mr-2" /> Ver
+                                  </DropdownMenuItem>
+                                </TooltipTrigger>
+                                <TooltipContent side="left"><p>Visualizar o resultado completo da análise</p></TooltipContent>
+                              </Tooltip>
+                            )}
                             {f.hasResult && !f.approvedAsOfficial && f.evaluationId && (
-                              <DropdownMenuItem
-                                onClick={() => onApproveOfficial(f)}
-                                disabled={approvingIds.has(f.id)}
-                              >
-                                <ShieldCheck className="h-3.5 w-3.5 mr-2" /> Aprovar Oficial
-                              </DropdownMenuItem>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <DropdownMenuItem
+                                    onClick={() => onApproveOfficial(f)}
+                                    disabled={approvingIds.has(f.id)}
+                                  >
+                                    <ShieldCheck className="h-3.5 w-3.5 mr-2" /> Aprovar Oficial
+                                  </DropdownMenuItem>
+                                </TooltipTrigger>
+                                <TooltipContent side="left"><p>Aprovar esta análise como avaliação oficial — aparecerá no módulo Avaliação Oficial</p></TooltipContent>
+                              </Tooltip>
                             )}
                             {isAdmin && (
-                              <DropdownMenuItem onClick={() => onOpenDiagnostic(f)}>
-                                <Bug className="h-3.5 w-3.5 mr-2" /> Diagnóstico
-                              </DropdownMenuItem>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <DropdownMenuItem onClick={() => onOpenDiagnostic(f)}>
+                                    <Bug className="h-3.5 w-3.5 mr-2" /> Diagnóstico
+                                  </DropdownMenuItem>
+                                </TooltipTrigger>
+                                <TooltipContent side="left"><p>Ver diagnóstico técnico do parser — útil para identificar problemas na leitura do PDF</p></TooltipContent>
+                              </Tooltip>
                             )}
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => onRemoveFile(f.id)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5 mr-2" /> Remover
-                            </DropdownMenuItem>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => onRemoveFile(f.id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Remover
+                                </DropdownMenuItem>
+                              </TooltipTrigger>
+                              <TooltipContent side="left"><p>Remover este atendimento do lote atual (não exclui da base)</p></TooltipContent>
+                            </Tooltip>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
