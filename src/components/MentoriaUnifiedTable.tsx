@@ -22,6 +22,7 @@ import {
   BookOpen,
   Zap,
   Clock,
+  UserCheck,
 } from "lucide-react";
 import { cn, formatDateBR, notaToScale10 } from "@/lib/utils";
 import {
