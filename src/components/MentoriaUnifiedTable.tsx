@@ -244,6 +244,7 @@ const MentoriaUnifiedTable = ({
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Data</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Status</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Tipo</TableHead>
+                <TableHead className="text-xs font-bold uppercase tracking-wide text-center">Aptos IA</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Nota</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide text-right">Ação</TableHead>
               </TableRow>
