@@ -131,13 +131,23 @@ const MentoriaUnifiedTable = ({
       const hasResult = f.status === "analisado" && f.result;
       const isAutoEligible = !isNonEval && (f.status === "lido" || f.status === "pendente") && !hasResult;
 
+      // Detect audio-only attendance
+      const isAudio = Boolean(f.hasAudio) && (() => {
+        const reason = String(f.nonEvaluableReason || f.ineligibleReason || f.result?.motivo_nao_avaliavel || f.result?.motivo_inelegivel || f.result?._nonEvaluableReason || f.result?._ineligibleReason || "").toLowerCase();
+        if (reason.includes("áudio") || reason.includes("audio") || reason.includes("gravacao") || reason.includes("gravação")) return true;
+        if (hasResult && f.result?.notaFinal === 0) return true;
+        const statusResult = String(f.result?.status_auditoria || f.result?.statusAuditoria || "").toLowerCase();
+        if (statusResult.includes("não realizada") || statusResult.includes("nao_auditavel")) return true;
+        return false;
+      })();
+
       let category: StatusFilter;
       if (isNonEval) category = "nao_avaliaveis";
       else if (ws === "finalizado" || hasResult) category = "finalizados";
       else if (ws === "em_analise") category = "em_analise";
       else category = "pendentes";
 
-      return { ...f, category, isNonEval, hasResult, isAutoEligible, workflowStatus: ws };
+      return { ...f, category, isNonEval, hasResult, isAutoEligible, isAudio, workflowStatus: ws };
     });
   }, [files, getWorkflowStatus]);
 
