@@ -775,11 +775,10 @@ const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore, onAuto
 
 // Legacy faixa calculation for classic mode
 function calcularFaixaLegacy(media100: number) {
-  if (media100 >= 95) return { faixa: "Excelente", percentual: 100, valor: 1200, faixaColor: "text-accent", faixaBg: "bg-accent/10 border-accent/20" };
-  if (media100 >= 85) return { faixa: "Muito bom", percentual: 90, valor: 1080, faixaColor: "text-emerald-600", faixaBg: "bg-emerald-50 border-emerald-200" };
-  if (media100 >= 70) return { faixa: "Bom atendimento", percentual: 70, valor: 840, faixaColor: "text-primary", faixaBg: "bg-primary/10 border-primary/20" };
-  if (media100 >= 50) return { faixa: "Em desenvolvimento", percentual: 30, valor: 360, faixaColor: "text-warning", faixaBg: "bg-warning/10 border-warning/20" };
-  return { faixa: "Abaixo do esperado", percentual: 0, valor: 0, faixaColor: "text-destructive", faixaBg: "bg-destructive/10 border-destructive/20" };
+  if (media100 >= 90) return { faixa: "Excelente", percentual: 100, valor: 1200, faixaColor: "text-accent", faixaBg: "bg-accent/10 border-accent/20" };
+  if (media100 >= 80) return { faixa: "Ótimo", percentual: 58, valor: 700, faixaColor: "text-emerald-600", faixaBg: "bg-emerald-50 border-emerald-200" };
+  if (media100 >= 60) return { faixa: "Bom", percentual: 25, valor: 300, faixaColor: "text-primary", faixaBg: "bg-primary/10 border-primary/20" };
+  return { faixa: "Fraco", percentual: 0, valor: 0, faixaColor: "text-destructive", faixaBg: "bg-destructive/10 border-destructive/20" };
 }
 
 export default MentoriaBonusPanel;

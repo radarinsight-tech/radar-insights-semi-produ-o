@@ -126,15 +126,13 @@ function calcularFaixa(media100: number): {
   color: string;
   bg: string;
 } {
-  if (media100 >= 95)
+  if (media100 >= 90)
     return { faixa: "Excelente", percentual: 100, valor: 1200, color: "text-accent", bg: "bg-accent/10 border-accent/20" };
-  if (media100 >= 85)
-    return { faixa: "Muito bom", percentual: 90, valor: 1080, color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200" };
-  if (media100 >= 70)
-    return { faixa: "Bom atendimento", percentual: 70, valor: 840, color: "text-primary", bg: "bg-primary/10 border-primary/20" };
-  if (media100 >= 50)
-    return { faixa: "Em desenvolvimento", percentual: 30, valor: 360, color: "text-warning", bg: "bg-warning/10 border-warning/20" };
-  return { faixa: "Abaixo do esperado", percentual: 0, valor: 0, color: "text-destructive", bg: "bg-destructive/10 border-destructive/20" };
+  if (media100 >= 80)
+    return { faixa: "Ótimo", percentual: 58, valor: 700, color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200" };
+  if (media100 >= 60)
+    return { faixa: "Bom", percentual: 25, valor: 300, color: "text-primary", bg: "bg-primary/10 border-primary/20" };
+  return { faixa: "Fraco", percentual: 0, valor: 0, color: "text-destructive", bg: "bg-destructive/10 border-destructive/20" };
 }
 
 // ─── Sample Status ──────────────────────────────────────────────────
