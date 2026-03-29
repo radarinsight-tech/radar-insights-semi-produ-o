@@ -2933,10 +2933,7 @@ const MentoriaLab = () => {
                 files={filteredFiles}
                 duplicateCount={duplicateCount}
                 onStartAutoAnalysis={() => handleBatchAnalyze("all")}
-                onViewAll={() => {
-                  const tabsEl = document.querySelector('[value="pipeline"]') as HTMLElement;
-                  tabsEl?.click();
-                }}
+                onViewAll={() => setActiveTab("pipeline")}
                 isProcessing={processing}
                 batchProcessing={batchProcessing}
               />
