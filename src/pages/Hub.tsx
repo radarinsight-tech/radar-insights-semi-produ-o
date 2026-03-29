@@ -10,14 +10,30 @@ import { useUserPermissions } from "@/hooks/useUserPermissions";
 
 const Hub = () => {
   const navigate = useNavigate();
-  const { canAccess, loading, isAdmin } = useUserPermissions();
+  const { canAccess, loading, isAdmin, isMentoriaAtendente } = useUserPermissions();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
 
+  // Redirect mentoria_atendente users directly to mentoria-preventiva
+  useEffect(() => {
+    if (!loading && isMentoriaAtendente && !isAdmin) {
+      navigate("/mentoria-preventiva", { replace: true });
+    }
+  }, [loading, isMentoriaAtendente, isAdmin, navigate]);
+
   if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Don't render hub for mentoria_atendente (they get redirected)
+  if (isMentoriaAtendente && !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
