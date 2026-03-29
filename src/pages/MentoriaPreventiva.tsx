@@ -162,6 +162,10 @@ const MentoriaPreventiva = () => {
 
   const isMonthlyLimitReached = isAttendenteMode && monthlyCount >= MONTHLY_LIMIT;
 
+  // ── Name normalization for ownership check ─────────────────────────
+  const normalizeName = (name: string) =>
+    name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
   // ── File reading ─────────────────────────────────────────────────────
   const readFile = useCallback(async (labFile: LabFile) => {
     setReadingIds((prev) => new Set(prev).add(labFile.id));
@@ -172,13 +176,25 @@ const MentoriaPreventiva = () => {
         return;
       }
       const metadata = extractAllMetadata(text);
+
+      // PDF ownership validation for atendente mode
+      if (isAttendenteMode && attendantName && metadata.atendente) {
+        const pdfName = normalizeName(metadata.atendente);
+        const linkedName = normalizeName(attendantName);
+        if (!pdfName.includes(linkedName) && !linkedName.includes(pdfName)) {
+          setFiles((prev) => prev.map((f) => f.id === labFile.id ? { ...f, status: "erro" as FileStatus, error: "Este atendimento pertence a outro colaborador." } : f));
+          toast.error("⚠️ Este atendimento pertence a outro colaborador e não pode ser importado aqui. Você só pode analisar seus próprios atendimentos.");
+          return;
+        }
+      }
+
       setFiles((prev) => prev.map((f) => f.id === labFile.id ? { ...f, status: "lido" as FileStatus, text, ...metadata } : f));
     } catch {
       setFiles((prev) => prev.map((f) => f.id === labFile.id ? { ...f, status: "erro" as FileStatus, error: "Falha na leitura." } : f));
     } finally {
       setReadingIds((prev) => { const n = new Set(prev); n.delete(labFile.id); return n; });
     }
-  }, []);
+  }, [isAttendenteMode, attendantName]);
 
   // ── Upload handler (PDF + ZIP) ───────────────────────────────────────
   const handleFiles = useCallback(async (newFiles: FileList | File[]) => {
