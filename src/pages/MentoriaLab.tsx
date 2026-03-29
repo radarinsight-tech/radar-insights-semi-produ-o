@@ -3227,8 +3227,8 @@ const MentoriaLab = () => {
                   );
                 })()}
 
-                {/* Pipeline View */}
-                <MentoriaPipeline
+                {/* Unified Table View */}
+                <MentoriaUnifiedTable
                   files={filteredFiles}
                   getWorkflowStatus={getWorkflowStatus}
                   highlightedFileId={highlightedFileId}
