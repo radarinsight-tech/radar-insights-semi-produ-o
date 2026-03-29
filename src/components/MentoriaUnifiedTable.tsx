@@ -464,14 +464,13 @@ const MentoriaUnifiedTable = ({
 
       {/* Floating action bar */}
       {selectedCount > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl border border-indigo-400/30 bg-indigo-50 dark:bg-indigo-950/90 px-5 py-3 shadow-xl backdrop-blur-sm">
-          <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-          <span className="text-sm font-medium text-foreground">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl border border-border/30 bg-[#1a1a2e] px-5 py-3 shadow-xl">
+          <span className="text-sm font-medium text-white">
             {selectedCount} selecionado(s)
           </span>
           <Button
             size="sm"
-            className="gap-1.5 font-semibold bg-indigo-600 hover:bg-indigo-700 text-white"
+            className="gap-1.5 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => {
               const ids = [...selectedIds].filter((id) =>
                 categorized.some((f) => f.id === id && f.isAutoEligible)
@@ -487,6 +486,14 @@ const MentoriaUnifiedTable = ({
           >
             {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
             ⚡ Analisar selecionados ({selectedCount})
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-white/20 text-white hover:bg-white/10"
+            onClick={() => setSelectedIds(new Set())}
+          >
+            Cancelar
           </Button>
         </div>
       )}
