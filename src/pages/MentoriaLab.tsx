@@ -2916,10 +2916,7 @@ const MentoriaLab = () => {
                 files={filteredFiles}
                 duplicateCount={duplicateCount}
                 errorCount={counts.erro}
-                onStartAutoAnalysis={() => handleBatchAnalyze("all")}
                 onViewAll={() => setActiveTab("pipeline")}
-                isProcessing={processing}
-                batchProcessing={batchProcessing}
               />
             )}
 
