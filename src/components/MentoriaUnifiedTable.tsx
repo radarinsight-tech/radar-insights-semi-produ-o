@@ -20,7 +20,7 @@ import {
 } from "@/lib/mentoriaEvaluability";
 import type { WorkflowStatus } from "@/components/MentoriaDetailDialog";
 
-type StatusFilter = "todos" | "pendentes" | "em_analise" | "finalizados" | "nao_avaliaveis" | "aptos_ia";
+type StatusFilter = "todos" | "pendentes" | "em_analise" | "finalizados" | "nao_avaliaveis" | "aptos_ia" | "audio";
 
 interface UnifiedFile {
   id: string;
