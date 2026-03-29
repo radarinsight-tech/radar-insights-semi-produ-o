@@ -564,11 +564,26 @@ const UsersPage = () => {
                     <SelectItem value="none">Sem permissão</SelectItem>
                     <SelectItem value="auditoria">Auditoria de Atendimento</SelectItem>
                     <SelectItem value="credito">Análise de Crédito</SelectItem>
+                    <SelectItem value="mentoria_atendente">Mentoria Preventiva (Atendente)</SelectItem>
                     <SelectItem value="admin">Admin (acesso total)</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">Define qual módulo o usuário pode acessar no sistema.</p>
               </div>
+              {editRole === "mentoria_atendente" && (
+                <div className="space-y-2">
+                  <Label>Atendente vinculado <span className="text-destructive">*</span></Label>
+                  <Select value={editAttendantId} onValueChange={setEditAttendantId}>
+                    <SelectTrigger><SelectValue placeholder="Selecione o atendente" /></SelectTrigger>
+                    <SelectContent>
+                      {attendantsList.map((att) => (
+                        <SelectItem key={att.id} value={att.id}>{att.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">O usuário só poderá analisar atendimentos deste atendente.</p>
+                </div>
+              )
               {(editRole === "credito" || editRole === "admin") && (
                 <div className="space-y-2">
                   <Label>Permissões de Crédito</Label>
