@@ -700,7 +700,9 @@ const MentoriaPreventiva = () => {
                         Ela não afeta seu bônus nem sua avaliação formal.
                       </p>
                     </div>
-                  )
+                  )}
+
+                  {/* Resumo */}
                   <Card className="p-5 space-y-2">
                     <h3 className="text-sm font-bold text-foreground">Resumo Geral</h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">{activeResult.resumoGeral}</p>
