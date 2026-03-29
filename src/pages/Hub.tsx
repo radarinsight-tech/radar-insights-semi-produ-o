@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, HeadsetIcon, CreditCard, Loader2, ShieldAlert, Users, FlaskConical, ShieldCheck, Users2, Trophy, ArrowRight, Sprout, Settings, BarChart3, PauseCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
