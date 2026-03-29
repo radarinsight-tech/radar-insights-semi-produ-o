@@ -220,6 +220,8 @@ const MentoriaInsights = ({ files, excludedAttendants, section = "all" }: Mentor
     );
   }
 
+  const showSection = (s: string) => section === "all" || section === s;
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -245,281 +247,280 @@ const MentoriaInsights = ({ files, excludedAttendants, section = "all" }: Mentor
       </div>
 
       {/* 1. Resumo Geral */}
-      <Card ref={resumoRef} className="p-5 space-y-4 rounded-xl border-border/60 shadow-sm">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-primary" />
-            <span>1. Resumo Geral</span>
-          </h3>
-          <SectionPrintButton sectionRef={resumoRef} title="Resumo Geral" />
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="p-3 rounded-xl bg-accent/5 border border-accent/20 text-center">
-            <Award className="h-5 w-5 text-accent mx-auto mb-1" />
-            <p className="text-sm font-bold text-foreground">{insights.melhor.name}</p>
-            <p className="text-xs text-muted-foreground">Melhor — {formatNota(insights.melhor.media)}</p>
+      {showSection("resumo") && (
+        <Card ref={resumoRef} className="p-5 space-y-4 rounded-xl border-border/60 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              <span>1. Resumo Geral</span>
+            </h3>
+            <SectionPrintButton sectionRef={resumoRef} title="Resumo Geral" />
           </div>
-          <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20 text-center">
-            <AlertTriangle className="h-5 w-5 text-destructive mx-auto mb-1" />
-            <p className="text-sm font-bold text-foreground">{insights.pior.name}</p>
-            <p className="text-xs text-muted-foreground">Atenção — {formatNota(insights.pior.media)}</p>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="p-3 rounded-xl bg-accent/5 border border-accent/20 text-center">
+              <Award className="h-5 w-5 text-accent mx-auto mb-1" />
+              <p className="text-sm font-bold text-foreground">{insights.melhor.name}</p>
+              <p className="text-xs text-muted-foreground">Melhor — {formatNota(insights.melhor.media)}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20 text-center">
+              <AlertTriangle className="h-5 w-5 text-destructive mx-auto mb-1" />
+              <p className="text-sm font-bold text-foreground">{insights.pior.name}</p>
+              <p className="text-xs text-muted-foreground">Atenção — {formatNota(insights.pior.media)}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/50 text-center">
+              <Users className="h-5 w-5 text-primary mx-auto mb-1" />
+              <p className="text-sm font-bold text-foreground">{insights.atendenteStats.length}</p>
+              <p className="text-xs text-muted-foreground">Atendentes avaliados</p>
+            </div>
           </div>
-          <div className="p-3 rounded-lg bg-muted/50 text-center">
-            <Users className="h-5 w-5 text-primary mx-auto mb-1" />
-            <p className="text-sm font-bold text-foreground">{insights.atendenteStats.length}</p>
-            <p className="text-xs text-muted-foreground">Atendentes avaliados</p>
-          </div>
-        </div>
 
-        {/* Top pontos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-          <div>
-            <p className="text-xs font-semibold text-destructive mb-2 flex items-center gap-1">
-              <TrendingDown className="h-3 w-3" /> Pontos críticos mais recorrentes
-            </p>
-            {insights.topCriticos.length > 0 ? (
-              <ul className="space-y-1">
-                {insights.topCriticos.map((p, i) => (
-                  <li key={i} className="text-xs text-foreground flex items-start gap-2">
-                    <Badge variant="outline" className="text-[10px] shrink-0 px-1.5">{p.count}x</Badge>
-                    {p.text}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-xs text-muted-foreground">Nenhum ponto crítico recorrente.</p>
-            )}
+          {/* Top pontos */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+            <div>
+              <p className="text-xs font-semibold text-destructive mb-2 flex items-center gap-1">
+                <TrendingDown className="h-3 w-3" /> Pontos críticos mais recorrentes
+              </p>
+              {insights.topCriticos.length > 0 ? (
+                <ul className="space-y-1">
+                  {insights.topCriticos.map((p, i) => (
+                    <li key={i} className="text-xs text-foreground flex items-start gap-2">
+                      <Badge variant="outline" className="text-[10px] shrink-0 px-1.5">{p.count}x</Badge>
+                      {p.text}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs text-muted-foreground">Nenhum ponto crítico recorrente.</p>
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-accent mb-2 flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" /> Pontos fortes mais recorrentes
+              </p>
+              {insights.topFortes.length > 0 ? (
+                <ul className="space-y-1">
+                  {insights.topFortes.map((p, i) => (
+                    <li key={i} className="text-xs text-foreground flex items-start gap-2">
+                      <Badge variant="outline" className="text-[10px] shrink-0 px-1.5">{p.count}x</Badge>
+                      {p.text}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs text-muted-foreground">Nenhum ponto forte recorrente.</p>
+              )}
+            </div>
           </div>
-          <div>
-            <p className="text-xs font-semibold text-accent mb-2 flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" /> Pontos fortes mais recorrentes
-            </p>
-            {insights.topFortes.length > 0 ? (
-              <ul className="space-y-1">
-                {insights.topFortes.map((p, i) => (
-                  <li key={i} className="text-xs text-foreground flex items-start gap-2">
-                    <Badge variant="outline" className="text-[10px] shrink-0 px-1.5">{p.count}x</Badge>
-                    {p.text}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-xs text-muted-foreground">Nenhum ponto forte recorrente.</p>
-            )}
+        </Card>
+      )}
+
+      {/* 2. Performance & Bônus Cards */}
+      {showSection("perf_bonus") && (
+        <Card ref={perfBonusRef} className="p-5 rounded-xl border-border/60 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-primary" /> 2. Performance & Bônus por Atendente
+            </h3>
+            <SectionPrintButton sectionRef={perfBonusRef} title="Performance & Bônus" />
           </div>
-        </div>
-      </Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {insights.atendenteStats.map((at) => {
+              const bonus = calcularBonus(at.media);
+              const isInsuficiente = at.amostragemInsuficiente;
+              const media10 = notaToScale10(at.media);
+              const borderColor = isInsuficiente
+                ? "border-l-muted-foreground"
+                : media10 >= 7 ? "border-l-accent" : media10 >= 5 ? "border-l-warning" : "border-l-destructive";
+              const bgColor = isInsuficiente
+                ? "bg-muted/30"
+                : media10 >= 7 ? "bg-accent/5" : media10 >= 5 ? "bg-warning/5" : "bg-destructive/5";
 
-      {/* Performance & Bônus Cards */}
-      <Card ref={perfBonusRef} className="p-5 rounded-xl border-border/60 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-primary" /> 2. Performance & Bônus por Atendente
-          </h3>
-          <SectionPrintButton sectionRef={perfBonusRef} title="Performance & Bônus" />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {insights.atendenteStats.map((at) => {
-            const bonus = calcularBonus(at.media);
-            const isInsuficiente = at.amostragemInsuficiente;
-            const media10 = notaToScale10(at.media);
-            const borderColor = isInsuficiente
-              ? "border-l-muted-foreground"
-              : media10 >= 7 ? "border-l-accent" : media10 >= 5 ? "border-l-warning" : "border-l-destructive";
-            const bgColor = isInsuficiente
-              ? "bg-muted/30"
-              : media10 >= 7 ? "bg-accent/5" : media10 >= 5 ? "bg-warning/5" : "bg-destructive/5";
-
-            return (
-              <div
-                key={at.name}
-                className={`rounded-xl border border-border/60 border-l-4 ${borderColor} ${bgColor} p-4 space-y-3 transition-colors`}
-              >
-                {/* Header */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-foreground truncate">{at.name}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {at.notas.length} mentoria{at.notas.length > 1 ? "s" : ""} realizada{at.notas.length > 1 ? "s" : ""}
-                    </p>
+              return (
+                <div
+                  key={at.name}
+                  className={`rounded-xl border border-border/60 border-l-4 ${borderColor} ${bgColor} p-4 space-y-3 transition-colors`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-foreground truncate">{at.name}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {at.notas.length} mentoria{at.notas.length > 1 ? "s" : ""} realizada{at.notas.length > 1 ? "s" : ""}
+                      </p>
+                    </div>
+                    {isInsuficiente && (
+                      <Badge className="bg-muted text-muted-foreground text-[9px] shrink-0">Amostragem insuficiente</Badge>
+                    )}
                   </div>
-                  {isInsuficiente && (
-                    <Badge className="bg-muted text-muted-foreground text-[9px] shrink-0">Amostragem insuficiente</Badge>
-                  )}
-                </div>
-
-                {/* Metrics */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="text-center p-2 rounded-lg bg-background/60">
-                    <p className={`text-lg font-black leading-none ${isInsuficiente ? "text-muted-foreground" : media10 >= 7 ? "text-accent" : media10 >= 5 ? "text-warning" : "text-destructive"}`}>
-                      {formatNota(at.media)}
-                    </p>
-                    <p className="text-[9px] text-muted-foreground mt-1">Nota Média</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="text-center p-2 rounded-lg bg-background/60">
+                      <p className={`text-lg font-black leading-none ${isInsuficiente ? "text-muted-foreground" : media10 >= 7 ? "text-accent" : media10 >= 5 ? "text-warning" : "text-destructive"}`}>
+                        {formatNota(at.media)}
+                      </p>
+                      <p className="text-[9px] text-muted-foreground mt-1">Nota Média</p>
+                    </div>
+                    <div className="text-center p-2 rounded-lg bg-background/60">
+                      <p className={`text-lg font-black leading-none ${isInsuficiente ? "text-muted-foreground" : "text-foreground"}`}>
+                        {isInsuficiente ? "—" : `${bonus.percentual}%`}
+                      </p>
+                      <p className="text-[9px] text-muted-foreground mt-1">Bônus</p>
+                    </div>
                   </div>
-                  <div className="text-center p-2 rounded-lg bg-background/60">
-                    <p className={`text-lg font-black leading-none ${isInsuficiente ? "text-muted-foreground" : "text-foreground"}`}>
-                      {isInsuficiente ? "—" : `${bonus.percentual}%`}
-                    </p>
-                    <p className="text-[9px] text-muted-foreground mt-1">Bônus</p>
+                  <div className="flex items-center justify-between pt-2 border-t border-border/40">
+                    <Badge variant="outline" className={`text-[10px] ${isInsuficiente ? "text-muted-foreground" : ""}`}>
+                      {isInsuficiente ? "Pendente" : bonus.classificacao}
+                    </Badge>
+                    <span className={`text-sm font-bold ${isInsuficiente ? "text-muted-foreground" : media10 >= 7 ? "text-accent" : media10 >= 5 ? "text-warning" : "text-destructive"}`}>
+                      {isInsuficiente ? "—" : formatBRL(bonus.valor)}
+                    </span>
                   </div>
                 </div>
-
-                {/* Classification + Value */}
-                <div className="flex items-center justify-between pt-2 border-t border-border/40">
-                  <Badge
-                    variant="outline"
-                    className={`text-[10px] ${isInsuficiente ? "text-muted-foreground" : ""}`}
-                  >
-                    {isInsuficiente ? "Pendente" : bonus.classificacao}
-                  </Badge>
-                  <span className={`text-sm font-bold ${isInsuficiente ? "text-muted-foreground" : media10 >= 7 ? "text-accent" : media10 >= 5 ? "text-warning" : "text-destructive"}`}>
-                    {isInsuficiente ? "—" : formatBRL(bonus.valor)}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       {/* 3. Performance detalhada por Atendente */}
-      <Card ref={perfRef} className="p-5 rounded-xl border-border/60 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Users className="h-4 w-4 text-primary" /> 3. Performance Detalhada
-          </h3>
-          <TooltipProvider delayDuration={200}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex">
-                  <Button variant="ghost" size="icon" className="h-7 w-7 opacity-40 cursor-not-allowed" disabled>
-                    <Printer className="h-3.5 w-3.5" />
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="left">
-                <p className="text-xs">Impressão temporariamente indisponível</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-        <Accordion type="multiple" className="space-y-2">
-          {insights.atendenteStats.map((at) => (
-            <AccordionItem key={at.name} value={at.name} className="border border-border rounded-lg px-4">
-              <AccordionTrigger className="hover:no-underline py-3">
-                <div className="flex items-center gap-3 w-full pr-4">
-                  <div className="flex-1 text-left">
-                    <span className="font-medium text-foreground text-sm">{at.name}</span>
-                    <span className="text-xs text-muted-foreground ml-2">({at.notas.length} atendimento{at.notas.length > 1 ? "s" : ""})</span>
+      {showSection("detalhada") && (
+        <Card ref={perfRef} className="p-5 rounded-xl border-border/60 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" /> 3. Performance Detalhada
+            </h3>
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">
+                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-40 cursor-not-allowed" disabled>
+                      <Printer className="h-3.5 w-3.5" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <p className="text-xs">Impressão temporariamente indisponível</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <Accordion type="multiple" className="space-y-2">
+            {insights.atendenteStats.map((at) => (
+              <AccordionItem key={at.name} value={at.name} className="border border-border rounded-lg px-4">
+                <AccordionTrigger className="hover:no-underline py-3">
+                  <div className="flex items-center gap-3 w-full pr-4">
+                    <div className="flex-1 text-left">
+                      <span className="font-medium text-foreground text-sm">{at.name}</span>
+                      <span className="text-xs text-muted-foreground ml-2">({at.notas.length} atendimento{at.notas.length > 1 ? "s" : ""})</span>
+                    </div>
+                    {at.amostragemInsuficiente ? (
+                      <>
+                        <Badge className={`text-xs ${classColor(at.classificacao)} bg-transparent border-0 p-0 font-bold opacity-50`}>
+                          {formatNota(at.media)}
+                        </Badge>
+                        <Badge className="bg-muted text-muted-foreground text-[10px]">Amostragem insuficiente</Badge>
+                        <span className="text-[10px] text-muted-foreground">mín. {MIN_MENTORIAS}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Badge className={`text-xs ${classColor(at.classificacao)} bg-transparent border-0 p-0 font-bold`}>
+                          {formatNota(at.media)}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">{at.classificacao}</Badge>
+                        {(() => {
+                          const bonus = calcularBonus(at.media);
+                          return (
+                            <Badge variant="outline" className="text-[10px] gap-1">
+                              {bonus.percentual}% · {formatBRL(bonus.valor)}
+                            </Badge>
+                          );
+                        })()}
+                        {notaToScale10(at.media) < 7 && (
+                          <Badge className="bg-warning/15 text-warning text-[10px]">Necessita mentoria</Badge>
+                        )}
+                      </>
+                    )}
                   </div>
-                  {at.amostragemInsuficiente ? (
-                    <>
-                      <Badge className={`text-xs ${classColor(at.classificacao)} bg-transparent border-0 p-0 font-bold opacity-50`}>
-                        {formatNota(at.media)}
-                      </Badge>
-                      <Badge className="bg-muted text-muted-foreground text-[10px]">Amostragem insuficiente</Badge>
-                      <span className="text-[10px] text-muted-foreground">mín. {MIN_MENTORIAS}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Badge className={`text-xs ${classColor(at.classificacao)} bg-transparent border-0 p-0 font-bold`}>
-                        {formatNota(at.media)}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">{at.classificacao}</Badge>
-                      {(() => {
-                        const bonus = calcularBonus(at.media);
-                        return (
-                          <Badge variant="outline" className="text-[10px] gap-1">
-                            {bonus.percentual}% · {formatBRL(bonus.valor)}
-                          </Badge>
-                        );
-                      })()}
-                      {notaToScale10(at.media) < 7 && (
-                        <Badge className="bg-warning/15 text-warning text-[10px]">Necessita mentoria</Badge>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1">
+                    <div>
+                      <p className="text-xs font-semibold text-accent mb-1">Pontos fortes</p>
+                      {at.pontosFortes.length > 0 ? (
+                        <ul className="space-y-0.5">
+                          {at.pontosFortes.map((p, i) => (
+                            <li key={i} className="text-xs text-foreground">✓ {p}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic">Nenhum identificado</p>
                       )}
-                    </>
-                  )}
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="pb-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1">
-                  <div>
-                    <p className="text-xs font-semibold text-accent mb-1">Pontos fortes</p>
-                    {at.pontosFortes.length > 0 ? (
-                      <ul className="space-y-0.5">
-                        {at.pontosFortes.map((p, i) => (
-                          <li key={i} className="text-xs text-foreground">✓ {p}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-xs text-muted-foreground italic">Nenhum identificado</p>
-                    )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-destructive mb-1">Pontos de melhoria</p>
+                      {at.pontosFracos.length > 0 ? (
+                        <ul className="space-y-0.5">
+                          {at.pontosFracos.map((p, i) => (
+                            <li key={i} className="text-xs text-foreground">• {p}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic">Nenhum identificado</p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs font-semibold text-destructive mb-1">Pontos de melhoria</p>
-                    {at.pontosFracos.length > 0 ? (
-                      <ul className="space-y-0.5">
-                        {at.pontosFracos.map((p, i) => (
-                          <li key={i} className="text-xs text-foreground">• {p}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-xs text-muted-foreground italic">Nenhum identificado</p>
-                    )}
+                  <div className="mt-3 flex flex-wrap gap-1">
+                    {at.notas.map((n, i) => (
+                      <Badge key={i} variant="outline" className={`text-xs ${classColor(classificacao(n))}`}>
+                        {formatNota(n)}
+                      </Badge>
+                    ))}
                   </div>
-                </div>
-                {/* Individual notas */}
-                <div className="mt-3 flex flex-wrap gap-1">
-                  {at.notas.map((n, i) => (
-                    <Badge key={i} variant="outline" className={`text-xs ${classColor(classificacao(n))}`}>
-                      {formatNota(n)}
-                    </Badge>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      </Card>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </Card>
+      )}
 
       {/* 4. Atendimentos Recomendados */}
-      <Card ref={recomRef} className="p-5 rounded-xl border-border/60 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Target className="h-4 w-4 text-primary" /> 4. Atendimentos Recomendados
-          </h3>
-          <SectionPrintButton sectionRef={recomRef} title="Atendimentos Recomendados" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <RecommendedList
-            title="Casos críticos"
-            subtitle="Nota < 5,0"
-            items={insights.piores}
-            icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
-            emptyText="Nenhum atendimento crítico"
-            borderColor="border-destructive/20"
-          />
-          <RecommendedList
-            title="Medianos"
-            subtitle="Nota 5,0 – 6,9"
-            items={insights.medianos}
-            icon={<MessageSquare className="h-4 w-4 text-warning" />}
-            emptyText="Nenhum atendimento mediano"
-            borderColor="border-warning/20"
-          />
-          <RecommendedList
-            title="Exemplos positivos"
-            subtitle="Nota ≥ 7,0"
-            items={insights.melhores}
-            icon={<Star className="h-4 w-4 text-accent" />}
-            emptyText="Nenhum atendimento positivo"
-            borderColor="border-accent/20"
-          />
-        </div>
-      </Card>
+      {showSection("recomendados") && (
+        <Card ref={recomRef} className="p-5 rounded-xl border-border/60 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Target className="h-4 w-4 text-primary" /> 4. Atendimentos Recomendados
+            </h3>
+            <SectionPrintButton sectionRef={recomRef} title="Atendimentos Recomendados" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <RecommendedList
+              title="Casos críticos"
+              subtitle="Nota < 5,0"
+              items={insights.piores}
+              icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
+              emptyText="Nenhum atendimento crítico"
+              borderColor="border-destructive/20"
+            />
+            <RecommendedList
+              title="Medianos"
+              subtitle="Nota 5,0 – 6,9"
+              items={insights.medianos}
+              icon={<MessageSquare className="h-4 w-4 text-warning" />}
+              emptyText="Nenhum atendimento mediano"
+              borderColor="border-warning/20"
+            />
+            <RecommendedList
+              title="Exemplos positivos"
+              subtitle="Nota ≥ 7,0"
+              items={insights.melhores}
+              icon={<Star className="h-4 w-4 text-accent" />}
+              emptyText="Nenhum atendimento positivo"
+              borderColor="border-accent/20"
+            />
+          </div>
+        </Card>
+      )}
 
       {/* 5. Padrões de Comportamento */}
-      {insights.atendenteStats.some((a) => a.pontosFracos.length > 0) && (
+      {showSection("padroes") && insights.atendenteStats.some((a) => a.pontosFracos.length > 0) && (
         <Card ref={padroesRef} className="p-5 rounded-xl border-border/60 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -548,22 +549,24 @@ const MentoriaInsights = ({ files, excludedAttendants, section = "all" }: Mentor
       )}
 
       {/* 6. Roteiro de Mentoria */}
-      <Card className="p-5 rounded-xl border-primary/20 bg-primary/[0.02] shadow-sm">
-        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-4">
-          <BookOpen className="h-4 w-4 text-primary" /> 6. Roteiro de Mentoria
-        </h3>
-        <div className="space-y-4">
-          <RoteiroStep step="1" title="Abertura" text={insights.roteiro.abertura} />
-          <RoteiroStep step="2" title={`Tema principal: ${insights.roteiro.tema}`} text={insights.roteiro.contexto} />
-          {insights.roteiro.exemploNegativo && (
-            <RoteiroStep step="3" title="Exemplo de atenção" text={insights.roteiro.exemploNegativo} variant="warning" />
-          )}
-          {insights.roteiro.exemploPositivo && (
-            <RoteiroStep step="4" title="Exemplo positivo" text={insights.roteiro.exemploPositivo} variant="success" />
-          )}
-          <RoteiroStep step="5" title="Fechamento e próximos passos" text={insights.roteiro.fechamento} />
-        </div>
-      </Card>
+      {showSection("roteiro") && (
+        <Card className="p-5 rounded-xl border-primary/20 bg-primary/[0.02] shadow-sm">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-4">
+            <BookOpen className="h-4 w-4 text-primary" /> 6. Roteiro de Mentoria
+          </h3>
+          <div className="space-y-4">
+            <RoteiroStep step="1" title="Abertura" text={insights.roteiro.abertura} />
+            <RoteiroStep step="2" title={`Tema principal: ${insights.roteiro.tema}`} text={insights.roteiro.contexto} />
+            {insights.roteiro.exemploNegativo && (
+              <RoteiroStep step="3" title="Exemplo de atenção" text={insights.roteiro.exemploNegativo} variant="warning" />
+            )}
+            {insights.roteiro.exemploPositivo && (
+              <RoteiroStep step="4" title="Exemplo positivo" text={insights.roteiro.exemploPositivo} variant="success" />
+            )}
+            <RoteiroStep step="5" title="Fechamento e próximos passos" text={insights.roteiro.fechamento} />
+          </div>
+        </Card>
+      )}
     </div>
   );
 };
