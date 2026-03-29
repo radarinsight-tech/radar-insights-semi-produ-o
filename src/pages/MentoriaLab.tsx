@@ -67,6 +67,8 @@ import ConversationView from "@/components/ConversationView";
 import MentoriaDetailDialog from "@/components/MentoriaDetailDialog";
 import ParserDiagnosticDialog from "@/components/ParserDiagnosticDialog";
 import MentoriaPipeline from "@/components/MentoriaPipeline";
+import MentoriaUnifiedTable from "@/components/MentoriaUnifiedTable";
+import MentoriaImportSummary from "@/components/MentoriaImportSummary";
 import MentoriaBatchHistory from "@/components/MentoriaBatchHistory";
 import MentoriaBonusPanel from "@/components/MentoriaBonusPanel";
 import MentoriaReportExport from "@/components/MentoriaReportExport";
@@ -196,6 +198,7 @@ const MentoriaLab = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [processing, setProcessing] = useState(false);
   const [readingIds, setReadingIds] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState("operacao");
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
   const [batchInfo, setBatchInfo] = useState<BatchInfo | null>(null);
   const [sideFile, setSideFile] = useState<LabFile | null>(null);
@@ -209,13 +212,14 @@ const MentoriaLab = () => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [clearConfirmStep, setClearConfirmStep] = useState<{ action: () => Promise<void>; count: number; label: string } | null>(null);
-  const [diagnosticFile, setDiagnosticFile] = useState<LabFile | null>(null);
-  const [workflowStatuses, setWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
-  const [batchStats, setBatchStats] = useState<{ analyzing: number; completed: number; failed: number }>({
-    analyzing: 0,
-    completed: 0,
-    failed: 0,
-  });
+   const [diagnosticFile, setDiagnosticFile] = useState<LabFile | null>(null);
+   const [workflowStatuses, setWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
+   const [duplicateCount, setDuplicateCount] = useState(0);
+   const [batchStats, setBatchStats] = useState<{ analyzing: number; completed: number; failed: number }>({
+     analyzing: 0,
+     completed: 0,
+     failed: 0,
+   });
   const [batchProcessing, setBatchProcessing] = useState(false);
   const { isAdmin } = useUserPermissions();
   const {
@@ -1021,7 +1025,38 @@ const MentoriaLab = () => {
         return;
       }
 
-      const allPdfs = [...pdfFiles, ...extractedPdfs];
+      // Duplicate detection: check existing file names in DB
+      let duplicatesDetected = 0;
+      const allPdfsRaw = [...pdfFiles, ...extractedPdfs];
+      const existingNames = new Set(files.map((f) => f.name.toLowerCase()));
+      
+      // Also check DB for previously imported file names
+      const { data: existingBatchFiles } = await supabase
+        .from("mentoria_batch_files")
+        .select("file_name")
+        .limit(5000);
+      if (existingBatchFiles) {
+        for (const bf of existingBatchFiles) {
+          existingNames.add(bf.file_name.toLowerCase());
+        }
+      }
+
+      const allPdfs: File[] = [];
+      for (const pdf of allPdfsRaw) {
+        if (existingNames.has(pdf.name.toLowerCase())) {
+          duplicatesDetected++;
+        }
+        allPdfs.push(pdf); // Still include duplicates, but track count
+      }
+      setDuplicateCount(duplicatesDetected);
+
+      if (duplicatesDetected > 0) {
+        toast.warning(
+          `${duplicatesDetected} arquivo(s) já importado(s) anteriormente foram detectados como duplicata(s).`,
+          { duration: 8000 },
+        );
+      }
+
       if (allPdfs.length === 0) {
         setBatchInfo((prev) => (prev ? { ...prev, status: "erro" } : prev));
         toast.error("Nenhum PDF válido encontrado. Verifique os arquivos enviados.");
@@ -2767,7 +2802,7 @@ const MentoriaLab = () => {
         </div>
 
         {/* Tabs navigation */}
-        <Tabs defaultValue="operacao" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 border border-border bg-muted/60 p-1 rounded-lg">
             <TabsTrigger value="operacao" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-accent/60 transition-colors rounded-md font-medium">Operação</TabsTrigger>
             <TabsTrigger value="pipeline" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-accent/60 transition-colors rounded-md font-medium">Pipeline</TabsTrigger>
@@ -2890,6 +2925,18 @@ const MentoriaLab = () => {
                   </div>
                 </div>
               </Card>
+            )}
+
+            {/* Import Summary Card */}
+            {files.length > 0 && (
+              <MentoriaImportSummary
+                files={filteredFiles}
+                duplicateCount={duplicateCount}
+                onStartAutoAnalysis={() => handleBatchAnalyze("all")}
+                onViewAll={() => setActiveTab("pipeline")}
+                isProcessing={processing}
+                batchProcessing={batchProcessing}
+              />
             )}
 
             {/* 3 Main Action Cards */}
@@ -3193,8 +3240,8 @@ const MentoriaLab = () => {
                   );
                 })()}
 
-                {/* Pipeline View */}
-                <MentoriaPipeline
+                {/* Unified Table View */}
+                <MentoriaUnifiedTable
                   files={filteredFiles}
                   getWorkflowStatus={getWorkflowStatus}
                   highlightedFileId={highlightedFileId}
