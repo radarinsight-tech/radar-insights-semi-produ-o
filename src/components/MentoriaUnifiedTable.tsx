@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Table,
@@ -31,7 +32,7 @@ import {
 } from "@/lib/mentoriaEvaluability";
 import type { WorkflowStatus } from "@/components/MentoriaDetailDialog";
 
-type StatusFilter = "todos" | "pendentes" | "em_analise" | "finalizados" | "nao_avaliaveis";
+type StatusFilter = "todos" | "pendentes" | "em_analise" | "finalizados" | "nao_avaliaveis" | "aptos_ia";
 
 interface UnifiedFile {
   id: string;
@@ -81,11 +82,13 @@ interface MentoriaUnifiedTableProps {
   onOpenDiagnostic: (f: UnifiedFile) => void;
   onAnalyzeNext?: () => void;
   onBatchAnalyze?: (count: number | "all") => void;
+  onAnalyzeSelected?: (ids: string[]) => void;
 }
 
-const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
+const STATUS_FILTERS: { key: StatusFilter; label: string; color?: string }[] = [
   { key: "todos", label: "Todos" },
   { key: "pendentes", label: "Pendentes" },
+  { key: "aptos_ia", label: "⚡ Aptos IA", color: "indigo" },
   { key: "em_analise", label: "Em análise" },
   { key: "finalizados", label: "Finalizados" },
   { key: "nao_avaliaveis", label: "Não avaliáveis" },
@@ -115,8 +118,10 @@ const MentoriaUnifiedTable = ({
   onRemoveFile,
   onOpenDiagnostic,
   onBatchAnalyze,
+  onAnalyzeSelected,
 }: MentoriaUnifiedTableProps) => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const isBusy = processing || batchProcessing;
 
@@ -138,28 +143,69 @@ const MentoriaUnifiedTable = ({
     });
   }, [files, getWorkflowStatus]);
 
+  // Hide already-analyzed items from main table (they exit the queue)
+  const visibleItems = useMemo(() => {
+    return categorized.filter((f) => f.category !== "finalizados");
+  }, [categorized]);
+
   const filtered = useMemo(() => {
-    if (statusFilter === "todos") return categorized;
-    return categorized.filter((f) => f.category === statusFilter);
-  }, [categorized, statusFilter]);
+    if (statusFilter === "todos") return visibleItems;
+    if (statusFilter === "aptos_ia") return visibleItems.filter((f) => f.isAutoEligible);
+    return visibleItems.filter((f) => f.category === statusFilter);
+  }, [visibleItems, statusFilter]);
 
   const filterCounts = useMemo(() => {
     const counts: Record<StatusFilter, number> = {
-      todos: categorized.length,
+      todos: visibleItems.length,
       pendentes: 0,
       em_analise: 0,
-      finalizados: 0,
+      finalizados: categorized.filter((f) => f.category === "finalizados").length,
       nao_avaliaveis: 0,
+      aptos_ia: 0,
     };
-    for (const f of categorized) {
-      counts[f.category]++;
+    for (const f of visibleItems) {
+      if (f.category === "pendentes") counts.pendentes++;
+      else if (f.category === "em_analise") counts.em_analise++;
+      else if (f.category === "nao_avaliaveis") counts.nao_avaliaveis++;
+      if (f.isAutoEligible) counts.aptos_ia++;
     }
     return counts;
-  }, [categorized]);
+  }, [visibleItems, categorized]);
 
-  const eligibleForBatch = useMemo(() => {
-    return categorized.filter((f) => f.isAutoEligible).length;
-  }, [categorized]);
+  // Eligible items for checkbox selection (status lido + auditable content)
+  const eligibleIds = useMemo(() => {
+    return new Set(filtered.filter((f) => f.isAutoEligible).map((f) => f.id));
+  }, [filtered]);
+
+  const allEligibleSelected = eligibleIds.size > 0 && [...eligibleIds].every((id) => selectedIds.has(id));
+  const someEligibleSelected = [...eligibleIds].some((id) => selectedIds.has(id));
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        eligibleIds.forEach((id) => next.add(id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        eligibleIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    }
+  };
+
+  const handleToggle = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const selectedCount = [...selectedIds].filter((id) => eligibleIds.has(id) || categorized.some((f) => f.id === id && f.isAutoEligible)).length;
 
   return (
     <div className="space-y-3" id="mentoria-table">
@@ -187,47 +233,63 @@ const MentoriaUnifiedTable = ({
         </div>
       )}
 
-      {/* Batch action bar */}
-      {eligibleForBatch > 0 && onBatchAnalyze && (
-        <div className="flex items-center justify-between gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+      {/* Floating action bar for selected items */}
+      {selectedCount > 0 && (
+        <div className="flex items-center justify-between gap-2 rounded-xl border border-indigo-400/30 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-3 sticky top-0 z-10">
           <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-primary" />
+            <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
             <span className="text-sm font-medium text-foreground">
-              {eligibleForBatch} atendimento(s) prontos para análise automática
+              {selectedCount} selecionado(s)
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            {eligibleForBatch >= 1 && (
-              <Button size="sm" variant="outline" className="gap-1.5 font-semibold" onClick={() => onBatchAnalyze(10)} disabled={isBusy}>
-                {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlayCircle className="h-3.5 w-3.5" />}
-                Próximos 10
-              </Button>
-            )}
-            <Button size="sm" className="gap-1.5 font-semibold" onClick={() => onBatchAnalyze("all")} disabled={isBusy}>
-              {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
-              Analisar todos ({eligibleForBatch})
-            </Button>
-          </div>
+          <Button
+            size="sm"
+            className="gap-1.5 font-semibold bg-indigo-600 hover:bg-indigo-700 text-white"
+            onClick={() => {
+              const ids = [...selectedIds].filter((id) =>
+                categorized.some((f) => f.id === id && f.isAutoEligible)
+              );
+              if (onAnalyzeSelected) {
+                onAnalyzeSelected(ids);
+              } else if (onBatchAnalyze) {
+                onBatchAnalyze(ids.length);
+              }
+              setSelectedIds(new Set());
+            }}
+            disabled={isBusy}
+          >
+            {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+            ⚡ Analisar selecionados ({selectedCount})
+          </Button>
         </div>
       )}
 
       {/* Status filter tabs */}
-      <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-1 border border-border/40">
-        {STATUS_FILTERS.map((sf) => (
-          <button
-            key={sf.key}
-            onClick={() => setStatusFilter(sf.key)}
-            className={cn(
-              "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-              statusFilter === sf.key
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/60"
-            )}
-          >
-            {sf.label}
-            <span className="ml-1.5 opacity-70">({filterCounts[sf.key]})</span>
-          </button>
-        ))}
+      <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-1 border border-border/40 flex-wrap">
+        {STATUS_FILTERS.map((sf) => {
+          const count = filterCounts[sf.key];
+          // Hide finalizados chip since they're auto-removed from the queue
+          if (sf.key === "finalizados") return null;
+          return (
+            <button
+              key={sf.key}
+              onClick={() => setStatusFilter(sf.key)}
+              className={cn(
+                "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                statusFilter === sf.key
+                  ? sf.color === "indigo"
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "bg-primary text-primary-foreground shadow-sm"
+                  : sf.color === "indigo"
+                    ? "text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/40"
+                    : "text-muted-foreground hover:text-foreground hover:bg-background/60"
+              )}
+            >
+              {sf.label}
+              <span className="ml-1.5 opacity-70">({count})</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Table */}
@@ -240,11 +302,20 @@ const MentoriaUnifiedTable = ({
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="w-10 text-center">
+                  <Checkbox
+                    checked={allEligibleSelected}
+                    onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                    aria-label="Selecionar todos elegíveis"
+                    className={cn(
+                      eligibleIds.size === 0 && "opacity-30 pointer-events-none"
+                    )}
+                  />
+                </TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Atendente</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Data</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Status</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Tipo</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-wide text-center">Aptos IA</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide">Nota</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wide text-right">Ação</TableHead>
               </TableRow>
@@ -259,6 +330,7 @@ const MentoriaUnifiedTable = ({
                 const isProcessingThis = (processing || batchProcessing) && f.workflowStatus === "em_analise" && !f.hasResult;
                 const canStartAnalysis = !processing && !batchProcessing && !isReading && f.status !== "erro" && !f.isNonEval && !f.hasResult;
                 const ineligibility = resolvePersistedMentoriaIneligibility(f.result);
+                const isEligible = eligibleIds.has(f.id);
 
                 return (
                   <TableRow
@@ -269,6 +341,17 @@ const MentoriaUnifiedTable = ({
                       f.approvedAsOfficial && "border-l-[3px] border-l-accent",
                     )}
                   >
+                    {/* Checkbox */}
+                    <TableCell className="py-3 text-center w-10">
+                      {isEligible ? (
+                        <Checkbox
+                          checked={selectedIds.has(f.id)}
+                          onCheckedChange={(checked) => handleToggle(f.id, !!checked)}
+                          aria-label={`Selecionar ${f.atendente || f.name}`}
+                        />
+                      ) : null}
+                    </TableCell>
+
                     {/* Atendente */}
                     <TableCell className="py-3">
                       <div className="min-w-0">
@@ -322,7 +405,6 @@ const MentoriaUnifiedTable = ({
                             Pendente
                           </Badge>
                         )}
-                        {/* Pending days badge */}
                         {!f.hasResult && !f.isNonEval && daysPending > 0 && (
                           <Badge
                             className={cn(
@@ -343,7 +425,7 @@ const MentoriaUnifiedTable = ({
                     <TableCell className="py-3">
                       <div className="flex items-center gap-1">
                         {f.isAutoEligible ? (
-                          <Badge className="bg-primary/10 text-primary text-[9px] px-1.5 py-0 h-auto gap-0.5">
+                          <Badge className="bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-[9px] px-1.5 py-0 h-auto gap-0.5">
                             <Zap className="h-2.5 w-2.5" /> Auto IA
                           </Badge>
                         ) : f.hasResult ? (
@@ -360,15 +442,6 @@ const MentoriaUnifiedTable = ({
                           </Badge>
                         )}
                       </div>
-                    </TableCell>
-
-                    {/* Aptos IA */}
-                    <TableCell className="py-3 text-center">
-                      {f.isAutoEligible ? (
-                        <Zap className="h-4 w-4 text-accent inline-block" />
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
                     </TableCell>
 
                     {/* Nota */}
@@ -396,7 +469,6 @@ const MentoriaUnifiedTable = ({
                     {/* Ação */}
                     <TableCell className="py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {/* Main action button */}
                         {!f.isNonEval && !f.hasResult && (
                           <Button
                             size="sm"
@@ -424,7 +496,6 @@ const MentoriaUnifiedTable = ({
                           </Button>
                         )}
 
-                        {/* Utility icons */}
                         <TooltipProvider delayDuration={200}>
                           <Tooltip>
                             <TooltipTrigger asChild>
