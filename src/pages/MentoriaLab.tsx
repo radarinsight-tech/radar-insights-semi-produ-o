@@ -211,13 +211,14 @@ const MentoriaLab = () => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [clearConfirmStep, setClearConfirmStep] = useState<{ action: () => Promise<void>; count: number; label: string } | null>(null);
-  const [diagnosticFile, setDiagnosticFile] = useState<LabFile | null>(null);
-  const [workflowStatuses, setWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
-  const [batchStats, setBatchStats] = useState<{ analyzing: number; completed: number; failed: number }>({
-    analyzing: 0,
-    completed: 0,
-    failed: 0,
-  });
+   const [diagnosticFile, setDiagnosticFile] = useState<LabFile | null>(null);
+   const [workflowStatuses, setWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
+   const [duplicateCount, setDuplicateCount] = useState(0);
+   const [batchStats, setBatchStats] = useState<{ analyzing: number; completed: number; failed: number }>({
+     analyzing: 0,
+     completed: 0,
+     failed: 0,
+   });
   const [batchProcessing, setBatchProcessing] = useState(false);
   const { isAdmin } = useUserPermissions();
   const {
