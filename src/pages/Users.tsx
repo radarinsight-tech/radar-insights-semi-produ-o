@@ -219,6 +219,13 @@ const UsersPage = () => {
 
   const handleSaveRole = async () => {
     if (!editUser) return;
+
+    // Validate: mentoria_atendente requires attendant
+    if (editRole === "mentoria_atendente" && !editAttendantId) {
+      toast.error("Selecione o atendente vinculado.");
+      return;
+    }
+
     setEditLoading(true);
 
     try {
@@ -241,6 +248,14 @@ const UsersPage = () => {
         const { error: secError } = await supabase.from("user_sectors").insert(rows as any);
         if (secError) throw secError;
       }
+
+      // Save attendant_id on profile
+      const attId = editRole === "mentoria_atendente" ? editAttendantId : null;
+      const { error: profError } = await supabase
+        .from("profiles")
+        .update({ attendant_id: attId } as any)
+        .eq("id", editUser.id);
+      if (profError) throw profError;
 
       toast.success("Permissões e setores atualizados.");
       setEditOpen(false);
