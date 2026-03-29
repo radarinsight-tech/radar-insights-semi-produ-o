@@ -288,7 +288,7 @@ const MentoriaUnifiedTable = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((f) => {
+              {displayedItems.map((f) => {
                 const daysPending = !f.hasResult ? getDaysPending(f.addedAt) : 0;
                 const isOverdue = daysPending >= 7;
                 const nota = f.hasResult ? f.result?.notaFinal : null;
@@ -444,6 +444,21 @@ const MentoriaUnifiedTable = ({
               })}
             </TableBody>
           </Table>
+          </div>
+
+          {/* Expand / collapse footer */}
+          {filtered.length > INITIAL_VISIBLE && (
+            <div className="border-t border-border/40 text-center py-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs gap-1 text-primary"
+                onClick={() => setShowAll(!showAll)}
+              >
+                {showAll ? "▲ Recolher" : `▼ Ver todos os ${filtered.length} atendimentos`}
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
