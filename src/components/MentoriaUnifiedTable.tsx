@@ -317,7 +317,23 @@ const MentoriaUnifiedTable = ({
               {displayedItems.map((f) => {
                 const daysPending = !f.hasResult ? getDaysPending(f.addedAt) : 0;
                 const isOverdue = daysPending >= 7;
-                const nota = f.hasResult ? f.result?.notaFinal : null;
+
+                // Detect audio-only attendance (analyzed but not truly evaluable)
+                const isAudioOnly = (() => {
+                  if (f.hasAudio) {
+                    const reason = f.nonEvaluableReason || f.ineligibleReason || f.result?.motivo_nao_avaliavel || f.result?.motivo_inelegivel || f.result?._nonEvaluableReason || f.result?._ineligibleReason || "";
+                    const reasonStr = String(reason).toLowerCase();
+                    if (reasonStr.includes("áudio") || reasonStr.includes("audio") || reasonStr.includes("gravacao") || reasonStr.includes("gravação")) return true;
+                  }
+                  // Also check if result has nota 0 with audio markers
+                  if (f.hasAudio && f.hasResult && f.result?.notaFinal === 0) return true;
+                  // Check status text in result
+                  const statusResult = String(f.result?.status_auditoria || f.result?.statusAuditoria || "").toLowerCase();
+                  if (f.hasAudio && (statusResult.includes("não realizada") || statusResult.includes("nao_auditavel"))) return true;
+                  return false;
+                })();
+
+                const nota = (!isAudioOnly && f.hasResult) ? f.result?.notaFinal : null;
                 const nota10 = nota != null ? notaToScale10(nota) : null;
                 const isReading = readingIds.has(f.id);
                 const isProcessingThis = (processing || batchProcessing) && f.workflowStatus === "em_analise" && !f.hasResult;
@@ -364,11 +380,19 @@ const MentoriaUnifiedTable = ({
                     {/* Status dot + label */}
                     <TableCell className="py-3 w-[15%]">
                       <div className="flex items-center gap-1.5">
-                        <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(f.category, isProcessingThis))} />
-                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                          {f.isNonEval ? "N/A" : isProcessingThis ? "Processando" : f.hasResult ? "Analisado" : f.category === "em_analise" ? "Em análise" : "Pendente"}
-                        </span>
-                        {isOverdue && (
+                        {isAudioOnly ? (
+                          <Badge className="bg-warning/20 text-warning text-[10px] px-1.5 py-0.5 h-auto gap-1 border border-warning/30">
+                            🎙️ Áudio
+                          </Badge>
+                        ) : (
+                          <>
+                            <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(f.category, isProcessingThis))} />
+                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                              {f.isNonEval ? "N/A" : isProcessingThis ? "Processando" : f.hasResult ? "Analisado" : f.category === "em_analise" ? "Em análise" : "Pendente"}
+                            </span>
+                          </>
+                        )}
+                        {isOverdue && !isAudioOnly && (
                           <Badge className="bg-destructive/15 text-destructive text-[8px] px-1 py-0 h-auto gap-0.5">
                             <Clock className="h-2 w-2" />{daysPending}d
                           </Badge>
@@ -381,7 +405,14 @@ const MentoriaUnifiedTable = ({
 
                     {/* Nota */}
                     <TableCell className="py-3 w-[10%] text-center">
-                      {nota10 != null ? (
+                      {isAudioOnly ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="text-sm cursor-default">🎙️</span>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom"><p>Atendimento com áudio — nota não aplicável</p></TooltipContent>
+                        </Tooltip>
+                      ) : nota10 != null ? (
                         <span className={cn(
                           "text-sm font-bold",
                           nota10 >= 9 ? "text-accent" : nota10 >= 7 ? "text-primary" : nota10 >= 5 ? "text-warning" : "text-destructive"
