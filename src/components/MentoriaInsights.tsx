@@ -224,27 +224,29 @@ const MentoriaInsights = ({ files, excludedAttendants, section = "all" }: Mentor
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center gap-3 pb-3 border-b border-primary/20">
-        <div className="p-2 rounded-xl bg-primary/10">
-          <Lightbulb className="h-5 w-5 text-primary" />
-        </div>
-        <div>
-          <h2 className="text-lg font-bold text-foreground">Insights da Mentoria</h2>
-          <p className="text-xs text-muted-foreground">
-            {insights.total} atendimentos analisados • {insights.atendenteStats.length} atendente{insights.atendenteStats.length > 1 ? "s" : ""}
-            {ineligibleFiles.length > 0 && <span className="text-muted-foreground/70"> • {ineligibleFiles.length} fora de avaliação</span>}
-          </p>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <div className="text-right">
-            <p className="text-2xl font-bold text-foreground leading-none">{formatNota(insights.media)}</p>
-            <Badge className={`text-[10px] ${classColor(insights.classificacaoMedia)} bg-transparent border-0 p-0 font-semibold`}>
-              {insights.classificacaoMedia}
-            </Badge>
+      {/* Header — only shown in Resumo Geral or "all" */}
+      {showSection("resumo") && (
+        <div className="flex items-center gap-3 pb-3 border-b border-primary/20">
+          <div className="p-2 rounded-xl bg-primary/10">
+            <Lightbulb className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-foreground">Insights da Mentoria</h2>
+            <p className="text-xs text-muted-foreground">
+              {insights.total} atendimentos analisados • {insights.atendenteStats.length} atendente{insights.atendenteStats.length > 1 ? "s" : ""}
+              {ineligibleFiles.length > 0 && <span className="text-muted-foreground/70"> • {ineligibleFiles.length} fora de avaliação</span>}
+            </p>
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            <div className="text-right">
+              <p className="text-2xl font-bold text-foreground leading-none">{formatNota(insights.media)}</p>
+              <Badge className={`text-[10px] ${classColor(insights.classificacaoMedia)} bg-transparent border-0 p-0 font-semibold`}>
+                {insights.classificacaoMedia}
+              </Badge>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 1. Resumo Geral */}
       {showSection("resumo") && (
