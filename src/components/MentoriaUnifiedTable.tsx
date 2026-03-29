@@ -267,6 +267,7 @@ const MentoriaUnifiedTable = ({
           );
         })}
       </div>
+      </TooltipProvider>
 
       {/* Table */}
       {filtered.length === 0 ? (
