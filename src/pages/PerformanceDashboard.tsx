@@ -45,11 +45,10 @@ interface EvalRow {
 
 /* ─── Official Bonus Tiers (0-10 scale, cap R$1.200) ─── */
 const BONUS_TIERS = [
-  { label: "Excelente / Referência", min: 9.5, max: 10.0, pct: 100, valor: 1200, color: "hsl(270 60% 55%)", textCls: "text-purple-600", bgCls: "bg-purple-500/10 border-purple-500/20", dotCls: "bg-purple-500" },
-  { label: "Muito bom", min: 8.5, max: 9.4, pct: 90, valor: 1080, color: "hsl(var(--accent))", textCls: "text-accent", bgCls: "bg-accent/10 border-accent/20", dotCls: "bg-accent" },
-  { label: "Bom atendimento", min: 7.0, max: 8.4, pct: 70, valor: 840, color: "hsl(var(--primary))", textCls: "text-primary", bgCls: "bg-primary/10 border-primary/20", dotCls: "bg-primary" },
-  { label: "Em desenvolvimento", min: 5.0, max: 6.9, pct: 30, valor: 360, color: "hsl(var(--warning))", textCls: "text-warning", bgCls: "bg-warning/10 border-warning/20", dotCls: "bg-warning" },
-  { label: "Abaixo do esperado", min: 0, max: 4.9, pct: 0, valor: 0, color: "hsl(var(--destructive))", textCls: "text-destructive", bgCls: "bg-destructive/10 border-destructive/20", dotCls: "bg-destructive" },
+  { label: "Excelente", min: 9.0, max: 10.0, pct: 100, valor: 1200, color: "hsl(var(--accent))", textCls: "text-accent", bgCls: "bg-accent/10 border-accent/20", dotCls: "bg-accent" },
+  { label: "Ótimo", min: 8.0, max: 8.9, pct: 58, valor: 700, color: "hsl(var(--primary))", textCls: "text-primary", bgCls: "bg-primary/10 border-primary/20", dotCls: "bg-primary" },
+  { label: "Bom", min: 6.0, max: 7.9, pct: 25, valor: 300, color: "hsl(var(--warning))", textCls: "text-warning", bgCls: "bg-warning/10 border-warning/20", dotCls: "bg-warning" },
+  { label: "Fraco", min: 0, max: 5.9, pct: 0, valor: 0, color: "hsl(var(--destructive))", textCls: "text-destructive", bgCls: "bg-destructive/10 border-destructive/20", dotCls: "bg-destructive" },
 ] as const;
 
 function getTier(nota10: number) {

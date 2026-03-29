@@ -296,7 +296,7 @@ function buildReportPdf(files: AnalyzedFile[], batchInfo?: BatchInfo | null, sum
   // Legend
   y += 4;
   addText("Régua progressiva (base R$ 1.200):", { bold: true, size: 8 });
-  addText("95–100: Excelente (100% = R$ 1.200) • 85–94: Muito bom (90% = R$ 1.080) • 70–84: Bom (70% = R$ 840) • 50–69: Em desenv. (30% = R$ 360) • 0–49: Abaixo (0%)", { size: 7.5, color: [120, 120, 120] });
+  addText("90–100: Excelente (100% = R$ 1.200) • 80–89: Ótimo (58% = R$ 700) • 60–79: Bom (25% = R$ 300) • 0–59: Fraco (0% = R$ 0)", { size: 7.5, color: [120, 120, 120] });
 
   // ═══════════════════════════════════════════════════════
   // SECTION 3: Performance Detalhada
