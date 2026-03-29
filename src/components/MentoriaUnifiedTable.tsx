@@ -478,6 +478,7 @@ const MentoriaUnifiedTable = ({
             </div>
           )}
         </div>
+        </TooltipProvider>
       )}
 
       {/* Floating action bar */}
