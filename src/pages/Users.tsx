@@ -81,6 +81,8 @@ const UsersPage = () => {
   const [editRole, setEditRole] = useState<AppRole | "none">("none");
   const [editCreditSubs, setEditCreditSubs] = useState<CreditSubRole[]>([]);
   const [editSectorIds, setEditSectorIds] = useState<string[]>([]);
+  const [editAttendantId, setEditAttendantId] = useState<string>("");
+  const [attendantsList, setAttendantsList] = useState<Array<{ id: string; name: string }>>([]);
   const [editLoading, setEditLoading] = useState(false);
   const [resetPwOpen, setResetPwOpen] = useState(false);
   const [resetPwUser, setResetPwUser] = useState<ProfileWithRole | null>(null);
