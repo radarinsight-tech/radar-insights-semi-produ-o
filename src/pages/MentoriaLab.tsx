@@ -1024,7 +1024,38 @@ const MentoriaLab = () => {
         return;
       }
 
-      const allPdfs = [...pdfFiles, ...extractedPdfs];
+      // Duplicate detection: check existing file names in DB
+      let duplicatesDetected = 0;
+      const allPdfsRaw = [...pdfFiles, ...extractedPdfs];
+      const existingNames = new Set(files.map((f) => f.name.toLowerCase()));
+      
+      // Also check DB for previously imported file names
+      const { data: existingBatchFiles } = await supabase
+        .from("mentoria_batch_files")
+        .select("file_name")
+        .limit(5000);
+      if (existingBatchFiles) {
+        for (const bf of existingBatchFiles) {
+          existingNames.add(bf.file_name.toLowerCase());
+        }
+      }
+
+      const allPdfs: File[] = [];
+      for (const pdf of allPdfsRaw) {
+        if (existingNames.has(pdf.name.toLowerCase())) {
+          duplicatesDetected++;
+        }
+        allPdfs.push(pdf); // Still include duplicates, but track count
+      }
+      setDuplicateCount(duplicatesDetected);
+
+      if (duplicatesDetected > 0) {
+        toast.warning(
+          `${duplicatesDetected} arquivo(s) já importado(s) anteriormente foram detectados como duplicata(s).`,
+          { duration: 8000 },
+        );
+      }
+
       if (allPdfs.length === 0) {
         setBatchInfo((prev) => (prev ? { ...prev, status: "erro" } : prev));
         toast.error("Nenhum PDF válido encontrado. Verifique os arquivos enviados.");
