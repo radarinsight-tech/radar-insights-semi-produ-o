@@ -193,15 +193,16 @@ const isFatalPdfReadError = (error: unknown) => {
 };
 
 // ─── Performance Sub-Sections ───────────────────────────────────────
-type PerformanceSection = "resumo" | "bonus" | "detalhada" | "recomendados" | "padroes" | "roteiro";
+type PerformanceSection = "bonus_panel" | "resumo" | "bonus" | "detalhada" | "recomendados" | "padroes" | "roteiro";
 
-const PERF_TABS: { key: PerformanceSection; label: string }[] = [
-  { key: "resumo", label: "Resumo Geral" },
-  { key: "bonus", label: "Performance & Bônus" },
-  { key: "detalhada", label: "Performance Detalhada" },
-  { key: "recomendados", label: "Recomendados" },
-  { key: "padroes", label: "Padrões" },
-  { key: "roteiro", label: "Roteiro" },
+const PERF_NAV: { key: PerformanceSection; label: string; icon: string }[] = [
+  { key: "bonus_panel", label: "Painel de Bônus", icon: "🏆" },
+  { key: "resumo", label: "Resumo Geral", icon: "📊" },
+  { key: "bonus", label: "Performance & Bônus", icon: "💰" },
+  { key: "detalhada", label: "Performance Detalhada", icon: "👤" },
+  { key: "recomendados", label: "Recomendados", icon: "⭐" },
+  { key: "padroes", label: "Padrões", icon: "💬" },
+  { key: "roteiro", label: "Roteiro", icon: "📋" },
 ];
 
 const PerformanceSections = ({
@@ -219,53 +220,93 @@ const PerformanceSections = ({
   restoreAttendants: (names: string[]) => void;
   batchAutoApprove: (ids: string[]) => Promise<void>;
 }) => {
-  const [activeSection, setActiveSection] = useState<PerformanceSection>("resumo");
+  const [activeSection, setActiveSection] = useState<PerformanceSection>("bonus_panel");
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
+  const renderContent = () => {
+    switch (activeSection) {
+      case "bonus_panel":
+        return (
+          <MentoriaBonusPanel
+            files={files}
+            excludedNames={globalExcludedNames}
+            onExclude={excludeAttendants}
+            onRestore={restoreAttendants}
+            onAutoApprove={batchAutoApprove}
+          />
+        );
+      case "resumo":
+        return <MentoriaCharts files={files} excludedAttendants={globalExcludedSet} />;
+      case "bonus":
+        return (
+          <MentoriaBonusPanel
+            files={files}
+            excludedNames={globalExcludedNames}
+            onExclude={excludeAttendants}
+            onRestore={restoreAttendants}
+            onAutoApprove={batchAutoApprove}
+          />
+        );
+      case "detalhada":
+      case "recomendados":
+      case "padroes":
+      case "roteiro":
+        return <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} />;
+      default:
+        return null;
+    }
+  };
+
+  // Mobile: dropdown selector
+  if (isMobile) {
+    const activeNav = PERF_NAV.find((n) => n.key === activeSection);
+    return (
+      <div className="space-y-3">
+        <Select value={activeSection} onValueChange={(v) => setActiveSection(v as PerformanceSection)}>
+          <SelectTrigger className="w-full">
+            <SelectValue>
+              {activeNav && `${activeNav.icon} ${activeNav.label}`}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {PERF_NAV.map((nav) => (
+              <SelectItem key={nav.key} value={nav.key}>
+                {nav.icon} {nav.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {renderContent()}
+      </div>
+    );
+  }
+
+  // Desktop: sidebar + content
   return (
-    <div className="space-y-4">
-      {/* Bonus Panel — always visible */}
-      <MentoriaBonusPanel
-        files={files}
-        excludedNames={globalExcludedNames}
-        onExclude={excludeAttendants}
-        onRestore={restoreAttendants}
-        onAutoApprove={batchAutoApprove}
-      />
-
-      {/* Section navigation */}
-      <div className="flex items-center gap-1 overflow-x-auto rounded-lg bg-muted/60 p-1 border border-border/40">
-        {PERF_TABS.map((tab) => (
+    <div className="flex gap-4 min-h-[400px]">
+      {/* Sidebar */}
+      <nav className="w-[180px] shrink-0 rounded-lg border border-border/50 bg-muted/30 p-2 space-y-0.5">
+        {PERF_NAV.map((nav) => (
           <button
-            key={tab.key}
-            onClick={() => setActiveSection(tab.key)}
+            key={nav.key}
+            onClick={() => setActiveSection(nav.key)}
             className={cn(
-              "px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap",
-              activeSection === tab.key
+              "w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-colors text-left",
+              activeSection === nav.key
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/60"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
             )}
           >
-            {tab.label}
+            <span className="text-sm">{nav.icon}</span>
+            <span className="truncate">{nav.label}</span>
           </button>
         ))}
-      </div>
+      </nav>
 
-      {/* Active section content */}
-      {activeSection === "resumo" && (
-        <MentoriaCharts files={files} excludedAttendants={globalExcludedSet} />
-      )}
-      {activeSection === "bonus" && (
-        <MentoriaBonusPanel
-          files={files}
-          excludedNames={globalExcludedNames}
-          onExclude={excludeAttendants}
-          onRestore={restoreAttendants}
-          onAutoApprove={batchAutoApprove}
-        />
-      )}
-      {(activeSection === "detalhada" || activeSection === "recomendados" || activeSection === "padroes" || activeSection === "roteiro") && (
-        <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} />
-      )}
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        {renderContent()}
+      </div>
     </div>
   );
 };
