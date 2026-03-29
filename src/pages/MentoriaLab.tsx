@@ -3105,111 +3105,133 @@ const MentoriaLab = () => {
               <>
                 {/* Filters — directly visible, no wrapper */}
                 <div className="flex flex-wrap items-center gap-3">
+                  <TooltipProvider delayDuration={300}>
                   {/* Search */}
-                  <div className="relative flex-1 min-w-[180px]">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar atendente ou protocolo..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-9"
-                    />
-                    {searchTerm && (
-                      <button onClick={() => setSearchTerm("")} className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <X className="h-4 w-4 text-muted-foreground" />
-                      </button>
-                    )}
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative flex-1 min-w-[180px]">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Buscar atendente ou protocolo..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-9"
+                        />
+                        {searchTerm && (
+                          <button onClick={() => setSearchTerm("")} className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <X className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom"><p>Digite o nome do atendente ou número do protocolo para filtrar</p></TooltipContent>
+                  </Tooltip>
 
                   {/* Atendente */}
-                  <Select value={filterAtendente} onValueChange={setFilterAtendente}>
-                    <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder="Atendente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos atendentes</SelectItem>
-                      <SelectItem value="sem_atendente">Sem atendente</SelectItem>
-                      {atendentes.map((a) => (
-                        <SelectItem key={a} value={a}>
-                          {a}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <Select value={filterAtendente} onValueChange={setFilterAtendente}>
+                          <SelectTrigger className="w-[160px]">
+                            <SelectValue placeholder="Atendente" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todos">Todos atendentes</SelectItem>
+                            <SelectItem value="sem_atendente">Sem atendente</SelectItem>
+                            {atendentes.map((a) => (
+                              <SelectItem key={a} value={a}>
+                                {a}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom"><p>Filtrar tabela por atendente específico</p></TooltipContent>
+                  </Tooltip>
 
                   {/* Data auditoria */}
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-[180px] justify-start text-left text-xs font-normal h-10",
-                          !filterAuditoriaFrom && "text-muted-foreground",
-                        )}
-                      >
-                        <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
-                        {filterAuditoriaFrom
-                          ? filterAuditoriaTo
-                            ? `${format(filterAuditoriaFrom, "dd/MM")} – ${format(filterAuditoriaTo, "dd/MM/yy")}`
-                            : `A partir de ${format(filterAuditoriaFrom, "dd/MM/yy")}`
-                          : "Período"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="range"
-                        selected={
-                          filterAuditoriaFrom && filterAuditoriaTo
-                            ? { from: filterAuditoriaFrom, to: filterAuditoriaTo }
-                            : filterAuditoriaFrom
-                              ? { from: filterAuditoriaFrom, to: undefined }
-                              : undefined
-                        }
-                        onSelect={(range) => {
-                          setFilterAuditoriaFrom(range?.from);
-                          setFilterAuditoriaTo(range?.to);
-                        }}
-                        numberOfMonths={2}
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                      {(filterAuditoriaFrom || filterAuditoriaTo) && (
-                        <div className="px-3 pb-3">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full text-xs"
-                            onClick={() => {
-                              setFilterAuditoriaFrom(undefined);
-                              setFilterAuditoriaTo(undefined);
-                            }}
-                          >
-                            Limpar período
-                          </Button>
-                        </div>
-                      )}
-                    </PopoverContent>
-                  </Popover>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-[180px] justify-start text-left text-xs font-normal h-10",
+                                !filterAuditoriaFrom && "text-muted-foreground",
+                              )}
+                            >
+                              <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+                              {filterAuditoriaFrom
+                                ? filterAuditoriaTo
+                                  ? `${format(filterAuditoriaFrom, "dd/MM")} – ${format(filterAuditoriaTo, "dd/MM/yy")}`
+                                  : `A partir de ${format(filterAuditoriaFrom, "dd/MM/yy")}`
+                                : "Período"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="range"
+                              selected={
+                                filterAuditoriaFrom && filterAuditoriaTo
+                                  ? { from: filterAuditoriaFrom, to: filterAuditoriaTo }
+                                  : filterAuditoriaFrom
+                                    ? { from: filterAuditoriaFrom, to: undefined }
+                                    : undefined
+                              }
+                              onSelect={(range) => {
+                                setFilterAuditoriaFrom(range?.from);
+                                setFilterAuditoriaTo(range?.to);
+                              }}
+                              numberOfMonths={2}
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                            {(filterAuditoriaFrom || filterAuditoriaTo) && (
+                              <div className="px-3 pb-3">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="w-full text-xs"
+                                  onClick={() => {
+                                    setFilterAuditoriaFrom(undefined);
+                                    setFilterAuditoriaTo(undefined);
+                                  }}
+                                >
+                                  Limpar período
+                                </Button>
+                              </div>
+                            )}
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom"><p>Filtrar atendimentos por período de data</p></TooltipContent>
+                  </Tooltip>
 
                   {/* Counter + visibility toggle */}
-                  <span className="ml-auto text-xs text-muted-foreground">
-                    {filteredFiles.length} de {files.length}
-                  </span>
-                  <TooltipProvider delayDuration={200}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={cn("h-9 w-9", !showCharts && "text-primary")}
-                          onClick={() => setShowCharts(!showCharts)}
-                        >
-                          {showCharts ? <Eye className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">{showCharts ? "Mostrar tabela" : "Ocultar tabela"}</p>
-                      </TooltipContent>
-                    </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="ml-auto text-xs text-muted-foreground cursor-default">
+                        {filteredFiles.length} de {files.length}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom"><p>Total de atendimentos exibidos / total importados no lote</p></TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn("h-9 w-9", !showCharts && "text-primary")}
+                        onClick={() => setShowCharts(!showCharts)}
+                      >
+                        {showCharts ? <Eye className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom"><p>Ocultar ou exibir a tabela de atendimentos</p></TooltipContent>
+                  </Tooltip>
                   </TooltipProvider>
                 </div>
 
