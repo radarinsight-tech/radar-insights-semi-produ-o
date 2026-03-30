@@ -412,7 +412,7 @@ const MentoriaPreventiva = () => {
         if (fnError) throw fnError;
         const res = fnData as PreventiveResult;
 
-        setFiles((prev) => prev.map((x) => x.id === f.id ? { ...x, status: "analisado" as FileStatus, result: res } : x));
+        setFiles((prev) => prev.map((x) => x.id === f.id ? { ...x, status: "analisado" as FileStatus, result: res, atendente: x.atendente || res.atendente || undefined } : x));
 
         await supabase.from("preventive_mentorings").insert({
           user_id: user.id,
