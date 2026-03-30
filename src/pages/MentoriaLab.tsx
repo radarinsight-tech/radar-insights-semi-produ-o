@@ -3329,6 +3329,13 @@ const MentoriaLab = () => {
                       }
                       toast.success(`${ids.length} atendimento(s) reprovado(s) e retornado(s) para Pendentes.`);
                     }}
+                    onMarkViewed={async (id: string) => {
+                      const file = files.find((f) => f.id === id);
+                      if (file?.batchFileId && !file.visualizado) {
+                        await supabase.from("mentoria_batch_files").update({ visualizado: true } as any).eq("id", file.batchFileId);
+                        setFiles((prev) => prev.map((f) => f.id === id ? { ...f, visualizado: true } : f));
+                      }
+                    }}
                   />
                 )}
               </>
