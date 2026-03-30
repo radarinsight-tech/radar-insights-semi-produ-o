@@ -223,9 +223,12 @@ const MentoriaPreventiva = () => {
         "namesMatch result": metadata.atendente && attendantName ? namesMatch(metadata.atendente, attendantName) : "skipped (missing value)",
       });
 
-      // PDF ownership validation for atendente mode
-      if (isAttendenteMode && attendantName && metadata.atendente) {
+      // PDF ownership validation for atendente mode (pre-analysis check)
+      // Only block if metadata.atendente was successfully extracted AND doesn't match
+      // If metadata.atendente is undefined/empty, allow through — post-analysis check will validate
+      if (isAttendenteMode && attendantName && metadata.atendente && metadata.atendente.trim()) {
         if (!namesMatch(metadata.atendente, attendantName)) {
+          console.log("[DEBUG readFile] Blocked by pre-analysis check:", { pdfAtendente: metadata.atendente, attendantName });
           setFiles((prev) => prev.map((f) => f.id === labFile.id ? { ...f, status: "erro" as FileStatus, error: "Este atendimento pertence a outro colaborador." } : f));
           toast.error("⚠️ Este atendimento pertence a outro colaborador e não pode ser importado aqui. Você só pode analisar seus próprios atendimentos.");
           return;
