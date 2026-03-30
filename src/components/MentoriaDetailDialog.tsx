@@ -281,8 +281,14 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
         <DialogHeader className="px-8 py-5 border-b border-border/60 bg-gradient-to-r from-muted/40 to-muted/20">
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="text-xs font-extrabold text-primary uppercase tracking-[0.15em]">
+              <DialogTitle className="text-xs font-extrabold text-primary uppercase tracking-[0.15em] flex items-center gap-2">
                 Relatório de Mentoria
+                {tipoAnalise === 'ia' && (
+                  <Badge className="bg-purple-600/15 text-purple-700 dark:text-purple-400 text-[9px] px-2 py-0.5 h-auto border-0 normal-case tracking-normal font-semibold">⚡ Analisado por IA</Badge>
+                )}
+                {tipoAnalise === 'manual' && (
+                  <Badge className="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 text-[9px] px-2 py-0.5 h-auto border-0 normal-case tracking-normal font-semibold">🔍 Analisado manualmente</Badge>
+                )}
               </DialogTitle>
               <p className="text-[11px] text-muted-foreground mt-1 truncate max-w-lg font-medium">{fileName}</p>
             </div>
