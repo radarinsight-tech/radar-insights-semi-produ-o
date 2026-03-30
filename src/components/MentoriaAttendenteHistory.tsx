@@ -139,7 +139,7 @@ const MentoriaAttendenteHistory = ({ userId }: Props) => {
                   <td className="p-2">{new Date(r.created_at).toLocaleDateString("pt-BR")}</td>
                   <td className="p-2 text-center">
                     <span className={`font-bold ${noteColor(r.nota_interna)}`}>
-                      {r.nota_interna != null ? r.nota_interna.toFixed(1) : "—"}
+                      {r.nota_interna != null ? (r.nota_interna > 10 ? (r.nota_interna / 10).toFixed(1) : r.nota_interna.toFixed(1)) : "—"}
                     </span>
                   </td>
                   <td className="p-2 max-w-[180px] truncate text-muted-foreground">{getStrengths(r)}</td>
