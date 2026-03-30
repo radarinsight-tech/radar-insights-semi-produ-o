@@ -185,7 +185,7 @@ const UsersPage = () => {
       setInviteName("");
       setInvitePassword("");
       setInviteOpen(false);
-      setTimeout(loadProfiles, 1500);
+      await loadProfiles();
     } catch (err: any) {
       toast.error(err.message || "Erro ao criar usuário.");
     } finally {
