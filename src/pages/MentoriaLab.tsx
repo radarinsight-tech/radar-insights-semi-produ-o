@@ -1327,6 +1327,7 @@ const MentoriaLab = () => {
           status: "pendente",
           batchId,
           batchFileId,
+          batchCode,
           storagePath,
         });
       }
