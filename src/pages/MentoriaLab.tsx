@@ -3432,6 +3432,7 @@ const MentoriaLab = () => {
         hasNextFile={!!getNextAnalyzedFile()}
         nonEvaluable={mentoriaFile?.nonEvaluable}
         nonEvaluableReason={mentoriaFile?.nonEvaluableReason}
+        tipoAnalise={mentoriaFile?.tipo_analise}
       />
       {/* Parser Diagnostic Dialog (admin-only) */}
       <ParserDiagnosticDialog
