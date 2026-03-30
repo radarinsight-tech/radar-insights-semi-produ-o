@@ -67,6 +67,8 @@ interface UnifiedFile {
   attendantMatch?: any;
   tipo_analise?: string | null;
   batchFileId?: string;
+  batchCode?: string;
+  visualizado?: boolean;
 }
 
 interface BatchStats {
