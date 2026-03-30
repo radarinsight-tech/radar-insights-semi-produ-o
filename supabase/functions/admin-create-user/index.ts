@@ -80,43 +80,85 @@ Deno.serve(async (req) => {
     }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    const trimmedEmail = email.trim();
 
-    // Create user with admin API — email auto-confirmed, no confirmation email sent
-    const { data: newUser, error: createError } =
-      await adminClient.auth.admin.createUser({
-        email: email.trim(),
-        password,
-        email_confirm: true,
-        user_metadata: { full_name: fullName || "" },
-      });
+    // --- Check if user already exists in Auth ---
+    let userId: string | null = null;
 
-    if (createError) {
-      console.error("Create user error:", createError);
-      const msg = createError.message?.includes("already been registered")
-        ? "Este e-mail já está cadastrado no sistema."
-        : "Erro ao criar usuário: " + createError.message;
-      return new Response(JSON.stringify({ error: msg }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const { data: listData } = await adminClient.auth.admin.listUsers();
+    const existingAuthUser = listData?.users?.find(
+      (u: any) => u.email?.toLowerCase() === trimmedEmail.toLowerCase()
+    );
+
+    if (existingAuthUser) {
+      // User exists in Auth — check if profile exists
+      const { data: existingProfile } = await adminClient
+        .from("profiles")
+        .select("id")
+        .eq("id", existingAuthUser.id)
+        .maybeSingle();
+
+      if (existingProfile) {
+        // Both Auth and profile exist — truly duplicate
+        return new Response(
+          JSON.stringify({ error: "Este e-mail já está cadastrado no sistema." }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      // Auth exists but no profile — recover by creating profile
+      userId = existingAuthUser.id;
+      console.log("Recovering orphan Auth user (no profile):", userId);
+    } else {
+      // User does not exist — create in Auth
+      const { data: newUser, error: createError } =
+        await adminClient.auth.admin.createUser({
+          email: trimmedEmail,
+          password,
+          email_confirm: true,
+          user_metadata: { full_name: fullName || "" },
+        });
+
+      if (createError) {
+        console.error("Create user error:", createError);
+        const msg = createError.message?.includes("already been registered")
+          ? "Este e-mail já está cadastrado no sistema."
+          : "Erro ao criar usuário: " + createError.message;
+        return new Response(JSON.stringify({ error: msg }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      userId = newUser?.user?.id ?? null;
     }
 
-    // Set force_password_change flag
-    if (newUser?.user?.id) {
-      const { error: flagError } = await adminClient
+    // --- Upsert profile to guarantee it exists ---
+    if (userId) {
+      const { error: upsertError } = await adminClient
         .from("profiles")
-        .update({ force_password_change: true })
-        .eq("id", newUser.user.id);
+        .upsert(
+          {
+            id: userId,
+            full_name: fullName || "",
+            force_password_change: true,
+          },
+          { onConflict: "id" }
+        );
 
-      if (flagError) {
-        console.error("Flag update error:", flagError);
+      if (upsertError) {
+        console.error("Profile upsert error:", upsertError);
+        // Auth succeeded, so still return success — profile will be created by trigger or next attempt
       }
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        userId: newUser?.user?.id,
+        userId,
         message: "Usuário criado com sucesso",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
