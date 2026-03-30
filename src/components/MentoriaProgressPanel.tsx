@@ -119,7 +119,7 @@ const MentoriaProgressPanel = ({ monthlyCount, monthlyLimit, userId }: Props) =>
     loadWeekly();
   }, [userId, monthlyCount]); // re-fetch when monthlyCount changes (new analysis done)
 
-  const showWeeklyAlert = isSunday() && weeklyCount < 3 && !weeklyAlertDismissed;
+  const showWeeklyAlert = isSunday() && weeklyCount < 4 && !weeklyAlertDismissed;
   const isMonthlyGoalReached = monthlyCount >= monthlyLimit;
 
   return (
