@@ -181,7 +181,28 @@ const MentoriaPreventiva = () => {
 
   // ── Name normalization for ownership check ─────────────────────────
   const normalizeName = (name: string) =>
-    name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+
+  const namesMatch = (pdfRaw: string, linkedRaw: string): boolean => {
+    const pdfNorm = normalizeName(pdfRaw);
+    const linkedNorm = normalizeName(linkedRaw);
+    // Direct inclusion check
+    if (pdfNorm.includes(linkedNorm) || linkedNorm.includes(pdfNorm)) return true;
+    // Part-by-part: every part of the linked name must appear in the PDF name
+    const linkedParts = linkedNorm.split(" ").filter(p => p.length >= 2);
+    const pdfParts = pdfNorm.split(" ").filter(p => p.length >= 2);
+    if (linkedParts.length >= 2) {
+      const allLinkedInPdf = linkedParts.every(lp => pdfParts.some(pp => pp === lp));
+      if (allLinkedInPdf) return true;
+    }
+    if (pdfParts.length >= 2) {
+      const allPdfInLinked = pdfParts.every(pp => linkedParts.some(lp => lp === pp));
+      if (allPdfInLinked) return true;
+    }
+    // First name match as minimum
+    if (linkedParts.length > 0 && pdfParts.length > 0 && linkedParts[0] === pdfParts[0]) return true;
+    return false;
+  };
 
   // ── File reading ─────────────────────────────────────────────────────
   const readFile = useCallback(async (labFile: LabFile) => {
