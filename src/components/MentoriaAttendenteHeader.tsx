@@ -70,5 +70,6 @@ const MentoriaAttendenteHeader = ({ attendantName, monthlyCount, monthlyLimit }:
       <MentoriaHelpModal open={helpOpen} onOpenChange={setHelpOpen} />
     </>
   );
+};
 
 export default MentoriaAttendenteHeader;
