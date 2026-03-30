@@ -223,9 +223,12 @@ const MentoriaPreventiva = () => {
         "namesMatch result": metadata.atendente && attendantName ? namesMatch(metadata.atendente, attendantName) : "skipped (missing value)",
       });
 
-      // PDF ownership validation for atendente mode
-      if (isAttendenteMode && attendantName && metadata.atendente) {
+      // PDF ownership validation for atendente mode (pre-analysis check)
+      // Only block if metadata.atendente was successfully extracted AND doesn't match
+      // If metadata.atendente is undefined/empty, allow through — post-analysis check will validate
+      if (isAttendenteMode && attendantName && metadata.atendente && metadata.atendente.trim()) {
         if (!namesMatch(metadata.atendente, attendantName)) {
+          console.log("[DEBUG readFile] Blocked by pre-analysis check:", { pdfAtendente: metadata.atendente, attendantName });
           setFiles((prev) => prev.map((f) => f.id === labFile.id ? { ...f, status: "erro" as FileStatus, error: "Este atendimento pertence a outro colaborador." } : f));
           toast.error("⚠️ Este atendimento pertence a outro colaborador e não pode ser importado aqui. Você só pode analisar seus próprios atendimentos.");
           return;
@@ -420,9 +423,19 @@ const MentoriaPreventiva = () => {
         if (fnError) throw fnError;
         const res = fnData as PreventiveResult;
 
+        // Post-analysis ownership validation: check res.atendente against linked attendant
+        if (isAttendenteMode && attendantName && res.atendente && res.atendente.trim()) {
+          if (!namesMatch(res.atendente, attendantName)) {
+            console.log("[DEBUG post-analysis] Blocked by post-analysis check:", { resAtendente: res.atendente, attendantName });
+            setFiles((prev) => prev.map((x) => x.id === f.id ? { ...x, status: "erro" as FileStatus, error: "Este atendimento pertence a outro colaborador." } : x));
+            toast.error("⚠️ A IA identificou que este atendimento pertence a outro colaborador.");
+            continue;
+          }
+        }
+
         setFiles((prev) => prev.map((x) => x.id === f.id ? { ...x, status: "analisado" as FileStatus, result: res, atendente: x.atendente || res.atendente || undefined } : x));
 
-        await supabase.from("preventive_mentorings").insert({
+        const { data: insertedData } = await supabase.from("preventive_mentorings").insert({
           user_id: user.id,
           atendente: res.atendente || null,
           protocolo: res.protocolo || null,
@@ -436,7 +449,7 @@ const MentoriaPreventiva = () => {
           resultado: res as unknown as Record<string, unknown>,
           pontos_melhoria: res.oportunidadesMelhoria?.map((o) => o.criterio) || [],
           status: res.viavel ? "analisado" : "inviavel",
-        } as any);
+        } as any).select("id").single();
 
         successCount++;
         if (isAttendenteMode) setMonthlyCount((prev) => prev + 1);
