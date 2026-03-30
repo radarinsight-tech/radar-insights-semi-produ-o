@@ -108,6 +108,17 @@ function autoSample(files: LabFile[], minPerAtendente = 2): Set<string> {
   return selected;
 }
 
+// ── Date parser helper ──────────────────────────────────────────────────
+function parseFileDate(dateStr: string): Date | null {
+  // dd/mm/yyyy
+  const br = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (br) return new Date(+br[3], +br[2] - 1, +br[1]);
+  // yyyy-mm-dd
+  const iso = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return new Date(+iso[1], +iso[2] - 1, +iso[3]);
+  return null;
+}
+
 // ── Component ──────────────────────────────────────────────────────────
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
