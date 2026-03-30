@@ -516,6 +516,7 @@ export type Database = {
           nota: number | null
           parsed_messages: Json | null
           protocolo: string | null
+          raw_text: string | null
           result: Json | null
           status: string
           tipo_analise: string | null
@@ -538,6 +539,7 @@ export type Database = {
           nota?: number | null
           parsed_messages?: Json | null
           protocolo?: string | null
+          raw_text?: string | null
           result?: Json | null
           status?: string
           tipo_analise?: string | null
@@ -560,6 +562,7 @@ export type Database = {
           nota?: number | null
           parsed_messages?: Json | null
           protocolo?: string | null
+          raw_text?: string | null
           result?: Json | null
           status?: string
           tipo_analise?: string | null
