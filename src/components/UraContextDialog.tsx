@@ -6,10 +6,12 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Radio, X, ChevronDown, ChevronRight, Phone, ShieldCheck, Route,
-  MessageSquare, ArrowRightLeft, Clock, AlertTriangle, Bot, Timer, Milestone, Zap, Info
+  MessageSquare, ArrowRightLeft, Clock, AlertTriangle, Bot, Timer, Milestone, Zap, Info,
+  Hourglass, UserCheck, FileText
 } from "lucide-react";
 import { extractUraContext } from "@/lib/conversationParser";
 import { buildJourneyTimeline, formatDuration, type JourneyTimeline, type JourneyMilestone } from "@/lib/uraJourneyTimeline";
+import { extractProtocolTimestamps, calculateUraTimeMetrics, formatMinutes, type UraTimeMetrics } from "@/lib/uraTimestampExtractor";
 import type { ParsedMessage, StructuredConversation } from "@/lib/conversationParser";
 import type { UraContext, UraStatus } from "@/lib/uraContextSummarizer";
 
@@ -65,6 +67,74 @@ const MILESTONE_ICON_COLORS: Record<string, { border: string; bg: string }> = {
   client_interaction: { border: "border-primary", bg: "bg-primary/15" },
   generic: { border: "border-border", bg: "bg-background" },
 };
+
+const CENARIO_CONFIG: Record<UraTimeMetrics["cenario"], { icon: typeof Radio; color: string; bg: string }> = {
+  sem_ura: { icon: Phone, color: "text-accent", bg: "bg-accent/10" },
+  com_ura: { icon: Radio, color: "text-primary", bg: "bg-primary/10" },
+  somente_ura: { icon: Bot, color: "text-warning", bg: "bg-warning/10" },
+};
+
+/* ─── Protocol Time Metrics Card ────────────────────────────────── */
+
+function ProtocolTimeMetrics({ metrics }: { metrics: UraTimeMetrics }) {
+  const cfg = CENARIO_CONFIG[metrics.cenario];
+  const CenarioIcon = cfg.icon;
+
+  return (
+    <div className="space-y-3">
+      {/* Scenario indicator */}
+      <div className={`flex items-center gap-2.5 rounded-xl border border-border/50 ${cfg.bg} px-4 py-3`}>
+        <div className={`w-8 h-8 rounded-lg ${cfg.bg} flex items-center justify-center`}>
+          <CenarioIcon className={`h-4 w-4 ${cfg.color}`} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className={`text-[11px] font-bold ${cfg.color} uppercase tracking-wide`}>
+            {metrics.cenarioLabel.split("—")[0]?.trim()}
+          </p>
+          <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
+            {metrics.cenarioDescricao}
+          </p>
+        </div>
+      </div>
+
+      {/* 3 metric cards */}
+      <div className="grid grid-cols-3 gap-2">
+        <MetricCard
+          icon={Hourglass}
+          label="Tempo na URA/fila"
+          value={formatMinutes(metrics.tempoFilaMinutos)}
+          highlight={metrics.cenario === "com_ura" && (metrics.tempoFilaMinutos ?? 0) > 5}
+        />
+        <MetricCard
+          icon={UserCheck}
+          label="Tempo de atendimento"
+          value={formatMinutes(metrics.tempoAtendimentoMinutos)}
+          highlight={false}
+        />
+        <MetricCard
+          icon={Clock}
+          label="Tempo total"
+          value={formatMinutes(metrics.tempoTotalMinutos)}
+          highlight={false}
+        />
+      </div>
+    </div>
+  );
+}
+
+function MetricCard({ icon: Icon, label, value, highlight }: { icon: typeof Clock; label: string; value: string; highlight: boolean }) {
+  return (
+    <div className={`rounded-xl border px-3 py-3 text-center ${
+      highlight ? "border-warning/40 bg-warning/5" : "border-border/40 bg-muted/10"
+    }`}>
+      <div className="flex justify-center mb-1.5">
+        <Icon className={`h-4 w-4 ${highlight ? "text-warning" : "text-muted-foreground"}`} />
+      </div>
+      <p className="text-[10px] text-muted-foreground font-medium leading-tight mb-1">{label}</p>
+      <p className={`text-base font-bold ${highlight ? "text-warning" : "text-foreground"}`}>{value}</p>
+    </div>
+  );
+}
 
 /* ─── Journey Summary Card ──────────────────────────────────────── */
 
@@ -191,6 +261,35 @@ function ChronologicalTimeline({ milestones }: { milestones: JourneyMilestone[] 
   );
 }
 
+/* ─── Raw Text Collapsible ──────────────────────────────────────── */
+
+function RawTextSection({ rawText }: { rawText: string }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="flex items-center gap-2 w-full rounded-xl border border-border/50 bg-muted/10 px-4 py-2.5 hover:bg-muted/20 transition-colors">
+        <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-[11px] font-bold text-foreground uppercase tracking-wide">
+          Ver texto completo do atendimento
+        </span>
+        <div className="ml-auto">
+          {open
+            ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+            : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="mt-1.5 rounded-xl border border-border/40 bg-background/50 p-4 max-h-[40vh] overflow-y-auto">
+          <pre className="text-[11px] text-foreground/80 leading-relaxed whitespace-pre-wrap break-words font-mono">
+            {rawText}
+          </pre>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
 /* ─── Main Dialog ───────────────────────────────────────────────── */
 
 const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredConversation }: UraContextDialogProps) => {
@@ -206,6 +305,14 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredCo
     const preParsed = structuredConversation?.messages;
     return buildJourneyTimeline(rawText, atendente, preParsed);
   }, [rawText, atendente, structuredConversation]);
+
+  // Extract protocol-level timestamps and calculate metrics
+  const timeMetrics = useMemo(() => {
+    if (!rawText) return null;
+    const timestamps = extractProtocolTimestamps(rawText);
+    if (!timestamps.horarioAbertura && !timestamps.inicioAtendimento && !timestamps.fimAtendimento) return null;
+    return calculateUraTimeMetrics(timestamps, rawText);
+  }, [rawText]);
 
   const sections: SectionConfig[] = useMemo(() => {
     if (!uraContext || uraContext.status !== "ura_valid") return [];
@@ -267,8 +374,13 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredCo
               </div>
             )}
 
-            {/* ═══ State: no_ura ═══ */}
-            {rawText && status === "no_ura" && (
+            {/* ═══ Protocol Time Metrics (always shown when available) ═══ */}
+            {rawText && timeMetrics && (
+              <ProtocolTimeMetrics metrics={timeMetrics} />
+            )}
+
+            {/* ═══ State: no_ura (only if no time metrics) ═══ */}
+            {rawText && status === "no_ura" && !timeMetrics && (
               <div className="flex flex-col items-center text-center py-10">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
                   <Phone className="h-5 w-5 text-primary/60" />
@@ -281,7 +393,7 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredCo
             )}
 
             {/* ═══ State: ura_irrelevant ═══ */}
-            {rawText && status === "ura_irrelevant" && (
+            {rawText && status === "ura_irrelevant" && !timeMetrics && (
               <div className="space-y-4">
                 <div className="flex flex-col items-center text-center py-6">
                   <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
@@ -292,28 +404,28 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredCo
                     O atendimento foi iniciado diretamente com atendente humano. As interações automáticas detectadas ocorreram apenas após o atendimento.
                   </p>
                 </div>
+              </div>
+            )}
 
-                {/* Post-attendance items */}
-                {uraContext?.postAttendanceItems && uraContext.postAttendanceItems.length > 0 && (
-                  <div className="rounded-xl border border-border/50 bg-muted/10 p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Bot className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide">
-                        Interações automáticas pós-atendimento
+            {/* Post-attendance items (for ura_irrelevant or ura_valid) */}
+            {rawText && uraContext?.postAttendanceItems && uraContext.postAttendanceItems.length > 0 && (
+              <div className="rounded-xl border border-border/50 bg-muted/10 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Bot className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide">
+                    Interações automáticas pós-atendimento
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {uraContext.postAttendanceItems.map((item, i) => (
+                    <div key={i} className="flex gap-3 items-start">
+                      <span className="text-[10px] text-muted-foreground font-semibold shrink-0 mt-0.5 min-w-[90px]">
+                        {item.label}
                       </span>
+                      <span className="text-[12px] text-foreground/70 leading-snug">{item.value}</span>
                     </div>
-                    <div className="space-y-2">
-                      {uraContext.postAttendanceItems.map((item, i) => (
-                        <div key={i} className="flex gap-3 items-start">
-                          <span className="text-[10px] text-muted-foreground font-semibold shrink-0 mt-0.5 min-w-[90px]">
-                            {item.label}
-                          </span>
-                          <span className="text-[12px] text-foreground/70 leading-snug">{item.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
             )}
 
@@ -351,20 +463,6 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredCo
                     </Badge>
                   )}
                 </div>
-
-                {/* Post-attendance info (separate from pre-attendance) */}
-                {uraContext?.postAttendanceItems && uraContext.postAttendanceItems.length > 0 && (
-                  <div className="rounded-lg border border-border/40 bg-muted/10 px-3 py-2">
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-                      Pós-atendimento
-                    </p>
-                    {uraContext.postAttendanceItems.map((item, i) => (
-                      <p key={i} className="text-[11px] text-muted-foreground">
-                        {item.label}: {item.value}
-                      </p>
-                    ))}
-                  </div>
-                )}
 
                 {/* Collapsible detail sections */}
                 {sections.map((section, idx) => {
@@ -406,7 +504,7 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredCo
                 })}
 
                 {/* ura_valid but empty */}
-                {!hasData && !showJourney && (
+                {!hasData && !showJourney && !timeMetrics && (
                   <div className="flex flex-col items-center text-center py-10">
                     <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
                       <Radio className="h-5 w-5 text-muted-foreground/60" />
@@ -418,6 +516,11 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredCo
                   </div>
                 )}
               </>
+            )}
+
+            {/* ═══ Raw Text Collapsible (always at the bottom when text exists) ═══ */}
+            {rawText && (
+              <RawTextSection rawText={rawText} />
             )}
           </div>
         </ScrollArea>

@@ -475,7 +475,7 @@ const MentoriaLab = () => {
           else if (bf.status === "reprovado") fileStatus = "reprovado";
 
           // Restore raw text and structured messages from DB
-          const rawText = (bf as any).extracted_text as string | undefined;
+          const rawText = ((bf as any).raw_text || (bf as any).extracted_text) as string | undefined;
           const persistedMessages = (bf as any).parsed_messages as StructuredConversation | undefined;
 
           // Restore or recompute structured conversation
@@ -875,6 +875,7 @@ const MentoriaLab = () => {
             canal: metadata.canal ?? "Não identificado",
             has_audio: hasAudio,
             extracted_text: hasText ? text : null,
+            raw_text: hasText ? text : null,
             parsed_messages: parsedMessagesPayload,
             error_message: null,
           } as any)
