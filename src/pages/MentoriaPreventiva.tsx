@@ -290,6 +290,67 @@ const MentoriaPreventiva = () => {
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [files]);
 
+  // ── Filtered files for table display ────────────────────────────────
+  const hasActiveFilters = filterSearch !== "" || filterPeriodo !== "todos" || filterStatus !== "todos";
+
+  const filteredFiles = useMemo(() => {
+    let result = files;
+
+    // Text search
+    if (filterSearch.trim()) {
+      const q = filterSearch.trim().toLowerCase();
+      result = result.filter((f) =>
+        f.name.toLowerCase().includes(q) ||
+        (f.protocolo && f.protocolo.toLowerCase().includes(q))
+      );
+    }
+
+    // Period filter
+    if (filterPeriodo !== "todos") {
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      let cutoff: Date;
+      if (filterPeriodo === "hoje") {
+        cutoff = todayStart;
+      } else if (filterPeriodo === "semana") {
+        const day = todayStart.getDay();
+        cutoff = new Date(todayStart);
+        cutoff.setDate(cutoff.getDate() - (day === 0 ? 6 : day - 1));
+      } else if (filterPeriodo === "mes") {
+        cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
+      } else {
+        // mes_anterior
+        cutoff = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const endPrev = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+        result = result.filter((f) => {
+          if (!f.data) return false;
+          // Try to parse dd/mm/yyyy or yyyy-mm-dd
+          const parsed = parseFileDate(f.data);
+          return parsed && parsed >= cutoff && parsed <= endPrev;
+        });
+        return result;
+      }
+      result = result.filter((f) => {
+        if (!f.data) return false;
+        const parsed = parseFileDate(f.data);
+        return parsed && parsed >= cutoff;
+      });
+    }
+
+    // Status filter
+    if (filterStatus !== "todos") {
+      result = result.filter((f) => f.status === filterStatus);
+    }
+
+    return result;
+  }, [files, filterSearch, filterPeriodo, filterStatus]);
+
+  const clearFilters = () => {
+    setFilterSearch("");
+    setFilterPeriodo("todos");
+    setFilterStatus("todos");
+  };
+
   // ── Batch analyze selected ───────────────────────────────────────────
   const handleBatchAnalyze = async () => {
     const toAnalyze = selectedFiles.filter((f) => f.status === "lido" && f.text);
