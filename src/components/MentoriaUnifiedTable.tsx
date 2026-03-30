@@ -129,6 +129,7 @@ const MentoriaUnifiedTable = ({
   onOpenDiagnostic,
   onBatchAnalyze,
   onAnalyzeSelected,
+  onDeleteSelected,
 }: MentoriaUnifiedTableProps) => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
