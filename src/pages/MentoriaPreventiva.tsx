@@ -215,6 +215,14 @@ const MentoriaPreventiva = () => {
       }
       const metadata = extractAllMetadata(text);
 
+      // DEBUG: temporary log for ownership validation
+      console.log("[DEBUG namesMatch]", {
+        "metadata.atendente": metadata.atendente,
+        "attendantName": attendantName,
+        "isAttendenteMode": isAttendenteMode,
+        "namesMatch result": metadata.atendente && attendantName ? namesMatch(metadata.atendente, attendantName) : "skipped (missing value)",
+      });
+
       // PDF ownership validation for atendente mode
       if (isAttendenteMode && attendantName && metadata.atendente) {
         if (!namesMatch(metadata.atendente, attendantName)) {
