@@ -2974,7 +2974,7 @@ const MentoriaLab = () => {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="performance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground hover:bg-accent/60 transition-colors rounded-md font-medium">Performance</TabsTrigger>
+                  <TabsTrigger value="performance" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground hover:bg-accent/60 transition-colors rounded-md font-medium">Performance</TabsTrigger>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-[300px] text-center">
                   <p>Visualize métricas, bônus e evolução dos atendentes da competência selecionada</p>
