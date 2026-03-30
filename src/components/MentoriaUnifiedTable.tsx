@@ -134,6 +134,7 @@ const MentoriaUnifiedTable = ({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const isBusy = processing || batchProcessing;
 
