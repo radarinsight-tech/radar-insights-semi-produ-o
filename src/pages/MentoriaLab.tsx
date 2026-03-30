@@ -125,6 +125,7 @@ interface LabFile {
   tipo?: string;
   batchId?: string;
   batchFileId?: string;
+  batchCode?: string;
   storagePath?: string;
   analyzedAt?: Date;
   ineligible?: boolean;
@@ -140,6 +141,7 @@ interface LabFile {
   uraStatus?: UraStatus;
   structuredConversation?: StructuredConversation;
   tipo_analise?: string | null;
+  visualizado?: boolean;
 }
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
