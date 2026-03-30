@@ -53,7 +53,7 @@ const Index = () => {
   );
 
   const loadHistory = useCallback(
-    async (excludedAttendants = normalizedExcludedAttendants) => {
+    async (excludedAttendants: Set<string>) => {
       try {
         const { data, error } = await supabase
           .from("evaluations")
