@@ -516,6 +516,15 @@ const MentoriaPreventiva = () => {
 
       <main className="flex-1 px-6 py-6">
         <div className="max-w-7xl mx-auto space-y-5">
+          {/* Progress panel — atendente only */}
+          {isAttendenteMode && (
+            <MentoriaProgressPanel
+              monthlyCount={monthlyCount}
+              monthlyLimit={MONTHLY_LIMIT}
+              userId={currentUserId}
+            />
+          )}
+
           {/* Disclaimer */}
           <div className="flex items-start gap-3 p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
             <Info className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
