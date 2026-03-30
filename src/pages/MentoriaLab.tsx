@@ -3267,6 +3267,30 @@ const MentoriaLab = () => {
                     onOpenDiagnostic={(f) => setDiagnosticFile(f as any)}
                     onAnalyzeNext={handleAnalyzeNextFromPipeline}
                     onBatchAnalyze={handleBatchAnalyze}
+                    onAnalyzeSelected={async (ids: string[], tipoAnalise: 'ia' | 'manual') => {
+                      // Save tipo_analise on selected batch files
+                      for (const id of ids) {
+                        const file = files.find((f) => f.id === id);
+                        if (file?.batchFileId) {
+                          await supabase.from("mentoria_batch_files").update({ tipo_analise: tipoAnalise } as any).eq("id", file.batchFileId);
+                        }
+                        setFiles((prev) => prev.map((f) => f.id === id ? { ...f, tipo_analise: tipoAnalise } as any : f));
+                      }
+                      // Then trigger the batch analysis
+                      handleBatchAnalyze(ids.length);
+                    }}
+                    onDeleteSelected={async (ids: string[]) => {
+                      // Delete from Supabase
+                      for (const id of ids) {
+                        const file = files.find((f) => f.id === id);
+                        if (file?.batchFileId) {
+                          await supabase.from("mentoria_batch_files").delete().eq("id", file.batchFileId);
+                        }
+                      }
+                      // Remove from local state
+                      setFiles((prev) => prev.filter((f) => !ids.includes(f.id)));
+                      toast.success(`${ids.length} atendimento(s) excluído(s).`);
+                    }}
                   />
                 )}
               </>
