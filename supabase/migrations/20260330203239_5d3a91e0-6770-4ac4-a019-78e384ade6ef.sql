@@ -1,0 +1,1 @@
+ALTER TABLE mentoria_batch_files ADD COLUMN IF NOT EXISTS visualizado boolean DEFAULT false;

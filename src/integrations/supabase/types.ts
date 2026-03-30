@@ -520,6 +520,7 @@ export type Database = {
           result: Json | null
           status: string
           tipo_analise: string | null
+          visualizado: boolean | null
         }
         Insert: {
           atendente?: string | null
@@ -543,6 +544,7 @@ export type Database = {
           result?: Json | null
           status?: string
           tipo_analise?: string | null
+          visualizado?: boolean | null
         }
         Update: {
           atendente?: string | null
@@ -566,6 +568,7 @@ export type Database = {
           result?: Json | null
           status?: string
           tipo_analise?: string | null
+          visualizado?: boolean | null
         }
         Relationships: [
           {
