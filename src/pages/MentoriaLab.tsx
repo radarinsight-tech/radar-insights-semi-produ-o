@@ -542,6 +542,7 @@ const MentoriaLab = () => {
             uraContext: uraCtx,
             uraStatus: uraCtx?.status,
             structuredConversation: structured,
+            tipo_analise: (bf as any).tipo_analise || null,
           } as LabFile;
         });
 
