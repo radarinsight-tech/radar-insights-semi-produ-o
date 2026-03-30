@@ -3319,7 +3319,7 @@ const MentoriaLab = () => {
           </TabsContent>
 
           <TabsContent value="performance" className="space-y-4 mt-4">
-            {files.length > 0 && filteredFiles.some((f) => f.status === "analisado") ? (
+            {files.length > 0 && filteredFiles.some((f) => f.status === "analisado" || f.status === "confirmado") ? (
               <PerformanceSections
                 files={filteredFiles}
                 globalExcludedNames={globalExcludedNames}
