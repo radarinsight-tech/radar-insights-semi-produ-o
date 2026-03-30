@@ -73,7 +73,7 @@ import MentoriaBatchHistory from "@/components/MentoriaBatchHistory";
 import MentoriaBonusPanel from "@/components/MentoriaBonusPanel";
 import MentoriaReportExport from "@/components/MentoriaReportExport";
 
-type FileStatus = "pendente" | "lido" | "analisado" | "erro";
+type FileStatus = "pendente" | "lido" | "analisado" | "erro" | "aguardando_revisao_ia" | "aguardando_revisao_manual" | "confirmado" | "reprovado";
 type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
 
 type BatchStatus =
@@ -147,6 +147,10 @@ const statusConfig: Record<FileStatus, { label: string; color: string }> = {
   lido: { label: "Lido", color: "bg-blue-100 text-blue-700" },
   analisado: { label: "Analisado", color: "bg-accent/15 text-accent" },
   erro: { label: "Erro", color: "bg-destructive/15 text-destructive" },
+  aguardando_revisao_ia: { label: "Fila IA", color: "bg-blue-100 text-blue-700" },
+  aguardando_revisao_manual: { label: "Fila Manual", color: "bg-emerald-100 text-emerald-700" },
+  confirmado: { label: "Confirmado", color: "bg-emerald-800/15 text-emerald-800" },
+  reprovado: { label: "Reprovado", color: "bg-destructive/15 text-destructive" },
 };
 
 import { extractAllMetadata } from "@/lib/mentoriaMetadata";
@@ -465,6 +469,10 @@ const MentoriaLab = () => {
           if (bf.status === "analyzed") fileStatus = "analisado";
           else if (bf.status === "read") fileStatus = "lido";
           else if (bf.status === "error") fileStatus = "erro";
+          else if (bf.status === "aguardando_revisao_ia") fileStatus = "aguardando_revisao_ia";
+          else if (bf.status === "aguardando_revisao_manual") fileStatus = "aguardando_revisao_manual";
+          else if (bf.status === "confirmado") fileStatus = "confirmado";
+          else if (bf.status === "reprovado") fileStatus = "reprovado";
 
           // Restore raw text and structured messages from DB
           const rawText = (bf as any).extracted_text as string | undefined;
@@ -3270,28 +3278,47 @@ const MentoriaLab = () => {
                     onAnalyzeNext={handleAnalyzeNextFromPipeline}
                     onBatchAnalyze={handleBatchAnalyze}
                     onAnalyzeSelected={async (ids: string[], tipoAnalise: 'ia' | 'manual') => {
-                      // Save tipo_analise on selected batch files
+                      const newStatus = tipoAnalise === 'ia' ? 'aguardando_revisao_ia' : 'aguardando_revisao_manual';
+                      // Save tipo_analise + new status on selected batch files
                       for (const id of ids) {
                         const file = files.find((f) => f.id === id);
                         if (file?.batchFileId) {
-                          await supabase.from("mentoria_batch_files").update({ tipo_analise: tipoAnalise } as any).eq("id", file.batchFileId);
+                          await supabase.from("mentoria_batch_files").update({ tipo_analise: tipoAnalise, status: newStatus } as any).eq("id", file.batchFileId);
                         }
-                        setFiles((prev) => prev.map((f) => f.id === id ? { ...f, tipo_analise: tipoAnalise } as any : f));
+                        setFiles((prev) => prev.map((f) => f.id === id ? { ...f, tipo_analise: tipoAnalise, status: newStatus } as any : f));
                       }
                       // Then trigger the batch analysis
                       handleBatchAnalyze(ids.length);
                     }}
                     onDeleteSelected={async (ids: string[]) => {
-                      // Delete from Supabase
                       for (const id of ids) {
                         const file = files.find((f) => f.id === id);
                         if (file?.batchFileId) {
                           await supabase.from("mentoria_batch_files").delete().eq("id", file.batchFileId);
                         }
                       }
-                      // Remove from local state
                       setFiles((prev) => prev.filter((f) => !ids.includes(f.id)));
                       toast.success(`${ids.length} atendimento(s) excluído(s).`);
+                    }}
+                    onConfirmSelected={async (ids: string[]) => {
+                      for (const id of ids) {
+                        const file = files.find((f) => f.id === id);
+                        if (file?.batchFileId) {
+                          await supabase.from("mentoria_batch_files").update({ status: 'confirmado' } as any).eq("id", file.batchFileId);
+                        }
+                        setFiles((prev) => prev.map((f) => f.id === id ? { ...f, status: 'confirmado' } as any : f));
+                      }
+                      toast.success(`${ids.length} atendimento(s) confirmado(s) e enviado(s) para Performance!`);
+                    }}
+                    onRejectSelected={async (ids: string[]) => {
+                      for (const id of ids) {
+                        const file = files.find((f) => f.id === id);
+                        if (file?.batchFileId) {
+                          await supabase.from("mentoria_batch_files").update({ status: 'pending', tipo_analise: null } as any).eq("id", file.batchFileId);
+                        }
+                        setFiles((prev) => prev.map((f) => f.id === id ? { ...f, status: 'pendente', tipo_analise: null } as any : f));
+                      }
+                      toast.success(`${ids.length} atendimento(s) reprovado(s) e retornado(s) para Pendentes.`);
                     }}
                   />
                 )}
@@ -3300,7 +3327,7 @@ const MentoriaLab = () => {
           </TabsContent>
 
           <TabsContent value="performance" className="space-y-4 mt-4">
-            {files.length > 0 && filteredFiles.some((f) => f.status === "analisado") ? (
+            {files.length > 0 && filteredFiles.some((f) => f.status === "analisado" || f.status === "confirmado") ? (
               <PerformanceSections
                 files={filteredFiles}
                 globalExcludedNames={globalExcludedNames}
