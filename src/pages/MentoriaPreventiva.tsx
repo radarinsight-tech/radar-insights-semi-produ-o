@@ -23,6 +23,7 @@ import PreventiveInsights from "@/components/PreventiveInsights";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
 import MentoriaAttendenteHeader from "@/components/MentoriaAttendenteHeader";
 import MentoriaAttendenteHistory from "@/components/MentoriaAttendenteHistory";
+import MentoriaProgressPanel from "@/components/MentoriaProgressPanel";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
