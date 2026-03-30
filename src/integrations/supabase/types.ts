@@ -518,6 +518,7 @@ export type Database = {
           protocolo: string | null
           result: Json | null
           status: string
+          tipo_analise: string | null
         }
         Insert: {
           atendente?: string | null
@@ -539,6 +540,7 @@ export type Database = {
           protocolo?: string | null
           result?: Json | null
           status?: string
+          tipo_analise?: string | null
         }
         Update: {
           atendente?: string | null
@@ -560,6 +562,7 @@ export type Database = {
           protocolo?: string | null
           result?: Json | null
           status?: string
+          tipo_analise?: string | null
         }
         Relationships: [
           {
