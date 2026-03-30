@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
@@ -525,15 +526,23 @@ const MentoriaPreventiva = () => {
           {/* Files imported: sampling controls */}
           {files.length > 0 && (
             <>
+              {/* Sticky panel: actions + stats */}
+              <div className="sticky top-0 z-20 bg-background pb-3 space-y-3">
               {/* Actions bar */}
+              <TooltipProvider delayDuration={200}>
               <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => inputRef.current?.click()}
-                >
-                  <Upload className="h-3 w-3 mr-1" /> Importar mais
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => inputRef.current?.click()}
+                    >
+                      <Upload className="h-3 w-3 mr-1" /> Importar mais
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-foreground text-background text-xs"><p>Importar novos PDFs ou ZIPs de atendimentos</p></TooltipContent>
+                </Tooltip>
                 <input
                   ref={inputRef}
                   type="file"
@@ -543,14 +552,19 @@ const MentoriaPreventiva = () => {
                   onChange={(e) => e.target.files && handleFiles(e.target.files)}
                 />
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={runAutoSample}
-                  disabled={readyCount === 0 || isReading}
-                >
-                  <Shuffle className="h-3 w-3 mr-1" /> Amostragem Automática
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={runAutoSample}
+                      disabled={readyCount === 0 || isReading}
+                    >
+                      <Shuffle className="h-3 w-3 mr-1" /> Amostragem Automática
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-foreground text-background text-xs"><p>Seleciona automaticamente 2 atendimentos por atendente, excluindo os com áudio</p></TooltipContent>
+                </Tooltip>
 
                 {selectedCount > 0 && (
                   <Button
@@ -576,34 +590,63 @@ const MentoriaPreventiva = () => {
                   </Button>
                 )}
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => { setFiles([]); setSampled(false); setActiveResult(null); setShowInsights(false); }}
-                >
-                  <X className="h-3 w-3 mr-1" /> Limpar tudo
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setFiles([]); setSampled(false); setActiveResult(null); setShowInsights(false); }}
+                    >
+                      <X className="h-3 w-3 mr-1" /> Limpar tudo
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-foreground text-background text-xs"><p>Remove todos os arquivos importados da lista atual</p></TooltipContent>
+                </Tooltip>
               </div>
+              </TooltipProvider>
 
               {/* Stats cards */}
+              <TooltipProvider delayDuration={200}>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Card className="p-3 text-center">
-                  <p className="text-2xl font-bold text-foreground">{files.length}</p>
-                  <p className="text-[10px] text-muted-foreground">Total importado</p>
-                </Card>
-                <Card className="p-3 text-center">
-                  <p className="text-2xl font-bold text-foreground">{readyCount}</p>
-                  <p className="text-[10px] text-muted-foreground">Lidos</p>
-                  {isReading && <Loader2 className="h-3 w-3 animate-spin text-primary mx-auto mt-1" />}
-                </Card>
-                <Card className="p-3 text-center">
-                  <p className="text-2xl font-bold text-amber-500">{audioCount}</p>
-                  <p className="text-[10px] text-muted-foreground">Com áudio (excluídos)</p>
-                </Card>
-                <Card className="p-3 text-center">
-                  <p className="text-2xl font-bold text-primary">{selectedCount}</p>
-                  <p className="text-[10px] text-muted-foreground">Selecionados</p>
-                </Card>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Card className="p-3 text-center cursor-default">
+                      <p className="text-2xl font-bold text-foreground">{files.length}</p>
+                      <p className="text-[10px] text-muted-foreground">Total importado</p>
+                    </Card>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-foreground text-background text-xs"><p>Total de arquivos carregados nesta sessão</p></TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Card className="p-3 text-center cursor-default">
+                      <p className="text-2xl font-bold text-foreground">{readyCount}</p>
+                      <p className="text-[10px] text-muted-foreground">Lidos</p>
+                      {isReading && <Loader2 className="h-3 w-3 animate-spin text-primary mx-auto mt-1" />}
+                    </Card>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-foreground text-background text-xs"><p>Arquivos com texto extraído com sucesso</p></TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Card className="p-3 text-center cursor-default">
+                      <p className="text-2xl font-bold text-amber-500">{audioCount}</p>
+                      <p className="text-[10px] text-muted-foreground">Com áudio (excluídos)</p>
+                    </Card>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-foreground text-background text-xs"><p>Arquivos ignorados por conterem áudio — não entram na análise</p></TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Card className="p-3 text-center cursor-default">
+                      <p className="text-2xl font-bold text-primary">{selectedCount}</p>
+                      <p className="text-[10px] text-muted-foreground">Selecionados</p>
+                    </Card>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-foreground text-background text-xs"><p>Arquivos marcados para análise</p></TooltipContent>
+                </Tooltip>
+              </div>
+              </TooltipProvider>
               </div>
 
               {/* Atendente distribution */}
@@ -626,16 +669,22 @@ const MentoriaPreventiva = () => {
               {/* File table */}
               <Card className="overflow-hidden">
               {/* Filter bar */}
+              <TooltipProvider delayDuration={200}>
               <div className="flex flex-wrap items-center gap-3 p-3 border-b border-border bg-muted/20">
-                <div className="relative flex-1 min-w-[180px] max-w-[280px]">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar arquivo ou protocolo…"
-                    value={filterSearch}
-                    onChange={(e) => setFilterSearch(e.target.value)}
-                    className="h-8 pl-8 text-xs bg-card"
-                  />
-                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="relative flex-1 min-w-[180px] max-w-[280px]">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        placeholder="Buscar arquivo ou protocolo…"
+                        value={filterSearch}
+                        onChange={(e) => setFilterSearch(e.target.value)}
+                        className="h-8 pl-8 text-xs bg-card"
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-foreground text-background text-xs"><p>Busque pelo nome do arquivo ou número do protocolo</p></TooltipContent>
+                </Tooltip>
                 <Select value={filterPeriodo} onValueChange={setFilterPeriodo}>
                   <SelectTrigger className="w-[140px] h-8 text-xs bg-card">
                     <SelectValue placeholder="Período" />
@@ -669,11 +718,13 @@ const MentoriaPreventiva = () => {
                   {filteredFiles.length} de {files.length} arquivo(s)
                 </span>
               </div>
+              </TooltipProvider>
 
               {/* Table */}
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
+                    <TooltipProvider delayDuration={200}>
                       <tr className="border-b border-border bg-muted/30">
                         <th className="p-2 w-8 text-center">
                           <Checkbox
@@ -683,13 +734,32 @@ const MentoriaPreventiva = () => {
                             }}
                           />
                         </th>
-                        <th className="p-2 text-left font-medium text-muted-foreground">Arquivo</th>
-                        <th className="p-2 text-left font-medium text-muted-foreground">Atendente</th>
-                        <th className="p-2 text-left font-medium text-muted-foreground">Protocolo</th>
-                        <th className="p-2 text-center font-medium text-muted-foreground">Áudio</th>
-                        <th className="p-2 text-center font-medium text-muted-foreground">Status</th>
-                        <th className="p-2 text-center font-medium text-muted-foreground">Ação</th>
+                        <th className="p-2 text-left font-medium text-muted-foreground">
+                          <Tooltip><TooltipTrigger asChild><span className="cursor-default">Arquivo</span></TooltipTrigger>
+                          <TooltipContent className="bg-foreground text-background text-xs"><p>Nome do arquivo PDF importado</p></TooltipContent></Tooltip>
+                        </th>
+                        <th className="p-2 text-left font-medium text-muted-foreground">
+                          <Tooltip><TooltipTrigger asChild><span className="cursor-default">Atendente</span></TooltipTrigger>
+                          <TooltipContent className="bg-foreground text-background text-xs"><p>Nome do atendente extraído do PDF</p></TooltipContent></Tooltip>
+                        </th>
+                        <th className="p-2 text-left font-medium text-muted-foreground">
+                          <Tooltip><TooltipTrigger asChild><span className="cursor-default">Protocolo</span></TooltipTrigger>
+                          <TooltipContent className="bg-foreground text-background text-xs"><p>Número do protocolo do atendimento</p></TooltipContent></Tooltip>
+                        </th>
+                        <th className="p-2 text-center font-medium text-muted-foreground">
+                          <Tooltip><TooltipTrigger asChild><span className="cursor-default">Áudio</span></TooltipTrigger>
+                          <TooltipContent className="bg-foreground text-background text-xs"><p>Indica se o atendimento contém gravação de áudio</p></TooltipContent></Tooltip>
+                        </th>
+                        <th className="p-2 text-center font-medium text-muted-foreground">
+                          <Tooltip><TooltipTrigger asChild><span className="cursor-default">Status</span></TooltipTrigger>
+                          <TooltipContent className="bg-foreground text-background text-xs"><p>Status atual da análise do arquivo</p></TooltipContent></Tooltip>
+                        </th>
+                        <th className="p-2 text-center font-medium text-muted-foreground">
+                          <Tooltip><TooltipTrigger asChild><span className="cursor-default">Ação</span></TooltipTrigger>
+                          <TooltipContent className="bg-foreground text-background text-xs"><p>Ações disponíveis para este arquivo</p></TooltipContent></Tooltip>
+                        </th>
                       </tr>
+                    </TooltipProvider>
                     </thead>
                     <tbody>
                       {filteredFiles.map((f) => (
