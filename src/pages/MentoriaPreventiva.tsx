@@ -134,7 +134,7 @@ const MentoriaPreventiva = () => {
   const navigate = useNavigate();
   const { loading: permLoading, canAccess, isMentoriaAtendente, isAdmin, attendantId, attendantName } = useUserPermissions();
   const isAttendenteMode = isMentoriaAtendente && !isAdmin;
-  const MONTHLY_LIMIT = 10;
+  const MONTHLY_LIMIT = 12;
 
   const [files, setFiles] = useState<LabFile[]>([]);
   const [readingIds, setReadingIds] = useState<Set<string>>(new Set());
