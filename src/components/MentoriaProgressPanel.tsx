@@ -128,7 +128,7 @@ const MentoriaProgressPanel = ({ monthlyCount, monthlyLimit, userId }: Props) =>
       {showWeeklyAlert && (
         <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
           <p className="text-sm text-amber-700 dark:text-amber-400">
-            ⚠️ Você não atingiu as 3 mentorias desta semana. Tente manter o ritmo na próxima!
+            ⚠️ Você não atingiu as 4 mentorias desta semana. Tente manter o ritmo na próxima!
           </p>
           <button
             onClick={() => setWeeklyAlertDismissed(true)}
