@@ -456,16 +456,33 @@ const MentoriaUnifiedTable = ({
                       f.approvedAsOfficial && "border-l-[3px] border-l-accent",
                     )}
                   >
-                    {/* Checkbox */}
+                    {/* Checkbox + read indicator */}
                     <TableCell className="py-3 text-center w-10">
-                      <Checkbox
-                        checked={selectedIds.has(f.id)}
-                        onCheckedChange={(checked) => handleToggle(f.id, !!checked)}
-                        aria-label={`Selecionar ${f.atendente || f.name}`}
-                      />
+                      <div className="flex items-center justify-center gap-1.5">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className={cn(
+                              "h-2 w-2 rounded-full shrink-0",
+                              (f.visualizado || f.hasResult || f.status === "analisado" || f.status === "confirmado" || f.status === "aguardando_revisao_ia" || f.status === "aguardando_revisao_manual")
+                                ? "bg-emerald-500"
+                                : "bg-red-500"
+                            )} />
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            <p>{(f.visualizado || f.hasResult || f.status === "analisado" || f.status === "confirmado" || f.status === "aguardando_revisao_ia" || f.status === "aguardando_revisao_manual")
+                              ? "Visualizado — PDF já foi revisado"
+                              : "Não visualizado — PDF ainda não foi aberto"}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Checkbox
+                          checked={selectedIds.has(f.id)}
+                          onCheckedChange={(checked) => handleToggle(f.id, !!checked)}
+                          aria-label={`Selecionar ${f.atendente || f.name}`}
+                        />
+                      </div>
                     </TableCell>
 
-                    {/* Atendente + protocolo */}
+                    {/* Atendente + protocolo + lote badge */}
                     <TableCell className="py-3 w-[30%]">
                       <div className="min-w-0 overflow-hidden">
                         <p className="text-sm font-semibold text-foreground truncate">
@@ -482,6 +499,11 @@ const MentoriaUnifiedTable = ({
                         </p>
                         {f.protocolo && (
                           <p className="text-[10px] text-muted-foreground font-mono truncate">{f.protocolo}</p>
+                        )}
+                        {f.batchCode && (
+                          <Badge className="bg-muted text-muted-foreground text-[9px] px-1.5 py-0 h-auto border-0 mt-0.5">
+                            lote-{f.batchCode.split("-").pop()}
+                          </Badge>
                         )}
                       </div>
                     </TableCell>
