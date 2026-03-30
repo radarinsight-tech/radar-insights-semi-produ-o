@@ -420,6 +420,12 @@ const MentoriaUnifiedTable = ({
                         {f.approvedAsOfficial && (
                           <ShieldCheck className="h-3 w-3 text-accent" />
                         )}
+                        {f.tipo_analise === 'ia' && (
+                          <Badge className="bg-purple-600/15 text-purple-700 dark:text-purple-400 text-[8px] px-1.5 py-0 h-auto border-0">⚡ IA</Badge>
+                        )}
+                        {f.tipo_analise === 'manual' && (
+                          <Badge className="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 text-[8px] px-1.5 py-0 h-auto border-0">🔍 Manual</Badge>
+                        )}
                       </div>
                     </TableCell>
 
