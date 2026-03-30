@@ -1,0 +1,1 @@
+ALTER TABLE public.preventive_mentorings ADD COLUMN nota_liberada boolean NOT NULL DEFAULT false;

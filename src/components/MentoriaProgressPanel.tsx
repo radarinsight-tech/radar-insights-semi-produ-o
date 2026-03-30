@@ -66,13 +66,13 @@ const ProgressRing = ({
 /* ── Weekly color logic ─────────────────────────────────────────── */
 function getWeeklyColor(count: number): string {
   if (count <= 1) return "hsl(0, 72%, 51%)";     // red
-  if (count === 2) return "hsl(45, 93%, 47%)";    // amber
+  if (count === 2 || count === 3) return "hsl(45, 93%, 47%)";    // amber
   return "hsl(142, 71%, 45%)";                     // green
 }
 
 function getWeeklyLabel(count: number): string {
   if (count <= 1) return "Abaixo do esperado";
-  if (count === 2) return "Quase lá!";
+  if (count === 2 || count === 3) return "Quase lá!";
   return "Meta atingida ✓";
 }
 
@@ -119,7 +119,7 @@ const MentoriaProgressPanel = ({ monthlyCount, monthlyLimit, userId }: Props) =>
     loadWeekly();
   }, [userId, monthlyCount]); // re-fetch when monthlyCount changes (new analysis done)
 
-  const showWeeklyAlert = isSunday() && weeklyCount < 3 && !weeklyAlertDismissed;
+  const showWeeklyAlert = isSunday() && weeklyCount < 4 && !weeklyAlertDismissed;
   const isMonthlyGoalReached = monthlyCount >= monthlyLimit;
 
   return (
@@ -128,7 +128,7 @@ const MentoriaProgressPanel = ({ monthlyCount, monthlyLimit, userId }: Props) =>
       {showWeeklyAlert && (
         <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
           <p className="text-sm text-amber-700 dark:text-amber-400">
-            ⚠️ Você não atingiu as 3 mentorias desta semana. Tente manter o ritmo na próxima!
+            ⚠️ Você não atingiu as 4 mentorias desta semana. Tente manter o ritmo na próxima!
           </p>
           <button
             onClick={() => setWeeklyAlertDismissed(true)}
@@ -153,11 +153,11 @@ const MentoriaProgressPanel = ({ monthlyCount, monthlyLimit, userId }: Props) =>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Weekly counter */}
         <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
-          <ProgressRing value={weeklyCount} max={3} color={getWeeklyColor(weeklyCount)} />
+          <ProgressRing value={weeklyCount} max={4} color={getWeeklyColor(weeklyCount)} />
           <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">Esta semana</p>
             <p className="text-sm font-bold text-foreground">
-              {weeklyCount} / 3 mentorias
+              {weeklyCount} / 4 mentorias
             </p>
             <p className="text-xs mt-0.5" style={{ color: getWeeklyColor(weeklyCount) }}>
               {getWeeklyLabel(weeklyCount)}

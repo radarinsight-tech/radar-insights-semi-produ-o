@@ -694,6 +694,7 @@ export type Database = {
           error_message: string | null
           id: string
           nota_interna: number | null
+          nota_liberada: boolean
           pdf_url: string | null
           pontos_melhoria: string[] | null
           pontos_obtidos: number | null
@@ -713,6 +714,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           nota_interna?: number | null
+          nota_liberada?: boolean
           pdf_url?: string | null
           pontos_melhoria?: string[] | null
           pontos_obtidos?: number | null
@@ -732,6 +734,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           nota_interna?: number | null
+          nota_liberada?: boolean
           pdf_url?: string | null
           pontos_melhoria?: string[] | null
           pontos_obtidos?: number | null

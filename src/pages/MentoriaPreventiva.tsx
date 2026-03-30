@@ -1016,7 +1016,7 @@ const MentoriaPreventiva = () => {
 
           {/* Atendente History Section */}
           {isAttendenteMode && currentUserId && !activeResult && (
-            <MentoriaAttendenteHistory userId={currentUserId} />
+            <MentoriaAttendenteHistory userId={currentUserId} isAdmin={isAdmin} />
           )}
         </div>
       </main>
