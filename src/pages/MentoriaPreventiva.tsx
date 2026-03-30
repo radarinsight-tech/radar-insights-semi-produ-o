@@ -215,14 +215,6 @@ const MentoriaPreventiva = () => {
       }
       const metadata = extractAllMetadata(text);
 
-      // DEBUG: temporary log for ownership validation
-      console.log("[DEBUG namesMatch]", {
-        "metadata.atendente": metadata.atendente,
-        "attendantName": attendantName,
-        "isAttendenteMode": isAttendenteMode,
-        "namesMatch result": metadata.atendente && attendantName ? namesMatch(metadata.atendente, attendantName) : "skipped (missing value)",
-      });
-
       // PDF ownership validation for atendente mode (pre-analysis check)
       // Only block if metadata.atendente was successfully extracted AND doesn't match
       // If metadata.atendente is undefined/empty, allow through — post-analysis check will validate
