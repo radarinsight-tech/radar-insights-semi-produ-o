@@ -54,6 +54,7 @@ interface UnifiedFile {
   addedAt?: Date;
   transferred?: boolean;
   attendantMatch?: any;
+  tipo_analise?: string | null;
 }
 
 interface BatchStats {
