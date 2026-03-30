@@ -220,7 +220,6 @@ const MentoriaPreventiva = () => {
       // If metadata.atendente is undefined/empty, allow through — post-analysis check will validate
       if (isAttendenteMode && attendantName && metadata.atendente && metadata.atendente.trim()) {
         if (!namesMatch(metadata.atendente, attendantName)) {
-          console.log("[DEBUG readFile] Blocked by pre-analysis check:", { pdfAtendente: metadata.atendente, attendantName });
           setFiles((prev) => prev.map((f) => f.id === labFile.id ? { ...f, status: "erro" as FileStatus, error: "Este atendimento pertence a outro colaborador." } : f));
           toast.error("⚠️ Este atendimento pertence a outro colaborador e não pode ser importado aqui. Você só pode analisar seus próprios atendimentos.");
           return;
