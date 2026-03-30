@@ -133,6 +133,9 @@ const MentoriaPreventiva = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [monthlyCount, setMonthlyCount] = useState(0);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [filterSearch, setFilterSearch] = useState("");
+  const [filterPeriodo, setFilterPeriodo] = useState("todos");
+  const [filterStatus, setFilterStatus] = useState("todos");
 
   // Load monthly count for atendente mode
   useEffect(() => {
