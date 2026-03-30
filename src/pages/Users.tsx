@@ -177,8 +177,9 @@ const UsersPage = () => {
         },
       });
 
-      if (error) throw error;
+      // When edge function returns non-2xx, SDK puts parsed body in `data` and sets `error`
       if (data?.error) throw new Error(data.error);
+      if (error) throw error;
 
       toast.success("Usuário criado com sucesso! Ele poderá acessar com e-mail e senha provisória.");
       setInviteEmail("");
