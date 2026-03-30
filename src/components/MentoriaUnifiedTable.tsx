@@ -623,7 +623,7 @@ const MentoriaUnifiedTable = ({
                             {f.hasResult && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <DropdownMenuItem onClick={() => onOpenMentoria(f)}>
+                                  <DropdownMenuItem onClick={() => { onMarkViewed?.(f.id); onOpenMentoria(f); }}>
                                     <BookOpen className="h-3.5 w-3.5 mr-2" /> Ver
                                   </DropdownMenuItem>
                                 </TooltipTrigger>
