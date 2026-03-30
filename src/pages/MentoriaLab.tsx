@@ -556,6 +556,8 @@ const MentoriaLab = () => {
             uraStatus: uraCtx?.status,
             structuredConversation: structured,
             tipo_analise: (bf as any).tipo_analise || null,
+            batchCode: batchCodeMap.get(bf.batch_id) || undefined,
+            visualizado: (bf as any).visualizado || false,
           } as LabFile;
         });
 
