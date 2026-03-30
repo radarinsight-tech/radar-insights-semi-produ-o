@@ -469,6 +469,10 @@ const MentoriaLab = () => {
           if (bf.status === "analyzed") fileStatus = "analisado";
           else if (bf.status === "read") fileStatus = "lido";
           else if (bf.status === "error") fileStatus = "erro";
+          else if (bf.status === "aguardando_revisao_ia") fileStatus = "aguardando_revisao_ia";
+          else if (bf.status === "aguardando_revisao_manual") fileStatus = "aguardando_revisao_manual";
+          else if (bf.status === "confirmado") fileStatus = "confirmado";
+          else if (bf.status === "reprovado") fileStatus = "reprovado";
 
           // Restore raw text and structured messages from DB
           const rawText = (bf as any).extracted_text as string | undefined;
