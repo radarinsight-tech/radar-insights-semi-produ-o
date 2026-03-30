@@ -209,19 +209,20 @@ const MentoriaUnifiedTable = ({
     return new Set(filtered.filter((f) => f.isAutoEligible).map((f) => f.id));
   }, [filtered]);
 
-  const allEligibleSelected = eligibleIds.size > 0 && [...eligibleIds].every((id) => selectedIds.has(id));
+  const allVisibleIds = useMemo(() => new Set(displayedItems.map((f) => f.id)), [displayedItems]);
+  const allVisibleSelected = allVisibleIds.size > 0 && [...allVisibleIds].every((id) => selectedIds.has(id));
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       setSelectedIds((prev) => {
         const next = new Set(prev);
-        eligibleIds.forEach((id) => next.add(id));
+        allVisibleIds.forEach((id) => next.add(id));
         return next;
       });
     } else {
       setSelectedIds((prev) => {
         const next = new Set(prev);
-        eligibleIds.forEach((id) => next.delete(id));
+        allVisibleIds.forEach((id) => next.delete(id));
         return next;
       });
     }
@@ -236,7 +237,7 @@ const MentoriaUnifiedTable = ({
     });
   };
 
-  const selectedCount = [...selectedIds].filter((id) => eligibleIds.has(id) || categorized.some((f) => f.id === id && f.isAutoEligible)).length;
+  const selectedCount = selectedIds.size;
 
   return (
     <div className="space-y-3" id="mentoria-table">
