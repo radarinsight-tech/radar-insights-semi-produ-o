@@ -614,7 +614,7 @@ const MentoriaUnifiedTable = ({
                           <DropdownMenuContent align="end" className="w-52">
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <DropdownMenuItem onClick={() => onOpenFile(f)}>
+                                <DropdownMenuItem onClick={() => { onMarkViewed?.(f.id); onOpenFile(f); }}>
                                   <Eye className="h-3.5 w-3.5 mr-2" /> Preview
                                 </DropdownMenuItem>
                               </TooltipTrigger>
