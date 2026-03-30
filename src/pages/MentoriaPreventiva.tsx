@@ -5,8 +5,10 @@ import {
   ArrowLeft, ShieldCheck, Upload, Loader2, FileText,
   CheckCircle2, AlertTriangle, ThumbsUp, Lightbulb, ChevronDown, ChevronUp,
   Hash, User, Calendar, Tag, Info, Shuffle, Volume2, VolumeX, X, Play,
-  Eye, BarChart3, ShieldAlert
+  Eye, BarChart3, ShieldAlert, Search, FilterX
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -106,6 +108,17 @@ function autoSample(files: LabFile[], minPerAtendente = 2): Set<string> {
   return selected;
 }
 
+// ── Date parser helper ──────────────────────────────────────────────────
+function parseFileDate(dateStr: string): Date | null {
+  // dd/mm/yyyy
+  const br = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (br) return new Date(+br[3], +br[2] - 1, +br[1]);
+  // yyyy-mm-dd
+  const iso = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return new Date(+iso[1], +iso[2] - 1, +iso[3]);
+  return null;
+}
+
 // ── Component ──────────────────────────────────────────────────────────
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
@@ -131,6 +144,9 @@ const MentoriaPreventiva = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [monthlyCount, setMonthlyCount] = useState(0);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [filterSearch, setFilterSearch] = useState("");
+  const [filterPeriodo, setFilterPeriodo] = useState("todos");
+  const [filterStatus, setFilterStatus] = useState("todos");
 
   // Load monthly count for atendente mode
   useEffect(() => {
@@ -284,6 +300,67 @@ const MentoriaPreventiva = () => {
     }
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [files]);
+
+  // ── Filtered files for table display ────────────────────────────────
+  const hasActiveFilters = filterSearch !== "" || filterPeriodo !== "todos" || filterStatus !== "todos";
+
+  const filteredFiles = useMemo(() => {
+    let result = files;
+
+    // Text search
+    if (filterSearch.trim()) {
+      const q = filterSearch.trim().toLowerCase();
+      result = result.filter((f) =>
+        f.name.toLowerCase().includes(q) ||
+        (f.protocolo && f.protocolo.toLowerCase().includes(q))
+      );
+    }
+
+    // Period filter
+    if (filterPeriodo !== "todos") {
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      let cutoff: Date;
+      if (filterPeriodo === "hoje") {
+        cutoff = todayStart;
+      } else if (filterPeriodo === "semana") {
+        const day = todayStart.getDay();
+        cutoff = new Date(todayStart);
+        cutoff.setDate(cutoff.getDate() - (day === 0 ? 6 : day - 1));
+      } else if (filterPeriodo === "mes") {
+        cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
+      } else {
+        // mes_anterior
+        cutoff = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const endPrev = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+        result = result.filter((f) => {
+          if (!f.data) return false;
+          // Try to parse dd/mm/yyyy or yyyy-mm-dd
+          const parsed = parseFileDate(f.data);
+          return parsed && parsed >= cutoff && parsed <= endPrev;
+        });
+        return result;
+      }
+      result = result.filter((f) => {
+        if (!f.data) return false;
+        const parsed = parseFileDate(f.data);
+        return parsed && parsed >= cutoff;
+      });
+    }
+
+    // Status filter
+    if (filterStatus !== "todos") {
+      result = result.filter((f) => f.status === filterStatus);
+    }
+
+    return result;
+  }, [files, filterSearch, filterPeriodo, filterStatus]);
+
+  const clearFilters = () => {
+    setFilterSearch("");
+    setFilterPeriodo("todos");
+    setFilterStatus("todos");
+  };
 
   // ── Batch analyze selected ───────────────────────────────────────────
   const handleBatchAnalyze = async () => {
@@ -548,9 +625,55 @@ const MentoriaPreventiva = () => {
 
               {/* File table */}
               <Card className="overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
+              {/* Filter bar */}
+              <div className="flex flex-wrap items-center gap-3 p-3 border-b border-border bg-muted/20">
+                <div className="relative flex-1 min-w-[180px] max-w-[280px]">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar arquivo ou protocolo…"
+                    value={filterSearch}
+                    onChange={(e) => setFilterSearch(e.target.value)}
+                    className="h-8 pl-8 text-xs bg-card"
+                  />
+                </div>
+                <Select value={filterPeriodo} onValueChange={setFilterPeriodo}>
+                  <SelectTrigger className="w-[140px] h-8 text-xs bg-card">
+                    <SelectValue placeholder="Período" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="hoje">Hoje</SelectItem>
+                    <SelectItem value="semana">Esta semana</SelectItem>
+                    <SelectItem value="mes">Este mês</SelectItem>
+                    <SelectItem value="mes_anterior">Mês anterior</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-[130px] h-8 text-xs bg-card">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="lido">Lido</SelectItem>
+                    <SelectItem value="analisado">Analisado</SelectItem>
+                    <SelectItem value="erro">Erro</SelectItem>
+                  </SelectContent>
+                </Select>
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={clearFilters}>
+                    <FilterX className="h-3.5 w-3.5" /> Limpar filtros
+                  </Button>
+                )}
+                <span className="text-[10px] text-muted-foreground ml-auto">
+                  {filteredFiles.length} de {files.length} arquivo(s)
+                </span>
+              </div>
+
+              {/* Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
                       <tr className="border-b border-border bg-muted/30">
                         <th className="p-2 w-8 text-center">
                           <Checkbox
@@ -569,7 +692,7 @@ const MentoriaPreventiva = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {files.map((f) => (
+                      {filteredFiles.map((f) => (
                         <tr
                           key={f.id}
                           className={`border-b border-border/50 transition-colors ${
