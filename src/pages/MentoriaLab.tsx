@@ -3270,28 +3270,47 @@ const MentoriaLab = () => {
                     onAnalyzeNext={handleAnalyzeNextFromPipeline}
                     onBatchAnalyze={handleBatchAnalyze}
                     onAnalyzeSelected={async (ids: string[], tipoAnalise: 'ia' | 'manual') => {
-                      // Save tipo_analise on selected batch files
+                      const newStatus = tipoAnalise === 'ia' ? 'aguardando_revisao_ia' : 'aguardando_revisao_manual';
+                      // Save tipo_analise + new status on selected batch files
                       for (const id of ids) {
                         const file = files.find((f) => f.id === id);
                         if (file?.batchFileId) {
-                          await supabase.from("mentoria_batch_files").update({ tipo_analise: tipoAnalise } as any).eq("id", file.batchFileId);
+                          await supabase.from("mentoria_batch_files").update({ tipo_analise: tipoAnalise, status: newStatus } as any).eq("id", file.batchFileId);
                         }
-                        setFiles((prev) => prev.map((f) => f.id === id ? { ...f, tipo_analise: tipoAnalise } as any : f));
+                        setFiles((prev) => prev.map((f) => f.id === id ? { ...f, tipo_analise: tipoAnalise, status: newStatus } as any : f));
                       }
                       // Then trigger the batch analysis
                       handleBatchAnalyze(ids.length);
                     }}
                     onDeleteSelected={async (ids: string[]) => {
-                      // Delete from Supabase
                       for (const id of ids) {
                         const file = files.find((f) => f.id === id);
                         if (file?.batchFileId) {
                           await supabase.from("mentoria_batch_files").delete().eq("id", file.batchFileId);
                         }
                       }
-                      // Remove from local state
                       setFiles((prev) => prev.filter((f) => !ids.includes(f.id)));
                       toast.success(`${ids.length} atendimento(s) excluído(s).`);
+                    }}
+                    onConfirmSelected={async (ids: string[]) => {
+                      for (const id of ids) {
+                        const file = files.find((f) => f.id === id);
+                        if (file?.batchFileId) {
+                          await supabase.from("mentoria_batch_files").update({ status: 'confirmado' } as any).eq("id", file.batchFileId);
+                        }
+                        setFiles((prev) => prev.map((f) => f.id === id ? { ...f, status: 'confirmado' } as any : f));
+                      }
+                      toast.success(`${ids.length} atendimento(s) confirmado(s) e enviado(s) para Performance!`);
+                    }}
+                    onRejectSelected={async (ids: string[]) => {
+                      for (const id of ids) {
+                        const file = files.find((f) => f.id === id);
+                        if (file?.batchFileId) {
+                          await supabase.from("mentoria_batch_files").update({ status: 'pending', tipo_analise: null } as any).eq("id", file.batchFileId);
+                        }
+                        setFiles((prev) => prev.map((f) => f.id === id ? { ...f, status: 'pendente', tipo_analise: null } as any : f));
+                      }
+                      toast.success(`${ids.length} atendimento(s) reprovado(s) e retornado(s) para Pendentes.`);
                     }}
                   />
                 )}
