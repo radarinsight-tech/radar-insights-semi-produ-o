@@ -157,7 +157,7 @@ const MentoriaProgressPanel = ({ monthlyCount, monthlyLimit, userId }: Props) =>
           <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">Esta semana</p>
             <p className="text-sm font-bold text-foreground">
-              {weeklyCount} / 3 mentorias
+              {weeklyCount} / 4 mentorias
             </p>
             <p className="text-xs mt-0.5" style={{ color: getWeeklyColor(weeklyCount) }}>
               {getWeeklyLabel(weeklyCount)}

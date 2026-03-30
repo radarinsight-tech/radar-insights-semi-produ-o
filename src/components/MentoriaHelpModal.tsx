@@ -53,7 +53,7 @@ const steps = [
 
 const rules = [
   "Somente seus próprios atendimentos podem ser analisados",
-  "Meta: 3 mentorias por semana — acompanhe pelo painel acima",
+  "Meta: 4 mentorias por semana — acompanhe pelo painel acima",
   "Limite de 12 mentorias por mês — ao atingir, novas importações são bloqueadas",
   "A nota exibida é orientativa para seu desenvolvimento pessoal — não é a nota oficial de avaliação e não impacta seu bônus",
   "As mentorias serão acompanhadas pelo seu gestor",
