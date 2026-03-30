@@ -4,6 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
@@ -120,6 +130,7 @@ const MentoriaUnifiedTable = ({
 }: MentoriaUnifiedTableProps) => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const isBusy = processing || batchProcessing;
 
@@ -364,7 +375,16 @@ const MentoriaUnifiedTable = ({
                     <TableCell className="py-3 w-[30%]">
                       <div className="min-w-0 overflow-hidden">
                         <p className="text-sm font-semibold text-foreground truncate">
-                          {f.atendente || <span className="italic text-muted-foreground">Não identificado</span>}
+                          {f.atendente || (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="italic text-muted-foreground cursor-help">Não identificado</span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-[280px]">
+                                <p>O nome do atendente não foi encontrado neste PDF. Verifique se o arquivo está correto.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
                         </p>
                         {f.protocolo && (
                           <p className="text-[10px] text-muted-foreground font-mono truncate">{f.protocolo}</p>
@@ -552,14 +572,35 @@ const MentoriaUnifiedTable = ({
             {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
             ⚡ Analisar selecionados ({selectedCount})
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-white/20 text-white hover:bg-white/10"
-            onClick={() => setSelectedIds(new Set())}
-          >
-            Cancelar
-          </Button>
+          <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-destructive/20 border-destructive/40 text-white hover:bg-destructive/30 font-medium"
+              onClick={() => setShowCancelConfirm(true)}
+            >
+              ✕ Cancelar
+            </Button>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Cancelar seleção</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja cancelar a seleção?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Não, manter</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    setSelectedIds(new Set());
+                    setShowCancelConfirm(false);
+                  }}
+                >
+                  Sim, cancelar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
     </div>
