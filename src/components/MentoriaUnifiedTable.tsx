@@ -698,9 +698,8 @@ const MentoriaUnifiedTable = ({
           </AlertDialog>
         </div>
         </TooltipProvider>
+      )}
     </div>
-  );
-};
   );
 };
 
