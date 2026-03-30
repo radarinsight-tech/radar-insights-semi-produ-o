@@ -153,7 +153,7 @@ const MentoriaProgressPanel = ({ monthlyCount, monthlyLimit, userId }: Props) =>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Weekly counter */}
         <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
-          <ProgressRing value={weeklyCount} max={3} color={getWeeklyColor(weeklyCount)} />
+          <ProgressRing value={weeklyCount} max={4} color={getWeeklyColor(weeklyCount)} />
           <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">Esta semana</p>
             <p className="text-sm font-bold text-foreground">
