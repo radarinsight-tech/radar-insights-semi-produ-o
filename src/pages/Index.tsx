@@ -53,7 +53,7 @@ const Index = () => {
   );
 
   const loadHistory = useCallback(
-    async (excludedAttendants = normalizedExcludedAttendants) => {
+    async (excludedAttendants: Set<string>) => {
       try {
         const { data, error } = await supabase
           .from("evaluations")
@@ -117,7 +117,7 @@ const Index = () => {
         console.error("Error loading history (uncaught):", err);
       }
     },
-    [isSectorAdmin, normalizedExcludedAttendants, sectorIds],
+    [isSectorAdmin, sectorIds],
   );
 
   const refreshOfficialData = useCallback(async () => {

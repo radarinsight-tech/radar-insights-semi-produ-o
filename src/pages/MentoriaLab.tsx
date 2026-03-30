@@ -2997,6 +2997,8 @@ const MentoriaLab = () => {
               <Card
                 className="p-8 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group text-center"
                 onClick={() => inputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={handleDrop}
               >
                 <Upload className="h-8 w-8 text-primary mx-auto mb-3" />
                 <h3 className="text-sm font-bold text-foreground mb-1">Importar Atendimentos</h3>
