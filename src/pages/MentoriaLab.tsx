@@ -147,6 +147,10 @@ const statusConfig: Record<FileStatus, { label: string; color: string }> = {
   lido: { label: "Lido", color: "bg-blue-100 text-blue-700" },
   analisado: { label: "Analisado", color: "bg-accent/15 text-accent" },
   erro: { label: "Erro", color: "bg-destructive/15 text-destructive" },
+  aguardando_revisao_ia: { label: "Fila IA", color: "bg-blue-100 text-blue-700" },
+  aguardando_revisao_manual: { label: "Fila Manual", color: "bg-emerald-100 text-emerald-700" },
+  confirmado: { label: "Confirmado", color: "bg-emerald-800/15 text-emerald-800" },
+  reprovado: { label: "Reprovado", color: "bg-destructive/15 text-destructive" },
 };
 
 import { extractAllMetadata } from "@/lib/mentoriaMetadata";
