@@ -81,7 +81,8 @@ interface MentoriaUnifiedTableProps {
   onOpenDiagnostic: (f: UnifiedFile) => void;
   onAnalyzeNext?: () => void;
   onBatchAnalyze?: (count: number | "all") => void;
-  onAnalyzeSelected?: (ids: string[]) => void;
+  onAnalyzeSelected?: (ids: string[], tipoAnalise: 'ia' | 'manual') => void;
+  onDeleteSelected?: (ids: string[]) => void;
 }
 
 const STATUS_FILTERS: { key: StatusFilter; label: string; color?: string; tooltip: string }[] = [
