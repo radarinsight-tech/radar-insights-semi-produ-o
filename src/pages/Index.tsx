@@ -117,7 +117,7 @@ const Index = () => {
         console.error("Error loading history (uncaught):", err);
       }
     },
-    [isSectorAdmin, normalizedExcludedAttendants, sectorIds],
+    [isSectorAdmin, sectorIds],
   );
 
   const refreshOfficialData = useCallback(async () => {
