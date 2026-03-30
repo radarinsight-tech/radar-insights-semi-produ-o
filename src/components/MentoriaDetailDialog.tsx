@@ -52,6 +52,7 @@ interface MentoriaDetailDialogProps {
   hasNextFile?: boolean;
   nonEvaluable?: boolean;
   nonEvaluableReason?: string;
+  tipoAnalise?: string | null;
 }
 
 const CATEGORY_ORDER = [
