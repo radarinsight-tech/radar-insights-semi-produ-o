@@ -571,14 +571,35 @@ const MentoriaUnifiedTable = ({
             {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
             ⚡ Analisar selecionados ({selectedCount})
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-white/20 text-white hover:bg-white/10"
-            onClick={() => setSelectedIds(new Set())}
-          >
-            Cancelar
-          </Button>
+          <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-destructive/20 border-destructive/40 text-white hover:bg-destructive/30 font-medium"
+              onClick={() => setShowCancelConfirm(true)}
+            >
+              ✕ Cancelar
+            </Button>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Cancelar seleção</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja cancelar a seleção?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Não, manter</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    setSelectedIds(new Set());
+                    setShowCancelConfirm(false);
+                  }}
+                >
+                  Sim, cancelar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
     </div>
