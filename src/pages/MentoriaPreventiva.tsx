@@ -892,9 +892,9 @@ const MentoriaPreventiva = () => {
                       </div>
                       <div className="text-center shrink-0 p-4 rounded-xl bg-muted/50 border border-border min-w-[120px]">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Ref. Interna</p>
-                        <p className={`text-3xl font-black ${classColor(activeResult.classificacaoInterna)}`}>
-                          {activeResult.notaInterna?.toFixed(1)}
-                        </p>
+                         <p className={`text-3xl font-black ${classColor(activeResult.classificacaoInterna)}`}>
+                           {activeResult.notaInterna != null ? (activeResult.notaInterna > 10 ? (activeResult.notaInterna / 10).toFixed(1) : activeResult.notaInterna.toFixed(1)) : "—"}
+                         </p>
                         <p className={`text-xs font-medium ${classColor(activeResult.classificacaoInterna)}`}>
                           {activeResult.classificacaoInterna}
                         </p>

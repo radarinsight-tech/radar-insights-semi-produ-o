@@ -174,9 +174,9 @@ const MentoriaAttendenteHistory = ({ userId }: Props) => {
                   </div>
                   <div className="text-center p-3 rounded-xl bg-muted/50 border border-border">
                     <p className="text-[10px] text-muted-foreground uppercase">Ref. Interna</p>
-                    <p className={`text-2xl font-black ${noteColor(res.notaInterna)}`}>
-                      {res.notaInterna?.toFixed(1)}
-                    </p>
+                     <p className={`text-2xl font-black ${noteColor(res.notaInterna != null && res.notaInterna > 10 ? res.notaInterna / 10 : res.notaInterna)}`}>
+                       {res.notaInterna != null ? (res.notaInterna > 10 ? (res.notaInterna / 10).toFixed(1) : res.notaInterna.toFixed(1)) : "—"}
+                     </p>
                     <Badge variant="outline" className="text-[10px] mt-1">Não oficial</Badge>
                   </div>
                 </div>
