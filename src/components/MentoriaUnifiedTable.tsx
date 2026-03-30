@@ -374,7 +374,16 @@ const MentoriaUnifiedTable = ({
                     <TableCell className="py-3 w-[30%]">
                       <div className="min-w-0 overflow-hidden">
                         <p className="text-sm font-semibold text-foreground truncate">
-                          {f.atendente || <span className="italic text-muted-foreground">Não identificado</span>}
+                          {f.atendente || (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="italic text-muted-foreground cursor-help">Não identificado</span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-[280px]">
+                                <p>O nome do atendente não foi encontrado neste PDF. Verifique se o arquivo está correto.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
                         </p>
                         {f.protocolo && (
                           <p className="text-[10px] text-muted-foreground font-mono truncate">{f.protocolo}</p>
