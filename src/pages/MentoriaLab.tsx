@@ -875,6 +875,7 @@ const MentoriaLab = () => {
             canal: metadata.canal ?? "Não identificado",
             has_audio: hasAudio,
             extracted_text: hasText ? text : null,
+            raw_text: hasText ? text : null,
             parsed_messages: parsedMessagesPayload,
             error_message: null,
           } as any)
