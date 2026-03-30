@@ -139,6 +139,7 @@ interface LabFile {
   uraContext?: UraContext;
   uraStatus?: UraStatus;
   structuredConversation?: StructuredConversation;
+  tipo_analise?: string | null;
 }
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
