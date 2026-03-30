@@ -125,6 +125,7 @@ interface LabFile {
   tipo?: string;
   batchId?: string;
   batchFileId?: string;
+  batchCode?: string;
   storagePath?: string;
   analyzedAt?: Date;
   ineligible?: boolean;
@@ -140,6 +141,7 @@ interface LabFile {
   uraStatus?: UraStatus;
   structuredConversation?: StructuredConversation;
   tipo_analise?: string | null;
+  visualizado?: boolean;
 }
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
@@ -460,6 +462,9 @@ const MentoriaLab = () => {
 
         const evaluabilityBackfill: Array<{ id: string; result: Record<string, unknown> }> = [];
 
+        const batchCodeMap = new Map<string, string>();
+        for (const b of batches) batchCodeMap.set(b.id, b.batch_code);
+
         const restoredFiles: LabFile[] = batchFiles.map((bf) => {
           const matchedEval = bf.protocolo ? evalMap.get(bf.protocolo) : undefined;
           const isAnalyzed = bf.status === "analyzed" && (bf.result || matchedEval);
@@ -551,6 +556,8 @@ const MentoriaLab = () => {
             uraStatus: uraCtx?.status,
             structuredConversation: structured,
             tipo_analise: (bf as any).tipo_analise || null,
+            batchCode: batchCodeMap.get(bf.batch_id) || undefined,
+            visualizado: (bf as any).visualizado || false,
           } as LabFile;
         });
 
@@ -1320,6 +1327,7 @@ const MentoriaLab = () => {
           status: "pendente",
           batchId,
           batchFileId,
+          batchCode,
           storagePath,
         });
       }
@@ -3320,6 +3328,13 @@ const MentoriaLab = () => {
                         setFiles((prev) => prev.map((f) => f.id === id ? { ...f, status: 'pendente', tipo_analise: null } as any : f));
                       }
                       toast.success(`${ids.length} atendimento(s) reprovado(s) e retornado(s) para Pendentes.`);
+                    }}
+                    onMarkViewed={async (id: string) => {
+                      const file = files.find((f) => f.id === id);
+                      if (file?.batchFileId && !file.visualizado) {
+                        await supabase.from("mentoria_batch_files").update({ visualizado: true } as any).eq("id", file.batchFileId);
+                        setFiles((prev) => prev.map((f) => f.id === id ? { ...f, visualizado: true } : f));
+                      }
                     }}
                   />
                 )}
