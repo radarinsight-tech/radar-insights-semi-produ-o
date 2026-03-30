@@ -597,7 +597,7 @@ const MentoriaUnifiedTable = ({
                             size="sm"
                             variant="outline"
                             className="h-7 px-2.5 gap-1 text-xs font-semibold border-accent/30 text-accent hover:bg-accent/10"
-                            onClick={() => onOpenMentoria(f)}
+                            onClick={() => { onMarkViewed?.(f.id); onOpenMentoria(f); }}
                           >
                             <BookOpen className="h-3 w-3" />
                             Ver
