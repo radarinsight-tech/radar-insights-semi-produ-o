@@ -66,13 +66,13 @@ const ProgressRing = ({
 /* ── Weekly color logic ─────────────────────────────────────────── */
 function getWeeklyColor(count: number): string {
   if (count <= 1) return "hsl(0, 72%, 51%)";     // red
-  if (count === 2) return "hsl(45, 93%, 47%)";    // amber
+  if (count === 2 || count === 3) return "hsl(45, 93%, 47%)";    // amber
   return "hsl(142, 71%, 45%)";                     // green
 }
 
 function getWeeklyLabel(count: number): string {
   if (count <= 1) return "Abaixo do esperado";
-  if (count === 2) return "Quase lá!";
+  if (count === 2 || count === 3) return "Quase lá!";
   return "Meta atingida ✓";
 }
 
