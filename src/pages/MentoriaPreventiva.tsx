@@ -181,7 +181,28 @@ const MentoriaPreventiva = () => {
 
   // ── Name normalization for ownership check ─────────────────────────
   const normalizeName = (name: string) =>
-    name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+
+  const namesMatch = (pdfRaw: string, linkedRaw: string): boolean => {
+    const pdfNorm = normalizeName(pdfRaw);
+    const linkedNorm = normalizeName(linkedRaw);
+    // Direct inclusion check
+    if (pdfNorm.includes(linkedNorm) || linkedNorm.includes(pdfNorm)) return true;
+    // Part-by-part: every part of the linked name must appear in the PDF name
+    const linkedParts = linkedNorm.split(" ").filter(p => p.length >= 2);
+    const pdfParts = pdfNorm.split(" ").filter(p => p.length >= 2);
+    if (linkedParts.length >= 2) {
+      const allLinkedInPdf = linkedParts.every(lp => pdfParts.some(pp => pp === lp));
+      if (allLinkedInPdf) return true;
+    }
+    if (pdfParts.length >= 2) {
+      const allPdfInLinked = pdfParts.every(pp => linkedParts.some(lp => lp === pp));
+      if (allPdfInLinked) return true;
+    }
+    // First name match as minimum
+    if (linkedParts.length > 0 && pdfParts.length > 0 && linkedParts[0] === pdfParts[0]) return true;
+    return false;
+  };
 
   // ── File reading ─────────────────────────────────────────────────────
   const readFile = useCallback(async (labFile: LabFile) => {
@@ -196,9 +217,7 @@ const MentoriaPreventiva = () => {
 
       // PDF ownership validation for atendente mode
       if (isAttendenteMode && attendantName && metadata.atendente) {
-        const pdfName = normalizeName(metadata.atendente);
-        const linkedName = normalizeName(attendantName);
-        if (!pdfName.includes(linkedName) && !linkedName.includes(pdfName)) {
+        if (!namesMatch(metadata.atendente, attendantName)) {
           setFiles((prev) => prev.map((f) => f.id === labFile.id ? { ...f, status: "erro" as FileStatus, error: "Este atendimento pertence a outro colaborador." } : f));
           toast.error("⚠️ Este atendimento pertence a outro colaborador e não pode ser importado aqui. Você só pode analisar seus próprios atendimentos.");
           return;
@@ -393,7 +412,7 @@ const MentoriaPreventiva = () => {
         if (fnError) throw fnError;
         const res = fnData as PreventiveResult;
 
-        setFiles((prev) => prev.map((x) => x.id === f.id ? { ...x, status: "analisado" as FileStatus, result: res } : x));
+        setFiles((prev) => prev.map((x) => x.id === f.id ? { ...x, status: "analisado" as FileStatus, result: res, atendente: x.atendente || res.atendente || undefined } : x));
 
         await supabase.from("preventive_mentorings").insert({
           user_id: user.id,
@@ -873,9 +892,9 @@ const MentoriaPreventiva = () => {
                       </div>
                       <div className="text-center shrink-0 p-4 rounded-xl bg-muted/50 border border-border min-w-[120px]">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Ref. Interna</p>
-                        <p className={`text-3xl font-black ${classColor(activeResult.classificacaoInterna)}`}>
-                          {activeResult.notaInterna?.toFixed(1)}
-                        </p>
+                         <p className={`text-3xl font-black ${classColor(activeResult.classificacaoInterna)}`}>
+                           {activeResult.notaInterna != null ? (activeResult.notaInterna > 10 ? (activeResult.notaInterna / 10).toFixed(1) : activeResult.notaInterna.toFixed(1)) : "—"}
+                         </p>
                         <p className={`text-xs font-medium ${classColor(activeResult.classificacaoInterna)}`}>
                           {activeResult.classificacaoInterna}
                         </p>

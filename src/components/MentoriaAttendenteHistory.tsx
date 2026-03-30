@@ -139,7 +139,7 @@ const MentoriaAttendenteHistory = ({ userId }: Props) => {
                   <td className="p-2">{new Date(r.created_at).toLocaleDateString("pt-BR")}</td>
                   <td className="p-2 text-center">
                     <span className={`font-bold ${noteColor(r.nota_interna)}`}>
-                      {r.nota_interna != null ? r.nota_interna.toFixed(1) : "—"}
+                      {r.nota_interna != null ? (r.nota_interna > 10 ? (r.nota_interna / 10).toFixed(1) : r.nota_interna.toFixed(1)) : "—"}
                     </span>
                   </td>
                   <td className="p-2 max-w-[180px] truncate text-muted-foreground">{getStrengths(r)}</td>
@@ -174,9 +174,9 @@ const MentoriaAttendenteHistory = ({ userId }: Props) => {
                   </div>
                   <div className="text-center p-3 rounded-xl bg-muted/50 border border-border">
                     <p className="text-[10px] text-muted-foreground uppercase">Ref. Interna</p>
-                    <p className={`text-2xl font-black ${noteColor(res.notaInterna)}`}>
-                      {res.notaInterna?.toFixed(1)}
-                    </p>
+                     <p className={`text-2xl font-black ${noteColor(res.notaInterna != null && res.notaInterna > 10 ? res.notaInterna / 10 : res.notaInterna)}`}>
+                       {res.notaInterna != null ? (res.notaInterna > 10 ? (res.notaInterna / 10).toFixed(1) : res.notaInterna.toFixed(1)) : "—"}
+                     </p>
                     <Badge variant="outline" className="text-[10px] mt-1">Não oficial</Badge>
                   </div>
                 </div>
