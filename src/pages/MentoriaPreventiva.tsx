@@ -692,7 +692,7 @@ const MentoriaPreventiva = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {files.map((f) => (
+                      {filteredFiles.map((f) => (
                         <tr
                           key={f.id}
                           className={`border-b border-border/50 transition-colors ${
