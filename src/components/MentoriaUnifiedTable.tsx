@@ -22,6 +22,7 @@ import {
 import {
   Eye, ShieldCheck, Bug, Trash2, Loader2, PlayCircle, CheckCircle2,
   AlertTriangle, BookOpen, Zap, Clock, MoreHorizontal, Search,
+  XCircle, Check,
 } from "lucide-react";
 import { cn, formatDateBR, notaToScale10 } from "@/lib/utils";
 import {
@@ -30,7 +31,17 @@ import {
 } from "@/lib/mentoriaEvaluability";
 import type { WorkflowStatus } from "@/components/MentoriaDetailDialog";
 
-type StatusFilter = "todos" | "pendentes" | "em_analise" | "finalizados" | "nao_avaliaveis" | "aptos_ia" | "audio";
+type StatusFilter =
+  | "todos"
+  | "pendentes"
+  | "em_analise"
+  | "finalizados"
+  | "nao_avaliaveis"
+  | "aptos_ia"
+  | "audio"
+  | "fila_ia"
+  | "fila_manual"
+  | "confirmados";
 
 interface UnifiedFile {
   id: string;
@@ -55,6 +66,7 @@ interface UnifiedFile {
   transferred?: boolean;
   attendantMatch?: any;
   tipo_analise?: string | null;
+  batchFileId?: string;
 }
 
 interface BatchStats {
@@ -83,6 +95,8 @@ interface MentoriaUnifiedTableProps {
   onBatchAnalyze?: (count: number | "all") => void;
   onAnalyzeSelected?: (ids: string[], tipoAnalise: 'ia' | 'manual') => void;
   onDeleteSelected?: (ids: string[]) => void;
+  onConfirmSelected?: (ids: string[]) => void;
+  onRejectSelected?: (ids: string[]) => void;
 }
 
 const STATUS_FILTERS: { key: StatusFilter; label: string; color?: string; tooltip: string }[] = [
@@ -90,6 +104,9 @@ const STATUS_FILTERS: { key: StatusFilter; label: string; color?: string; toolti
   { key: "pendentes", label: "Pendentes", tooltip: "Atendimentos aguardando análise da IA" },
   { key: "aptos_ia", label: "⚡ Aptos IA", color: "indigo", tooltip: "PDFs válidos prontos para análise automática. Clique em Analisar para processar" },
   { key: "em_analise", label: "Em análise", tooltip: "Atendimentos sendo processados pela IA no momento" },
+  { key: "fila_ia", label: "⚡ Fila IA", color: "blue", tooltip: "Analisados via IA aguardando revisão e confirmação do gestor" },
+  { key: "fila_manual", label: "🔍 Fila Manual", color: "emerald", tooltip: "Analisados manualmente aguardando revisão e confirmação do gestor" },
+  { key: "confirmados", label: "✅ Confirmados", color: "teal", tooltip: "Atendimentos confirmados pelo gestor — disponíveis na aba Performance" },
   { key: "nao_avaliaveis", label: "Não avaliáveis", tooltip: "PDFs sem conteúdo válido para auditoria (áudio, sem interação, duplicados)" },
   { key: "audio", label: "🎙️ Áudio", color: "amber", tooltip: "Atendimentos com áudio — auditoria não realizada por conteúdo de voz" },
 ];
@@ -101,13 +118,33 @@ const getDaysPending = (addedAt?: Date): number => {
 };
 
 // Status dot colors
-const statusDot = (category: string, isProcessing: boolean) => {
+const statusDot = (status: string, isProcessing: boolean) => {
   if (isProcessing) return "bg-primary animate-pulse";
-  switch (category) {
+  switch (status) {
+    case "confirmado": return "bg-emerald-700";
+    case "aguardando_revisao_ia": return "bg-blue-500";
+    case "aguardando_revisao_manual": return "bg-emerald-500";
+    case "reprovado": return "bg-destructive";
     case "finalizados": return "bg-accent";
     case "em_analise": return "bg-blue-500";
     case "nao_avaliaveis": return "bg-warning";
     default: return "bg-muted-foreground/40";
+  }
+};
+
+// Status badge renderer
+const renderStatusBadge = (status: string) => {
+  switch (status) {
+    case "aguardando_revisao_ia":
+      return <Badge className="bg-blue-600/15 text-blue-700 dark:text-blue-400 text-[8px] px-1.5 py-0 h-auto border-0">🔵 Fila IA</Badge>;
+    case "aguardando_revisao_manual":
+      return <Badge className="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 text-[8px] px-1.5 py-0 h-auto border-0">🟢 Fila Manual</Badge>;
+    case "confirmado":
+      return <Badge className="bg-emerald-800/15 text-emerald-800 dark:text-emerald-300 text-[8px] px-1.5 py-0 h-auto border-0">✅ Confirmado</Badge>;
+    case "reprovado":
+      return <Badge className="bg-destructive/15 text-destructive text-[8px] px-1.5 py-0 h-auto border-0">❌ Reprovado</Badge>;
+    default:
+      return null;
   }
 };
 
@@ -130,11 +167,15 @@ const MentoriaUnifiedTable = ({
   onBatchAnalyze,
   onAnalyzeSelected,
   onDeleteSelected,
+  onConfirmSelected,
+  onRejectSelected,
 }: MentoriaUnifiedTableProps) => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+  const [rejectTargetIds, setRejectTargetIds] = useState<string[]>([]);
 
   const isBusy = processing || batchProcessing;
 
@@ -143,7 +184,7 @@ const MentoriaUnifiedTable = ({
       const ws = getWorkflowStatus(f.id);
       const ev = resolvePersistedMentoriaEvaluability(f.result);
       const isNonEval = ev?.nonEvaluable === true;
-      const hasResult = f.status === "analisado" && f.result;
+      const hasResult = (f.status === "analisado" || f.status === "aguardando_revisao_ia" || f.status === "aguardando_revisao_manual" || f.status === "confirmado") && f.result;
       const isAutoEligible = !isNonEval && (f.status === "lido" || f.status === "pendente") && !hasResult;
 
       // Detect audio-only attendance
@@ -157,8 +198,11 @@ const MentoriaUnifiedTable = ({
       })();
 
       let category: StatusFilter;
-      if (isNonEval) category = "nao_avaliaveis";
-      else if (ws === "finalizado" || hasResult) category = "finalizados";
+      if (f.status === "aguardando_revisao_ia") category = "fila_ia";
+      else if (f.status === "aguardando_revisao_manual") category = "fila_manual";
+      else if (f.status === "confirmado") category = "confirmados";
+      else if (isNonEval) category = "nao_avaliaveis";
+      else if (ws === "finalizado" || (f.status === "analisado" && f.result)) category = "finalizados";
       else if (ws === "em_analise") category = "em_analise";
       else category = "pendentes";
 
@@ -177,6 +221,9 @@ const MentoriaUnifiedTable = ({
     if (statusFilter === "todos") return visibleItems;
     if (statusFilter === "aptos_ia") return visibleItems.filter((f) => f.isAutoEligible);
     if (statusFilter === "audio") return visibleItems.filter((f) => f.isAudio);
+    if (statusFilter === "fila_ia") return visibleItems.filter((f) => f.status === "aguardando_revisao_ia");
+    if (statusFilter === "fila_manual") return visibleItems.filter((f) => f.status === "aguardando_revisao_manual");
+    if (statusFilter === "confirmados") return visibleItems.filter((f) => f.status === "confirmado");
     return visibleItems.filter((f) => f.category === statusFilter);
   }, [visibleItems, statusFilter]);
 
@@ -194,11 +241,17 @@ const MentoriaUnifiedTable = ({
       nao_avaliaveis: 0,
       aptos_ia: 0,
       audio: 0,
+      fila_ia: 0,
+      fila_manual: 0,
+      confirmados: 0,
     };
     for (const f of visibleItems) {
       if (f.category === "pendentes") counts.pendentes++;
       else if (f.category === "em_analise") counts.em_analise++;
       else if (f.category === "nao_avaliaveis") counts.nao_avaliaveis++;
+      else if (f.category === "fila_ia") counts.fila_ia++;
+      else if (f.category === "fila_manual") counts.fila_manual++;
+      else if (f.category === "confirmados") counts.confirmados++;
       if (f.isAutoEligible) counts.aptos_ia++;
       if (f.isAudio) counts.audio++;
     }
@@ -238,6 +291,7 @@ const MentoriaUnifiedTable = ({
   };
 
   const selectedCount = selectedIds.size;
+  const isReviewTab = statusFilter === "fila_ia" || statusFilter === "fila_manual";
 
   return (
     <div className="space-y-3" id="mentoria-table">
@@ -282,12 +336,24 @@ const MentoriaUnifiedTable = ({
                         ? "bg-indigo-600 text-white shadow-sm"
                         : sf.color === "amber"
                           ? "bg-amber-500 text-white shadow-sm"
-                          : "bg-primary text-primary-foreground shadow-sm"
+                          : sf.color === "blue"
+                            ? "bg-blue-600 text-white shadow-sm"
+                            : sf.color === "emerald"
+                              ? "bg-emerald-600 text-white shadow-sm"
+                              : sf.color === "teal"
+                                ? "bg-teal-700 text-white shadow-sm"
+                                : "bg-primary text-primary-foreground shadow-sm"
                       : sf.color === "indigo"
                         ? "text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/40"
                         : sf.color === "amber"
                           ? "text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/40"
-                          : "text-muted-foreground hover:text-foreground hover:bg-background/60"
+                          : sf.color === "blue"
+                            ? "text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/40"
+                            : sf.color === "emerald"
+                              ? "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/40"
+                              : sf.color === "teal"
+                                ? "text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-950/40"
+                                : "text-muted-foreground hover:text-foreground hover:bg-background/60"
                   )}
                 >
                   {sf.label}
@@ -340,7 +406,7 @@ const MentoriaUnifiedTable = ({
                   <Tooltip><TooltipTrigger asChild><span className="cursor-default">Data</span></TooltipTrigger><TooltipContent side="bottom"><p>Data de realização do atendimento</p></TooltipContent></Tooltip>
                 </TableHead>
                 <TableHead className="w-[15%] text-xs font-bold uppercase tracking-wide">
-                  <Tooltip><TooltipTrigger asChild><span className="cursor-default">Status</span></TooltipTrigger><TooltipContent side="bottom"><p>Situação atual da análise (Pendente, Analisado, Em análise, Não avaliável)</p></TooltipContent></Tooltip>
+                  <Tooltip><TooltipTrigger asChild><span className="cursor-default">Status</span></TooltipTrigger><TooltipContent side="bottom"><p>Situação atual da análise</p></TooltipContent></Tooltip>
                 </TableHead>
                 <TableHead className="w-[10%] text-xs font-bold uppercase tracking-wide text-center">
                   <Tooltip><TooltipTrigger asChild><span className="cursor-default">Nota</span></TooltipTrigger><TooltipContent side="bottom"><p>Nota final atribuída pela IA após análise</p></TooltipContent></Tooltip>
@@ -358,8 +424,24 @@ const MentoriaUnifiedTable = ({
                 const nota10 = nota != null ? notaToScale10(nota) : null;
                 const isReading = readingIds.has(f.id);
                 const isProcessingThis = (processing || batchProcessing) && f.workflowStatus === "em_analise" && !f.hasResult;
-                const canStartAnalysis = !processing && !batchProcessing && !isReading && f.status !== "erro" && !f.isNonEval && !f.hasResult;
-                const isEligible = eligibleIds.has(f.id);
+                const isInReviewQueue = f.status === "aguardando_revisao_ia" || f.status === "aguardando_revisao_manual";
+
+                // Status label
+                const getStatusLabel = () => {
+                  if (f.isNonEval) return "N/A";
+                  if (isProcessingThis) return "Processando";
+                  switch (f.status) {
+                    case "aguardando_revisao_ia": return "Fila IA";
+                    case "aguardando_revisao_manual": return "Fila Manual";
+                    case "confirmado": return "Confirmado";
+                    case "reprovado": return "Reprovado";
+                    case "analisado": return "Analisado";
+                    default:
+                      if (f.hasResult) return "Analisado";
+                      if (f.category === "em_analise") return "Em análise";
+                      return "Pendente";
+                  }
+                };
 
                 return (
                   <TableRow
@@ -405,14 +487,14 @@ const MentoriaUnifiedTable = ({
                       <p className="text-xs text-foreground">{f.data ? formatDateBR(f.data) : "—"}</p>
                     </TableCell>
 
-                    {/* Status dot + label */}
+                    {/* Status dot + label + badges */}
                     <TableCell className="py-3 w-[15%]">
-                      <div className="flex items-center gap-1.5">
-                        <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(f.category, isProcessingThis))} />
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(f.status, isProcessingThis))} />
                         <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                          {f.isNonEval ? "N/A" : isProcessingThis ? "Processando" : f.hasResult ? "Analisado" : f.category === "em_analise" ? "Em análise" : "Pendente"}
+                          {getStatusLabel()}
                         </span>
-                        {isOverdue && (
+                        {isOverdue && !isInReviewQueue && (
                           <Badge className="bg-destructive/15 text-destructive text-[8px] px-1 py-0 h-auto gap-0.5">
                             <Clock className="h-2 w-2" />{daysPending}d
                           </Badge>
@@ -420,10 +502,11 @@ const MentoriaUnifiedTable = ({
                         {f.approvedAsOfficial && (
                           <ShieldCheck className="h-3 w-3 text-accent" />
                         )}
-                        {f.tipo_analise === 'ia' && (
+                        {renderStatusBadge(f.status)}
+                        {f.tipo_analise === 'ia' && f.status !== "aguardando_revisao_ia" && (
                           <Badge className="bg-purple-600/15 text-purple-700 dark:text-purple-400 text-[8px] px-1.5 py-0 h-auto border-0">⚡ IA</Badge>
                         )}
-                        {f.tipo_analise === 'manual' && (
+                        {f.tipo_analise === 'manual' && f.status !== "aguardando_revisao_manual" && (
                           <Badge className="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 text-[8px] px-1.5 py-0 h-auto border-0">🔍 Manual</Badge>
                         )}
                       </div>
@@ -443,24 +526,46 @@ const MentoriaUnifiedTable = ({
                       )}
                     </TableCell>
 
-                    {/* Ação — main button + overflow menu */}
+                    {/* Ação — review actions for queue tabs, otherwise menu only */}
                     <TableCell className="py-3 w-[20%] text-right">
                       <div className="flex items-center justify-end gap-1 flex-nowrap">
-                        {!f.isNonEval && !f.hasResult && (
-                          <Button
-                            size="sm"
-                            className="h-7 px-2.5 gap-1 text-xs font-semibold"
-                            onClick={() => onStartMentoria(f)}
-                            disabled={!canStartAnalysis}
-                          >
-                            {isReading || isProcessingThis ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <PlayCircle className="h-3 w-3" />
-                            )}
-                            Analisar
-                          </Button>
+                        {/* Review queue: confirm/reject buttons */}
+                        {isInReviewQueue && (
+                          <>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  className="h-7 px-2.5 gap-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
+                                  onClick={() => {
+                                    if (onConfirmSelected) onConfirmSelected([f.id]);
+                                  }}
+                                >
+                                  <Check className="h-3 w-3" /> Confirmar
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top"><p>Confirmar análise e enviar para Performance</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 px-2.5 gap-1 text-xs font-semibold border-destructive/40 text-destructive hover:bg-destructive/10"
+                                  onClick={() => {
+                                    setRejectTargetIds([f.id]);
+                                    setShowRejectConfirm(true);
+                                  }}
+                                >
+                                  <XCircle className="h-3 w-3" /> Reprovar
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top"><p>Reprovar e retornar para Pendentes</p></TooltipContent>
+                            </Tooltip>
+                          </>
                         )}
+
+                        {/* View result button for analyzed items */}
                         {f.hasResult && (
                           <Button
                             size="sm"
@@ -569,74 +674,121 @@ const MentoriaUnifiedTable = ({
             {selectedCount} selecionado(s)
           </span>
 
-          {/* Button 1: Analisar com IA */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="sm"
-                className="gap-1.5 font-semibold bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => {
-                  const ids = [...selectedIds].filter((id) =>
-                    categorized.some((f) => f.id === id && f.isAutoEligible)
-                  );
-                  if (onAnalyzeSelected) {
-                    onAnalyzeSelected(ids, 'ia');
-                  } else if (onBatchAnalyze) {
-                    onBatchAnalyze(ids.length);
-                  }
-                  setSelectedIds(new Set());
-                }}
-                disabled={isBusy}
-              >
-                {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
-                ⚡ Analisar com IA ({selectedCount})
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top"><p>Análise automática via IA — mais rápida, sem intervenção manual</p></TooltipContent>
-          </Tooltip>
+          {/* Review tabs: Confirm + Reject buttons */}
+          {isReviewTab && (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    className="gap-1.5 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={() => {
+                      if (onConfirmSelected) onConfirmSelected([...selectedIds]);
+                      setSelectedIds(new Set());
+                    }}
+                    disabled={isBusy}
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    ✅ Confirmar selecionados ({selectedCount})
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top"><p>Confirmar análises selecionadas e enviar para Performance</p></TooltipContent>
+              </Tooltip>
 
-          {/* Button 2: Analisar manualmente */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="sm"
-                className="gap-1.5 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
-                onClick={() => {
-                  const ids = [...selectedIds].filter((id) =>
-                    categorized.some((f) => f.id === id && f.isAutoEligible)
-                  );
-                  if (onAnalyzeSelected) {
-                    onAnalyzeSelected(ids, 'manual');
-                  } else if (onBatchAnalyze) {
-                    onBatchAnalyze(ids.length);
-                  }
-                  setSelectedIds(new Set());
-                }}
-                disabled={isBusy}
-              >
-                <Search className="h-3.5 w-3.5" />
-                🔍 Analisar manualmente ({selectedCount})
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top"><p>Análise manual — você revisa cada critério individualmente</p></TooltipContent>
-          </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 font-medium bg-red-100 text-red-700 border-red-300 hover:bg-red-200"
+                    onClick={() => {
+                      setRejectTargetIds([...selectedIds]);
+                      setShowRejectConfirm(true);
+                    }}
+                    disabled={isBusy}
+                  >
+                    <XCircle className="h-3.5 w-3.5" />
+                    ❌ Reprovar selecionados ({selectedCount})
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top"><p>Reprovar análises selecionadas — voltarão para Pendentes</p></TooltipContent>
+              </Tooltip>
+            </>
+          )}
 
-          {/* Button 3: Excluir */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1.5 font-medium bg-red-100 text-red-700 border-red-300 hover:bg-red-200"
-                onClick={() => setShowDeleteConfirm(true)}
-                disabled={isBusy}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                🗑 Excluir ({selectedCount})
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top"><p>Excluir os atendimentos selecionados permanentemente</p></TooltipContent>
-          </Tooltip>
+          {/* Non-review tabs: Analyze + Delete buttons */}
+          {!isReviewTab && (
+            <>
+              {/* Button 1: Analisar com IA */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    className="gap-1.5 font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={() => {
+                      const ids = [...selectedIds].filter((id) =>
+                        categorized.some((f) => f.id === id && f.isAutoEligible)
+                      );
+                      if (onAnalyzeSelected) {
+                        onAnalyzeSelected(ids, 'ia');
+                      } else if (onBatchAnalyze) {
+                        onBatchAnalyze(ids.length);
+                      }
+                      setSelectedIds(new Set());
+                    }}
+                    disabled={isBusy}
+                  >
+                    {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+                    ⚡ Analisar com IA ({selectedCount})
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top"><p>Análise automática via IA — mais rápida, sem intervenção manual</p></TooltipContent>
+              </Tooltip>
+
+              {/* Button 2: Analisar manualmente */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    className="gap-1.5 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={() => {
+                      const ids = [...selectedIds].filter((id) =>
+                        categorized.some((f) => f.id === id && f.isAutoEligible)
+                      );
+                      if (onAnalyzeSelected) {
+                        onAnalyzeSelected(ids, 'manual');
+                      } else if (onBatchAnalyze) {
+                        onBatchAnalyze(ids.length);
+                      }
+                      setSelectedIds(new Set());
+                    }}
+                    disabled={isBusy}
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                    🔍 Analisar manualmente ({selectedCount})
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top"><p>Análise manual — você revisa cada critério individualmente</p></TooltipContent>
+              </Tooltip>
+
+              {/* Button 3: Excluir */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 font-medium bg-red-100 text-red-700 border-red-300 hover:bg-red-200"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    disabled={isBusy}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    🗑 Excluir ({selectedCount})
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top"><p>Excluir os atendimentos selecionados permanentemente</p></TooltipContent>
+              </Tooltip>
+            </>
+          )}
 
           {/* Cancel button */}
           <Tooltip>
@@ -698,6 +850,36 @@ const MentoriaUnifiedTable = ({
                   }}
                 >
                   Sim, excluir
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Reject confirmation dialog */}
+          <AlertDialog open={showRejectConfirm} onOpenChange={setShowRejectConfirm}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reprovar atendimento(s)</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Reprovar {rejectTargetIds.length} atendimento(s)? Eles voltarão para Pendentes.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => {
+                    if (onRejectSelected) onRejectSelected(rejectTargetIds);
+                    setSelectedIds((prev) => {
+                      const next = new Set(prev);
+                      rejectTargetIds.forEach((id) => next.delete(id));
+                      return next;
+                    });
+                    setRejectTargetIds([]);
+                    setShowRejectConfirm(false);
+                  }}
+                >
+                  Sim, reprovar
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
