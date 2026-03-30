@@ -462,6 +462,9 @@ const MentoriaLab = () => {
 
         const evaluabilityBackfill: Array<{ id: string; result: Record<string, unknown> }> = [];
 
+        const batchCodeMap = new Map<string, string>();
+        for (const b of batches) batchCodeMap.set(b.id, b.batch_code);
+
         const restoredFiles: LabFile[] = batchFiles.map((bf) => {
           const matchedEval = bf.protocolo ? evalMap.get(bf.protocolo) : undefined;
           const isAnalyzed = bf.status === "analyzed" && (bf.result || matchedEval);
