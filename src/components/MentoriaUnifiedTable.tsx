@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Eye, ShieldCheck, Bug, Trash2, Loader2, PlayCircle, CheckCircle2,
-  AlertTriangle, BookOpen, Zap, Clock, MoreHorizontal,
+  AlertTriangle, BookOpen, Zap, Clock, MoreHorizontal, Search,
 } from "lucide-react";
 import { cn, formatDateBR, notaToScale10 } from "@/lib/utils";
 import {
