@@ -217,9 +217,7 @@ const MentoriaPreventiva = () => {
 
       // PDF ownership validation for atendente mode
       if (isAttendenteMode && attendantName && metadata.atendente) {
-        const pdfName = normalizeName(metadata.atendente);
-        const linkedName = normalizeName(attendantName);
-        if (!pdfName.includes(linkedName) && !linkedName.includes(pdfName)) {
+        if (!namesMatch(metadata.atendente, attendantName)) {
           setFiles((prev) => prev.map((f) => f.id === labFile.id ? { ...f, status: "erro" as FileStatus, error: "Este atendimento pertence a outro colaborador." } : f));
           toast.error("⚠️ Este atendimento pertence a outro colaborador e não pode ser importado aqui. Você só pode analisar seus próprios atendimentos.");
           return;
