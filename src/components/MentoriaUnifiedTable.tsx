@@ -318,16 +318,19 @@ const MentoriaUnifiedTable = ({
                 <TableHead className="w-10 text-center">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="inline-flex">
+                      <span className="inline-flex items-center gap-1.5 cursor-pointer" onClick={() => handleSelectAll(!allVisibleSelected)}>
                         <Checkbox
-                          checked={allEligibleSelected}
+                          checked={allVisibleSelected}
                           onCheckedChange={(checked) => handleSelectAll(!!checked)}
-                          aria-label="Selecionar todos elegíveis"
-                          className={cn(eligibleIds.size === 0 && "opacity-30 pointer-events-none")}
+                          aria-label={allVisibleSelected ? "Desmarcar todos" : "Selecionar todos"}
+                          className={cn(allVisibleIds.size === 0 && "opacity-30 pointer-events-none")}
                         />
+                        <span className="text-[9px] font-medium text-muted-foreground whitespace-nowrap">
+                          {allVisibleSelected ? "Desmarcar todos" : "Selecionar todos"}
+                        </span>
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom"><p>Selecionar todos os atendimentos da página</p></TooltipContent>
+                    <TooltipContent side="bottom"><p>{allVisibleSelected ? "Desmarcar todos os atendimentos visíveis" : "Selecionar todos os atendimentos visíveis"}</p></TooltipContent>
                   </Tooltip>
                 </TableHead>
                 <TableHead className="w-[30%] text-xs font-bold uppercase tracking-wide">
