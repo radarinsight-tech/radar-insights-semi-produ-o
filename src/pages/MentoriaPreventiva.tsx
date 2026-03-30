@@ -417,7 +417,6 @@ const MentoriaPreventiva = () => {
         // Post-analysis ownership validation: check res.atendente against linked attendant
         if (isAttendenteMode && attendantName && res.atendente && res.atendente.trim()) {
           if (!namesMatch(res.atendente, attendantName)) {
-            console.log("[DEBUG post-analysis] Blocked by post-analysis check:", { resAtendente: res.atendente, attendantName });
             setFiles((prev) => prev.map((x) => x.id === f.id ? { ...x, status: "erro" as FileStatus, error: "Este atendimento pertence a outro colaborador." } : x));
             toast.error("⚠️ A IA identificou que este atendimento pertence a outro colaborador.");
             continue;
