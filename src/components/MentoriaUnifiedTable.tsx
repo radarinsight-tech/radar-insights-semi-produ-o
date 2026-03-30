@@ -557,38 +557,98 @@ const MentoriaUnifiedTable = ({
 
       {/* Floating action bar */}
       {selectedCount > 0 && (
+        <TooltipProvider delayDuration={300}>
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl border border-border/30 bg-[#1a1a2e] px-5 py-3 shadow-xl">
           <span className="text-sm font-medium text-white">
             {selectedCount} selecionado(s)
           </span>
-          <Button
-            size="sm"
-            className="gap-1.5 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
-            onClick={() => {
-              const ids = [...selectedIds].filter((id) =>
-                categorized.some((f) => f.id === id && f.isAutoEligible)
-              );
-              if (onAnalyzeSelected) {
-                onAnalyzeSelected(ids);
-              } else if (onBatchAnalyze) {
-                onBatchAnalyze(ids.length);
-              }
-              setSelectedIds(new Set());
-            }}
-            disabled={isBusy}
-          >
-            {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
-            ⚡ Analisar selecionados ({selectedCount})
-          </Button>
+
+          {/* Button 1: Analisar com IA */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                className="gap-1.5 font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => {
+                  const ids = [...selectedIds].filter((id) =>
+                    categorized.some((f) => f.id === id && f.isAutoEligible)
+                  );
+                  if (onAnalyzeSelected) {
+                    onAnalyzeSelected(ids, 'ia');
+                  } else if (onBatchAnalyze) {
+                    onBatchAnalyze(ids.length);
+                  }
+                  setSelectedIds(new Set());
+                }}
+                disabled={isBusy}
+              >
+                {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+                ⚡ Analisar com IA ({selectedCount})
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top"><p>Análise automática via IA — mais rápida, sem intervenção manual</p></TooltipContent>
+          </Tooltip>
+
+          {/* Button 2: Analisar manualmente */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                className="gap-1.5 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={() => {
+                  const ids = [...selectedIds].filter((id) =>
+                    categorized.some((f) => f.id === id && f.isAutoEligible)
+                  );
+                  if (onAnalyzeSelected) {
+                    onAnalyzeSelected(ids, 'manual');
+                  } else if (onBatchAnalyze) {
+                    onBatchAnalyze(ids.length);
+                  }
+                  setSelectedIds(new Set());
+                }}
+                disabled={isBusy}
+              >
+                <Search className="h-3.5 w-3.5" />
+                🔍 Analisar manualmente ({selectedCount})
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top"><p>Análise manual — você revisa cada critério individualmente</p></TooltipContent>
+          </Tooltip>
+
+          {/* Button 3: Excluir */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 font-medium bg-red-100 text-red-700 border-red-300 hover:bg-red-200"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={isBusy}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                🗑 Excluir ({selectedCount})
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top"><p>Excluir os atendimentos selecionados permanentemente</p></TooltipContent>
+          </Tooltip>
+
+          {/* Cancel button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="bg-destructive/20 border-destructive/40 text-white hover:bg-destructive/30 font-medium"
+                onClick={() => setShowCancelConfirm(true)}
+              >
+                ✕ Cancelar
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top"><p>Cancela a seleção atual de atendimentos</p></TooltipContent>
+          </Tooltip>
+
+          {/* Cancel selection dialog */}
           <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
-            <Button
-              size="sm"
-              variant="outline"
-              className="bg-destructive/20 border-destructive/40 text-white hover:bg-destructive/30 font-medium"
-              onClick={() => setShowCancelConfirm(true)}
-            >
-              ✕ Cancelar
-            </Button>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Cancelar seleção</AlertDialogTitle>
@@ -609,6 +669,36 @@ const MentoriaUnifiedTable = ({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+
+          {/* Delete confirmation dialog */}
+          <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir atendimentos</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja excluir {selectedCount} atendimento(s)? Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => {
+                    if (onDeleteSelected) {
+                      onDeleteSelected([...selectedIds]);
+                    }
+                    setSelectedIds(new Set());
+                    setShowDeleteConfirm(false);
+                  }}
+                >
+                  Sim, excluir
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+        </TooltipProvider>
+      )}
         </div>
       )}
     </div>
