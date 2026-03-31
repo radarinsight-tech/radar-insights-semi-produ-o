@@ -123,6 +123,7 @@ interface LabFile {
   data?: string;
   canal?: string;
   hasAudio?: boolean;
+  hasImage?: boolean;
   tipo?: string;
   batchId?: string;
   batchFileId?: string;
