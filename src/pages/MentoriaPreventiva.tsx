@@ -148,7 +148,7 @@ const MentoriaPreventiva = () => {
   const [readingIds, setReadingIds] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState(false);
   const [activeFile, setActiveFile] = useState<LabFile | null>(null);
-  const [showCriterios, setShowCriterios] = useState(false);
+  
   const [sampled, setSampled] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
