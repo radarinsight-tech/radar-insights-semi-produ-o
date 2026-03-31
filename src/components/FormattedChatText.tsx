@@ -261,6 +261,7 @@ const FormattedChatText = ({ rawText, clientName, audioBlobs, imageBlobs }: Form
               {rawText}
             </pre>
           )}
+          <ChatMediaSection audioBlobs={audioBlobs} imageBlobs={imageBlobs} />
         </div>
       </CollapsibleContent>
     </Collapsible>
