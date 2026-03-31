@@ -56,6 +56,7 @@ const sugestaoConfig: Record<SugestaoResultado, { label: string; icon: typeof Ch
   SIM: { label: "SIM", icon: CheckCircle2, color: "text-accent", bg: "bg-accent/10 border-accent/20" },
   NÃO: { label: "NÃO", icon: XCircle, color: "text-destructive", bg: "bg-destructive/10 border-destructive/20" },
   PARCIAL: { label: "PARCIAL", icon: AlertCircle, color: "text-warning", bg: "bg-warning/10 border-warning/20" },
+  "FORA DO ESCOPO": { label: "FORA DO ESCOPO", icon: ShieldCheck, color: "text-muted-foreground", bg: "bg-muted/50 border-muted-foreground/20" },
 };
 
 const CATEGORY_ORDER = [
@@ -89,7 +90,8 @@ const SemiAutoPanel = ({ analysis, iaResult, onConfirm }: SemiAutoPanelProps) =>
         // Map IA resultado to SugestaoResultado
         const iaResultado: SugestaoResultado =
           iaCrit.resultado === "SIM" ? "SIM" :
-          iaCrit.resultado === "NÃO" ? "NÃO" : "PARCIAL";
+          iaCrit.resultado === "NÃO" ? "NÃO" :
+          iaCrit.resultado === "FORA DO ESCOPO" ? "FORA DO ESCOPO" : "PARCIAL";
 
         map.set(s.numero, {
           numero: s.numero,

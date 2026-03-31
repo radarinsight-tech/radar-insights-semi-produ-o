@@ -64,8 +64,13 @@ function resultToPoints(resposta: SugestaoResultado, peso: number): number {
     case "SIM": return peso;
     case "PARCIAL": return Math.round(peso * 0.5 * 10) / 10;
     case "NÃO": return 0;
+    case "FORA DO ESCOPO": return 0; // excluded from calculation
     default: return 0;
   }
+}
+
+function isForaDoEscopo(resposta: SugestaoResultado): boolean {
+  return resposta === "FORA DO ESCOPO";
 }
 
 export function classify(nota100: number): Classificacao {
@@ -102,7 +107,8 @@ export function calculateScore(
   for (const cw of CRITERIA_WEIGHTS) {
     const found = respostas.find(r => r.numero === cw.numero);
     const resposta = found?.resposta || "NÃO";
-    const pts = resultToPoints(resposta, cw.peso);
+    const fora = isForaDoEscopo(resposta);
+    const pts = fora ? 0 : resultToPoints(resposta, cw.peso);
 
     detalhesPorCriterio.push({
       numero: cw.numero,
@@ -114,12 +120,22 @@ export function calculateScore(
     });
 
     if (!catMap[cw.categoria]) catMap[cw.categoria] = { obtidos: 0, possiveis: 0 };
-    catMap[cw.categoria].obtidos += pts;
-    catMap[cw.categoria].possiveis += cw.peso;
+    if (!fora) {
+      catMap[cw.categoria].obtidos += pts;
+      catMap[cw.categoria].possiveis += cw.peso;
+    }
   }
 
-  const pontosObtidos = detalhesPorCriterio.reduce((s, d) => s + d.pontosObtidos, 0);
-  const nota100 = Math.round((pontosObtidos / TOTAL_POSSIBLE) * 100 * 10) / 10;
+  const pontosObtidos = detalhesPorCriterio
+    .filter(d => !isForaDoEscopo(d.resposta))
+    .reduce((s, d) => s + d.pontosObtidos, 0);
+  const pontosPossiveis = detalhesPorCriterio
+    .filter(d => !isForaDoEscopo(d.resposta))
+    .reduce((s, d) => s + d.peso, 0);
+
+  const nota100 = pontosPossiveis > 0
+    ? Math.round((pontosObtidos / pontosPossiveis) * 100 * 10) / 10
+    : 0;
   const nota10 = Math.round(nota100 / 10 * 10) / 10;
 
   const porCategoria: ScoringResult["porCategoria"] = {};
@@ -132,7 +148,7 @@ export function calculateScore(
 
   return {
     pontosObtidos,
-    pontosPossiveis: TOTAL_POSSIBLE,
+    pontosPossiveis,
     nota100,
     nota10,
     classificacao: classify(nota100),
@@ -152,7 +168,7 @@ export function scoreFromFullReport(fullReport: any): ScoringResult | null {
 
   const respostas: Array<{ numero: number; resposta: SugestaoResultado }> = criterios.map((c: any) => ({
     numero: c.numero,
-    resposta: c.resultado === "SIM" ? "SIM" : c.resultado === "NÃO" ? "NÃO" : "PARCIAL",
+    resposta: c.resultado === "SIM" ? "SIM" : c.resultado === "NÃO" ? "NÃO" : c.resultado === "FORA DO ESCOPO" ? "FORA DO ESCOPO" : "PARCIAL",
   }));
 
   return calculateScore(respostas);
