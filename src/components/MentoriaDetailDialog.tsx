@@ -53,6 +53,7 @@ interface MentoriaDetailDialogProps {
   nonEvaluable?: boolean;
   nonEvaluableReason?: string;
   tipoAnalise?: string | null;
+  initialStep?: MentoriaStep;
 }
 
 const CATEGORY_ORDER = [
