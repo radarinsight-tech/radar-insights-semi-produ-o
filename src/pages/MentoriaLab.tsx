@@ -3510,6 +3510,7 @@ const MentoriaLab = () => {
         nonEvaluable={mentoriaFile?.nonEvaluable}
         nonEvaluableReason={mentoriaFile?.nonEvaluableReason}
         tipoAnalise={mentoriaFile?.tipo_analise}
+        initialStep={mentoriaInitialStep}
       />
       {/* Parser Diagnostic Dialog (admin-only) */}
       <ParserDiagnosticDialog
