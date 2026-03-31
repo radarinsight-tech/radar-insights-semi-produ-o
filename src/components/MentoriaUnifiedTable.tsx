@@ -226,8 +226,7 @@ const MentoriaUnifiedTable = ({
     if (statusFilter === "todos") return visibleItems;
     if (statusFilter === "aptos_ia") return visibleItems.filter((f) => f.isAutoEligible);
     if (statusFilter === "audio") return visibleItems.filter((f) => f.isAudio);
-    if (statusFilter === "fila_ia") return visibleItems.filter((f) => f.status === "aguardando_revisao_ia");
-    if (statusFilter === "fila_manual") return visibleItems.filter((f) => f.status === "aguardando_revisao_manual");
+    if (statusFilter === "aguardando_confirmacao") return visibleItems.filter((f) => f.category === "aguardando_confirmacao");
     if (statusFilter === "confirmados") return visibleItems.filter((f) => f.status === "confirmado");
     return visibleItems.filter((f) => f.category === statusFilter);
   }, [visibleItems, statusFilter]);
