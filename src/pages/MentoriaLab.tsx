@@ -339,6 +339,7 @@ const MentoriaLab = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showAnalyzeWarning, setShowAnalyzeWarning] = useState(false);
   const [mentoriaFile, setMentoriaFile] = useState<LabFile | null>(null);
+  const [mentoriaInitialStep, setMentoriaInitialStep] = useState<"pre-analise" | "semi-auto" | "relatorio" | undefined>(undefined);
   const [showCharts, setShowCharts] = useState(false);
   const [highlightedFileId, setHighlightedFileId] = useState<string | null>(null);
   const [approvingIds, setApprovingIds] = useState<Set<string>>(new Set());
@@ -1477,12 +1478,29 @@ const MentoriaLab = () => {
     }
   };
 
-  const openMentoria = useCallback((f: LabFile) => {
+  const openMentoria = useCallback((f: LabFile, initialStep?: "pre-analise" | "semi-auto" | "relatorio") => {
     setSideFile(null);
     setMentoriaFile(f);
+    setMentoriaInitialStep(initialStep);
     setHighlightedFileId(f.id);
     setWorkflowStatuses((prev) => ({ ...prev, [f.id]: prev[f.id] === "finalizado" ? "finalizado" : "em_analise" }));
   }, []);
+
+  // Monthly confirm counts per attendant for the 6-per-month limit
+  const monthlyConfirmCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    for (const f of files) {
+      if (f.status === "confirmado" && f.atendente) {
+        // Check if confirmed in current month (use analyzedAt or addedAt as proxy)
+        const key = f.atendente.trim().toLowerCase();
+        counts.set(key, (counts.get(key) || 0) + 1);
+      }
+    }
+    return counts;
+  }, [files]);
 
   const persistEvaluationRecord = useCallback(
     async ({
@@ -3279,24 +3297,24 @@ const MentoriaLab = () => {
                       setSideFile(f as any);
                       setHighlightedFileId(f.id);
                     }}
-                    onOpenMentoria={(f) => openMentoria(f as any)}
+                    onOpenMentoria={(f) => openMentoria(f as any, "relatorio")}
                     onStartMentoria={(f) => handleStartMentoria(f as any)}
                     onApproveOfficial={(f) => approveAsOfficial(f as any)}
                     onRemoveFile={removeFile}
                     onOpenDiagnostic={(f) => setDiagnosticFile(f as any)}
                     onAnalyzeNext={handleAnalyzeNextFromPipeline}
                     onBatchAnalyze={handleBatchAnalyze}
+                    monthlyConfirmCounts={monthlyConfirmCounts}
+                    onAuditFile={(f) => openMentoria(f as any, "semi-auto")}
                     onAnalyzeSelected={async (ids: string[], tipoAnalise: 'ia' | 'manual') => {
-                      const newStatus = tipoAnalise === 'ia' ? 'aguardando_revisao_ia' : 'aguardando_revisao_manual';
-                      // Save tipo_analise + new status on selected batch files
+                      const newStatus = 'aguardando_revisao_ia';
                       for (const id of ids) {
                         const file = files.find((f) => f.id === id);
                         if (file?.batchFileId) {
-                          await supabase.from("mentoria_batch_files").update({ tipo_analise: tipoAnalise, status: newStatus } as any).eq("id", file.batchFileId);
+                          await supabase.from("mentoria_batch_files").update({ tipo_analise: 'ia', status: newStatus } as any).eq("id", file.batchFileId);
                         }
-                        setFiles((prev) => prev.map((f) => f.id === id ? { ...f, tipo_analise: tipoAnalise, status: newStatus } as any : f));
+                        setFiles((prev) => prev.map((f) => f.id === id ? { ...f, tipo_analise: 'ia', status: newStatus } as any : f));
                       }
-                      // Then trigger the batch analysis
                       handleBatchAnalyze(ids.length);
                     }}
                     onDeleteSelected={async (ids: string[]) => {
@@ -3310,14 +3328,30 @@ const MentoriaLab = () => {
                       toast.success(`${ids.length} atendimento(s) excluído(s).`);
                     }}
                     onConfirmSelected={async (ids: string[]) => {
+                      let confirmed = 0;
+                      let blocked = 0;
                       for (const id of ids) {
                         const file = files.find((f) => f.id === id);
-                        if (file?.batchFileId) {
+                        if (!file) continue;
+                        // Check 6-per-month limit
+                        if (file.atendente) {
+                          const key = file.atendente.trim().toLowerCase();
+                          const currentCount = monthlyConfirmCounts.get(key) || 0;
+                          if (currentCount >= 6) {
+                            toast.warning(`Limite de 6 auditorias oficiais atingido para ${file.atendente} neste mês.`);
+                            blocked++;
+                            continue;
+                          }
+                        }
+                        if (file.batchFileId) {
                           await supabase.from("mentoria_batch_files").update({ status: 'confirmado' } as any).eq("id", file.batchFileId);
                         }
                         setFiles((prev) => prev.map((f) => f.id === id ? { ...f, status: 'confirmado' } as any : f));
+                        confirmed++;
                       }
-                      toast.success(`${ids.length} atendimento(s) confirmado(s) e enviado(s) para Performance!`);
+                      if (confirmed > 0) {
+                        toast.success(`Auditoria confirmada! ${confirmed} atendimento(s) adicionado(s) à Performance.`);
+                      }
                     }}
                     onRejectSelected={async (ids: string[]) => {
                       for (const id of ids) {
@@ -3476,6 +3510,7 @@ const MentoriaLab = () => {
         nonEvaluable={mentoriaFile?.nonEvaluable}
         nonEvaluableReason={mentoriaFile?.nonEvaluableReason}
         tipoAnalise={mentoriaFile?.tipo_analise}
+        initialStep={mentoriaInitialStep}
       />
       {/* Parser Diagnostic Dialog (admin-only) */}
       <ParserDiagnosticDialog

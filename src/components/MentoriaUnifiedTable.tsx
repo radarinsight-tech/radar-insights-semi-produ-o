@@ -39,8 +39,7 @@ type StatusFilter =
   | "nao_avaliaveis"
   | "aptos_ia"
   | "audio"
-  | "fila_ia"
-  | "fila_manual"
+  | "aguardando_confirmacao"
   | "confirmados";
 
 interface UnifiedFile {
@@ -100,6 +99,8 @@ interface MentoriaUnifiedTableProps {
   onConfirmSelected?: (ids: string[]) => void;
   onRejectSelected?: (ids: string[]) => void;
   onMarkViewed?: (id: string) => void;
+  onAuditFile?: (f: UnifiedFile) => void;
+  monthlyConfirmCounts?: Map<string, number>;
 }
 
 const STATUS_FILTERS: { key: StatusFilter; label: string; color?: string; tooltip: string }[] = [
@@ -107,8 +108,7 @@ const STATUS_FILTERS: { key: StatusFilter; label: string; color?: string; toolti
   { key: "pendentes", label: "Pendentes", tooltip: "Atendimentos aguardando análise da IA" },
   { key: "aptos_ia", label: "⚡ Aptos IA", color: "indigo", tooltip: "PDFs válidos prontos para análise automática. Clique em Analisar para processar" },
   { key: "em_analise", label: "Em análise", tooltip: "Atendimentos sendo processados pela IA no momento" },
-  { key: "fila_ia", label: "⚡ Fila IA", color: "blue", tooltip: "Analisados via IA aguardando revisão e confirmação do gestor" },
-  { key: "fila_manual", label: "🔍 Fila Manual", color: "emerald", tooltip: "Analisados manualmente aguardando revisão e confirmação do gestor" },
+  { key: "aguardando_confirmacao", label: "⏳ Aguardando confirmação", color: "blue", tooltip: "Analisados pela IA aguardando confirmação ou auditoria do gestor" },
   { key: "confirmados", label: "✅ Confirmados", color: "teal", tooltip: "Atendimentos confirmados pelo gestor — disponíveis na aba Performance" },
   { key: "nao_avaliaveis", label: "Não avaliáveis", tooltip: "PDFs sem conteúdo válido para auditoria (áudio, sem interação, duplicados)" },
   { key: "audio", label: "🎙️ Áudio", color: "amber", tooltip: "Atendimentos com áudio — auditoria não realizada por conteúdo de voz" },
@@ -173,6 +173,8 @@ const MentoriaUnifiedTable = ({
   onConfirmSelected,
   onRejectSelected,
   onMarkViewed,
+  onAuditFile,
+  monthlyConfirmCounts,
 }: MentoriaUnifiedTableProps) => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -202,11 +204,10 @@ const MentoriaUnifiedTable = ({
       })();
 
       let category: StatusFilter;
-      if (f.status === "aguardando_revisao_ia") category = "fila_ia";
-      else if (f.status === "aguardando_revisao_manual") category = "fila_manual";
+      if (f.status === "aguardando_revisao_ia" || f.status === "aguardando_revisao_manual") category = "aguardando_confirmacao";
       else if (f.status === "confirmado") category = "confirmados";
       else if (isNonEval) category = "nao_avaliaveis";
-      else if (ws === "finalizado" || (f.status === "analisado" && f.result)) category = "finalizados";
+      else if (ws === "finalizado" || (f.status === "analisado" && f.result)) category = "aguardando_confirmacao";
       else if (ws === "em_analise") category = "em_analise";
       else category = "pendentes";
 
@@ -225,8 +226,7 @@ const MentoriaUnifiedTable = ({
     if (statusFilter === "todos") return visibleItems;
     if (statusFilter === "aptos_ia") return visibleItems.filter((f) => f.isAutoEligible);
     if (statusFilter === "audio") return visibleItems.filter((f) => f.isAudio);
-    if (statusFilter === "fila_ia") return visibleItems.filter((f) => f.status === "aguardando_revisao_ia");
-    if (statusFilter === "fila_manual") return visibleItems.filter((f) => f.status === "aguardando_revisao_manual");
+    if (statusFilter === "aguardando_confirmacao") return visibleItems.filter((f) => f.category === "aguardando_confirmacao");
     if (statusFilter === "confirmados") return visibleItems.filter((f) => f.status === "confirmado");
     return visibleItems.filter((f) => f.category === statusFilter);
   }, [visibleItems, statusFilter]);
@@ -241,20 +241,18 @@ const MentoriaUnifiedTable = ({
       todos: visibleItems.length,
       pendentes: 0,
       em_analise: 0,
-      finalizados: categorized.filter((f) => f.category === "finalizados").length,
+      finalizados: 0,
       nao_avaliaveis: 0,
       aptos_ia: 0,
       audio: 0,
-      fila_ia: 0,
-      fila_manual: 0,
+      aguardando_confirmacao: 0,
       confirmados: 0,
     };
     for (const f of visibleItems) {
       if (f.category === "pendentes") counts.pendentes++;
       else if (f.category === "em_analise") counts.em_analise++;
       else if (f.category === "nao_avaliaveis") counts.nao_avaliaveis++;
-      else if (f.category === "fila_ia") counts.fila_ia++;
-      else if (f.category === "fila_manual") counts.fila_manual++;
+      else if (f.category === "aguardando_confirmacao") counts.aguardando_confirmacao++;
       else if (f.category === "confirmados") counts.confirmados++;
       if (f.isAutoEligible) counts.aptos_ia++;
       if (f.isAudio) counts.audio++;
@@ -295,7 +293,7 @@ const MentoriaUnifiedTable = ({
   };
 
   const selectedCount = selectedIds.size;
-  const isReviewTab = statusFilter === "fila_ia" || statusFilter === "fila_manual";
+  const isReviewTab = statusFilter === "aguardando_confirmacao";
 
   return (
     <div className="space-y-3" id="mentoria-table">
@@ -435,13 +433,14 @@ const MentoriaUnifiedTable = ({
                   if (f.isNonEval) return "N/A";
                   if (isProcessingThis) return "Processando";
                   switch (f.status) {
-                    case "aguardando_revisao_ia": return "Fila IA";
-                    case "aguardando_revisao_manual": return "Fila Manual";
+                    case "aguardando_revisao_ia":
+                    case "aguardando_revisao_manual":
+                    case "analisado":
+                      return f.hasResult ? "Aguardando confirmação" : "Analisado";
                     case "confirmado": return "Confirmado";
                     case "reprovado": return "Reprovado";
-                    case "analisado": return "Analisado";
                     default:
-                      if (f.hasResult) return "Analisado";
+                      if (f.hasResult) return "Aguardando confirmação";
                       if (f.category === "em_analise") return "Em análise";
                       return "Pendente";
                   }
@@ -505,6 +504,17 @@ const MentoriaUnifiedTable = ({
                             lote-{f.batchCode.split("-").pop()}
                           </Badge>
                         )}
+                        {/* Monthly audit counter */}
+                        {f.atendente && monthlyConfirmCounts && (() => {
+                          const count = monthlyConfirmCounts.get(f.atendente.trim().toLowerCase()) || 0;
+                          if (count >= 6) return (
+                            <Badge className="bg-destructive/15 text-destructive text-[9px] px-1.5 py-0 h-auto border-0 mt-0.5">6/6 limite atingido</Badge>
+                          );
+                          if (count > 0) return (
+                            <Badge className="bg-blue-600/15 text-blue-700 dark:text-blue-400 text-[9px] px-1.5 py-0 h-auto border-0 mt-0.5">{count}/6 este mês</Badge>
+                          );
+                          return null;
+                        })()}
                       </div>
                     </TableCell>
 
@@ -538,25 +548,30 @@ const MentoriaUnifiedTable = ({
                       </div>
                     </TableCell>
 
-                    {/* Nota */}
+                    {/* Nota + (Não Oficial) badge */}
                     <TableCell className="py-3 w-[10%] text-center">
                       {nota10 != null ? (
-                        <span className={cn(
-                          "text-sm font-bold",
-                          nota10 >= 9 ? "text-accent" : nota10 >= 7 ? "text-primary" : nota10 >= 5 ? "text-warning" : "text-destructive"
-                        )}>
-                          {nota10.toFixed(1).replace(".", ",")}
-                        </span>
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className={cn(
+                            "text-sm font-bold",
+                            nota10 >= 9 ? "text-accent" : nota10 >= 7 ? "text-primary" : nota10 >= 5 ? "text-warning" : "text-destructive"
+                          )}>
+                            {nota10.toFixed(1).replace(".", ",")}
+                          </span>
+                          {f.status !== "confirmado" && f.hasResult && (
+                            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-[7px] px-1 py-0 h-auto border-0">Não Oficial</Badge>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </TableCell>
 
-                    {/* Ação — review actions for queue tabs, otherwise menu only */}
+                    {/* Ação — Confirm/Audit for analyzed items, menu for all */}
                     <TableCell className="py-3 w-[20%] text-right">
                       <div className="flex items-center justify-end gap-1 flex-nowrap">
-                        {/* Review queue: confirm/reject buttons */}
-                        {isInReviewQueue && (
+                        {/* Confirm + Audit buttons for items with results that are not yet confirmed */}
+                        {f.hasResult && f.status !== "confirmado" && (
                           <>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -570,29 +585,29 @@ const MentoriaUnifiedTable = ({
                                   <Check className="h-3 w-3" /> Confirmar
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent side="top"><p>Confirmar análise e enviar para Performance</p></TooltipContent>
+                              <TooltipContent side="top"><p>Confirmar nota como oficial e enviar para Performance</p></TooltipContent>
                             </Tooltip>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="h-7 px-2.5 gap-1 text-xs font-semibold border-destructive/40 text-destructive hover:bg-destructive/10"
+                                  className="h-7 px-2.5 gap-1 text-xs font-semibold border-primary/40 text-primary hover:bg-primary/10"
                                   onClick={() => {
-                                    setRejectTargetIds([f.id]);
-                                    setShowRejectConfirm(true);
+                                    onMarkViewed?.(f.id);
+                                    if (onAuditFile) onAuditFile(f);
                                   }}
                                 >
-                                  <XCircle className="h-3 w-3" /> Reprovar
+                                  <Search className="h-3 w-3" /> Auditar
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent side="top"><p>Reprovar e retornar para Pendentes</p></TooltipContent>
+                              <TooltipContent side="top"><p>Revisar os 19 critérios antes de confirmar</p></TooltipContent>
                             </Tooltip>
                           </>
                         )}
 
-                        {/* View result button for analyzed items */}
-                        {f.hasResult && (
+                        {/* View result button for confirmed items */}
+                        {f.hasResult && f.status === "confirmado" && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -771,31 +786,6 @@ const MentoriaUnifiedTable = ({
                 <TooltipContent side="top"><p>Análise automática via IA — mais rápida, sem intervenção manual</p></TooltipContent>
               </Tooltip>
 
-              {/* Button 2: Analisar manualmente */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    className="gap-1.5 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
-                    onClick={() => {
-                      const ids = [...selectedIds].filter((id) =>
-                        categorized.some((f) => f.id === id && f.isAutoEligible)
-                      );
-                      if (onAnalyzeSelected) {
-                        onAnalyzeSelected(ids, 'manual');
-                      } else if (onBatchAnalyze) {
-                        onBatchAnalyze(ids.length);
-                      }
-                      setSelectedIds(new Set());
-                    }}
-                    disabled={isBusy}
-                  >
-                    <Search className="h-3.5 w-3.5" />
-                    🔍 Analisar manualmente ({selectedCount})
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top"><p>Análise manual — você revisa cada critério individualmente</p></TooltipContent>
-              </Tooltip>
 
               {/* Button 3: Excluir */}
               <Tooltip>
