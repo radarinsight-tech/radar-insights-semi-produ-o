@@ -142,6 +142,8 @@ interface LabFile {
   structuredConversation?: StructuredConversation;
   tipo_analise?: string | null;
   visualizado?: boolean;
+  audioBlobs?: import("@/lib/pdfMediaExtractor").ExtractedAudio[];
+  imageBlobs?: import("@/lib/pdfMediaExtractor").ExtractedImage[];
 }
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
