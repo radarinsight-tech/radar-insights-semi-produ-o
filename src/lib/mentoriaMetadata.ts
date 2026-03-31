@@ -244,9 +244,9 @@ function _extractAtendenteRaw(text: string): string | undefined {
   // Strategy 3: Presentation patterns in chat body (single first name)
   // "Sou [Nome], especialista..." / "Olá, Sou [Nome]," / "Aqui é [Nome]"
   const presentationPatterns = [
-    /\bsou\s+([A-ZÀ-Ÿ][a-zà-ÿ]+)[\s,]/i,
-    /\baqui\s+[eé]\s+(?:o|a)?\s*([A-ZÀ-Ÿ][a-zà-ÿ]+)/i,
-    /\bmeu\s+nome\s+[eé]\s+([A-ZÀ-Ÿ][a-zà-ÿ]+)/i,
+    /\bsou\s+([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)*)[\s,]/i,
+    /\baqui\s+[eé]\s+(?:o|a)?\s*([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)*)/i,
+    /\bmeu\s+nome\s+[eé]\s+([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)*)/i,
   ];
 
   for (const pattern of presentationPatterns) {
