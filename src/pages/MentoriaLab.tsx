@@ -924,6 +924,7 @@ const MentoriaLab = () => {
             data_atendimento: metadata.data ?? null,
             canal: metadata.canal ?? "Não identificado",
             has_audio: hasAudio,
+            has_image: hasImage,
             extracted_text: safeText,
             raw_text: safeText,
             parsed_messages: parsedMessagesPayload,

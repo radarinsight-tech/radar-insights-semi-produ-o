@@ -512,6 +512,7 @@ export type Database = {
           file_path: string | null
           file_size: number | null
           has_audio: boolean | null
+          has_image: boolean | null
           id: string
           nota: number | null
           parsed_messages: Json | null
@@ -536,6 +537,7 @@ export type Database = {
           file_path?: string | null
           file_size?: number | null
           has_audio?: boolean | null
+          has_image?: boolean | null
           id?: string
           nota?: number | null
           parsed_messages?: Json | null
@@ -560,6 +562,7 @@ export type Database = {
           file_path?: string | null
           file_size?: number | null
           has_audio?: boolean | null
+          has_image?: boolean | null
           id?: string
           nota?: number | null
           parsed_messages?: Json | null
