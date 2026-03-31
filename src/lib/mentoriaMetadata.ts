@@ -244,18 +244,18 @@ function _extractAtendenteRaw(text: string): string | undefined {
   // Strategy 3: Presentation patterns in chat body (single first name)
   // "Sou [Nome], especialista..." / "Olá, Sou [Nome]," / "Aqui é [Nome]"
   const presentationPatterns = [
-    /\bsou\s+([A-ZÀ-Ÿ][a-zà-ÿ]+)[\s,]/i,
-    /\baqui\s+[eé]\s+(?:o|a)?\s*([A-ZÀ-Ÿ][a-zà-ÿ]+)/i,
-    /\bmeu\s+nome\s+[eé]\s+([A-ZÀ-Ÿ][a-zà-ÿ]+)/i,
+    /\bsou\s+([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)*)[\s,]/i,
+    /\baqui\s+[eé]\s+(?:o|a)?\s*([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)*)/i,
+    /\bmeu\s+nome\s+[eé]\s+([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)*)/i,
   ];
 
   for (const pattern of presentationPatterns) {
     const match = text.match(pattern);
     if (match) {
       const name = match[1].trim();
-      if (!isBot(name) && name.length >= 3) {
-        // Capitalize properly
-        return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+      if (!isBot(name) && !isInvalidAttendantName(name) && name.length >= 3) {
+        // Capitalize first letter of each word, preserve rest
+        return name.replace(/\b([A-Za-zÀ-ÿ])/g, (c) => c.toUpperCase());
       }
     }
   }
@@ -283,7 +283,7 @@ function _extractAtendenteRaw(text: string): string | undefined {
   if (singleNameCounts.size > 0) {
     // Pick most frequent, must have at least 2 messages
     const sorted = [...singleNameCounts.entries()].sort((a, b) => b[1] - a[1]);
-    if (sorted[0][1] >= 2) {
+    if (sorted[0][1] >= 1) {
       return sorted[0][0];
     }
   }
