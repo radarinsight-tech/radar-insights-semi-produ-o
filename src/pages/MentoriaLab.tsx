@@ -795,6 +795,32 @@ const MentoriaLab = () => {
           }
         }
 
+        // Extract embedded media (audio/images) from PDF binary
+        let extractedAudioBlobs: ExtractedAudio[] = [];
+        let extractedImageBlobs: ExtractedImage[] = [];
+        if (hasBinaryContent) {
+          try {
+            const [audios, images] = await Promise.all([
+              extractAudioAttachments(sourceFile.file),
+              extractPageImages(sourceFile.file),
+            ]);
+            extractedAudioBlobs = audios;
+            extractedImageBlobs = images;
+            if (audios.length > 0 || images.length > 0) {
+              console.info("[MentoriaLab][Importação][media_extraida]", {
+                id_atendimento: sourceFile.batchFileId || sourceFile.id,
+                audios: audios.length,
+                imagens: images.length,
+              });
+            }
+          } catch (err: any) {
+            console.warn("[MentoriaLab][Importação][media_extracao_erro]", {
+              id_atendimento: sourceFile.batchFileId || sourceFile.id,
+              erro: err?.message || "Falha ao extrair mídia",
+            });
+          }
+        }
+
         const hasText = text.trim().length > 0;
         let metadata: {
           protocolo?: string;
