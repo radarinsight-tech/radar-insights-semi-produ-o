@@ -99,6 +99,8 @@ interface MentoriaUnifiedTableProps {
   onConfirmSelected?: (ids: string[]) => void;
   onRejectSelected?: (ids: string[]) => void;
   onMarkViewed?: (id: string) => void;
+  onAuditFile?: (f: UnifiedFile) => void;
+  monthlyConfirmCounts?: Map<string, number>;
 }
 
 const STATUS_FILTERS: { key: StatusFilter; label: string; color?: string; tooltip: string }[] = [
