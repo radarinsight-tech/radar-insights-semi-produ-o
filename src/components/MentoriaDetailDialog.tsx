@@ -115,11 +115,18 @@ const findRelevantExcerpt = (rawText: string | undefined, explicacao: string): s
   return null;
 };
 
-const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation, workflowStatus, onMarkFinished, onNextFile, hasNextFile, nonEvaluable, nonEvaluableReason, tipoAnalise }: MentoriaDetailDialogProps) => {
+const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation, workflowStatus, onMarkFinished, onNextFile, hasNextFile, nonEvaluable, nonEvaluableReason, tipoAnalise, initialStep }: MentoriaDetailDialogProps) => {
   const [uraOpen, setUraOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState<MentoriaStep>("pre-analise");
+  const [currentStep, setCurrentStep] = useState<MentoriaStep>(initialStep || "pre-analise");
   const [completedSteps, setCompletedSteps] = useState<Set<MentoriaStep>>(new Set());
   const printRef = useRef<HTMLDivElement>(null);
+
+  // Reset step when dialog opens with a new initialStep
+  const prevInitialStep = useRef(initialStep);
+  if (initialStep !== prevInitialStep.current) {
+    prevInitialStep.current = initialStep;
+    if (initialStep) setCurrentStep(initialStep);
+  }
 
   // Pre-analysis: run once when conversation is available
   const preAnalysis: PreAnalysisResult | null = useMemo(() => {
