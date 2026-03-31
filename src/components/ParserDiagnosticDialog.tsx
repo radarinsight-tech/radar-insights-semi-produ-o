@@ -377,7 +377,7 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
               </pre>
             </div>
           </div>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
