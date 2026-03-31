@@ -272,7 +272,7 @@ function _extractAtendenteRaw(text: string): string | undefined {
       if (!name || name.length < 3 || isBot(name) || isInstitutional(name)) continue;
       if (clienteName && name.toLowerCase() === clienteName) continue;
       // Skip if it looks like a header label
-      if (/^(protocolo|cliente|atendente|canal|data|tipo|status|setor|horário|início|fim)/i.test(name)) continue;
+      if (/^(protocolo|cliente|atendente|canal|data|tipo|status|setor|departamento|equipe|fila|horário|horario|início|inicio|fim|aviso|nota|sistema|agente|operador)/i.test(name)) continue;
       singleNameCounts.set(name, (singleNameCounts.get(name) || 0) + 1);
     }
   }
