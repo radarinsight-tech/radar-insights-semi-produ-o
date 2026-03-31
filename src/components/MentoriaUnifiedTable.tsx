@@ -504,6 +504,17 @@ const MentoriaUnifiedTable = ({
                             lote-{f.batchCode.split("-").pop()}
                           </Badge>
                         )}
+                        {/* Monthly audit counter */}
+                        {f.atendente && monthlyConfirmCounts && (() => {
+                          const count = monthlyConfirmCounts.get(f.atendente.trim().toLowerCase()) || 0;
+                          if (count >= 6) return (
+                            <Badge className="bg-destructive/15 text-destructive text-[9px] px-1.5 py-0 h-auto border-0 mt-0.5">6/6 limite atingido</Badge>
+                          );
+                          if (count > 0) return (
+                            <Badge className="bg-blue-600/15 text-blue-700 dark:text-blue-400 text-[9px] px-1.5 py-0 h-auto border-0 mt-0.5">{count}/6 este mês</Badge>
+                          );
+                          return null;
+                        })()}
                       </div>
                     </TableCell>
 
