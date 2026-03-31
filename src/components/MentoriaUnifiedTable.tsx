@@ -474,7 +474,7 @@ const MentoriaUnifiedTable = ({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <span className={cn(
-                              "h-2 w-2 rounded-full shrink-0",
+                              "h-3 w-3 rounded-full shrink-0",
                               (f.visualizado || f.hasResult || f.status === "analisado" || f.status === "confirmado" || f.status === "aguardando_revisao_ia" || f.status === "aguardando_revisao_manual")
                                 ? "bg-emerald-500"
                                 : "bg-red-500"
