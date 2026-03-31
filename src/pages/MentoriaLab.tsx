@@ -542,6 +542,7 @@ const MentoriaLab = () => {
             data: bf.data_atendimento || undefined,
             canal: bf.canal || undefined,
             hasAudio: bf.has_audio || false,
+            hasImage: Boolean((bf as any).has_image),
             tipo: (persistedResult as any)?.tipo || undefined,
             batchId: bf.batch_id,
             batchFileId: bf.id,
