@@ -191,24 +191,41 @@ const MESSAGE_PATTERNS = [
 
 /**
  * Detect if text is in OPA block format where messages are structured as:
- * [Name]
- * [Date in Portuguese] or [dd/mm/yyyy HH:mm]
- * [Message content]
+ * Format A (OPA): [Name] → [Date] → [Message]
+ * Format B (BandaTurbo): [Name] → [Message] → [Date]
  */
 function isBlockFormat(text: string): boolean {
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
 
-  // Count how many name+date pairs we find in sequence
-  let blockPairs = 0;
+  // Count how many name+date pairs we find in sequence (Format A)
+  let blockPairsA = 0;
   for (let i = 0; i < lines.length - 1; i++) {
     if (isNameLine(lines[i]) && isDateLine(lines[i + 1])) {
-      blockPairs++;
+      blockPairsA++;
       i++; // skip the date line
     }
   }
-  if (blockPairs >= 2) return true;
+  if (blockPairsA >= 2) return true;
 
-  // Fallback: check for Portuguese long dates (strong OPA signal)
+  // Count Format B: name line followed by content, then date line
+  let blockPairsB = 0;
+  for (let i = 0; i < lines.length - 2; i++) {
+    if (isNameLine(lines[i]) && !isDateLine(lines[i + 1])) {
+      // Look ahead for a date line within the next few lines
+      for (let j = i + 1; j < Math.min(i + 15, lines.length); j++) {
+        if (isDateLine(lines[j])) {
+          blockPairsB++;
+          i = j;
+          break;
+        }
+        // Stop if we find another name line (next block)
+        if (j > i + 1 && isNameLine(lines[j])) break;
+      }
+    }
+  }
+  if (blockPairsB >= 2) return true;
+
+  // Fallback: check for Portuguese long dates (strong signal)
   const longDates = text.match(new RegExp(`\\d{1,2}\\s+de\\s+(?:${MONTH_NAMES})\\s+de\\s+\\d{4}\\s+\\d{2}:\\d{2}`, "gi"));
   if (longDates && longDates.length >= 2) return true;
 
@@ -216,79 +233,148 @@ function isBlockFormat(text: string): boolean {
 }
 
 /**
- * Parse OPA-style block format where each message is:
- * Line 1: Speaker name
- * Line 2: Date/time (Portuguese format or dd/mm/yyyy HH:mm)
- * Line 3+: Message content (until next speaker block)
- *
- * Uses a two-pass approach:
- * 1. Find all block start positions (name + date pairs)
- * 2. Extract message content between consecutive block starts
+ * Detect which block sub-format is used:
+ * "A" = Name → Date → Message (OPA)
+ * "B" = Name → Message → Date (BandaTurbo)
+ */
+function detectBlockSubFormat(lines: string[]): "A" | "B" {
+  let countA = 0, countB = 0;
+  const trimmed = lines.map(l => l.trim());
+
+  for (let i = 0; i < trimmed.length - 1; i++) {
+    if (isNameLine(trimmed[i])) {
+      let nextNonEmpty = i + 1;
+      while (nextNonEmpty < trimmed.length && !trimmed[nextNonEmpty]) nextNonEmpty++;
+      if (nextNonEmpty < trimmed.length && isDateLine(trimmed[nextNonEmpty])) {
+        countA++;
+      } else if (nextNonEmpty < trimmed.length && !isDateLine(trimmed[nextNonEmpty])) {
+        // Look for date after content
+        for (let j = nextNonEmpty + 1; j < Math.min(nextNonEmpty + 15, trimmed.length); j++) {
+          if (isDateLine(trimmed[j])) { countB++; break; }
+          if (isNameLine(trimmed[j])) break;
+        }
+      }
+    }
+  }
+  return countB > countA ? "B" : "A";
+}
+
+/**
+ * Parse block format, supporting both sub-formats.
  */
 function parseBlockFormat(text: string, atendente?: string): ParsedMessage[] {
   const lines = text.split("\n");
-  const messages: ParsedMessage[] = [];
+  const subFormat = detectBlockSubFormat(lines);
 
-  // First pass: find all block start positions
+  if (subFormat === "B") {
+    return parseBlockFormatB(lines, atendente);
+  }
+  return parseBlockFormatA(lines, atendente);
+}
+
+/**
+ * Parse Format A: Name → Date → Message (OPA-style)
+ */
+function parseBlockFormatA(lines: string[], atendente?: string): ParsedMessage[] {
+  const messages: ParsedMessage[] = [];
   const blockStarts: { nameIdx: number; dateIdx: number }[] = [];
+
   for (let i = 0; i < lines.length - 1; i++) {
     const line = lines[i].trim();
     if (!line) continue;
-
     if (isNameLine(line)) {
-      // Look at next non-empty line for a date
       let nextIdx = i + 1;
       while (nextIdx < lines.length && !lines[nextIdx].trim()) nextIdx++;
       if (nextIdx < lines.length && isDateLine(lines[nextIdx].trim())) {
         blockStarts.push({ nameIdx: i, dateIdx: nextIdx });
-        i = nextIdx; // skip past the date line
+        i = nextIdx;
       }
     }
   }
 
   if (blockStarts.length === 0) return [];
 
-  // Second pass: extract messages using block boundaries
   for (let b = 0; b < blockStarts.length; b++) {
     const { nameIdx, dateIdx } = blockStarts[b];
     const speaker = lines[nameIdx].trim().replace(/:$/, "").trim();
     const dateLine = lines[dateIdx].trim();
-
-    const ptDate = parsePortugueseDate(dateLine);
-    const shortDate = dateLine.match(/^(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)/);
+    const cleanedDate = dateLine.replace(/^Lida\s*-\s*/i, "");
+    const ptDate = parsePortugueseDate(cleanedDate);
+    const shortDate = cleanedDate.match(/^(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)/);
     const date = ptDate?.date || shortDate?.[1];
     const time = ptDate?.time || shortDate?.[2];
-
-    // Message content: from line after date until next block's name line (or end)
     const contentStart = dateIdx + 1;
-    const contentEnd = (b + 1 < blockStarts.length)
-      ? blockStarts[b + 1].nameIdx
-      : lines.length;
-
+    const contentEnd = (b + 1 < blockStarts.length) ? blockStarts[b + 1].nameIdx : lines.length;
     const textLines: string[] = [];
     for (let j = contentStart; j < contentEnd; j++) {
       const msgLine = lines[j].trim();
       if (msgLine) textLines.push(msgLine);
     }
+    const role = determineRole(speaker, atendente);
+    const isoTs = dateTimeToISO(date, time);
+    messages.push({ speaker, role, text: textLines.join("\n"), time, date, isoTimestamp: isoTs });
+  }
+
+  if (!atendente && messages.length >= 2) inferRoles(messages);
+  return messages;
+}
+
+/**
+ * Parse Format B: Name → Message → Date (BandaTurbo-style)
+ * Block structure: Speaker name on its own line, then message lines,
+ * then a date line (optionally prefixed with "Lida - ").
+ */
+function parseBlockFormatB(lines: string[], atendente?: string): ParsedMessage[] {
+  const messages: ParsedMessage[] = [];
+
+  // Find block starts: name lines that are NOT date lines
+  const blockStarts: number[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (!trimmed) continue;
+    if (isNameLine(trimmed) && !isDateLine(trimmed)) {
+      blockStarts.push(i);
+    }
+  }
+
+  for (let b = 0; b < blockStarts.length; b++) {
+    const nameIdx = blockStarts[b];
+    const speaker = lines[nameIdx].trim().replace(/:$/, "").trim();
+    const nextBlockStart = b + 1 < blockStarts.length ? blockStarts[b + 1] : lines.length;
+
+    // Collect content and find the date line within this block
+    const contentLines: string[] = [];
+    let date: string | undefined;
+    let time: string | undefined;
+
+    for (let j = nameIdx + 1; j < nextBlockStart; j++) {
+      const trimmed = lines[j].trim();
+      if (!trimmed) continue;
+      if (isDateLine(trimmed)) {
+        const cleaned = trimmed.replace(/^Lida\s*-\s*/i, "");
+        const ptDate = parsePortugueseDate(cleaned);
+        const shortDate = cleaned.match(/^(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)/);
+        date = ptDate?.date || shortDate?.[1];
+        time = ptDate?.time || shortDate?.[2];
+        // Date line found — don't add to content
+      } else {
+        contentLines.push(trimmed);
+      }
+    }
+
+    if (contentLines.length === 0) continue;
 
     const role = determineRole(speaker, atendente);
     const isoTs = dateTimeToISO(date, time);
-
     messages.push({
-      speaker,
-      role,
-      text: textLines.join("\n"),
-      time,
-      date,
+      speaker, role,
+      text: contentLines.join("\n"),
+      time, date,
       isoTimestamp: isoTs,
     });
   }
 
-  // Post-process: if no atendente hint provided, infer roles from conversation flow
-  if (!atendente && messages.length >= 2) {
-    inferRoles(messages);
-  }
-
+  if (!atendente && messages.length >= 2) inferRoles(messages);
   return messages;
 }
 
