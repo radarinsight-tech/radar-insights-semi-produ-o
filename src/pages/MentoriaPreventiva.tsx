@@ -955,10 +955,10 @@ const PreventiveDetailDialog = ({
 
     if (rawText) {
       try {
-        const conv = parseConversationText(rawText);
-        totalMessages = conv.messages.length;
-        attendantMessages = conv.messages.filter(m => m.sender === "attendant").length;
-        clientMessages = conv.messages.filter(m => m.sender === "client").length;
+        const msgs = parseConversationText(rawText);
+        totalMessages = msgs.length;
+        attendantMessages = msgs.filter(m => m.sender === "attendant").length;
+        clientMessages = msgs.filter(m => m.sender === "client").length;
       } catch { /* ignore */ }
     }
 
