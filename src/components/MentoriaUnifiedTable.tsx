@@ -548,15 +548,20 @@ const MentoriaUnifiedTable = ({
                       </div>
                     </TableCell>
 
-                    {/* Nota */}
+                    {/* Nota + (Não Oficial) badge */}
                     <TableCell className="py-3 w-[10%] text-center">
                       {nota10 != null ? (
-                        <span className={cn(
-                          "text-sm font-bold",
-                          nota10 >= 9 ? "text-accent" : nota10 >= 7 ? "text-primary" : nota10 >= 5 ? "text-warning" : "text-destructive"
-                        )}>
-                          {nota10.toFixed(1).replace(".", ",")}
-                        </span>
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className={cn(
+                            "text-sm font-bold",
+                            nota10 >= 9 ? "text-accent" : nota10 >= 7 ? "text-primary" : nota10 >= 5 ? "text-warning" : "text-destructive"
+                          )}>
+                            {nota10.toFixed(1).replace(".", ",")}
+                          </span>
+                          {f.status !== "confirmado" && f.hasResult && (
+                            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-[7px] px-1 py-0 h-auto border-0">Não Oficial</Badge>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
