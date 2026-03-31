@@ -204,11 +204,10 @@ const MentoriaUnifiedTable = ({
       })();
 
       let category: StatusFilter;
-      if (f.status === "aguardando_revisao_ia") category = "fila_ia";
-      else if (f.status === "aguardando_revisao_manual") category = "fila_manual";
+      if (f.status === "aguardando_revisao_ia" || f.status === "aguardando_revisao_manual") category = "aguardando_confirmacao";
       else if (f.status === "confirmado") category = "confirmados";
       else if (isNonEval) category = "nao_avaliaveis";
-      else if (ws === "finalizado" || (f.status === "analisado" && f.result)) category = "finalizados";
+      else if (ws === "finalizado" || (f.status === "analisado" && f.result)) category = "aguardando_confirmacao";
       else if (ws === "em_analise") category = "em_analise";
       else category = "pendentes";
 
