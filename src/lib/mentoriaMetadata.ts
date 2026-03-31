@@ -199,7 +199,7 @@ function _extractAtendenteRaw(text: string): string | undefined {
       candidate = candidate.replace(ATTENDANT_PREFIXES, "").trim();
       // Take only the name part (before any extra info like date, id, etc.)
       const namePart = candidate.split(/[,\-\|\/]/)[0].trim();
-      if (namePart && !isBot(namePart) && !isInvalidAttendantName(namePart) && isLikelyPersonName(namePart)) {
+      if (namePart && !isBot(namePart) && !isInvalidAttendantName(namePart) && !isInstitutional(namePart) && isLikelyPersonName(namePart)) {
         return namePart;
       }
     }
