@@ -1985,21 +1985,23 @@ const MentoriaLab = () => {
           }
 
           success++;
-        } catch {
+        } catch (err: any) {
+          const errorMsg = err?.message || "Erro inesperado na análise";
+          errors++;
+          // Rollback: never leave file stuck in "em_analise" / "aguardando_revisao_ia"
           setFiles((prev) =>
             prev.map((f) =>
               f.id === labFile.id
-                ? { ...f, status: "erro", error: "Ocorreu uma falha temporária no processamento. Tente novamente." }
+                ? { ...f, status: "lido", error: "Falha na análise. Clique em Analisar para tentar novamente." }
                 : f,
             ),
           );
           if (labFile.batchFileId) {
             await supabase
               .from("mentoria_batch_files")
-              .update({ status: "error", error_message: "Falha temporária" } as any)
+              .update({ status: "read", error_message: errorMsg } as any)
               .eq("id", labFile.batchFileId);
           }
-          errors++;
         }
       }
 
