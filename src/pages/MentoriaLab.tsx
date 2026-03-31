@@ -2122,7 +2122,7 @@ const MentoriaLab = () => {
             const { data: dbRow } = await supabase
               .from("mentoria_batch_files")
               .select(
-                "extracted_text, parsed_messages, result, atendente, protocolo, data_atendimento, canal, has_audio",
+                "extracted_text, raw_text, parsed_messages, result, atendente, protocolo, data_atendimento, canal, has_audio",
               )
               .eq("id", labFile.batchFileId)
               .maybeSingle();
