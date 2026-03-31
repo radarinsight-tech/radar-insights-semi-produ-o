@@ -1234,10 +1234,5 @@ const PreventiveDetailDialog = ({
     </Dialog>
   );
 };
-        </div>
-      </main>
-    </div>
-  );
-};
 
 export default MentoriaPreventiva;
