@@ -5,7 +5,8 @@ import {
   ArrowLeft, ShieldCheck, Upload, Loader2, FileText,
   CheckCircle2, AlertTriangle, ThumbsUp, Lightbulb, ChevronDown, ChevronUp,
   Hash, User, Calendar, Tag, Info, Shuffle, Volume2, VolumeX, X, Play,
-  Eye, BarChart3, ShieldAlert, Search, FilterX
+  Eye, BarChart3, ShieldAlert, Search, FilterX, Printer, Radio,
+  ChevronRight, ChevronLeft, List, Award, MessageSquareQuote
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,6 +15,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
@@ -21,6 +24,10 @@ import { extractAllMetadata, type PdfMetadata } from "@/lib/mentoriaMetadata";
 import logoSymbol from "@/assets/logo-symbol.png";
 import PreventiveInsights from "@/components/PreventiveInsights";
 import FormattedChatText from "@/components/FormattedChatText";
+import SemiAutoPanel, { type SemiAutoResult } from "@/components/SemiAutoPanel";
+import MentoriaStepBar, { type MentoriaStep } from "@/components/MentoriaStepBar";
+import { runPreAnalysis, type PreAnalysisResult } from "@/lib/mentoriaPreAnalysis";
+import { parseConversationText } from "@/lib/conversationParser";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
 import MentoriaAttendenteHeader from "@/components/MentoriaAttendenteHeader";
 import MentoriaAttendenteHistory from "@/components/MentoriaAttendenteHistory";
@@ -140,9 +147,8 @@ const MentoriaPreventiva = () => {
   const [files, setFiles] = useState<LabFile[]>([]);
   const [readingIds, setReadingIds] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState(false);
-  const [activeResult, setActiveResult] = useState<PreventiveResult | null>(null);
-  const [activeRawText, setActiveRawText] = useState<string | null>(null);
-  const [showCriterios, setShowCriterios] = useState(false);
+  const [activeFile, setActiveFile] = useState<LabFile | null>(null);
+  
   const [sampled, setSampled] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -151,6 +157,8 @@ const MentoriaPreventiva = () => {
   const [filterSearch, setFilterSearch] = useState("");
   const [filterPeriodo, setFilterPeriodo] = useState("todos");
   const [filterStatus, setFilterStatus] = useState("todos");
+  const [currentStep, setCurrentStep] = useState<MentoriaStep>("revisao");
+  const [completedSteps, setCompletedSteps] = useState<Set<MentoriaStep>>(new Set());
 
   // Load monthly count for atendente mode
   useEffect(() => {
@@ -456,14 +464,6 @@ const MentoriaPreventiva = () => {
     toast.success(`${successCount} de ${toAnalyze.length} análise(s) concluída(s).`);
   };
 
-  // ── Colors ───────────────────────────────────────────────────────────
-  const classColor = (c: string) => {
-    if (c === "Excelente") return "text-emerald-500";
-    if (c === "Bom atendimento") return "text-blue-500";
-    if (c === "Regular") return "text-amber-500";
-    return "text-destructive";
-  };
-
   // ── Access guard ──────────────────────────────────────────────────────
   if (permLoading) {
     return (
@@ -626,7 +626,7 @@ const MentoriaPreventiva = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => { setShowInsights(!showInsights); setActiveResult(null); setActiveRawText(null); }}
+                    onClick={() => { setShowInsights(!showInsights); setActiveFile(null); }}
                   >
                     <BarChart3 className="h-3 w-3 mr-1" /> {showInsights ? "Ocultar Insights" : "Ver Insights"}
                   </Button>
@@ -637,7 +637,7 @@ const MentoriaPreventiva = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => { setFiles([]); setSampled(false); setActiveResult(null); setActiveRawText(null); setShowInsights(false); }}
+                      onClick={() => { setFiles([]); setSampled(false); setActiveFile(null); setShowInsights(false); }}
                     >
                       <X className="h-3 w-3 mr-1" /> Limpar tudo
                     </Button>
@@ -847,7 +847,7 @@ const MentoriaPreventiva = () => {
                                 variant="ghost"
                                 size="sm"
                                 className="h-6 px-2 text-[10px]"
-                                onClick={() => { setActiveResult(f.result!); setActiveRawText(f.text || null); }}
+                                onClick={() => { setActiveFile(f); setCurrentStep("revisao"); setCompletedSteps(new Set()); }}
                               >
                                 <Eye className="h-3 w-3 mr-0.5" /> Ver
                               </Button>
@@ -863,7 +863,7 @@ const MentoriaPreventiva = () => {
           )}
 
           {/* Insights panel */}
-          {showInsights && analyzedCount > 0 && !activeResult && (
+          {showInsights && analyzedCount > 0 && !activeFile && (
             <PreventiveInsights
               files={files.filter((f) => f.status === "analisado" && f.result).map((f) => ({
                 id: f.id,
@@ -874,160 +874,357 @@ const MentoriaPreventiva = () => {
             />
           )}
 
-          {/* Result detail panel */}
-          {activeResult && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold text-foreground">Resultado da Mentoria Preventiva</h2>
-                <Button variant="ghost" size="sm" onClick={() => { setActiveResult(null); setActiveRawText(null); }}>
-                  <X className="h-3 w-3 mr-1" /> Fechar
-                </Button>
-              </div>
+          {/* Atendente History Section */}
+          {isAttendenteMode && currentUserId && !activeFile && (
+            <MentoriaAttendenteHistory userId={currentUserId} isAdmin={isAdmin} />
+          )}
+        </div>
+      </main>
 
-              {!activeResult.viavel ? (
-                <Card className="p-8 text-center space-y-4">
-                  <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto" />
-                  <h3 className="text-base font-bold text-foreground">Análise Inviável</h3>
-                  <p className="text-sm text-muted-foreground">{activeResult.motivoInviavel}</p>
-                </Card>
-              ) : (
-                <>
-                  {/* Header */}
-                  <Card className="p-5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="grid grid-cols-2 gap-x-6 gap-y-2 flex-1">
+      {/* ═══ REVIEW / REPORT DIALOG ═══ */}
+      {activeFile?.result && (
+        <PreventiveDetailDialog
+          open={!!activeFile}
+          onOpenChange={(open) => { if (!open) setActiveFile(null); }}
+          result={activeFile.result}
+          fileName={activeFile.name}
+          rawText={activeFile.text}
+          isAttendenteMode={isAttendenteMode}
+          currentStep={currentStep}
+          completedSteps={completedSteps}
+          onStepChange={setCurrentStep}
+          onCompleteStep={(step) => setCompletedSteps(prev => new Set(prev).add(step))}
+        />
+      )}
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PREVENTIVE DETAIL DIALOG — mirrors Mentoria Lab's layout
+   ═══════════════════════════════════════════════════════════════════════ */
+
+interface PreventiveDetailDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  result: PreventiveResult;
+  fileName: string;
+  rawText?: string;
+  isAttendenteMode: boolean;
+  currentStep: MentoriaStep;
+  completedSteps: Set<MentoriaStep>;
+  onStepChange: (step: MentoriaStep) => void;
+  onCompleteStep: (step: MentoriaStep) => void;
+}
+
+const classColor = (c: string) => {
+  if (c === "Excelente") return "text-accent";
+  if (c === "Bom atendimento") return "text-primary";
+  if (c === "Regular") return "text-warning";
+  return "text-destructive";
+};
+
+const classColorBg = (c: string) => {
+  if (c === "Excelente") return "bg-accent text-accent-foreground";
+  if (c === "Bom atendimento") return "bg-primary text-primary-foreground";
+  if (c === "Regular") return "bg-warning/15 text-warning";
+  return "bg-destructive/15 text-destructive";
+};
+
+const PreventiveDetailDialog = ({
+  open, onOpenChange, result, fileName, rawText,
+  isAttendenteMode, currentStep, completedSteps, onStepChange, onCompleteStep,
+}: PreventiveDetailDialogProps) => {
+  const printRef = useRef<HTMLDivElement>(null);
+
+  // Build a PreAnalysisResult from the preventive result for SemiAutoPanel
+  const preAnalysis: PreAnalysisResult | null = useMemo(() => {
+    if (!result?.criterios?.length) return null;
+
+    // Try to parse conversation for metadata
+    let totalMessages = 0, attendantMessages = 0, clientMessages = 0;
+    let avgResponseTimeSec: number | undefined;
+
+    if (rawText) {
+      try {
+        const msgs = parseConversationText(rawText);
+        totalMessages = msgs.length;
+        attendantMessages = msgs.filter(m => m.role === "atendente").length;
+        clientMessages = msgs.filter(m => m.role === "cliente").length;
+      } catch { /* ignore */ }
+    }
+
+    // If no messages parsed, estimate from result
+    if (totalMessages === 0) {
+      totalMessages = (result.criterios?.length || 0) > 0 ? 10 : 0; // reasonable default
+      attendantMessages = Math.ceil(totalMessages * 0.3);
+      clientMessages = totalMessages - attendantMessages;
+    }
+
+    return {
+      suggestions: result.criterios.map(c => ({
+        numero: c.numero,
+        nome: c.nome,
+        categoria: c.categoria,
+        sugestao: (c.resultado === "SIM" ? "SIM" : c.resultado === "NÃO" ? "NÃO" : "PARCIAL") as any,
+        confianca: "alta" as any,
+        justificativa: c.explicacao,
+        evidencia: undefined,
+      })),
+      metadata: {
+        totalMessages,
+        humanMessages: attendantMessages + clientMessages,
+        attendantMessages,
+        clientMessages,
+        avgResponseTimeSec,
+      },
+    };
+  }, [result, rawText]);
+
+  const handlePrint = () => {
+    if (!printRef.current) return;
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+    const content = printRef.current.cloneNode(true) as HTMLElement;
+    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]')).map(el => el.outerHTML).join("\n");
+    printWindow.document.write(`<!DOCTYPE html><html><head><title>Mentoria Preventiva — ${result.protocolo || "Atendimento"}</title>${styles}<style>@page{size:A4;margin:12mm 10mm;} html,body{margin:0!important;font-size:10px!important;-webkit-print-color-adjust:exact!important;} .print-wrapper{max-width:190mm!important;margin:0 auto!important;}</style></head><body><div class="print-wrapper"></div></body></html>`);
+    const wrapper = printWindow.document.querySelector('.print-wrapper');
+    if (wrapper) wrapper.appendChild(printWindow.document.adoptNode(content));
+    printWindow.document.close();
+    setTimeout(() => { printWindow.print(); printWindow.close(); }, 600);
+  };
+
+  if (!result.viavel) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Mentoria Preventiva</DialogTitle></DialogHeader>
+          <div className="flex flex-col items-center text-center py-6">
+            <AlertTriangle className="h-10 w-10 text-warning mb-3" />
+            <p className="font-bold text-foreground">Análise Inviável</p>
+            <p className="text-sm text-muted-foreground mt-2">{result.motivoInviavel}</p>
+          </div>
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}><X className="h-4 w-4 mr-1" /> Fechar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 overflow-y-auto flex flex-col">
+        {/* ═══ TOOLBAR ═══ */}
+        <DialogHeader className="px-8 py-5 border-b border-border/60 bg-gradient-to-r from-muted/40 to-muted/20">
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-xs font-extrabold text-primary uppercase tracking-[0.15em] flex items-center gap-2">
+                Mentoria Preventiva
+                <Badge className="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 text-[9px] px-2 py-0.5 h-auto border-0 normal-case tracking-normal font-semibold">🌱 Desenvolvimento</Badge>
+              </DialogTitle>
+              <p className="text-[11px] text-muted-foreground mt-1 truncate max-w-lg font-medium">{fileName}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {currentStep === "relatorio" && (
+                <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5 text-xs h-8 font-semibold">
+                  <Printer className="h-3.5 w-3.5" /> Imprimir
+                </Button>
+              )}
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOpenChange(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </DialogHeader>
+
+        {/* ═══ STEP BAR ═══ */}
+        <MentoriaStepBar
+          currentStep={currentStep}
+          completedSteps={completedSteps}
+          onStepClick={onStepChange}
+          hasPreAnalysis={!!preAnalysis}
+        />
+
+        {/* ═══ STEP CONTENT ═══ */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          {/* STEP: REVISÃO */}
+          {currentStep === "revisao" && preAnalysis && (
+            <ScrollArea className="h-full">
+              <div className="px-8 py-8">
+                <SemiAutoPanel
+                  analysis={preAnalysis}
+                  iaResult={result}
+                  onConfirm={(semiResult: SemiAutoResult) => {
+                    console.log("Preventive review confirmed:", semiResult);
+                  }}
+                />
+              </div>
+            </ScrollArea>
+          )}
+
+          {/* STEP: RELATÓRIO */}
+          {currentStep === "relatorio" && (
+            <ScrollArea className="h-full">
+              <div ref={printRef} className="px-8 py-8 space-y-6">
+                {/* Unofficial note banner */}
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-warning/5 border border-warning/20">
+                  <span className="text-base">📌</span>
+                  <p className="text-xs text-warning">
+                    Esta nota é para sua mentoria pessoal e não tem caráter oficial.
+                    Ela não afeta seu bônus nem sua avaliação formal.
+                  </p>
+                </div>
+
+                {/* Hero: metadata + score */}
+                <div className="rounded-2xl bg-gradient-to-br from-muted/50 via-muted/30 to-background border border-border/60 p-5 shadow-sm">
+                  <div className="flex items-stretch gap-5">
+                    <div className="flex-1 min-w-0">
+                      <h1 className="text-base font-extrabold text-foreground tracking-tight mb-3">Mentoria Preventiva</h1>
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-2">
                         {[
-                          { icon: Hash, label: "Protocolo", value: activeResult.protocolo || "—" },
-                          { icon: User, label: "Atendente", value: activeResult.atendente || "—" },
-                          { icon: Calendar, label: "Data", value: activeResult.data || "—" },
-                          { icon: Tag, label: "Tipo", value: activeResult.tipo || "—" },
+                          { icon: Hash, label: "Protocolo", value: result.protocolo || "—", mono: true },
+                          { icon: User, label: "Atendente", value: result.atendente || "—" },
+                          { icon: Calendar, label: "Data", value: result.data || "—" },
+                          { icon: Tag, label: "Tipo", value: result.tipo || "—" },
                         ].map((item) => (
                           <div key={item.label} className="flex items-center gap-2">
                             <div className="w-6 h-6 rounded-md bg-muted flex items-center justify-center shrink-0">
                               <item.icon className="h-3 w-3 text-muted-foreground" />
                             </div>
-                            <div>
-                              <p className="text-[10px] text-muted-foreground">{item.label}</p>
-                              <p className="text-xs font-medium text-foreground">{item.value}</p>
+                            <div className="min-w-0">
+                              <p className="text-[8px] text-muted-foreground uppercase tracking-[0.1em] font-semibold leading-none mb-0.5">{item.label}</p>
+                              <p className={`text-[13px] font-bold text-foreground truncate leading-tight ${item.mono ? "font-mono" : ""}`}>{item.value}</p>
                             </div>
                           </div>
                         ))}
                       </div>
-                      <div className="text-center shrink-0 p-4 rounded-xl bg-muted/50 border border-border min-w-[120px]">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Ref. Interna</p>
-                         <p className={`text-3xl font-black ${classColor(activeResult.classificacaoInterna)}`}>
-                           {activeResult.notaInterna != null ? (activeResult.notaInterna > 10 ? (activeResult.notaInterna / 10).toFixed(1) : activeResult.notaInterna.toFixed(1)) : "—"}
-                         </p>
-                        <p className={`text-xs font-medium ${classColor(activeResult.classificacaoInterna)}`}>
-                          {activeResult.classificacaoInterna}
-                        </p>
-                        <Badge variant="outline" className="mt-2 text-[10px]">Não oficial</Badge>
-                      </div>
                     </div>
-                  </Card>
-
-                  {/* Unofficial note badge for atendente */}
-                  {isAttendenteMode && (
-                    <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
-                      <span className="text-base">📌</span>
-                      <p className="text-xs text-amber-700">
-                        Esta nota é para sua mentoria pessoal e não tem caráter oficial.
-                        Ela não afeta seu bônus nem sua avaliação formal.
+                    <div className="shrink-0 w-44 flex flex-col items-center justify-center text-center rounded-2xl bg-background border-2 border-border/80 p-4 shadow-md">
+                      <p className="text-[8px] text-muted-foreground uppercase tracking-[0.15em] font-bold mb-1">Ref. Interna</p>
+                      <p className={`text-4xl font-black tracking-tighter leading-none ${classColor(result.classificacaoInterna)}`}>
+                        {result.notaInterna != null ? (result.notaInterna > 10 ? (result.notaInterna / 10).toFixed(1) : result.notaInterna.toFixed(1)) : "—"}
                       </p>
+                      <p className="text-[10px] text-muted-foreground mt-1 font-medium tabular-nums">
+                        {result.pontosObtidos}/{result.pontosPossiveis} pontos
+                      </p>
+                      <Badge className={`mt-2 text-[10px] px-2.5 py-0.5 font-bold shadow-sm ${classColorBg(result.classificacaoInterna)}`}>
+                        {result.classificacaoInterna}
+                      </Badge>
+                      <Badge variant="outline" className="mt-2 text-[9px]">Não oficial</Badge>
                     </div>
-                  )}
+                  </div>
+                </div>
 
-                  {/* Resumo */}
-                  <Card className="p-5 space-y-2">
-                    <h3 className="text-sm font-bold text-foreground">Resumo Geral</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{activeResult.resumoGeral}</p>
-                  </Card>
+                {/* Resumo */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-bold text-foreground">Resumo Geral</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{result.resumoGeral}</p>
+                </div>
 
-                  {/* Pontos Fortes */}
-                  {activeResult.pontosFortes?.length > 0 && (
-                    <Card className="p-5 space-y-3">
-                      <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                        <ThumbsUp className="h-4 w-4 text-emerald-500" />
-                        Pontos Fortes
-                      </h3>
+                {/* Pontos Fortes + Oportunidades */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {result.pontosFortes?.length > 0 && (
+                    <div className="rounded-2xl bg-accent/5 border border-accent/20 p-6">
+                      <div className="flex items-center gap-2.5 mb-4">
+                        <div className="w-8 h-8 rounded-full bg-accent/15 flex items-center justify-center">
+                          <ThumbsUp className="h-4 w-4 text-accent" />
+                        </div>
+                        <p className="text-[10px] font-extrabold text-accent uppercase tracking-[0.12em]">Pontos Fortes</p>
+                      </div>
                       <div className="space-y-2">
-                        {activeResult.pontosFortes.map((p, i) => (
+                        {result.pontosFortes.map((p, i) => (
                           <div key={i} className="flex items-start gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                            <CheckCircle2 className="h-4 w-4 text-accent shrink-0 mt-0.5" />
                             <p className="text-sm text-foreground">{p}</p>
                           </div>
                         ))}
                       </div>
-                    </Card>
+                    </div>
                   )}
-
-                  {/* Oportunidades */}
-                  {activeResult.oportunidadesMelhoria?.length > 0 && (
-                    <Card className="p-5 space-y-3">
-                      <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                        <Lightbulb className="h-4 w-4 text-amber-500" />
-                        Oportunidades de Melhoria
-                      </h3>
+                  {result.oportunidadesMelhoria?.length > 0 && (
+                    <div className="rounded-2xl bg-warning/5 border border-warning/20 p-6">
+                      <div className="flex items-center gap-2.5 mb-4">
+                        <div className="w-8 h-8 rounded-full bg-warning/15 flex items-center justify-center">
+                          <Lightbulb className="h-4 w-4 text-warning" />
+                        </div>
+                        <p className="text-[10px] font-extrabold text-warning uppercase tracking-[0.12em]">Oportunidades de Melhoria</p>
+                      </div>
                       <div className="space-y-3">
-                        {activeResult.oportunidadesMelhoria.map((o, i) => (
-                          <div key={i} className="p-3 rounded-lg bg-muted/40 border border-border space-y-1.5">
+                        {result.oportunidadesMelhoria.map((o, i) => (
+                          <div key={i} className="space-y-1">
                             <p className="text-xs font-bold text-foreground">{o.criterio}</p>
-                            <p className="text-xs text-muted-foreground"><strong>Sugestão:</strong> {o.sugestao}</p>
-                            <p className="text-xs text-muted-foreground"><strong>Exemplo:</strong> {o.exemplo}</p>
-                            <p className="text-xs text-emerald-600"><strong>Impacto:</strong> {o.impacto}</p>
+                            <p className="text-xs text-muted-foreground">{o.sugestao}</p>
                           </div>
                         ))}
                       </div>
-                    </Card>
+                    </div>
                   )}
+                </div>
 
-                  {/* Critérios */}
-                  <Card className="p-5 space-y-3">
-                    <button
-                      className="flex items-center justify-between w-full text-left"
-                      onClick={() => setShowCriterios(!showCriterios)}
-                    >
-                      <h3 className="text-sm font-bold text-foreground">Detalhamento dos Critérios</h3>
-                      {showCriterios ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </button>
-                    {showCriterios && (
-                      <div className="space-y-2">
-                        {activeResult.criterios?.map((c) => (
-                          <div key={c.numero} className="flex items-start gap-3 p-2 rounded border border-border">
-                            <Badge
-                              variant={c.resultado === "SIM" ? "default" : c.resultado === "NÃO" ? "destructive" : "secondary"}
-                              className="text-[10px] shrink-0 mt-0.5"
-                            >
-                              {c.resultado}
-                            </Badge>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium text-foreground">
-                                {c.numero}. {c.nome} <span className="text-muted-foreground">({c.pontosObtidos}/{c.pesoMaximo})</span>
-                              </p>
-                              <p className="text-[11px] text-muted-foreground mt-0.5">{c.explicacao}</p>
-                            </div>
-                          </div>
-                        ))}
+                {/* Critérios detalhados */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-foreground">Detalhamento dos Critérios</h3>
+                  <div className="space-y-2">
+                    {result.criterios?.map((c) => (
+                      <div key={c.numero} className="flex items-start gap-3 p-2 rounded border border-border">
+                        <Badge
+                          variant={c.resultado === "SIM" ? "default" : c.resultado === "NÃO" ? "destructive" : "secondary"}
+                          className="text-[10px] shrink-0 mt-0.5"
+                        >
+                          {c.resultado}
+                        </Badge>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-foreground">
+                            {c.numero}. {c.nome} <span className="text-muted-foreground">({c.pontosObtidos}/{c.pesoMaximo})</span>
+                          </p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{c.explicacao}</p>
+                        </div>
                       </div>
-                    )}
-                    </Card>
+                    ))}
+                  </div>
+                </div>
 
-                  {/* Texto original do chat */}
-                  {activeRawText && (
-                    <FormattedChatText rawText={activeRawText} clientName={activeResult.cliente} />
-                  )}
-                </>
-              )}
-            </div>
+                {/* Texto original do chat */}
+                {rawText && (
+                  <FormattedChatText rawText={rawText} clientName={result.cliente} />
+                )}
+
+                {/* Footer */}
+                <div className="pt-4 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground">
+                  <span className="font-medium">Radar Insight · Mentoria Preventiva</span>
+                  <span>{new Date().toLocaleDateString("pt-BR")} às {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                </div>
+              </div>
+            </ScrollArea>
           )}
 
-          {/* Atendente History Section */}
-          {isAttendenteMode && currentUserId && !activeResult && (
-            <MentoriaAttendenteHistory userId={currentUserId} isAdmin={isAdmin} />
-          )}
+          {/* Fallback */}
+          {!preAnalysis && currentStep !== "relatorio" && (() => { onStepChange("relatorio"); return null; })()}
         </div>
-      </main>
-    </div>
+
+        {/* ═══ CONTROL BAR ═══ */}
+        <div className="px-8 py-3 border-t border-border/60 bg-muted/20 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            {currentStep === "relatorio" && (
+              <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-8 font-semibold" onClick={() => onStepChange("revisao")}>
+                <ChevronLeft className="h-3.5 w-3.5" /> Voltar etapa
+              </Button>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {currentStep === "revisao" && (
+              <Button size="sm" className="gap-1.5 text-xs h-8 font-semibold" onClick={() => { onCompleteStep("revisao"); onStepChange("relatorio"); }}>
+                Confirmar Revisão <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5 text-xs h-8 font-semibold">
+              <List className="h-3.5 w-3.5" /> Voltar para lista
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
