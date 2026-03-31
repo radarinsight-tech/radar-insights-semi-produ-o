@@ -1159,6 +1159,7 @@ const MentoriaLab = () => {
       } = await supabase.auth.getUser();
       if (!user) {
         toast.error("Você precisa estar autenticado para importar arquivos.");
+        setIsImporting(false); setImportingCount(0);
         return;
       }
 
