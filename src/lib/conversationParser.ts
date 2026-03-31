@@ -75,14 +75,20 @@ const SHORT_DATE_REGEX = /(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}(?::\d{2})?)/g;
 
 /**
  * Check if a line looks like a standalone date (Portuguese or short).
+ * Also matches "Lida - DD de mes de YYYY HH:MM" format.
  */
 function isDateLine(line: string): boolean {
   const trimmed = line.trim();
   if (!trimmed) return false;
-  if (parsePortugueseDate(trimmed)) return true;
-  if (/^\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}/.test(trimmed)) return true;
+  // Strip "Lida - " prefix if present
+  const cleaned = trimmed.replace(/^Lida\s*-\s*/i, "");
+  if (parsePortugueseDate(cleaned)) return true;
+  if (/^\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}/.test(cleaned)) return true;
   return false;
 }
+
+/** Header labels that should NOT be treated as speaker names */
+const HEADER_LABELS = /^(hor[aá]rio\s+de\s+abertura|in[ií]cio\s+do\s+atendimento|fim\s+do\s+atendimento|protocolo|cliente|atendente|data|canal|setor|tipo\s+de\s+atendimento|status)\b/i;
 
 /**
  * Check if a line looks like a speaker name (short, capitalized, no date/number prefix).
@@ -93,6 +99,8 @@ function isNameLine(line: string): boolean {
   if (/^\d/.test(trimmed)) return false;
   // Must start with a letter
   if (!/^[A-Za-zÀ-ÿ]/.test(trimmed)) return false;
+  // Reject known header labels
+  if (HEADER_LABELS.test(trimmed)) return false;
   // Should be short (a name, not a sentence)
   if (trimmed.split(/\s+/).length > 6) return false;
   // Should not contain date patterns
