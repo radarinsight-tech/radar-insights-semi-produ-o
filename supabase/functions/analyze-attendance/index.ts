@@ -86,17 +86,18 @@ Se NÃO houver atendente humano (apenas BOT):
 
 Se houver atendente humano → prosseguir.
 
-ETAPA 8 — DETECTAR IMPEDIMENTOS
-Verifique se o atendente enviou áudio, mensagem de voz ou arquivo de áudio.
+ETAPA 8 — DETECTAR USO DE ÁUDIO PELO ATENDENTE
+Verifique se o atendente enviou áudio, mensagem de voz ou arquivo de áudio (gravacao_de_voz.mp3 etc.).
 
 Se sim:
-- statusAtendimento = "auditado"
-- statusAuditoria = "impedimento_detectado"
-- motivo = "envio_de_audio_pelo_atendente"
-- notaFinal = 0, pontosObtidos = 0, pontosPossiveis = 0
-- NÃO aplicar mentoria. ENCERRAR.
+- NÃO bloquear a auditoria. Continuar normalmente.
+- O uso de áudio pode ser penalizado no critério apropriado (ex: linguagem, condução),
+  mas NÃO impede a avaliação dos outros 18 critérios.
+- Registrar observação: "Atendente enviou áudio durante atendimento de texto"
+- Se houver transcrição do áudio disponível no texto (marcada como "[Áudio transcrito]: ..."),
+  usar o conteúdo transcrito como parte da conversa para avaliar todos os critérios.
 
-Se não → prosseguir.
+Prosseguir para a próxima etapa.
 
 ETAPA 9 — DETECTAR FALHA DO BOT
 Analise se houve falha do BOT:
