@@ -283,7 +283,7 @@ function _extractAtendenteRaw(text: string): string | undefined {
   if (singleNameCounts.size > 0) {
     // Pick most frequent, must have at least 2 messages
     const sorted = [...singleNameCounts.entries()].sort((a, b) => b[1] - a[1]);
-    if (sorted[0][1] >= 2) {
+    if (sorted[0][1] >= 1) {
       return sorted[0][0];
     }
   }
