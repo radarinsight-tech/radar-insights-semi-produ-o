@@ -43,8 +43,22 @@ export function detectAudio(text: string): boolean {
   if (/download\s+de\s+[aá]udio/i.test(lower)) return true;
   if (/mensagem\s+de\s+voz/i.test(lower)) return true;
   if (/\b[aá]udio\s+(enviado|recebido|anexado|detectado)\b/i.test(lower)) return true;
+  // Emoji marker
+  if (lower.includes("🎵")) return true;
   // General audio keywords
   return /\b(áudio|audio|gravação|gravacao|escuta|ligação|ligacao|chamada)\b/.test(lower);
+}
+
+// ── Imagem ─────────────────────────────────────────────────────────────
+export function detectImage(text: string): boolean {
+  const lower = text.toLowerCase();
+  // Explicit image file extensions
+  if (/\.(jpg|jpeg|png|webp|gif|bmp|tiff|svg)\b/i.test(lower)) return true;
+  // Keywords
+  if (/\b(imagem|image|foto|fotografia|captura\s+de\s+tela|screenshot|print)\b/i.test(lower)) return true;
+  // Emoji marker
+  if (lower.includes("📷")) return true;
+  return false;
 }
 
 // ── Data do atendimento ────────────────────────────────────────────────
