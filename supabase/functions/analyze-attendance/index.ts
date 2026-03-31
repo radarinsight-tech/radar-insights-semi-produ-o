@@ -636,8 +636,9 @@ ${text}`,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("analyze-attendance error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }), {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[analyze-attendance] Erro:", msg, e instanceof Error ? e.stack : "");
+    return new Response(JSON.stringify({ error: "Erro ao processar análise", detail: msg }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
