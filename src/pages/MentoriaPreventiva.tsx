@@ -878,7 +878,7 @@ const MentoriaPreventiva = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-bold text-foreground">Resultado da Mentoria Preventiva</h2>
-                <Button variant="ghost" size="sm" onClick={() => setActiveResult(null)}>
+                <Button variant="ghost" size="sm" onClick={() => { setActiveResult(null); setActiveRawText(null); }}>
                   <X className="h-3 w-3 mr-1" /> Fechar
                 </Button>
               </div>
