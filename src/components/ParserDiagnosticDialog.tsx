@@ -275,7 +275,7 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
                         {ROLE_CONFIG[m.role || "sistema"].label}
                       </Badge>
                       <span className="text-muted-foreground shrink-0">{EVENT_LABELS[m.type || "generic"]}</span>
-                      <span className="text-foreground truncate">{m.label}</span>
+                      <span className="text-foreground break-words whitespace-pre-wrap">{m.label}</span>
                     </div>
                   ))}
                 </div>
