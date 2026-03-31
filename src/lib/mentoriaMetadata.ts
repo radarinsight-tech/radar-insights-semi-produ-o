@@ -151,6 +151,13 @@ function isInvalidAttendantName(name: string): boolean {
 }
 
 export function extractAtendente(text: string): string | undefined {
+  const result = _extractAtendenteRaw(text);
+  const BLOCKED = ["seu", "sua", "seu atendente", "sua atendente"];
+  if (result && BLOCKED.includes(result.toLowerCase().trim())) return undefined;
+  return result;
+}
+
+function _extractAtendenteRaw(text: string): string | undefined {
   // Strategy 0: "Seu atendente\nNome" or "Seu atendente Nome" pattern (BandaTurbo PDFs)
   // Matches both newline-separated and space-separated variants
   const seuBlockPattern = /(?:seu|sua)\s+atendente\s*[:\-]?\s*[\n\s]\s*([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)+)/gi;
