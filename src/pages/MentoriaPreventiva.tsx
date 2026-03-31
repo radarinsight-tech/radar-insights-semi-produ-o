@@ -957,8 +957,8 @@ const PreventiveDetailDialog = ({
       try {
         const msgs = parseConversationText(rawText);
         totalMessages = msgs.length;
-        attendantMessages = msgs.filter(m => m.sender === "attendant").length;
-        clientMessages = msgs.filter(m => m.sender === "client").length;
+        attendantMessages = msgs.filter(m => m.role === "atendente").length;
+        clientMessages = msgs.filter(m => m.role === "cliente").length;
       } catch { /* ignore */ }
     }
 
