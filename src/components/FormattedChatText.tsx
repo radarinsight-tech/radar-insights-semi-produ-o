@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { FileText, ChevronDown, ChevronRight } from "lucide-react";
+import { ChatMediaSection } from "@/components/ChatMediaSection";
+import type { ExtractedAudio, ExtractedImage } from "@/lib/pdfMediaExtractor";
 
 // ─── Types ───────────────────────────────────────────────────────
 
