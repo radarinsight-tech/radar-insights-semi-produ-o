@@ -3542,6 +3542,8 @@ const MentoriaLab = () => {
         nonEvaluableReason={mentoriaFile?.nonEvaluableReason}
         tipoAnalise={mentoriaFile?.tipo_analise}
         initialStep={mentoriaInitialStep}
+        audioBlobs={mentoriaFile?.audioBlobs}
+        imageBlobs={mentoriaFile?.imageBlobs}
       />
       {/* Parser Diagnostic Dialog (admin-only) */}
       <ParserDiagnosticDialog
