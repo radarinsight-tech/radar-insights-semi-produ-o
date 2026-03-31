@@ -423,8 +423,8 @@ ${text}`,
                   },
                   motivo: {
                     type: "string",
-                    enum: ["sem_interacao_do_cliente", "atendimento_apenas_por_bot", "envio_de_audio_pelo_atendente", ""],
-                    description: "Motivo quando não auditado. Vazio se auditado.",
+                    enum: ["sem_interacao_do_cliente", "atendimento_apenas_por_bot", "envio_de_audio_pelo_atendente", "nao_se_aplica"],
+                    description: "Motivo quando não auditado. Use 'nao_se_aplica' se auditado.",
                   },
                   statusBot: {
                     type: "string",
