@@ -5,7 +5,8 @@ import {
   ArrowLeft, ShieldCheck, Upload, Loader2, FileText,
   CheckCircle2, AlertTriangle, ThumbsUp, Lightbulb, ChevronDown, ChevronUp,
   Hash, User, Calendar, Tag, Info, Shuffle, Volume2, VolumeX, X, Play,
-  Eye, BarChart3, ShieldAlert, Search, FilterX
+  Eye, BarChart3, ShieldAlert, Search, FilterX, Printer, Radio,
+  ChevronRight, ChevronLeft, List, Award, MessageSquareQuote
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,6 +15,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
@@ -21,6 +24,10 @@ import { extractAllMetadata, type PdfMetadata } from "@/lib/mentoriaMetadata";
 import logoSymbol from "@/assets/logo-symbol.png";
 import PreventiveInsights from "@/components/PreventiveInsights";
 import FormattedChatText from "@/components/FormattedChatText";
+import SemiAutoPanel, { type SemiAutoResult } from "@/components/SemiAutoPanel";
+import MentoriaStepBar, { type MentoriaStep } from "@/components/MentoriaStepBar";
+import { runPreAnalysis, type PreAnalysisResult } from "@/lib/mentoriaPreAnalysis";
+import { parseConversation } from "@/lib/conversationParser";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
 import MentoriaAttendenteHeader from "@/components/MentoriaAttendenteHeader";
 import MentoriaAttendenteHistory from "@/components/MentoriaAttendenteHistory";
