@@ -169,7 +169,7 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <div className="flex-1 overflow-y-auto -mx-6 px-6">
           <div className="space-y-5 pb-4">
 
             {/* Integrity check */}
