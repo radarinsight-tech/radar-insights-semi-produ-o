@@ -128,8 +128,11 @@ function isBot(name: string): boolean {
 
 function isInstitutional(name: string): boolean {
   const lower = name.toLowerCase().trim();
-  // Single-word institutional terms
+  // Full name match
   if (INSTITUTIONAL_TERMS.has(lower)) return true;
+  // First word match (e.g. "Setor Financeiro" → "setor")
+  const firstWord = lower.split(/\s+/)[0];
+  if (INSTITUTIONAL_TERMS.has(firstWord)) return true;
   // Company-like names
   if (COMPANY_PATTERN.test(lower)) return true;
   return false;
