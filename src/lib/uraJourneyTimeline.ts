@@ -140,7 +140,7 @@ function milestoneLabel(type: JourneyMilestone["type"], text: string, speaker?: 
     case "problem_informed": return `Problema informado: ${short(text, 50)}`;
     case "transfer": return "Transferido para fila";
     case "queue": return "Aguardando na fila";
-    case "human_start": return `Atendimento humano iniciado por ${speaker || "atendente"}`;
+    case "human_start": return `Atendimento humano`;
     case "survey": return "Pesquisa de satisfação enviada";
     case "reminder": return "Lembrete de pesquisa";
     case "client_interaction": return `Cliente: ${short(text, 50)}`;
