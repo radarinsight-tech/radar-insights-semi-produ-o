@@ -637,7 +637,7 @@ const MentoriaPreventiva = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => { setFiles([]); setSampled(false); setActiveResult(null); setShowInsights(false); }}
+                      onClick={() => { setFiles([]); setSampled(false); setActiveResult(null); setActiveRawText(null); setShowInsights(false); }}
                     >
                       <X className="h-3 w-3 mr-1" /> Limpar tudo
                     </Button>
