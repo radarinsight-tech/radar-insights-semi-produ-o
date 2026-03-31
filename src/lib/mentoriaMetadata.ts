@@ -108,6 +108,8 @@ function normalizeDate(raw: string): string {
 const BOT_NAMES = new Set([
   "marte", "bot", "sistema", "robô", "robo", "automático", "automatico",
   "assistente virtual", "atendimento automático", "chatbot",
+  "bandaturbo", "especialista virtual", "seu especialista virtual",
+  "especialista virtual da bandaturbo",
 ]);
 
 /** Institutional / non-person terms to always exclude */
@@ -119,7 +121,7 @@ const INSTITUTIONAL_TERMS = new Set([
 ]);
 
 /** Regex for company-like names (contains Internet, Telecom, LTDA, etc.) */
-const COMPANY_PATTERN = /\b(internet|telecom|telecomunica|ltda|s\.?a\.?|eireli|me\b|fibra|provedor|banda\s*larga|serviços|servicos|tecnologia|soluções|solucoes|group|corp|inc)\b/i;
+const COMPANY_PATTERN = /\b(internet|telecom|telecomunica|ltda|s\.?a\.?|eireli|me\b|fibra|provedor|banda\s*larga|serviços|servicos|tecnologia|soluções|solucoes|group|corp|inc|bandaturbo|banda\s*turbo)\b/i;
 
 function isBot(name: string): boolean {
   const lower = name.toLowerCase().trim();
@@ -150,6 +152,8 @@ function isLikelyPersonName(name: string): boolean {
   if (!/^[A-Za-zÀ-ÿ\s'.]+$/.test(trimmed)) return false;
   // Reject institutional/company names
   if (isInstitutional(trimmed)) return false;
+  // Reject names starting with prepositions (e.g. "Da Bandaturbo", "Do Setor")
+  if (/^(da|do|de|das|dos|e|em|com|para|por|ao|aos|à|às)\s/i.test(trimmed)) return false;
   return true;
 }
 
@@ -283,7 +287,7 @@ function _extractAtendenteRaw(text: string): string | undefined {
   if (singleNameCounts.size > 0) {
     // Pick most frequent, must have at least 2 messages
     const sorted = [...singleNameCounts.entries()].sort((a, b) => b[1] - a[1]);
-    if (sorted[0][1] >= 1) {
+    if (sorted[0][1] >= 2) {
       return sorted[0][0];
     }
   }
