@@ -580,9 +580,49 @@ const MentoriaUnifiedTable = ({
                       )}
                     </TableCell>
 
-                    {/* Ação — Confirm/Audit for analyzed items, menu for all */}
+                    {/* Ação — Análise IA / Confirm+Audit / menu */}
                     <TableCell className="py-3 w-[20%] text-right">
                       <div className="flex items-center justify-end gap-1 flex-nowrap">
+                        {/* Botão Análise IA para pendentes/lidos */}
+                        {(f.status === "lido" || f.status === "pendente") && !f.hasResult && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2 text-xs gap-1"
+                                onClick={() => onStartMentoria(f)}
+                                disabled={isBusy}
+                              >
+                                <PlayCircle className="h-3 w-3" />
+                                Análise IA
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top"><p>Iniciar análise deste atendimento pela IA</p></TooltipContent>
+                          </Tooltip>
+                        )}
+
+                        {/* Botão Auditar para analisados aguardando revisão */}
+                        {(f.status === "analisado" || f.status === "aguardando_revisao_ia" || f.status === "aguardando_revisao_manual") && f.hasResult && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2 text-xs gap-1"
+                                onClick={() => {
+                                  onMarkViewed?.(f.id);
+                                  if (onAuditFile) onAuditFile(f);
+                                }}
+                              >
+                                <Eye className="h-3 w-3" />
+                                Auditar
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top"><p>Revisar os 19 critérios antes de confirmar</p></TooltipContent>
+                          </Tooltip>
+                        )}
+
                         {/* Confirm + Audit buttons for items with results that are not yet confirmed */}
                         {f.hasResult && f.status !== "confirmado" && (
                           <>
