@@ -200,6 +200,26 @@ function _extractAtendenteRaw(text: string): string | undefined {
     }
   }
 
+  // Strategy 0.5: Standalone name lines (BandaTurbo block format)
+  // e.g. "Dilcele Furtado\nOlá, tudo bem?\nLida - ..."
+  const standalonePattern = /^([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)+)$/gm;
+  const standaloneCounts = new Map<string, number>();
+  for (const m of [...text.matchAll(standalonePattern)]) {
+    const name = m[1].trim();
+    if (!name || isBot(name) || isInstitutional(name) || isInvalidAttendantName(name)) continue;
+    if (BOT_COMPANY_KEYWORDS.test(name.toLowerCase())) continue;
+    standaloneCounts.set(name, (standaloneCounts.get(name) || 0) + 1);
+  }
+  if (standaloneCounts.size > 0) {
+    const clientHeader = text.match(/(?:cliente|solicitante)\s*[:\-]\s*([^\n\r]+)/i)?.[1]?.trim().split(/[,\-\|\/]/)[0].trim() || "";
+    const sortedStandalone = [...standaloneCounts.entries()]
+      .filter(([name]) => name.toLowerCase() !== clientHeader.toLowerCase())
+      .sort((a, b) => b[1] - a[1]);
+    if (sortedStandalone.length > 0 && sortedStandalone[0][1] >= 2) {
+      return sortedStandalone[0][0];
+    }
+  }
+
   // Strategy 1: Explicit labels
   const labelPatterns = [
     /(?:seu\s+atendente|sua\s+atendente|atendente|agente|operador|analista|consultor|responsável)\s*[:\-]\s*([^\n\r]+)/gi,
