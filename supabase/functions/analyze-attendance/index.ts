@@ -256,13 +256,15 @@ REGRA DE BLOQUEIO: Se qualquer inconsistência for detectada na checagem, CORRIJ
 REGRAS FINAIS DE COERÊNCIA
 ═══════════════════════════════════════════════════
 
-1. Se statusAuditoria = "impedimento_detectado" → NÃO calcular nota (notaFinal = 0)
-2. Se statusAtendimento = "apenas_bot" → NÃO calcular nota (notaFinal = 0)
-3. Se statusAtendimento = "fora_de_avaliacao" → NÃO calcular nota (notaFinal = 0)
-4. Se statusAuditoria = "auditoria_realizada" → nota e pontuação são OBRIGATÓRIAS e pontosPossiveis > 0
-5. classificacao DEVE sempre corresponder à notaFinal conforme a escala
-6. NUNCA "Bom atendimento" com notaFinal 0
-7. NUNCA "sem_interacao_do_cliente" quando existem mensagens do cliente`;
+1. Se statusAtendimento = "apenas_bot" → NÃO calcular nota (notaFinal = 0)
+2. Se statusAtendimento = "fora_de_avaliacao" → NÃO calcular nota (notaFinal = 0)
+3. Se statusAuditoria = "auditoria_realizada" → nota e pontuação são OBRIGATÓRIAS e pontosPossiveis > 0
+4. classificacao DEVE sempre corresponder à notaFinal conforme a escala
+5. NUNCA "Bom atendimento" com notaFinal 0
+6. NUNCA "sem_interacao_do_cliente" quando existem mensagens do cliente
+7. Atendimentos com áudio do atendente DEVEM ser auditados normalmente (auditoria_realizada), NÃO impedimento_detectado.
+8. NUNCA retornar impedimento_detectado por causa de áudio — áudio não bloqueia mais a auditoria.`;
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
