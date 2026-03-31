@@ -333,6 +333,8 @@ const MentoriaLab = () => {
   const [files, setFiles] = useState<LabFile[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [processing, setProcessing] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importingCount, setImportingCount] = useState(0);
   const [readingIds, setReadingIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState("operacao");
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
