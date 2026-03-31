@@ -121,7 +121,7 @@ const INSTITUTIONAL_TERMS = new Set([
 ]);
 
 /** Regex for company-like names (contains Internet, Telecom, LTDA, etc.) */
-const COMPANY_PATTERN = /\b(internet|telecom|telecomunica|ltda|s\.?a\.?|eireli|me\b|fibra|provedor|banda\s*larga|serviços|servicos|tecnologia|soluções|solucoes|group|corp|inc)\b/i;
+const COMPANY_PATTERN = /\b(internet|telecom|telecomunica|ltda|s\.?a\.?|eireli|me\b|fibra|provedor|banda\s*larga|serviços|servicos|tecnologia|soluções|solucoes|group|corp|inc|bandaturbo|banda\s*turbo)\b/i;
 
 function isBot(name: string): boolean {
   const lower = name.toLowerCase().trim();
