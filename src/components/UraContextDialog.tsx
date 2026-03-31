@@ -22,6 +22,8 @@ interface UraContextDialogProps {
   rawText?: string;
   atendente?: string;
   structuredConversation?: StructuredConversation;
+  audioBlobs?: ExtractedAudio[];
+  imageBlobs?: ExtractedImage[];
 }
 
 interface SectionConfig {
