@@ -147,8 +147,7 @@ const MentoriaPreventiva = () => {
   const [files, setFiles] = useState<LabFile[]>([]);
   const [readingIds, setReadingIds] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState(false);
-  const [activeResult, setActiveResult] = useState<PreventiveResult | null>(null);
-  const [activeRawText, setActiveRawText] = useState<string | null>(null);
+  const [activeFile, setActiveFile] = useState<LabFile | null>(null);
   const [showCriterios, setShowCriterios] = useState(false);
   const [sampled, setSampled] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
@@ -158,6 +157,8 @@ const MentoriaPreventiva = () => {
   const [filterSearch, setFilterSearch] = useState("");
   const [filterPeriodo, setFilterPeriodo] = useState("todos");
   const [filterStatus, setFilterStatus] = useState("todos");
+  const [currentStep, setCurrentStep] = useState<MentoriaStep>("revisao");
+  const [completedSteps, setCompletedSteps] = useState<Set<MentoriaStep>>(new Set());
 
   // Load monthly count for atendente mode
   useEffect(() => {
