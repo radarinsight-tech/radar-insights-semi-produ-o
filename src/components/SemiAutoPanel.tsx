@@ -39,6 +39,8 @@ export interface SemiAutoResult {
 
 interface SemiAutoPanelProps {
   analysis: PreAnalysisResult;
+  /** Result from analyze-attendance edge function — when present, pre-fills criteria from IA */
+  iaResult?: any;
   onConfirm?: (result: SemiAutoResult) => void;
 }
 
