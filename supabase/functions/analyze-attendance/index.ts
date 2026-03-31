@@ -266,6 +266,13 @@ REGRAS FINAIS DE COERÊNCIA
 8. NUNCA retornar impedimento_detectado por causa de áudio — áudio não bloqueia mais a auditoria.`;
 
 
+function sanitizeText(t: string): string {
+  return t
+    .replace(/\u0000/g, '')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+    .trim();
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -274,7 +281,8 @@ serve(async (req) => {
   const startTime = Date.now();
 
   try {
-    const { text } = await req.json();
+    const body = await req.json();
+    const text = typeof body.text === "string" ? sanitizeText(body.text) : body.text;
     if (!text || typeof text !== "string") {
       return new Response(JSON.stringify({ error: "Texto do atendimento é obrigatório" }), {
         status: 400,
@@ -628,8 +636,9 @@ ${text}`,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("analyze-attendance error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }), {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[analyze-attendance] Erro:", msg, e instanceof Error ? e.stack : "");
+    return new Response(JSON.stringify({ error: "Erro ao processar análise", detail: msg }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
