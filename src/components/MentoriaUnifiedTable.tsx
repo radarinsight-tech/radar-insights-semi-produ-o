@@ -173,6 +173,8 @@ const MentoriaUnifiedTable = ({
   onConfirmSelected,
   onRejectSelected,
   onMarkViewed,
+  onAuditFile,
+  monthlyConfirmCounts,
 }: MentoriaUnifiedTableProps) => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
