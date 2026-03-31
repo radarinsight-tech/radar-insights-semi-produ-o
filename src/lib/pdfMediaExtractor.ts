@@ -46,7 +46,7 @@ export async function extractAudioAttachments(
             };
             const ext = lower.slice(lower.lastIndexOf("."));
             const mime = mimeMap[ext] || "audio/mpeg";
-            const blob = new Blob([content], { type: mime });
+            const blob = new Blob([new Uint8Array(content)], { type: mime });
             const url = URL.createObjectURL(blob);
             results.push({ name, url, blob });
           }
