@@ -255,7 +255,10 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                   <Badge className="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 text-[9px] px-2 py-0.5 h-auto border-0 normal-case tracking-normal font-semibold">🔍 Analisado manualmente</Badge>
                 )}
               </DialogTitle>
-              <p className="text-[11px] text-muted-foreground mt-1 truncate max-w-lg font-medium">{fileName}</p>
+              <p className="text-[11px] text-muted-foreground mt-1 truncate max-w-lg font-medium">
+                {fileName}
+                <span className="ml-2 text-muted-foreground/70">— Resultado consolidado da auditoria deste atendimento com nota, critérios e orientações de melhoria.</span>
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => setUraOpen(true)} className="gap-1.5 text-xs h-8 font-semibold">
