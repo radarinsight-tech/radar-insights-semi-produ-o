@@ -3,15 +3,15 @@
  * processed each attendance: raw text, normalized text, parsed messages, detected events, and summary.
  */
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { normalizeRawText, parseStructuredConversation, extractUraContext, type ParsedMessage, type StructuredConversation } from "@/lib/conversationParser";
 import { classifyMessages, type ClassifiedMessage } from "@/lib/messageClassifier";
 import { buildJourneyTimeline, type JourneyMilestone } from "@/lib/uraJourneyTimeline";
-import { AlertTriangle, CheckCircle2, Clock, MessageSquare, Bot, User, Headphones, HelpCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, MessageSquare, Bot, User, Headphones, HelpCircle, ChevronDown, ChevronRight } from "lucide-react";
 
 interface Props {
   open: boolean;
