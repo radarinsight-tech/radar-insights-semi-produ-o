@@ -339,7 +339,7 @@ const MentoriaLab = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showAnalyzeWarning, setShowAnalyzeWarning] = useState(false);
   const [mentoriaFile, setMentoriaFile] = useState<LabFile | null>(null);
-  const [mentoriaInitialStep, setMentoriaInitialStep] = useState<"pre-analise" | "semi-auto" | "relatorio" | undefined>(undefined);
+  const [mentoriaInitialStep, setMentoriaInitialStep] = useState<"revisao" | "relatorio" | undefined>(undefined);
   const [showCharts, setShowCharts] = useState(false);
   const [highlightedFileId, setHighlightedFileId] = useState<string | null>(null);
   const [approvingIds, setApprovingIds] = useState<Set<string>>(new Set());
@@ -1478,7 +1478,7 @@ const MentoriaLab = () => {
     }
   };
 
-  const openMentoria = useCallback((f: LabFile, initialStep?: "pre-analise" | "semi-auto" | "relatorio") => {
+  const openMentoria = useCallback((f: LabFile, initialStep?: "revisao" | "relatorio") => {
     setSideFile(null);
     setMentoriaFile(f);
     setMentoriaInitialStep(initialStep);
@@ -3305,7 +3305,7 @@ const MentoriaLab = () => {
                     onAnalyzeNext={handleAnalyzeNextFromPipeline}
                     onBatchAnalyze={handleBatchAnalyze}
                     monthlyConfirmCounts={monthlyConfirmCounts}
-                    onAuditFile={(f) => openMentoria(f as any, "semi-auto")}
+                    onAuditFile={(f) => openMentoria(f as any, "revisao")}
                     onAnalyzeSelected={async (ids: string[], tipoAnalise: 'ia' | 'manual') => {
                       const newStatus = 'aguardando_revisao_ia';
                       for (const id of ids) {

@@ -1,11 +1,10 @@
-import { Check, Sparkles, Zap, FileText } from "lucide-react";
+import { Check, ClipboardCheck, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type MentoriaStep = "pre-analise" | "semi-auto" | "relatorio";
+export type MentoriaStep = "revisao" | "relatorio";
 
-const STEPS: { key: MentoriaStep; label: string; icon: typeof Sparkles }[] = [
-  { key: "pre-analise", label: "Pré-Análise", icon: Sparkles },
-  { key: "semi-auto", label: "Semi-Automático", icon: Zap },
+const STEPS: { key: MentoriaStep; label: string; icon: typeof ClipboardCheck }[] = [
+  { key: "revisao", label: "Revisão", icon: ClipboardCheck },
   { key: "relatorio", label: "Relatório", icon: FileText },
 ];
 
@@ -14,16 +13,10 @@ interface MentoriaStepBarProps {
   completedSteps: Set<MentoriaStep>;
   onStepClick: (step: MentoriaStep) => void;
   hasPreAnalysis: boolean;
-  /** When true, hides the Pre-Análise step (audit mode: Semi-Auto → Relatório) */
-  hidePreAnalysis?: boolean;
 }
 
-const MentoriaStepBar = ({ currentStep, completedSteps, onStepClick, hasPreAnalysis, hidePreAnalysis }: MentoriaStepBarProps) => {
-  const steps = !hasPreAnalysis
-    ? [STEPS[2]]
-    : hidePreAnalysis
-      ? STEPS.filter(s => s.key !== "pre-analise")
-      : STEPS;
+const MentoriaStepBar = ({ currentStep, completedSteps, onStepClick, hasPreAnalysis }: MentoriaStepBarProps) => {
+  const steps = !hasPreAnalysis ? [STEPS[1]] : STEPS;
   const currentIdx = steps.findIndex(s => s.key === currentStep);
 
   return (
@@ -37,7 +30,6 @@ const MentoriaStepBar = ({ currentStep, completedSteps, onStepClick, hasPreAnaly
 
           return (
             <div key={step.key} className="flex items-center flex-1 last:flex-none">
-              {/* Step circle + label */}
               <button
                 onClick={() => isClickable && onStepClick(step.key)}
                 disabled={!isClickable}
@@ -64,7 +56,6 @@ const MentoriaStepBar = ({ currentStep, completedSteps, onStepClick, hasPreAnaly
                 <span className="whitespace-nowrap">{step.label}</span>
               </button>
 
-              {/* Connector line */}
               {idx < steps.length - 1 && (
                 <div className={cn(
                   "flex-1 h-0.5 mx-2 rounded-full transition-all",

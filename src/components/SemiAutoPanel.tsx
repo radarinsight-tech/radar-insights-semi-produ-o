@@ -263,6 +263,16 @@ const SemiAutoPanel = ({ analysis, iaResult, onConfirm }: SemiAutoPanelProps) =>
 
   return (
     <div className="space-y-6">
+      {/* ═══ METADATA HEADER (from pre-analysis) ═══ */}
+      <div className="flex items-center gap-5 text-sm text-muted-foreground mb-4">
+        <span className="flex items-center gap-1.5">💬 Mensagens: <span className="font-bold text-foreground">{analysis.metadata.totalMessages}</span></span>
+        <span className="flex items-center gap-1.5">👤 Atendente: <span className="font-bold text-foreground">{analysis.metadata.attendantMessages}</span></span>
+        <span className="flex items-center gap-1.5">🙋 Cliente: <span className="font-bold text-foreground">{analysis.metadata.clientMessages}</span></span>
+        {analysis.metadata.avgResponseTimeSec != null && (
+          <span className="flex items-center gap-1.5">⏱ Tempo médio: <span className="font-bold text-foreground">{(analysis.metadata.avgResponseTimeSec / 60).toFixed(1)} min</span></span>
+        )}
+      </div>
+
       {/* ═══ SUMMARY HEADER ═══ */}
       <div className="rounded-2xl bg-gradient-to-br from-primary/5 via-primary/3 to-background border border-primary/20 p-5">
         <div className="flex items-center gap-2.5 mb-4">
@@ -270,7 +280,7 @@ const SemiAutoPanel = ({ analysis, iaResult, onConfirm }: SemiAutoPanelProps) =>
             <Zap className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h3 className="text-sm font-extrabold text-foreground uppercase tracking-[0.1em]">Modo Semi-Automático</h3>
+            <h3 className="text-sm font-extrabold text-foreground uppercase tracking-[0.1em]">Revisão</h3>
             <p className="text-[10px] text-muted-foreground mt-0.5">Revise e confirme as sugestões da IA</p>
           </div>
         </div>

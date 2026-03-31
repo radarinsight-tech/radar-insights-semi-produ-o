@@ -5,14 +5,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   CheckCircle2, XCircle, MinusCircle, ShieldAlert,
   MessageSquareQuote, Printer, X, Award, TrendingUp, AlertTriangle, Lightbulb,
-  User, Calendar, FileText, Hash, Radio, Sparkles, Zap, ChevronRight, ChevronLeft, List, CheckSquare
+  User, Calendar, FileText, Hash, Radio, ChevronRight, ChevronLeft, List, CheckSquare
 } from "lucide-react";
 import UraContextDialog from "@/components/UraContextDialog";
-import PreAnalysisPanel from "@/components/PreAnalysisPanel";
 import SemiAutoPanel, { type SemiAutoResult } from "@/components/SemiAutoPanel";
 import MentoriaStepBar, { type MentoriaStep, STEPS } from "@/components/MentoriaStepBar";
 import { runPreAnalysis, type PreAnalysisResult } from "@/lib/mentoriaPreAnalysis";
@@ -117,7 +115,7 @@ const findRelevantExcerpt = (rawText: string | undefined, explicacao: string): s
 
 const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation, workflowStatus, onMarkFinished, onNextFile, hasNextFile, nonEvaluable, nonEvaluableReason, tipoAnalise, initialStep }: MentoriaDetailDialogProps) => {
   const [uraOpen, setUraOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState<MentoriaStep>(initialStep || "pre-analise");
+  const [currentStep, setCurrentStep] = useState<MentoriaStep>(initialStep || "revisao");
   const [completedSteps, setCompletedSteps] = useState<Set<MentoriaStep>>(new Set());
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -166,10 +164,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
-    // Clone the actual rendered content (WYSIWYG)
     const content = printRef.current.cloneNode(true) as HTMLElement;
-
-    // Collect all stylesheets from the current page
     const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
       .map(el => el.outerHTML)
       .join("\n");
@@ -180,65 +175,21 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
         <title>Mentoria — ${result.protocolo || "Atendimento"}</title>
         ${styles}
         <style>
-          @page {
-            size: A4 portrait;
-            margin: 12mm 10mm 14mm 10mm;
-          }
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 210mm !important;
-            max-width: 210mm !important;
-            overflow-x: hidden !important;
-            font-size: 10px !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-            color-adjust: exact !important;
-          }
-          .print-wrapper {
-            width: 100% !important;
-            max-width: 190mm !important;
-            margin: 0 auto !important;
-            padding: 0 !important;
-            overflow: hidden !important;
-            box-sizing: border-box !important;
-          }
-          .print-wrapper * {
-            max-width: 100% !important;
-            overflow-wrap: break-word !important;
-            word-break: break-word !important;
-            box-sizing: border-box !important;
-          }
-          /* Scale down text slightly for A4 fit */
-          .print-wrapper {
-            font-size: 9.5px !important;
-          }
+          @page { size: A4 portrait; margin: 12mm 10mm 14mm 10mm; }
+          html, body { margin: 0 !important; padding: 0 !important; width: 210mm !important; max-width: 210mm !important; overflow-x: hidden !important; font-size: 10px !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+          .print-wrapper { width: 100% !important; max-width: 190mm !important; margin: 0 auto !important; padding: 0 !important; overflow: hidden !important; box-sizing: border-box !important; }
+          .print-wrapper * { max-width: 100% !important; overflow-wrap: break-word !important; word-break: break-word !important; box-sizing: border-box !important; }
+          .print-wrapper { font-size: 9.5px !important; }
           .print-wrapper h1 { font-size: 14px !important; }
           .print-wrapper h2 { font-size: 11px !important; }
           .print-wrapper h3 { font-size: 10.5px !important; }
-          .print-wrapper p, .print-wrapper span, .print-wrapper div {
-            line-height: 1.45 !important;
-          }
-          /* Ensure backgrounds print */
-          .print-wrapper [class*="bg-"] {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          /* Prevent page breaks inside key sections */
+          .print-wrapper p, .print-wrapper span, .print-wrapper div { line-height: 1.45 !important; }
+          .print-wrapper [class*="bg-"] { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           .print-wrapper > div { page-break-inside: avoid; }
-          /* Remove scroll containers */
-          [data-radix-scroll-area-viewport] {
-            overflow: visible !important;
-            max-height: none !important;
-          }
-          /* Hide scrollbars */
+          [data-radix-scroll-area-viewport] { overflow: visible !important; max-height: none !important; }
           ::-webkit-scrollbar { display: none !important; }
-          /* Ensure grid doesn't overflow */
           .grid { gap: 8px !important; }
-          @media print {
-            body { padding: 0 !important; margin: 0 !important; }
-            .print-wrapper > div { page-break-inside: avoid; }
-          }
+          @media print { body { padding: 0 !important; margin: 0 !important; } .print-wrapper > div { page-break-inside: avoid; } }
         </style>
       </head><body>
         <div class="print-wrapper"></div>
@@ -282,6 +233,9 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
     subtotal: subtotais ? subtotais[subtotalKey(cat)] : null,
   }));
 
+  const availableSteps: MentoriaStep[] = preAnalysis ? ["revisao", "relatorio"] : ["relatorio"];
+  const currentIdx = availableSteps.indexOf(currentStep);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 overflow-y-auto flex flex-col">
@@ -322,7 +276,6 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           completedSteps={completedSteps}
           onStepClick={(step) => setCurrentStep(step)}
           hasPreAnalysis={!!preAnalysis}
-          hidePreAnalysis={initialStep === "semi-auto"}
         />
 
         {/* ═══ NON-EVALUABLE WARNING ═══ */}
@@ -341,24 +294,15 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
 
         {/* ═══ STEP CONTENT ═══ */}
         <div className="flex-1 min-h-0 overflow-y-auto">
-          {/* STEP: PRÉ-ANÁLISE */}
-          {currentStep === "pre-analise" && preAnalysis && (
-            <ScrollArea className="h-full">
-              <div className="px-8 py-8">
-                <PreAnalysisPanel analysis={preAnalysis} />
-              </div>
-            </ScrollArea>
-          )}
-
-          {/* STEP: SEMI-AUTOMÁTICO */}
-          {currentStep === "semi-auto" && preAnalysis && (
+          {/* STEP: REVISÃO (unified pre-analysis + semi-auto) */}
+          {currentStep === "revisao" && preAnalysis && (
             <ScrollArea className="h-full">
               <div className="px-8 py-8">
                 <SemiAutoPanel
                   analysis={preAnalysis}
                   iaResult={result}
                   onConfirm={(semiResult: SemiAutoResult) => {
-                    console.log("Semi-auto confirmed:", semiResult);
+                    console.log("Review confirmed:", semiResult);
                   }}
                 />
               </div>
@@ -629,17 +573,13 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
             )}
             {/* Back step button */}
             {preAnalysis && (() => {
-              const availableSteps: MentoriaStep[] = initialStep === "semi-auto"
-                ? ["semi-auto", "relatorio"]
-                : ["pre-analise", "semi-auto", "relatorio"];
-              const idx = availableSteps.indexOf(currentStep);
-              if (idx <= 0) return null;
+              if (currentIdx <= 0) return null;
               return (
                 <Button
                   variant="ghost"
                   size="sm"
                   className="gap-1.5 text-xs h-8 font-semibold"
-                  onClick={() => setCurrentStep(availableSteps[idx - 1])}
+                  onClick={() => setCurrentStep(availableSteps[currentIdx - 1])}
                 >
                   <ChevronLeft className="h-3.5 w-3.5" /> Voltar etapa
                 </Button>
@@ -648,20 +588,16 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           </div>
           <div className="flex items-center gap-2">
             {/* Advance step button */}
-            {preAnalysis && currentStep !== "relatorio" && (
+            {preAnalysis && currentStep === "revisao" && (
               <Button
                 size="sm"
                 className="gap-1.5 text-xs h-8 font-semibold"
                 onClick={() => {
-                  const availableSteps: MentoriaStep[] = initialStep === "semi-auto"
-                    ? ["semi-auto", "relatorio"]
-                    : ["pre-analise", "semi-auto", "relatorio"];
-                  const idx = availableSteps.indexOf(currentStep);
-                  setCompletedSteps(prev => new Set(prev).add(currentStep));
-                  if (idx < availableSteps.length - 1) setCurrentStep(availableSteps[idx + 1]);
+                  setCompletedSteps(prev => new Set(prev).add("revisao"));
+                  setCurrentStep("relatorio");
                 }}
               >
-                {currentStep === "pre-analise" ? "Avançar para Semi-Automático" : "Avançar para Relatório"}
+                Confirmar Revisão
                 <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             )}
