@@ -157,7 +157,7 @@ export function extractAtendente(text: string): string | undefined {
   const seuBlockMatches = [...text.matchAll(seuBlockPattern)];
   for (const m of seuBlockMatches) {
     const name = m[1].trim().replace(/\s+/g, " ");
-    if (name && !isBot(name) && !isOnlyPrefix(name) && name.length >= 3) {
+    if (name && !isBot(name) && !isInvalidAttendantName(name) && name.length >= 3) {
       return name;
     }
   }
@@ -176,7 +176,7 @@ export function extractAtendente(text: string): string | undefined {
       candidate = candidate.replace(ATTENDANT_PREFIXES, "").trim();
       // Take only the name part (before any extra info like date, id, etc.)
       const namePart = candidate.split(/[,\-\|\/]/)[0].trim();
-      if (namePart && !isBot(namePart) && !isOnlyPrefix(namePart) && isLikelyPersonName(namePart)) {
+      if (namePart && !isBot(namePart) && !isInvalidAttendantName(namePart) && isLikelyPersonName(namePart)) {
         return namePart;
       }
     }
