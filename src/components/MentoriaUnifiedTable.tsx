@@ -206,6 +206,9 @@ const MentoriaUnifiedTable = ({
         return false;
       })();
 
+      // Detect image attachment
+      const isImage = Boolean(f.hasImage);
+
       let category: StatusFilter;
       if (f.status === "aguardando_revisao_ia" || f.status === "aguardando_revisao_manual") category = "aguardando_confirmacao";
       else if (f.status === "confirmado") category = "confirmados";
@@ -214,7 +217,7 @@ const MentoriaUnifiedTable = ({
       else if (ws === "em_analise") category = "em_analise";
       else category = "pendentes";
 
-      return { ...f, category, isNonEval, hasResult, isAutoEligible, isAudio, workflowStatus: ws };
+      return { ...f, category, isNonEval, hasResult, isAutoEligible, isAudio, isImage, workflowStatus: ws };
     });
   }, [files, getWorkflowStatus]);
 
