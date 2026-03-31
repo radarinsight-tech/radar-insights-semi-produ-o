@@ -266,6 +266,13 @@ REGRAS FINAIS DE COERÊNCIA
 8. NUNCA retornar impedimento_detectado por causa de áudio — áudio não bloqueia mais a auditoria.`;
 
 
+function sanitizeText(t: string): string {
+  return t
+    .replace(/\u0000/g, '')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+    .trim();
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -274,7 +281,8 @@ serve(async (req) => {
   const startTime = Date.now();
 
   try {
-    const { text } = await req.json();
+    const body = await req.json();
+    const text = typeof body.text === "string" ? sanitizeText(body.text) : body.text;
     if (!text || typeof text !== "string") {
       return new Response(JSON.stringify({ error: "Texto do atendimento é obrigatório" }), {
         status: 400,
