@@ -464,12 +464,6 @@ const MentoriaPreventiva = () => {
     toast.success(`${successCount} de ${toAnalyze.length} análise(s) concluída(s).`);
   };
 
-  // ── Colors ───────────────────────────────────────────────────────────
-  const classColor = (c: string) => {
-    if (c === "Excelente") return "text-emerald-500";
-    if (c === "Bom atendimento") return "text-blue-500";
-    if (c === "Regular") return "text-amber-500";
-    return "text-destructive";
   };
 
   // ── Access guard ──────────────────────────────────────────────────────
