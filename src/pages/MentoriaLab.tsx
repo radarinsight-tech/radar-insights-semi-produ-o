@@ -3305,7 +3305,7 @@ const MentoriaLab = () => {
                     onAnalyzeNext={handleAnalyzeNextFromPipeline}
                     onBatchAnalyze={handleBatchAnalyze}
                     monthlyConfirmCounts={monthlyConfirmCounts}
-                    onAuditFile={(f) => openMentoria(f as any, "semi-auto")}
+                    onAuditFile={(f) => openMentoria(f as any, "revisao")}
                     onAnalyzeSelected={async (ids: string[], tipoAnalise: 'ia' | 'manual') => {
                       const newStatus = 'aguardando_revisao_ia';
                       for (const id of ids) {
