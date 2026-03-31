@@ -185,8 +185,8 @@ const UsersPage = () => {
       setInviteEmail("");
       setInviteName("");
       setInvitePassword("");
-      setInviteOpen(false);
       await loadProfiles();
+      setInviteOpen(false);
     } catch (err: any) {
       toast.error(err.message || "Erro ao criar usuário.");
     } finally {
