@@ -317,6 +317,7 @@ export interface PdfMetadata {
   data?: string;
   canal: string;
   hasAudio: boolean;
+  hasImage: boolean;
   tipo: string;
 }
 
@@ -327,6 +328,7 @@ export function extractAllMetadata(text: string): PdfMetadata {
     data: extractData(text),
     canal: extractCanal(text),
     hasAudio: detectAudio(text),
+    hasImage: detectImage(text),
     tipo: extractTipoAtendimento(text),
   };
 }
