@@ -469,39 +469,67 @@ const SemiAutoPanel = ({ analysis, iaResult, onConfirm }: SemiAutoPanelProps) =>
                       {/* Actions row */}
                       {!confirmed && (
                         <div className="flex items-center gap-1.5 mt-2.5" style={{ marginLeft: "26px" }}>
-                          <Button
-                            variant={decision.status === "accepted" ? "default" : "outline"}
-                            size="sm"
-                            className="text-[10px] h-6 px-2.5 gap-1 font-semibold"
-                            onClick={() => acceptItem(item.numero)}
-                          >
-                            <Check className="h-3 w-3" /> Aceitar
-                          </Button>
+                          <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant={decision.status === "accepted" ? "default" : "outline"}
+                                  size="sm"
+                                  className="text-[10px] h-6 px-2.5 gap-1 font-semibold"
+                                  onClick={() => acceptItem(item.numero)}
+                                >
+                                  <Check className="h-3 w-3" /> Aceitar
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs max-w-[220px]">
+                                Confirma o resultado sugerido pela IA para este critério.
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
 
                           {/* Adjust dropdown */}
-                          <Select
-                            value=""
-                            onValueChange={(v) => adjustItem(item.numero, v as SugestaoResultado)}
-                          >
-                            <SelectTrigger className="h-6 w-[90px] text-[10px] font-semibold">
-                              <Pencil className="h-3 w-3 mr-1" />
-                              Ajustar
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="SIM">SIM</SelectItem>
-                              <SelectItem value="PARCIAL">PARCIAL</SelectItem>
-                              <SelectItem value="NÃO">NÃO</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span>
+                                  <Select
+                                    value=""
+                                    onValueChange={(v) => adjustItem(item.numero, v as SugestaoResultado)}
+                                  >
+                                    <SelectTrigger className="h-6 w-[90px] text-[10px] font-semibold">
+                                      <Pencil className="h-3 w-3 mr-1" />
+                                      Ajustar
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="SIM">SIM</SelectItem>
+                                      <SelectItem value="NÃO">NÃO</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs max-w-[220px]">
+                                Substitui o resultado da IA pela sua decisão manual.
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
 
-                          <Button
-                            variant={decision.status === "rejected" ? "destructive" : "ghost"}
-                            size="sm"
-                            className="text-[10px] h-6 px-2.5 gap-1 font-semibold"
-                            onClick={() => rejectItem(item.numero)}
-                          >
-                            <X className="h-3 w-3" /> Rejeitar
-                          </Button>
+                          <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant={decision.status === "rejected" ? "destructive" : "ghost"}
+                                  size="sm"
+                                  className="text-[10px] h-6 px-2.5 gap-1 font-semibold"
+                                  onClick={() => rejectItem(item.numero)}
+                                >
+                                  <X className="h-3 w-3" /> Fora de escopo
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs max-w-[280px]">
+                                Exclui este critério do cálculo — use quando o critério não se aplica ao contexto deste atendimento. Mesmo efeito que 'Fora do escopo' automático da IA.
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
 
                           {/* Weight info */}
                           <span className="text-[9px] text-muted-foreground ml-auto">
