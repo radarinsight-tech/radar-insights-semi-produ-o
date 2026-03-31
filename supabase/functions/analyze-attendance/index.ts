@@ -132,6 +132,16 @@ REGRA DE DECISÃO:
 - Critério não aplicável → FORA DO ESCOPO
 - Nunca inventar evidências.
 
+REGRA DE CONTEXTO DO DIÁLOGO:
+Antes de avaliar cada critério, ler TODO o histórico do atendimento
+prestando atenção em:
+- Tom geral da conversa (cordial, profissional, ágil)
+- Mensagens de saudação e despedida do atendente
+- Confirmações do cliente durante o atendimento
+- Arquivos enviados (imagem, PDF) como evidência de ações realizadas
+NÃO avaliar critérios de forma isolada sem considerar o contexto completo.
+Um atendimento curto e direto pode ser excelente — brevidade não é penalização.
+
 MATRIZ DE AVALIAÇÃO — 100 PONTOS
 
 POSTURA E COMUNICAÇÃO (25 pontos)
@@ -150,16 +160,30 @@ ENTENDIMENTO E CONDUÇÃO (25 pontos)
 
 SOLUÇÃO E CONFIRMAÇÃO (25 pontos)
 11. Informou registro da solução no sistema? (4 pontos)
+    FORA DO ESCOPO para atendimentos financeiros (boleto, 2a via, fatura, pagamento, negociação de dívida) — não há solução técnica a registrar. Avaliar apenas em atendimentos de suporte técnico, instalação ou alterações cadastrais complexas.
 12. Confirmou se o cliente ficou confortável com a solução? (6 pontos)
 13. Buscou alternativa quando necessário? (5 pontos)
 14. Realizou testes com o cliente? (5 pontos)
+    FORA DO ESCOPO para atendimentos financeiros (boleto, fatura, pagamento) — não há serviço técnico a testar. Avaliar apenas em atendimentos de suporte técnico onde houve configuração, reinicialização de equipamento ou ajuste de sinal.
 15. Confirmou se restaram dúvidas? (5 pontos)
 
 ENCERRAMENTO E VALOR (25 pontos)
-16. Cliente demonstrou satisfação? (7 pontos) — Sem opinião clara ou encerrou sem resposta → FORA DO ESCOPO.
+16. Cliente demonstrou satisfação? (7 pontos)
+    Considerar SIM quando o cliente expressar:
+    - agradecimento explícito: "obrigado", "obrigada", "tá obrigada", "valeu"
+    - confirmação positiva acompanhada de encerramento: "era isso, obrigada"
+    - satisfação direta: "ótimo", "perfeito", "que bom", "resolvido"
+    FORA DO ESCOPO apenas se o cliente não enviar nenhuma mensagem após a solução ou encerrar sem qualquer retorno.
+    Evidência parcial (agradecimento simples) → SIM.
 17. Informou serviços ou benefícios disponíveis? (6 pontos) — Atendimento exclusivamente técnico → FORA DO ESCOPO.
 18. Verificou possibilidade de upgrade ou melhoria? (6 pontos)
 19. Atualizou dados do cliente no sistema? (6 pontos)
+    Considerar SIM quando houver evidência de:
+    - atendente mencionar que acessou ou atualizou o cadastro
+    - cliente confirmar dados ("confirmei", "está correto", "sim")
+    - atendente enviar imagem durante o atendimento (indicada como "image.png - Download" ou similar) — imagem no chat de atendimento frequentemente representa tela do sistema com dados cadastrais
+    Evidência parcial (imagem enviada + cliente confirmou) → SIM.
+    NÃO apenas se não houver nenhum indicativo de acesso ao cadastro.
 
 REGRAS DE PONTUAÇÃO
 SIM → pontuação total do critério
