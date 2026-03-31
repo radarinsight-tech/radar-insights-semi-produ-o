@@ -1,6 +1,6 @@
 /**
  * Metadata extraction utilities for Mentoria Lab PDFs.
- * Extracts: protocolo, atendente, data, canal, hasAudio from raw PDF text.
+ * Extracts: protocolo, atendente, data, canal, hasAudio, tipo from raw PDF text.
  */
 
 // ── Protocolo ──────────────────────────────────────────────────────────
