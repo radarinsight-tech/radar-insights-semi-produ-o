@@ -653,10 +653,12 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                 size="sm"
                 className="gap-1.5 text-xs h-8 font-semibold"
                 onClick={() => {
-                  const steps: MentoriaStep[] = ["pre-analise", "semi-auto", "relatorio"];
-                  const idx = steps.indexOf(currentStep);
+                  const availableSteps: MentoriaStep[] = initialStep === "semi-auto"
+                    ? ["semi-auto", "relatorio"]
+                    : ["pre-analise", "semi-auto", "relatorio"];
+                  const idx = availableSteps.indexOf(currentStep);
                   setCompletedSteps(prev => new Set(prev).add(currentStep));
-                  if (idx < steps.length - 1) setCurrentStep(steps[idx + 1]);
+                  if (idx < availableSteps.length - 1) setCurrentStep(availableSteps[idx + 1]);
                 }}
               >
                 {currentStep === "pre-analise" ? "Avançar para Semi-Automático" : "Avançar para Relatório"}
