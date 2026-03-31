@@ -241,20 +241,18 @@ const MentoriaUnifiedTable = ({
       todos: visibleItems.length,
       pendentes: 0,
       em_analise: 0,
-      finalizados: categorized.filter((f) => f.category === "finalizados").length,
+      finalizados: 0,
       nao_avaliaveis: 0,
       aptos_ia: 0,
       audio: 0,
-      fila_ia: 0,
-      fila_manual: 0,
+      aguardando_confirmacao: 0,
       confirmados: 0,
     };
     for (const f of visibleItems) {
       if (f.category === "pendentes") counts.pendentes++;
       else if (f.category === "em_analise") counts.em_analise++;
       else if (f.category === "nao_avaliaveis") counts.nao_avaliaveis++;
-      else if (f.category === "fila_ia") counts.fila_ia++;
-      else if (f.category === "fila_manual") counts.fila_manual++;
+      else if (f.category === "aguardando_confirmacao") counts.aguardando_confirmacao++;
       else if (f.category === "confirmados") counts.confirmados++;
       if (f.isAutoEligible) counts.aptos_ia++;
       if (f.isAudio) counts.audio++;
