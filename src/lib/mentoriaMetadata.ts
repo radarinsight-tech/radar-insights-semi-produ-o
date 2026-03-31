@@ -209,6 +209,14 @@ function _extractAtendenteRaw(text: string): string | undefined {
     if (!name || isBot(name) || isInstitutional(name) || isInvalidAttendantName(name)) continue;
     if (BOT_COMPANY_KEYWORDS.test(name.toLowerCase())) continue;
     standaloneCounts.set(name, (standaloneCounts.get(name) || 0) + 1);
+    // Also count the first-2-word prefix (e.g. "Dani Porto" from "Dani Porto Internet")
+    const words = name.split(/\s+/);
+    if (words.length > 2) {
+      const prefix2 = words.slice(0, 2).join(" ");
+      if (prefix2 && !isBot(prefix2) && !isInstitutional(prefix2) && !isInvalidAttendantName(prefix2)) {
+        standaloneCounts.set(prefix2, (standaloneCounts.get(prefix2) || 0) + 1);
+      }
+    }
   }
   if (standaloneCounts.size > 0) {
     const clientHeader = text.match(/(?:cliente|solicitante)\s*[:\-]\s*([^\n\r]+)/i)?.[1]?.trim().split(/[,\-\|\/]/)[0].trim() || "";
