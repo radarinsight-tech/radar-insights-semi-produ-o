@@ -577,15 +577,24 @@ const SemiAutoPanel = ({ analysis, iaResult, onConfirm }: SemiAutoPanelProps) =>
               </p>
             )}
           </div>
-          <Button
-            size="sm"
-            className="gap-1.5 font-bold text-xs"
-            disabled={confirmed}
-            onClick={handleConfirm}
-          >
-            <Send className="h-3.5 w-3.5" />
-            {confirmed ? "Confirmada" : "Confirmar avaliação"}
-          </Button>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  className="gap-1.5 font-bold text-xs bg-accent hover:bg-accent/90 text-accent-foreground"
+                  disabled={confirmed}
+                  onClick={handleConfirm}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  {confirmed ? "Confirmada" : "Confirmar avaliação"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs max-w-[280px]">
+                Consolida todas as decisões e calcula a nota final do atendimento.
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
     </div>

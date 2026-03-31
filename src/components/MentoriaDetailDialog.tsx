@@ -604,17 +604,25 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           <div className="flex items-center gap-2">
             {/* Advance step button */}
             {preAnalysis && currentStep === "revisao" && (
-              <Button
-                size="sm"
-                className="gap-1.5 text-xs h-8 font-semibold"
-                onClick={() => {
-                  setCompletedSteps(prev => new Set(prev).add("revisao"));
-                  setCurrentStep("relatorio");
-                }}
-              >
-                Confirmar Revisão
-                <ChevronRight className="h-3.5 w-3.5" />
-              </Button>
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      className="gap-1.5 text-xs h-8 font-semibold"
+                      onClick={() => {
+                        setCompletedSteps(prev => new Set(prev).add("revisao"));
+                        setCurrentStep("relatorio");
+                      }}
+                    >
+                      Etapa final →
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs max-w-[280px]">
+                    Avança para o Relatório de Mentoria com a nota consolidada.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
             {/* Finalize button - only on report step */}
             {currentStep === "relatorio" && workflowStatus !== "finalizado" && onMarkFinished && (

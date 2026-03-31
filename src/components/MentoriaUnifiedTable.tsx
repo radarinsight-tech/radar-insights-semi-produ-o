@@ -539,7 +539,7 @@ const MentoriaUnifiedTable = ({
                     {/* Status dot + label + badges */}
                     <TableCell className="py-3 w-[15%]">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusDot(f.status, isProcessingThis))} />
+                        <span className={cn("h-3 w-3 rounded-full shrink-0", statusDot(f.status, isProcessingThis))} />
                         <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                           {getStatusLabel()}
                         </span>

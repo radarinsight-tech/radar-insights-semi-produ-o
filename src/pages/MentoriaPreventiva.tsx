@@ -1214,9 +1214,18 @@ const PreventiveDetailDialog = ({
           </div>
           <div className="flex items-center gap-2">
             {currentStep === "revisao" && (
-              <Button size="sm" className="gap-1.5 text-xs h-8 font-semibold" onClick={() => { onCompleteStep("revisao"); onStepChange("relatorio"); }}>
-                Confirmar Revisão <ChevronRight className="h-3.5 w-3.5" />
-              </Button>
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="sm" className="gap-1.5 text-xs h-8 font-semibold" onClick={() => { onCompleteStep("revisao"); onStepChange("relatorio"); }}>
+                      Etapa final →
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs max-w-[280px]">
+                    Avança para o Relatório de Mentoria com a nota consolidada.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
             <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5 text-xs h-8 font-semibold">
               <List className="h-3.5 w-3.5" /> Voltar para lista
