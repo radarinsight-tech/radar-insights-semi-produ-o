@@ -108,6 +108,8 @@ function normalizeDate(raw: string): string {
 const BOT_NAMES = new Set([
   "marte", "bot", "sistema", "robô", "robo", "automático", "automatico",
   "assistente virtual", "atendimento automático", "chatbot",
+  "bandaturbo", "especialista virtual", "seu especialista virtual",
+  "especialista virtual da bandaturbo",
 ]);
 
 /** Institutional / non-person terms to always exclude */
