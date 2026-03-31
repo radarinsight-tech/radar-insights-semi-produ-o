@@ -252,6 +252,7 @@ const MentoriaUnifiedTable = ({
       nao_avaliaveis: 0,
       aptos_ia: 0,
       audio: 0,
+      imagem: 0,
       aguardando_confirmacao: 0,
       confirmados: 0,
     };
@@ -263,6 +264,7 @@ const MentoriaUnifiedTable = ({
       else if (f.category === "confirmados") counts.confirmados++;
       if (f.isAutoEligible) counts.aptos_ia++;
       if (f.isAudio) counts.audio++;
+      if (f.isImage) counts.imagem++;
     }
     return counts;
   }, [visibleItems, categorized]);
