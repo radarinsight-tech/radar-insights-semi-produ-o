@@ -226,14 +226,32 @@ const SemiAutoPanel = ({ analysis, iaResult, onConfirm }: SemiAutoPanelProps) =>
     });
   };
 
+  // Enrich suggestions with IA result justifications when available
+  const enrichedSuggestions = useMemo(() => {
+    const iaCriterios: any[] = iaResult?.criterios || [];
+    return analysis.suggestions.map(s => {
+      const iaCrit = iaCriterios.find((c: any) => c.numero === s.numero);
+      if (iaCrit) {
+        return {
+          ...s,
+          justificativa: iaCrit.explicacao || s.justificativa,
+          evidencia: s.evidencia,
+          sugestao: (iaCrit.resultado === "SIM" ? "SIM" : iaCrit.resultado === "NÃO" ? "NÃO" : "PARCIAL") as SugestaoResultado,
+          confianca: "alta" as Confianca,
+        };
+      }
+      return s;
+    });
+  }, [analysis.suggestions, iaResult]);
+
   // Filter suggestions
   const filteredSuggestions = useMemo(() => {
-    return analysis.suggestions.filter(s => {
+    return enrichedSuggestions.filter(s => {
       if (filterMode === "all") return true;
       const d = decisions.get(s.numero);
       return d?.status === filterMode;
     });
-  }, [analysis.suggestions, decisions, filterMode]);
+  }, [enrichedSuggestions, decisions, filterMode]);
 
   // Group by category
   const grouped = useMemo(() => {
