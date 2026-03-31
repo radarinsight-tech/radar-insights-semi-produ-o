@@ -86,17 +86,18 @@ Se NÃO houver atendente humano (apenas BOT):
 
 Se houver atendente humano → prosseguir.
 
-ETAPA 8 — DETECTAR IMPEDIMENTOS
-Verifique se o atendente enviou áudio, mensagem de voz ou arquivo de áudio.
+ETAPA 8 — DETECTAR USO DE ÁUDIO PELO ATENDENTE
+Verifique se o atendente enviou áudio, mensagem de voz ou arquivo de áudio (gravacao_de_voz.mp3 etc.).
 
 Se sim:
-- statusAtendimento = "auditado"
-- statusAuditoria = "impedimento_detectado"
-- motivo = "envio_de_audio_pelo_atendente"
-- notaFinal = 0, pontosObtidos = 0, pontosPossiveis = 0
-- NÃO aplicar mentoria. ENCERRAR.
+- NÃO bloquear a auditoria. Continuar normalmente.
+- O uso de áudio pode ser penalizado no critério apropriado (ex: linguagem, condução),
+  mas NÃO impede a avaliação dos outros 18 critérios.
+- Registrar observação: "Atendente enviou áudio durante atendimento de texto"
+- Se houver transcrição do áudio disponível no texto (marcada como "[Áudio transcrito]: ..."),
+  usar o conteúdo transcrito como parte da conversa para avaliar todos os critérios.
 
-Se não → prosseguir.
+Prosseguir para a próxima etapa.
 
 ETAPA 9 — DETECTAR FALHA DO BOT
 Analise se houve falha do BOT:
@@ -255,13 +256,15 @@ REGRA DE BLOQUEIO: Se qualquer inconsistência for detectada na checagem, CORRIJ
 REGRAS FINAIS DE COERÊNCIA
 ═══════════════════════════════════════════════════
 
-1. Se statusAuditoria = "impedimento_detectado" → NÃO calcular nota (notaFinal = 0)
-2. Se statusAtendimento = "apenas_bot" → NÃO calcular nota (notaFinal = 0)
-3. Se statusAtendimento = "fora_de_avaliacao" → NÃO calcular nota (notaFinal = 0)
-4. Se statusAuditoria = "auditoria_realizada" → nota e pontuação são OBRIGATÓRIAS e pontosPossiveis > 0
-5. classificacao DEVE sempre corresponder à notaFinal conforme a escala
-6. NUNCA "Bom atendimento" com notaFinal 0
-7. NUNCA "sem_interacao_do_cliente" quando existem mensagens do cliente`;
+1. Se statusAtendimento = "apenas_bot" → NÃO calcular nota (notaFinal = 0)
+2. Se statusAtendimento = "fora_de_avaliacao" → NÃO calcular nota (notaFinal = 0)
+3. Se statusAuditoria = "auditoria_realizada" → nota e pontuação são OBRIGATÓRIAS e pontosPossiveis > 0
+4. classificacao DEVE sempre corresponder à notaFinal conforme a escala
+5. NUNCA "Bom atendimento" com notaFinal 0
+6. NUNCA "sem_interacao_do_cliente" quando existem mensagens do cliente
+7. Atendimentos com áudio do atendente DEVEM ser auditados normalmente (auditoria_realizada), NÃO impedimento_detectado.
+8. NUNCA retornar impedimento_detectado por causa de áudio — áudio não bloqueia mais a auditoria.`;
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -273,6 +276,76 @@ serve(async (req) => {
     if (!text || typeof text !== "string") {
       return new Response(JSON.stringify({ error: "Texto do atendimento é obrigatório" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Pre-check: detect URA-only / no human content ──
+    // If the text has zero human interaction indicators, return nonEvaluable immediately
+    const lowerText = text.toLowerCase();
+    const BOT_ONLY_SPEAKERS = /\b(marte|bot|sistema|rob[oô]|ura|autom[aá]tico|chatbot|assistente\s*virtual|especialista\s*virtual)\b/i;
+    // Strip lines that are clearly bot/system messages or headers
+    const lines = text.split(/\n/).filter((l: string) => l.trim().length > 0);
+    // Check if there are ANY lines with human-like speaker patterns (not bot/system)
+    const humanMessagePattern = /^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,40}?)[\s]*[\(:\[]/;
+    let hasHumanSpeaker = false;
+    for (const line of lines) {
+      const speakerMatch = line.trim().match(humanMessagePattern);
+      if (speakerMatch) {
+        const speaker = speakerMatch[1].trim();
+        if (!BOT_ONLY_SPEAKERS.test(speaker) && speaker.length > 1) {
+          hasHumanSpeaker = true;
+          break;
+        }
+      }
+    }
+
+    // Also check for minimal text content (very short text = likely empty/header-only)
+    const textWithoutHeaders = text.replace(/^(protocolo|cliente|atendente|canal|data|hor[aá]rio|in[ií]cio|fim|status|tipo|setor)[^\n]*/gim, "").trim();
+    const isEffectivelyEmpty = textWithoutHeaders.length < 50;
+
+    if (!hasHumanSpeaker && isEffectivelyEmpty) {
+      // URA-only or empty attendance — return valid nonEvaluable response
+      return new Response(JSON.stringify({
+        nonEvaluable: true,
+        motivoNaoAvaliavel: "Atendimento encerrado na URA sem atendente humano",
+        statusAtendimento: "fora_de_avaliacao",
+        statusAuditoria: "auditoria_bloqueada",
+        motivo: "atendimento_apenas_por_bot",
+        statusBot: "bot_ok",
+        observacaoBot: "Atendimento não teve participação de atendente humano",
+        data: "",
+        protocolo: "",
+        cliente: "",
+        tipo: "Outro",
+        atendente: "",
+        criterios: [],
+        subtotais: {
+          posturaEComunicacao: { obtidos: 0, possiveis: 0 },
+          entendimentoEConducao: { obtidos: 0, possiveis: 0 },
+          solucaoEConfirmacao: { obtidos: 0, possiveis: 0 },
+          encerramentoEValor: { obtidos: 0, possiveis: 0 },
+        },
+        pontosObtidos: 0,
+        pontosPossiveis: 0,
+        notaFinal: 0,
+        classificacao: "Fora de Avaliação",
+        bonusQualidade: 0,
+        bonusOperacional: { atualizacaoCadastral: "FORA DO ESCOPO", pontosExtras: 0 },
+        mentoria: [],
+        motivoResultado: "Atendimento sem interação humana — apenas URA/bot",
+        impeditivo: false,
+        motivoImpeditivo: "",
+        promptVersion: PROMPT_VERSION,
+        auditLog: {
+          dataExecucao: new Date().toISOString(),
+          promptVersion: PROMPT_VERSION,
+          tempoExecucaoMs: Date.now() - startTime,
+          resultadoValidado: true,
+          erroDetectado: null,
+        },
+      }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

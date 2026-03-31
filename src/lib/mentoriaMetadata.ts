@@ -186,6 +186,53 @@ export function extractAtendente(text: string): string | undefined {
     return sorted[0][0];
   }
 
+  // Strategy 3: Presentation patterns in chat body (single first name)
+  // "Sou [Nome], especialista..." / "Olá, Sou [Nome]," / "Aqui é [Nome]"
+  const presentationPatterns = [
+    /\bsou\s+([A-ZÀ-Ÿ][a-zà-ÿ]+)[\s,]/i,
+    /\baqui\s+[eé]\s+(?:o|a)?\s*([A-ZÀ-Ÿ][a-zà-ÿ]+)/i,
+    /\bmeu\s+nome\s+[eé]\s+([A-ZÀ-Ÿ][a-zà-ÿ]+)/i,
+  ];
+
+  for (const pattern of presentationPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      const name = match[1].trim();
+      if (!isBot(name) && name.length >= 3) {
+        // Capitalize properly
+        return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+      }
+    }
+  }
+
+  // Strategy 4: Most frequent single-name speaker (relaxed: allow single word)
+  const singleNameCounts = new Map<string, number>();
+  const singleNamePatterns = [
+    /^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'.]+)\s*\(\d{2}:\d{2}\)\s*:/gm,
+    /^\[?\d{2}:\d{2}\]?\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'.]+)\s*:/gm,
+    /^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'.]+)\s*:/gm,
+  ];
+
+  for (const pattern of singleNamePatterns) {
+    const matches = [...text.matchAll(pattern)];
+    for (const m of matches) {
+      const name = m[1].trim();
+      if (!name || name.length < 3 || isBot(name) || isInstitutional(name)) continue;
+      if (clienteName && name.toLowerCase() === clienteName) continue;
+      // Skip if it looks like a header label
+      if (/^(protocolo|cliente|atendente|canal|data|tipo|status|setor|horário|início|fim)/i.test(name)) continue;
+      singleNameCounts.set(name, (singleNameCounts.get(name) || 0) + 1);
+    }
+  }
+
+  if (singleNameCounts.size > 0) {
+    // Pick most frequent, must have at least 2 messages
+    const sorted = [...singleNameCounts.entries()].sort((a, b) => b[1] - a[1]);
+    if (sorted[0][1] >= 2) {
+      return sorted[0][0];
+    }
+  }
+
   return undefined;
 }
 
