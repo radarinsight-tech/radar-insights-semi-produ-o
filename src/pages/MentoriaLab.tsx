@@ -339,6 +339,7 @@ const MentoriaLab = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showAnalyzeWarning, setShowAnalyzeWarning] = useState(false);
   const [mentoriaFile, setMentoriaFile] = useState<LabFile | null>(null);
+  const [mentoriaInitialStep, setMentoriaInitialStep] = useState<"pre-analise" | "semi-auto" | "relatorio" | undefined>(undefined);
   const [showCharts, setShowCharts] = useState(false);
   const [highlightedFileId, setHighlightedFileId] = useState<string | null>(null);
   const [approvingIds, setApprovingIds] = useState<Set<string>>(new Set());
