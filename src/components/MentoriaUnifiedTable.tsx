@@ -39,6 +39,7 @@ type StatusFilter =
   | "nao_avaliaveis"
   | "aptos_ia"
   | "audio"
+  | "imagem"
   | "aguardando_confirmacao"
   | "confirmados";
 
@@ -50,6 +51,7 @@ interface UnifiedFile {
   data?: string;
   canal?: string;
   hasAudio?: boolean;
+  hasImage?: boolean;
   status: string;
   result?: any;
   error?: string;
@@ -111,7 +113,8 @@ const STATUS_FILTERS: { key: StatusFilter; label: string; color?: string; toolti
   { key: "aguardando_confirmacao", label: "⏳ Aguardando confirmação", color: "blue", tooltip: "Analisados pela IA aguardando confirmação ou auditoria do gestor" },
   { key: "confirmados", label: "✅ Confirmados", color: "teal", tooltip: "Atendimentos confirmados pelo gestor — disponíveis na aba Performance" },
   { key: "nao_avaliaveis", label: "Não avaliáveis", tooltip: "PDFs sem conteúdo válido para auditoria (áudio, sem interação, duplicados)" },
-  { key: "audio", label: "🎙️ Áudio", color: "amber", tooltip: "Atendimentos com áudio — auditoria não realizada por conteúdo de voz" },
+  { key: "audio", label: "🎙️ Áudio", color: "amber", tooltip: "Atendimentos com áudio embutido. O áudio é transcrito automaticamente antes da análise." },
+  { key: "imagem", label: "📷 Imagem", color: "purple", tooltip: "Atendimentos com imagem anexada" },
 ];
 
 const getDaysPending = (addedAt?: Date): number => {
@@ -203,6 +206,9 @@ const MentoriaUnifiedTable = ({
         return false;
       })();
 
+      // Detect image attachment
+      const isImage = Boolean(f.hasImage);
+
       let category: StatusFilter;
       if (f.status === "aguardando_revisao_ia" || f.status === "aguardando_revisao_manual") category = "aguardando_confirmacao";
       else if (f.status === "confirmado") category = "confirmados";
@@ -211,7 +217,7 @@ const MentoriaUnifiedTable = ({
       else if (ws === "em_analise") category = "em_analise";
       else category = "pendentes";
 
-      return { ...f, category, isNonEval, hasResult, isAutoEligible, isAudio, workflowStatus: ws };
+      return { ...f, category, isNonEval, hasResult, isAutoEligible, isAudio, isImage, workflowStatus: ws };
     });
   }, [files, getWorkflowStatus]);
 
@@ -226,6 +232,7 @@ const MentoriaUnifiedTable = ({
     if (statusFilter === "todos") return visibleItems;
     if (statusFilter === "aptos_ia") return visibleItems.filter((f) => f.isAutoEligible);
     if (statusFilter === "audio") return visibleItems.filter((f) => f.isAudio);
+    if (statusFilter === "imagem") return visibleItems.filter((f) => f.isImage);
     if (statusFilter === "aguardando_confirmacao") return visibleItems.filter((f) => f.category === "aguardando_confirmacao");
     if (statusFilter === "confirmados") return visibleItems.filter((f) => f.status === "confirmado");
     return visibleItems.filter((f) => f.category === statusFilter);
@@ -245,6 +252,7 @@ const MentoriaUnifiedTable = ({
       nao_avaliaveis: 0,
       aptos_ia: 0,
       audio: 0,
+      imagem: 0,
       aguardando_confirmacao: 0,
       confirmados: 0,
     };
@@ -256,6 +264,7 @@ const MentoriaUnifiedTable = ({
       else if (f.category === "confirmados") counts.confirmados++;
       if (f.isAutoEligible) counts.aptos_ia++;
       if (f.isAudio) counts.audio++;
+      if (f.isImage) counts.imagem++;
     }
     return counts;
   }, [visibleItems, categorized]);
@@ -344,7 +353,9 @@ const MentoriaUnifiedTable = ({
                               ? "bg-emerald-600 text-white shadow-sm"
                               : sf.color === "teal"
                                 ? "bg-teal-700 text-white shadow-sm"
-                                : "bg-primary text-primary-foreground shadow-sm"
+                                : sf.color === "purple"
+                                  ? "bg-purple-600 text-white shadow-sm"
+                                  : "bg-primary text-primary-foreground shadow-sm"
                       : sf.color === "indigo"
                         ? "text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/40"
                         : sf.color === "amber"
@@ -355,7 +366,9 @@ const MentoriaUnifiedTable = ({
                               ? "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/40"
                               : sf.color === "teal"
                                 ? "text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-950/40"
-                                : "text-muted-foreground hover:text-foreground hover:bg-background/60"
+                                : sf.color === "purple"
+                                  ? "text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-950/40"
+                                  : "text-muted-foreground hover:text-foreground hover:bg-background/60"
                   )}
                 >
                   {sf.label}
@@ -461,7 +474,7 @@ const MentoriaUnifiedTable = ({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <span className={cn(
-                              "h-2 w-2 rounded-full shrink-0",
+                              "h-3 w-3 rounded-full shrink-0",
                               (f.visualizado || f.hasResult || f.status === "analisado" || f.status === "confirmado" || f.status === "aguardando_revisao_ia" || f.status === "aguardando_revisao_manual")
                                 ? "bg-emerald-500"
                                 : "bg-red-500"

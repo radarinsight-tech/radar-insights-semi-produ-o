@@ -123,6 +123,7 @@ interface LabFile {
   data?: string;
   canal?: string;
   hasAudio?: boolean;
+  hasImage?: boolean;
   tipo?: string;
   batchId?: string;
   batchFileId?: string;
@@ -541,6 +542,7 @@ const MentoriaLab = () => {
             data: bf.data_atendimento || undefined,
             canal: bf.canal || undefined,
             hasAudio: bf.has_audio || false,
+            hasImage: Boolean((bf as any).has_image),
             tipo: (persistedResult as any)?.tipo || undefined,
             batchId: bf.batch_id,
             batchFileId: bf.id,
@@ -830,6 +832,7 @@ const MentoriaLab = () => {
           data?: string;
           canal: string;
           hasAudio: boolean;
+          hasImage: boolean;
           tipo: string;
         } = {
           protocolo: undefined,
@@ -837,6 +840,7 @@ const MentoriaLab = () => {
           data: undefined,
           canal: "Não identificado",
           hasAudio: false,
+          hasImage: false,
           tipo: "Não identificado",
         };
 
@@ -901,6 +905,7 @@ const MentoriaLab = () => {
         }
 
         const hasAudio = Boolean(metadata.hasAudio || uraCtx?.audioDetectado);
+        const hasImage = Boolean(metadata.hasImage || (extractedImageBlobs && extractedImageBlobs.length > 0));
 
         // Sanitize text: remove \u0000 null bytes that PostgreSQL JSONB rejects
         const sanitize = (s: string) => s.replace(/\u0000/g, "").replace(/\\u0000/g, "");
@@ -919,6 +924,7 @@ const MentoriaLab = () => {
             data_atendimento: metadata.data ?? null,
             canal: metadata.canal ?? "Não identificado",
             has_audio: hasAudio,
+            has_image: hasImage,
             extracted_text: safeText,
             raw_text: safeText,
             parsed_messages: parsedMessagesPayload,
@@ -951,6 +957,7 @@ const MentoriaLab = () => {
           result: sourceFile.result,
           ...metadata,
           hasAudio,
+          hasImage,
           attendantMatch: attendantMatchResult,
           transferred: attendantMatchResult?.transferred,
           uraContext: uraCtx,
