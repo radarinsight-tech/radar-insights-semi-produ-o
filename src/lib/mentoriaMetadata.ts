@@ -152,6 +152,8 @@ function isLikelyPersonName(name: string): boolean {
   if (!/^[A-Za-zÀ-ÿ\s'.]+$/.test(trimmed)) return false;
   // Reject institutional/company names
   if (isInstitutional(trimmed)) return false;
+  // Reject names starting with prepositions (e.g. "Da Bandaturbo", "Do Setor")
+  if (/^(da|do|de|das|dos|e|em|com|para|por|ao|aos|à|às)\s/i.test(trimmed)) return false;
   return true;
 }
 
