@@ -113,7 +113,8 @@ const STATUS_FILTERS: { key: StatusFilter; label: string; color?: string; toolti
   { key: "aguardando_confirmacao", label: "⏳ Aguardando confirmação", color: "blue", tooltip: "Analisados pela IA aguardando confirmação ou auditoria do gestor" },
   { key: "confirmados", label: "✅ Confirmados", color: "teal", tooltip: "Atendimentos confirmados pelo gestor — disponíveis na aba Performance" },
   { key: "nao_avaliaveis", label: "Não avaliáveis", tooltip: "PDFs sem conteúdo válido para auditoria (áudio, sem interação, duplicados)" },
-  { key: "audio", label: "🎙️ Áudio", color: "amber", tooltip: "Atendimentos com áudio — auditoria não realizada por conteúdo de voz" },
+  { key: "audio", label: "🎙️ Áudio", color: "amber", tooltip: "Atendimentos com áudio embutido. O áudio é transcrito automaticamente antes da análise." },
+  { key: "imagem", label: "📷 Imagem", color: "purple", tooltip: "Atendimentos com imagem anexada" },
 ];
 
 const getDaysPending = (addedAt?: Date): number => {
