@@ -353,7 +353,9 @@ const MentoriaUnifiedTable = ({
                               ? "bg-emerald-600 text-white shadow-sm"
                               : sf.color === "teal"
                                 ? "bg-teal-700 text-white shadow-sm"
-                                : "bg-primary text-primary-foreground shadow-sm"
+                                : sf.color === "purple"
+                                  ? "bg-purple-600 text-white shadow-sm"
+                                  : "bg-primary text-primary-foreground shadow-sm"
                       : sf.color === "indigo"
                         ? "text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/40"
                         : sf.color === "amber"
@@ -364,7 +366,9 @@ const MentoriaUnifiedTable = ({
                               ? "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/40"
                               : sf.color === "teal"
                                 ? "text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-950/40"
-                                : "text-muted-foreground hover:text-foreground hover:bg-background/60"
+                                : sf.color === "purple"
+                                  ? "text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-950/40"
+                                  : "text-muted-foreground hover:text-foreground hover:bg-background/60"
                   )}
                 >
                   {sf.label}
