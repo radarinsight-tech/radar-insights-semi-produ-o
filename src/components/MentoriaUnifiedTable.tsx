@@ -293,7 +293,7 @@ const MentoriaUnifiedTable = ({
   };
 
   const selectedCount = selectedIds.size;
-  const isReviewTab = statusFilter === "fila_ia" || statusFilter === "fila_manual";
+  const isReviewTab = statusFilter === "aguardando_confirmacao";
 
   return (
     <div className="space-y-3" id="mentoria-table">
