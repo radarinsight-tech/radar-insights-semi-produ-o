@@ -356,6 +356,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
               <div className="px-8 py-8">
                 <SemiAutoPanel
                   analysis={preAnalysis}
+                  iaResult={result}
                   onConfirm={(semiResult: SemiAutoResult) => {
                     console.log("Semi-auto confirmed:", semiResult);
                   }}
