@@ -981,6 +981,7 @@ const PreventiveDetailDialog = ({
       })),
       metadata: {
         totalMessages,
+        humanMessages: attendantMessages + clientMessages,
         attendantMessages,
         clientMessages,
         avgResponseTimeSec,
