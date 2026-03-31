@@ -333,6 +333,8 @@ const MentoriaLab = () => {
   const [files, setFiles] = useState<LabFile[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [processing, setProcessing] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importingCount, setImportingCount] = useState(0);
   const [readingIds, setReadingIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState("operacao");
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
@@ -1149,11 +1151,15 @@ const MentoriaLab = () => {
         return;
       }
 
+      setIsImporting(true);
+      setImportingCount(fileArray.length);
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
         toast.error("Você precisa estar autenticado para importar arquivos.");
+        setIsImporting(false); setImportingCount(0);
         return;
       }
 
@@ -1198,6 +1204,7 @@ const MentoriaLab = () => {
           prev ? { ...prev, status: "erro", totalFilesInSource: totalZipEntries, ignoredFiles: totalZipEntries } : prev,
         );
         toast.error("O ZIP não contém PDFs válidos para análise.");
+        setIsImporting(false); setImportingCount(0);
         return;
       }
 
@@ -1236,6 +1243,7 @@ const MentoriaLab = () => {
       if (allPdfs.length === 0) {
         setBatchInfo((prev) => (prev ? { ...prev, status: "erro" } : prev));
         toast.error("Nenhum PDF válido encontrado. Verifique os arquivos enviados.");
+        setIsImporting(false); setImportingCount(0);
         return;
       }
 
@@ -1244,6 +1252,7 @@ const MentoriaLab = () => {
         toast.error(
           `O limite máximo é de ${IMPORT_LIMIT} atendimentos por lote. Você tentou importar ${allPdfs.length}.`,
         );
+        setIsImporting(false); setImportingCount(0);
         return;
       }
 
@@ -1320,6 +1329,7 @@ const MentoriaLab = () => {
         console.error("Failed to create batch:", batchErr);
         toast.error("Erro ao registrar lote. Arquivos foram salvos.");
         setBatchInfo((prev) => (prev ? { ...prev, status: "erro" } : prev));
+        setIsImporting(false); setImportingCount(0);
         return;
       }
 
@@ -1382,15 +1392,18 @@ const MentoriaLab = () => {
       }
 
       // Toast
+      setIsImporting(false);
+      setImportingCount(0);
+
       if (isZipSource) {
         const parts = [`${extractedPdfs.length} PDF(s) extraído(s) do ZIP`];
         if (pdfFiles.length > 0) parts.push(`${pdfFiles.length} PDF(s) avulso(s)`);
         if (totalIgnored > 0) parts.push(`${totalIgnored} arquivo(s) ignorado(s)`);
         toast.success(
-          `${allPdfs.length} atendimento(s) importado(s). ${parts.join(" · ")}. Leitura automática iniciada.`,
+          `${allPdfs.length} atendimento(s) adicionado(s) com sucesso. ${parts.join(" · ")}`,
         );
       } else {
-        toast.success(`${allPdfs.length} arquivo(s) importado(s). Leitura automática iniciada.`);
+        toast.success(`${allPdfs.length} atendimento(s) adicionado(s) com sucesso.`);
       }
     },
     [extractPdfsFromZip, generateBatchCode, runIngestionQueue, classifyBatchFiles, updateBatchStatus],
@@ -1398,6 +1411,7 @@ const MentoriaLab = () => {
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    if (isImporting) return;
     handleFiles(e.dataTransfer.files);
   };
 
@@ -3063,16 +3077,31 @@ const MentoriaLab = () => {
             {/* Empty state */}
             {!loadingFromDb && files.length === 0 && (
               <Card
-                className="p-8 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group text-center"
-                onClick={() => inputRef.current?.click()}
+                className={cn(
+                  "p-8 transition-all group text-center",
+                  isImporting ? "border-primary/30 bg-primary/5" : "cursor-pointer hover:shadow-md hover:border-primary/40"
+                )}
+                onClick={() => !isImporting && inputRef.current?.click()}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
               >
-                <Upload className="h-8 w-8 text-primary mx-auto mb-3" />
-                <h3 className="text-sm font-bold text-foreground mb-1">Importar Atendimentos</h3>
-                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                  Envie PDFs ou um ZIP com atendimentos para iniciar a curadoria.
-                </p>
+                {isImporting ? (
+                  <div className="flex flex-col items-center gap-3 py-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm font-semibold text-primary">Analisando arquivos...</p>
+                    <p className="text-xs text-muted-foreground">
+                      Aguarde, processando {importingCount} arquivo(s) recebido(s)
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8 text-primary mx-auto mb-3" />
+                    <h3 className="text-sm font-bold text-foreground mb-1">Importar Atendimentos</h3>
+                    <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                      Envie PDFs ou um ZIP com atendimentos para iniciar a curadoria.
+                    </p>
+                  </>
+                )}
               </Card>
             )}
 
@@ -3084,12 +3113,29 @@ const MentoriaLab = () => {
                   <div
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={handleDrop}
-                    onClick={() => inputRef.current?.click()}
-                    className="border-2 border-dashed border-primary/30 rounded-lg h-[110px] flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                    onClick={() => !isImporting && inputRef.current?.click()}
+                    className={cn(
+                      "border-2 border-dashed rounded-lg h-[110px] flex flex-col items-center justify-center transition-colors",
+                      isImporting
+                        ? "border-primary/40 bg-primary/5 cursor-default"
+                        : "border-primary/30 cursor-pointer hover:border-primary/50 hover:bg-primary/5"
+                    )}
                   >
-                    <Upload className="h-5 w-5 text-primary/60 mb-1.5" />
-                    <p className="text-sm font-medium text-muted-foreground">Arraste PDFs ou ZIP aqui</p>
-                    <p className="text-[10px] text-muted-foreground/70 mt-0.5">ou clique para selecionar</p>
+                    {isImporting ? (
+                      <>
+                        <Loader2 className="h-5 w-5 text-primary animate-spin mb-1.5" />
+                        <p className="text-sm font-semibold text-primary">Analisando arquivos...</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          Aguarde, processando {importingCount} arquivo(s) recebido(s)
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-5 w-5 text-primary/60 mb-1.5" />
+                        <p className="text-sm font-medium text-muted-foreground">Arraste PDFs ou ZIP aqui</p>
+                        <p className="text-[10px] text-muted-foreground/70 mt-0.5">ou clique para selecionar</p>
+                      </>
+                    )}
                   </div>
                 </Card>
 
