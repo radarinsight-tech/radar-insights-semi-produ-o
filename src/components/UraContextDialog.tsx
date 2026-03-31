@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { ExtractedAudio, ExtractedImage } from "@/lib/pdfMediaExtractor";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,8 @@ interface UraContextDialogProps {
   rawText?: string;
   atendente?: string;
   structuredConversation?: StructuredConversation;
+  audioBlobs?: ExtractedAudio[];
+  imageBlobs?: ExtractedImage[];
 }
 
 interface SectionConfig {
@@ -265,13 +268,13 @@ function ChronologicalTimeline({ milestones }: { milestones: JourneyMilestone[] 
 
 import FormattedChatText from "@/components/FormattedChatText";
 
-function RawTextSection({ rawText }: { rawText: string }) {
-  return <FormattedChatText rawText={rawText} />;
+function RawTextSection({ rawText, audioBlobs, imageBlobs }: { rawText: string; audioBlobs?: ExtractedAudio[]; imageBlobs?: ExtractedImage[] }) {
+  return <FormattedChatText rawText={rawText} audioBlobs={audioBlobs} imageBlobs={imageBlobs} />;
 }
 
 /* ─── Main Dialog ───────────────────────────────────────────────── */
 
-const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredConversation }: UraContextDialogProps) => {
+const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredConversation, audioBlobs, imageBlobs }: UraContextDialogProps) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["detalhes"]));
 
   const uraContext = useMemo(() => {
@@ -499,7 +502,7 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredCo
 
             {/* ═══ Raw Text Collapsible (always at the bottom when text exists) ═══ */}
             {rawText && (
-              <RawTextSection rawText={rawText} />
+              <RawTextSection rawText={rawText} audioBlobs={audioBlobs} imageBlobs={imageBlobs} />
             )}
           </div>
         </ScrollArea>

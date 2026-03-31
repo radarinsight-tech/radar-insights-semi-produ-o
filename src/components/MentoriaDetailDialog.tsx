@@ -1,6 +1,7 @@
 import { useRef, useState, useMemo } from "react";
 import { calcularBonus, formatBRL, notaToScale10, formatDateBR } from "@/lib/utils";
 import type { StructuredConversation } from "@/lib/conversationParser";
+import type { ExtractedAudio, ExtractedImage } from "@/lib/pdfMediaExtractor";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,8 @@ interface MentoriaDetailDialogProps {
   nonEvaluableReason?: string;
   tipoAnalise?: string | null;
   initialStep?: MentoriaStep;
+  audioBlobs?: ExtractedAudio[];
+  imageBlobs?: ExtractedImage[];
 }
 
 const CATEGORY_ORDER = [
@@ -113,7 +116,7 @@ const findRelevantExcerpt = (rawText: string | undefined, explicacao: string): s
   return null;
 };
 
-const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation, workflowStatus, onMarkFinished, onNextFile, hasNextFile, nonEvaluable, nonEvaluableReason, tipoAnalise, initialStep }: MentoriaDetailDialogProps) => {
+const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation, workflowStatus, onMarkFinished, onNextFile, hasNextFile, nonEvaluable, nonEvaluableReason, tipoAnalise, initialStep, audioBlobs, imageBlobs }: MentoriaDetailDialogProps) => {
   const [uraOpen, setUraOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<MentoriaStep>(initialStep || "revisao");
   const [completedSteps, setCompletedSteps] = useState<Set<MentoriaStep>>(new Set());
@@ -621,7 +624,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           </div>
         </div>
       </DialogContent>
-      <UraContextDialog open={uraOpen} onOpenChange={setUraOpen} rawText={rawText} atendente={atendente} structuredConversation={structuredConversation} />
+      <UraContextDialog open={uraOpen} onOpenChange={setUraOpen} rawText={rawText} atendente={atendente} structuredConversation={structuredConversation} audioBlobs={audioBlobs} imageBlobs={imageBlobs} />
     </Dialog>
   );
 };

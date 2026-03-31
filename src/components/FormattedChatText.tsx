@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { FileText, ChevronDown, ChevronRight } from "lucide-react";
+import { ChatMediaSection } from "@/components/ChatMediaSection";
+import type { ExtractedAudio, ExtractedImage } from "@/lib/pdfMediaExtractor";
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -227,9 +229,11 @@ function BlockRenderer({ blocks }: { blocks: ParsedBlock[] }) {
 interface FormattedChatTextProps {
   rawText: string;
   clientName?: string;
+  audioBlobs?: ExtractedAudio[];
+  imageBlobs?: ExtractedImage[];
 }
 
-const FormattedChatText = ({ rawText, clientName }: FormattedChatTextProps) => {
+const FormattedChatText = ({ rawText, clientName, audioBlobs, imageBlobs }: FormattedChatTextProps) => {
   const [open, setOpen] = useState(false);
 
   const blocks = useMemo(() => parseRawTextBlocks(rawText, clientName), [rawText, clientName]);
@@ -257,6 +261,7 @@ const FormattedChatText = ({ rawText, clientName }: FormattedChatTextProps) => {
               {rawText}
             </pre>
           )}
+          <ChatMediaSection audioBlobs={audioBlobs} imageBlobs={imageBlobs} />
         </div>
       </CollapsibleContent>
     </Collapsible>

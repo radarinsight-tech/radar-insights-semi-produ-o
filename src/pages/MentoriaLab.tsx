@@ -56,6 +56,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn, formatDateBR, notaToScale10, formatNota } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
+import { extractAudioAttachments, extractPageImages, type ExtractedAudio, type ExtractedImage } from "@/lib/pdfMediaExtractor";
 import { parseStructuredConversation, type StructuredConversation } from "@/lib/conversationParser";
 import logoSymbol from "@/assets/logo-symbol.png";
 import { toast } from "sonner";
@@ -142,6 +143,8 @@ interface LabFile {
   structuredConversation?: StructuredConversation;
   tipo_analise?: string | null;
   visualizado?: boolean;
+  audioBlobs?: import("@/lib/pdfMediaExtractor").ExtractedAudio[];
+  imageBlobs?: import("@/lib/pdfMediaExtractor").ExtractedImage[];
 }
 
 const statusConfig: Record<FileStatus, { label: string; color: string }> = {
@@ -792,6 +795,32 @@ const MentoriaLab = () => {
           }
         }
 
+        // Extract embedded media (audio/images) from PDF binary
+        let extractedAudioBlobs: ExtractedAudio[] = [];
+        let extractedImageBlobs: ExtractedImage[] = [];
+        if (hasBinaryContent) {
+          try {
+            const [audios, images] = await Promise.all([
+              extractAudioAttachments(sourceFile.file),
+              extractPageImages(sourceFile.file),
+            ]);
+            extractedAudioBlobs = audios;
+            extractedImageBlobs = images;
+            if (audios.length > 0 || images.length > 0) {
+              console.info("[MentoriaLab][Importação][media_extraida]", {
+                id_atendimento: sourceFile.batchFileId || sourceFile.id,
+                audios: audios.length,
+                imagens: images.length,
+              });
+            }
+          } catch (err: any) {
+            console.warn("[MentoriaLab][Importação][media_extracao_erro]", {
+              id_atendimento: sourceFile.batchFileId || sourceFile.id,
+              erro: err?.message || "Falha ao extrair mídia",
+            });
+          }
+        }
+
         const hasText = text.trim().length > 0;
         let metadata: {
           protocolo?: string;
@@ -919,6 +948,8 @@ const MentoriaLab = () => {
           uraContext: uraCtx,
           uraStatus: uraCtx?.status,
           structuredConversation: structured,
+          audioBlobs: extractedAudioBlobs.length > 0 ? extractedAudioBlobs : undefined,
+          imageBlobs: extractedImageBlobs.length > 0 ? extractedImageBlobs : undefined,
         };
 
         setFiles((prev) => prev.map((f) => (f.id === labFile.id ? updatedFile : f)));
@@ -3511,6 +3542,8 @@ const MentoriaLab = () => {
         nonEvaluableReason={mentoriaFile?.nonEvaluableReason}
         tipoAnalise={mentoriaFile?.tipo_analise}
         initialStep={mentoriaInitialStep}
+        audioBlobs={mentoriaFile?.audioBlobs}
+        imageBlobs={mentoriaFile?.imageBlobs}
       />
       {/* Parser Diagnostic Dialog (admin-only) */}
       <ParserDiagnosticDialog
