@@ -39,6 +39,7 @@ type StatusFilter =
   | "nao_avaliaveis"
   | "aptos_ia"
   | "audio"
+  | "imagem"
   | "aguardando_confirmacao"
   | "confirmados";
 
