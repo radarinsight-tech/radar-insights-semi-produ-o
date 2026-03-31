@@ -3072,16 +3072,31 @@ const MentoriaLab = () => {
             {/* Empty state */}
             {!loadingFromDb && files.length === 0 && (
               <Card
-                className="p-8 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group text-center"
-                onClick={() => inputRef.current?.click()}
+                className={cn(
+                  "p-8 transition-all group text-center",
+                  isImporting ? "border-primary/30 bg-primary/5" : "cursor-pointer hover:shadow-md hover:border-primary/40"
+                )}
+                onClick={() => !isImporting && inputRef.current?.click()}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
               >
-                <Upload className="h-8 w-8 text-primary mx-auto mb-3" />
-                <h3 className="text-sm font-bold text-foreground mb-1">Importar Atendimentos</h3>
-                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                  Envie PDFs ou um ZIP com atendimentos para iniciar a curadoria.
-                </p>
+                {isImporting ? (
+                  <div className="flex flex-col items-center gap-3 py-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm font-semibold text-primary">Analisando arquivos...</p>
+                    <p className="text-xs text-muted-foreground">
+                      Aguarde, processando {importingCount} arquivo(s) recebido(s)
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8 text-primary mx-auto mb-3" />
+                    <h3 className="text-sm font-bold text-foreground mb-1">Importar Atendimentos</h3>
+                    <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                      Envie PDFs ou um ZIP com atendimentos para iniciar a curadoria.
+                    </p>
+                  </>
+                )}
               </Card>
             )}
 
