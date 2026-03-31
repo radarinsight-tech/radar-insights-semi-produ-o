@@ -109,7 +109,7 @@ const BOT_NAMES = new Set([
   "marte", "bot", "sistema", "robô", "robo", "automático", "automatico",
   "assistente virtual", "atendimento automático", "chatbot",
   "bandaturbo", "especialista virtual", "seu especialista virtual",
-  "especialista virtual da bandaturbo",
+  "especialista virtual da bandaturbo", "seu especialista virtual da bandaturbo",
 ]);
 
 /** Institutional / non-person terms to always exclude */
@@ -123,9 +123,12 @@ const INSTITUTIONAL_TERMS = new Set([
 /** Regex for company-like names (contains Internet, Telecom, LTDA, etc.) */
 const COMPANY_PATTERN = /\b(internet|telecom|telecomunica|ltda|s\.?a\.?|eireli|me\b|fibra|provedor|banda\s*larga|serviços|servicos|tecnologia|soluções|solucoes|group|corp|inc|bandaturbo|banda\s*turbo)\b/i;
 
+/** Regex to block any extracted name containing bot/company keywords */
+const BOT_COMPANY_KEYWORDS = /bandaturbo|banda\s*turbo|especialista\s+virtual|atendimento\s+autom[aá]tico|assistente\s+virtual/i;
+
 function isBot(name: string): boolean {
   const lower = name.toLowerCase().trim();
-  return BOT_NAMES.has(lower) || /^(bot|sistema|robô|robo)\b/i.test(lower);
+  return BOT_NAMES.has(lower) || /^(bot|sistema|robô|robo)\b/i.test(lower) || BOT_COMPANY_KEYWORDS.test(lower);
 }
 
 function isInstitutional(name: string): boolean {
@@ -150,10 +153,10 @@ function isLikelyPersonName(name: string): boolean {
   if (/[@:\/\d]{3,}/.test(trimmed)) return false;
   // Should mostly be letters and spaces
   if (!/^[A-Za-zÀ-ÿ\s'.]+$/.test(trimmed)) return false;
+  // Reject names starting with prepositions
+  if (/^(da|do|de|das|dos|e|em|com|para|por|ao|aos|à|às)\s/i.test(trimmed)) return false;
   // Reject institutional/company names
   if (isInstitutional(trimmed)) return false;
-  // Reject names starting with prepositions (e.g. "Da Bandaturbo", "Do Setor")
-  if (/^(da|do|de|das|dos|e|em|com|para|por|ao|aos|à|às)\s/i.test(trimmed)) return false;
   return true;
 }
 
@@ -175,18 +178,13 @@ function isInvalidAttendantName(name: string): boolean {
 
 export function extractAtendente(text: string): string | undefined {
   const result = _extractAtendenteRaw(text);
-
   if (!result) return undefined;
-
   const lower = result.toLowerCase().trim();
-
-  // Block exact pronouns/labels
+  // Block pronouns/labels
   const BLOCKED = ["seu", "sua", "seu atendente", "sua atendente"];
   if (BLOCKED.includes(lower)) return undefined;
-
-  // Block any name containing company/bot keywords
-  if (/bandaturbo|especialista\s+virtual|atendimento\s+autom|bot\s+|marte\b/i.test(lower)) return undefined;
-
+  // Block any name containing bot/company keywords
+  if (BOT_COMPANY_KEYWORDS.test(lower)) return undefined;
   return result;
 }
 
@@ -197,7 +195,7 @@ function _extractAtendenteRaw(text: string): string | undefined {
   const seuBlockMatches = [...text.matchAll(seuBlockPattern)];
   for (const m of seuBlockMatches) {
     const name = m[1].trim().replace(/\s+/g, " ");
-    if (name && !isBot(name) && !isInvalidAttendantName(name) && name.length >= 3) {
+    if (name && !isBot(name) && !isInvalidAttendantName(name) && !isInstitutional(name) && name.length >= 3) {
       return name;
     }
   }
@@ -255,8 +253,8 @@ function _extractAtendenteRaw(text: string): string | undefined {
     return sorted[0][0];
   }
 
-  // Strategy 3: Presentation patterns in chat body (single first name)
-  // "Sou [Nome], especialista..." / "Olá, Sou [Nome]," / "Aqui é [Nome]"
+  // Strategy 3: Presentation patterns in chat body
+  // "Sou [Nome Sobrenome], especialista..." / "Aqui é [Nome]" / "Meu nome é [Nome]"
   const presentationPatterns = [
     /\bsou\s+([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)*)[\s,]/i,
     /\baqui\s+[eé]\s+(?:o|a)?\s*([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)*)/i,
@@ -267,8 +265,7 @@ function _extractAtendenteRaw(text: string): string | undefined {
     const match = text.match(pattern);
     if (match) {
       const name = match[1].trim();
-      if (!isBot(name) && !isInvalidAttendantName(name) && name.length >= 3) {
-        // Capitalize first letter of each word, preserve rest
+      if (!isBot(name) && !isInvalidAttendantName(name) && !isInstitutional(name) && name.length >= 3) {
         return name.replace(/\b([A-Za-zÀ-ÿ])/g, (c) => c.toUpperCase());
       }
     }
@@ -289,13 +286,12 @@ function _extractAtendenteRaw(text: string): string | undefined {
       if (!name || name.length < 3 || isBot(name) || isInstitutional(name)) continue;
       if (clienteName && name.toLowerCase() === clienteName) continue;
       // Skip if it looks like a header label
-      if (/^(protocolo|cliente|atendente|canal|data|tipo|status|setor|departamento|equipe|fila|horário|horario|início|inicio|fim|aviso|nota|sistema|agente|operador)/i.test(name)) continue;
+      if (/^(protocolo|cliente|atendente|canal|data|tipo|status|setor|departamento|horário|início|fim|equipe|fila)/i.test(name)) continue;
       singleNameCounts.set(name, (singleNameCounts.get(name) || 0) + 1);
     }
   }
 
   if (singleNameCounts.size > 0) {
-    // Pick most frequent, must have at least 2 messages
     const sorted = [...singleNameCounts.entries()].sort((a, b) => b[1] - a[1]);
     if (sorted[0][1] >= 2) {
       return sorted[0][0];
