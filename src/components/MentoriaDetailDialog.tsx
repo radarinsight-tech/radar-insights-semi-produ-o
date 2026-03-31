@@ -116,7 +116,7 @@ const findRelevantExcerpt = (rawText: string | undefined, explicacao: string): s
   return null;
 };
 
-const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation, workflowStatus, onMarkFinished, onNextFile, hasNextFile, nonEvaluable, nonEvaluableReason, tipoAnalise, initialStep }: MentoriaDetailDialogProps) => {
+const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation, workflowStatus, onMarkFinished, onNextFile, hasNextFile, nonEvaluable, nonEvaluableReason, tipoAnalise, initialStep, audioBlobs, imageBlobs }: MentoriaDetailDialogProps) => {
   const [uraOpen, setUraOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<MentoriaStep>(initialStep || "revisao");
   const [completedSteps, setCompletedSteps] = useState<Set<MentoriaStep>>(new Set());
