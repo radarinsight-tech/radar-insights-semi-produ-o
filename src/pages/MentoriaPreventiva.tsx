@@ -846,7 +846,7 @@ const MentoriaPreventiva = () => {
                                 variant="ghost"
                                 size="sm"
                                 className="h-6 px-2 text-[10px]"
-                                onClick={() => setActiveResult(f.result!)}
+                                onClick={() => { setActiveResult(f.result!); setActiveRawText(f.text || null); }}
                               >
                                 <Eye className="h-3 w-3 mr-0.5" /> Ver
                               </Button>
