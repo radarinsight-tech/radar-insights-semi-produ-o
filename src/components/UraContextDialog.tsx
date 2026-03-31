@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { ExtractedAudio, ExtractedImage } from "@/lib/pdfMediaExtractor";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
