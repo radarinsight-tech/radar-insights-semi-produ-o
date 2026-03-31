@@ -280,6 +280,76 @@ serve(async (req) => {
       });
     }
 
+    // ── Pre-check: detect URA-only / no human content ──
+    // If the text has zero human interaction indicators, return nonEvaluable immediately
+    const lowerText = text.toLowerCase();
+    const BOT_ONLY_SPEAKERS = /\b(marte|bot|sistema|rob[oô]|ura|autom[aá]tico|chatbot|assistente\s*virtual|especialista\s*virtual)\b/i;
+    // Strip lines that are clearly bot/system messages or headers
+    const lines = text.split(/\n/).filter((l: string) => l.trim().length > 0);
+    // Check if there are ANY lines with human-like speaker patterns (not bot/system)
+    const humanMessagePattern = /^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]{1,40}?)[\s]*[\(:\[]/;
+    let hasHumanSpeaker = false;
+    for (const line of lines) {
+      const speakerMatch = line.trim().match(humanMessagePattern);
+      if (speakerMatch) {
+        const speaker = speakerMatch[1].trim();
+        if (!BOT_ONLY_SPEAKERS.test(speaker) && speaker.length > 1) {
+          hasHumanSpeaker = true;
+          break;
+        }
+      }
+    }
+
+    // Also check for minimal text content (very short text = likely empty/header-only)
+    const textWithoutHeaders = text.replace(/^(protocolo|cliente|atendente|canal|data|hor[aá]rio|in[ií]cio|fim|status|tipo|setor)[^\n]*/gim, "").trim();
+    const isEffectivelyEmpty = textWithoutHeaders.length < 50;
+
+    if (!hasHumanSpeaker && isEffectivelyEmpty) {
+      // URA-only or empty attendance — return valid nonEvaluable response
+      return new Response(JSON.stringify({
+        nonEvaluable: true,
+        motivoNaoAvaliavel: "Atendimento encerrado na URA sem atendente humano",
+        statusAtendimento: "fora_de_avaliacao",
+        statusAuditoria: "auditoria_bloqueada",
+        motivo: "atendimento_apenas_por_bot",
+        statusBot: "bot_ok",
+        observacaoBot: "Atendimento não teve participação de atendente humano",
+        data: "",
+        protocolo: "",
+        cliente: "",
+        tipo: "Outro",
+        atendente: "",
+        criterios: [],
+        subtotais: {
+          posturaEComunicacao: { obtidos: 0, possiveis: 0 },
+          entendimentoEConducao: { obtidos: 0, possiveis: 0 },
+          solucaoEConfirmacao: { obtidos: 0, possiveis: 0 },
+          encerramentoEValor: { obtidos: 0, possiveis: 0 },
+        },
+        pontosObtidos: 0,
+        pontosPossiveis: 0,
+        notaFinal: 0,
+        classificacao: "Fora de Avaliação",
+        bonusQualidade: 0,
+        bonusOperacional: { atualizacaoCadastral: "FORA DO ESCOPO", pontosExtras: 0 },
+        mentoria: [],
+        motivoResultado: "Atendimento sem interação humana — apenas URA/bot",
+        impeditivo: false,
+        motivoImpeditivo: "",
+        promptVersion: PROMPT_VERSION,
+        auditLog: {
+          dataExecucao: new Date().toISOString(),
+          promptVersion: PROMPT_VERSION,
+          tempoExecucaoMs: Date.now() - startTime,
+          resultadoValidado: true,
+          erroDetectado: null,
+        },
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const startTime = Date.now();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
