@@ -1243,6 +1243,7 @@ const MentoriaLab = () => {
       if (allPdfs.length === 0) {
         setBatchInfo((prev) => (prev ? { ...prev, status: "erro" } : prev));
         toast.error("Nenhum PDF válido encontrado. Verifique os arquivos enviados.");
+        setIsImporting(false); setImportingCount(0);
         return;
       }
 
