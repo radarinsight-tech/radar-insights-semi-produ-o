@@ -56,6 +56,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn, formatDateBR, notaToScale10, formatNota } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
+import { extractAudioAttachments, extractPageImages, type ExtractedAudio, type ExtractedImage } from "@/lib/pdfMediaExtractor";
 import { parseStructuredConversation, type StructuredConversation } from "@/lib/conversationParser";
 import logoSymbol from "@/assets/logo-symbol.png";
 import { toast } from "sonner";
