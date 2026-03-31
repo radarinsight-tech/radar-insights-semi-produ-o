@@ -1009,7 +1009,12 @@ const MentoriaPreventiva = () => {
                         ))}
                       </div>
                     )}
-                  </Card>
+                    </Card>
+
+                  {/* Texto original do chat */}
+                  {activeRawText && (
+                    <FormattedChatText rawText={activeRawText} clientName={activeResult.cliente} />
+                  )}
                 </>
               )}
             </div>
