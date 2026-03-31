@@ -1,6 +1,7 @@
 import { useRef, useState, useMemo } from "react";
 import { calcularBonus, formatBRL, notaToScale10, formatDateBR } from "@/lib/utils";
 import type { StructuredConversation } from "@/lib/conversationParser";
+import type { ExtractedAudio, ExtractedImage } from "@/lib/pdfMediaExtractor";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
