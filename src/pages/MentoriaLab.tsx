@@ -832,6 +832,7 @@ const MentoriaLab = () => {
           data?: string;
           canal: string;
           hasAudio: boolean;
+          hasImage: boolean;
           tipo: string;
         } = {
           protocolo: undefined,
@@ -839,6 +840,7 @@ const MentoriaLab = () => {
           data: undefined,
           canal: "Não identificado",
           hasAudio: false,
+          hasImage: false,
           tipo: "Não identificado",
         };
 
