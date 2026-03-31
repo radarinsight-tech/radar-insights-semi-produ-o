@@ -901,7 +901,13 @@ const MentoriaLab = () => {
         }
 
         const hasAudio = Boolean(metadata.hasAudio || uraCtx?.audioDetectado);
-        const parsedMessagesPayload = structured ? JSON.parse(JSON.stringify(structured)) : null;
+
+        // Sanitize text: remove \u0000 null bytes that PostgreSQL JSONB rejects
+        const sanitize = (s: string) => s.replace(/\u0000/g, "").replace(/\\u0000/g, "");
+        const safeText = hasText ? sanitize(text) : null;
+        const parsedMessagesPayload = structured
+          ? JSON.parse(sanitize(JSON.stringify(structured)))
+          : null;
 
         // ── Pure ingestion: persist read data, NO classification ──
         const { error: persistError } = await supabase
@@ -913,8 +919,8 @@ const MentoriaLab = () => {
             data_atendimento: metadata.data ?? null,
             canal: metadata.canal ?? "Não identificado",
             has_audio: hasAudio,
-            extracted_text: hasText ? text : null,
-            raw_text: hasText ? text : null,
+            extracted_text: safeText,
+            raw_text: safeText,
             parsed_messages: parsedMessagesPayload,
             error_message: null,
           } as any)

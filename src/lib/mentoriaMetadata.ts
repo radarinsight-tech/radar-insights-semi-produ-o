@@ -134,20 +134,40 @@ function isLikelyPersonName(name: string): boolean {
   return true;
 }
 
+/** Prefixes to strip from attendant name fields (e.g. "Seu atendente: Bruna") */
+const ATTENDANT_PREFIXES = /^(?:seu\s+atendente|sua\s+atendente|seu|sua|atendente)\s*[:\-]?\s*/i;
+
+/** Check if a value is just a pronoun/prefix with no real name */
+function isOnlyPrefix(name: string): boolean {
+  return /^(seu|sua|atendente|seu\s+atendente|sua\s+atendente)$/i.test(name.trim());
+}
+
 export function extractAtendente(text: string): string | undefined {
+  // Strategy 0: "Seu atendente\nNome" pattern (BandaTurbo PDFs)
+  const seuBlockPattern = /(?:seu|sua)\s+atendente\s*[:\-]?\s*\n\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]+)/gi;
+  const seuBlockMatches = [...text.matchAll(seuBlockPattern)];
+  for (const m of seuBlockMatches) {
+    const name = m[1].trim().replace(/\s+/g, " ");
+    if (name && !isBot(name) && !isOnlyPrefix(name) && name.length >= 3) {
+      return name;
+    }
+  }
+
   // Strategy 1: Explicit labels
   const labelPatterns = [
-    /(?:atendente|agente|operador|analista|consultor|responsável)\s*[:\-]\s*([^\n\r]+)/gi,
+    /(?:seu\s+atendente|sua\s+atendente|atendente|agente|operador|analista|consultor|responsável)\s*[:\-]\s*([^\n\r]+)/gi,
     /(?:transferido\s+para|encaminhado\s+para|atendido\s+por)\s*[:\-]?\s*([^\n\r]+)/gi,
   ];
 
   for (const pattern of labelPatterns) {
     const matches = [...text.matchAll(pattern)];
     for (const m of matches) {
-      const candidate = m[1].trim().replace(/\s+/g, " ");
+      let candidate = m[1].trim().replace(/\s+/g, " ");
+      // Strip residual prefixes
+      candidate = candidate.replace(ATTENDANT_PREFIXES, "").trim();
       // Take only the name part (before any extra info like date, id, etc.)
       const namePart = candidate.split(/[,\-\|\/]/)[0].trim();
-      if (namePart && !isBot(namePart) && isLikelyPersonName(namePart)) {
+      if (namePart && !isBot(namePart) && !isOnlyPrefix(namePart) && isLikelyPersonName(namePart)) {
         return namePart;
       }
     }
