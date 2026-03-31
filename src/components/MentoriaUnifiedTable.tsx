@@ -603,7 +603,7 @@ const MentoriaUnifiedTable = ({
                         )}
 
                         {/* Botão Auditar para analisados aguardando revisão */}
-                        {(f.status === "analisado" || f.status === "aguardando_revisao_ia" || f.status === "aguardando_revisao_manual") && f.hasResult && f.status !== "confirmado" && (
+                        {(f.status === "analisado" || f.status === "aguardando_revisao_ia" || f.status === "aguardando_revisao_manual") && f.hasResult && (
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
