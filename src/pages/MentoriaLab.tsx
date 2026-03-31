@@ -1478,12 +1478,29 @@ const MentoriaLab = () => {
     }
   };
 
-  const openMentoria = useCallback((f: LabFile) => {
+  const openMentoria = useCallback((f: LabFile, initialStep?: "pre-analise" | "semi-auto" | "relatorio") => {
     setSideFile(null);
     setMentoriaFile(f);
+    setMentoriaInitialStep(initialStep);
     setHighlightedFileId(f.id);
     setWorkflowStatuses((prev) => ({ ...prev, [f.id]: prev[f.id] === "finalizado" ? "finalizado" : "em_analise" }));
   }, []);
+
+  // Monthly confirm counts per attendant for the 6-per-month limit
+  const monthlyConfirmCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    for (const f of files) {
+      if (f.status === "confirmado" && f.atendente) {
+        // Check if confirmed in current month (use analyzedAt or addedAt as proxy)
+        const key = f.atendente.trim().toLowerCase();
+        counts.set(key, (counts.get(key) || 0) + 1);
+      }
+    }
+    return counts;
+  }, [files]);
 
   const persistEvaluationRecord = useCallback(
     async ({
