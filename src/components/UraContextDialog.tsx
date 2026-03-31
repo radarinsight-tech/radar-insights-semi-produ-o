@@ -268,8 +268,8 @@ function ChronologicalTimeline({ milestones }: { milestones: JourneyMilestone[] 
 
 import FormattedChatText from "@/components/FormattedChatText";
 
-function RawTextSection({ rawText }: { rawText: string }) {
-  return <FormattedChatText rawText={rawText} />;
+function RawTextSection({ rawText, audioBlobs, imageBlobs }: { rawText: string; audioBlobs?: ExtractedAudio[]; imageBlobs?: ExtractedImage[] }) {
+  return <FormattedChatText rawText={rawText} audioBlobs={audioBlobs} imageBlobs={imageBlobs} />;
 }
 
 /* ─── Main Dialog ───────────────────────────────────────────────── */
