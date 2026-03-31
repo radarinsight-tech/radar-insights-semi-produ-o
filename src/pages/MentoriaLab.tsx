@@ -902,6 +902,7 @@ const MentoriaLab = () => {
         }
 
         const hasAudio = Boolean(metadata.hasAudio || uraCtx?.audioDetectado);
+        const hasImage = Boolean(metadata.hasImage || (extractedImageBlobs && extractedImageBlobs.length > 0));
 
         // Sanitize text: remove \u0000 null bytes that PostgreSQL JSONB rejects
         const sanitize = (s: string) => s.replace(/\u0000/g, "").replace(/\\u0000/g, "");
