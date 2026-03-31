@@ -274,7 +274,7 @@ function RawTextSection({ rawText, audioBlobs, imageBlobs }: { rawText: string; 
 
 /* ─── Main Dialog ───────────────────────────────────────────────── */
 
-const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredConversation }: UraContextDialogProps) => {
+const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredConversation, audioBlobs, imageBlobs }: UraContextDialogProps) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["detalhes"]));
 
   const uraContext = useMemo(() => {
