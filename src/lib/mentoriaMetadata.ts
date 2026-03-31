@@ -114,6 +114,8 @@ const BOT_NAMES = new Set([
 const INSTITUTIONAL_TERMS = new Set([
   "protocolo", "cliente", "sistema", "atendente", "agente", "operador",
   "informação", "informacao", "aviso", "nota", "observação", "observacao",
+  "setor", "departamento", "equipe", "time", "fila", "canal", "status",
+  "tipo", "data", "horário", "horario", "inicio", "início", "fim",
 ]);
 
 /** Regex for company-like names (contains Internet, Telecom, LTDA, etc.) */
@@ -197,7 +199,7 @@ function _extractAtendenteRaw(text: string): string | undefined {
       candidate = candidate.replace(ATTENDANT_PREFIXES, "").trim();
       // Take only the name part (before any extra info like date, id, etc.)
       const namePart = candidate.split(/[,\-\|\/]/)[0].trim();
-      if (namePart && !isBot(namePart) && !isInvalidAttendantName(namePart) && isLikelyPersonName(namePart)) {
+      if (namePart && !isBot(namePart) && !isInvalidAttendantName(namePart) && !isInstitutional(namePart) && isLikelyPersonName(namePart)) {
         return namePart;
       }
     }
@@ -270,7 +272,7 @@ function _extractAtendenteRaw(text: string): string | undefined {
       if (!name || name.length < 3 || isBot(name) || isInstitutional(name)) continue;
       if (clienteName && name.toLowerCase() === clienteName) continue;
       // Skip if it looks like a header label
-      if (/^(protocolo|cliente|atendente|canal|data|tipo|status|setor|horário|início|fim)/i.test(name)) continue;
+      if (/^(protocolo|cliente|atendente|canal|data|tipo|status|setor|departamento|equipe|fila|horário|horario|início|inicio|fim|aviso|nota|sistema|agente|operador)/i.test(name)) continue;
       singleNameCounts.set(name, (singleNameCounts.get(name) || 0) + 1);
     }
   }
