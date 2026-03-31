@@ -51,6 +51,7 @@ interface UnifiedFile {
   data?: string;
   canal?: string;
   hasAudio?: boolean;
+  hasImage?: boolean;
   status: string;
   result?: any;
   error?: string;
