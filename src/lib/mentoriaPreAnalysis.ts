@@ -7,7 +7,7 @@
 import type { ParsedMessage, StructuredConversation } from "./conversationParser";
 import type { UraContext } from "./uraContextSummarizer";
 
-export type SugestaoResultado = "SIM" | "NÃO" | "PARCIAL";
+export type SugestaoResultado = "SIM" | "NÃO" | "PARCIAL" | "FORA DO ESCOPO";
 export type Confianca = "alta" | "media" | "baixa";
 
 export interface PreAnalysisSuggestion {

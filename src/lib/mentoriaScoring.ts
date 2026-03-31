@@ -168,7 +168,7 @@ export function scoreFromFullReport(fullReport: any): ScoringResult | null {
 
   const respostas: Array<{ numero: number; resposta: SugestaoResultado }> = criterios.map((c: any) => ({
     numero: c.numero,
-    resposta: c.resultado === "SIM" ? "SIM" : c.resultado === "NÃO" ? "NÃO" : "PARCIAL",
+    resposta: c.resultado === "SIM" ? "SIM" : c.resultado === "NÃO" ? "NÃO" : c.resultado === "FORA DO ESCOPO" ? "FORA DO ESCOPO" : "PARCIAL",
   }));
 
   return calculateScore(respostas);
