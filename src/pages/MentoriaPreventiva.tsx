@@ -140,6 +140,7 @@ const MentoriaPreventiva = () => {
   const [readingIds, setReadingIds] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState(false);
   const [activeResult, setActiveResult] = useState<PreventiveResult | null>(null);
+  const [activeRawText, setActiveRawText] = useState<string | null>(null);
   const [showCriterios, setShowCriterios] = useState(false);
   const [sampled, setSampled] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
