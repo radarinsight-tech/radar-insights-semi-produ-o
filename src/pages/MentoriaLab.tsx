@@ -3108,12 +3108,29 @@ const MentoriaLab = () => {
                   <div
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={handleDrop}
-                    onClick={() => inputRef.current?.click()}
-                    className="border-2 border-dashed border-primary/30 rounded-lg h-[110px] flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                    onClick={() => !isImporting && inputRef.current?.click()}
+                    className={cn(
+                      "border-2 border-dashed rounded-lg h-[110px] flex flex-col items-center justify-center transition-colors",
+                      isImporting
+                        ? "border-primary/40 bg-primary/5 cursor-default"
+                        : "border-primary/30 cursor-pointer hover:border-primary/50 hover:bg-primary/5"
+                    )}
                   >
-                    <Upload className="h-5 w-5 text-primary/60 mb-1.5" />
-                    <p className="text-sm font-medium text-muted-foreground">Arraste PDFs ou ZIP aqui</p>
-                    <p className="text-[10px] text-muted-foreground/70 mt-0.5">ou clique para selecionar</p>
+                    {isImporting ? (
+                      <>
+                        <Loader2 className="h-5 w-5 text-primary animate-spin mb-1.5" />
+                        <p className="text-sm font-semibold text-primary">Analisando arquivos...</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          Aguarde, processando {importingCount} arquivo(s) recebido(s)
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-5 w-5 text-primary/60 mb-1.5" />
+                        <p className="text-sm font-medium text-muted-foreground">Arraste PDFs ou ZIP aqui</p>
+                        <p className="text-[10px] text-muted-foreground/70 mt-0.5">ou clique para selecionar</p>
+                      </>
+                    )}
                   </div>
                 </Card>
 
