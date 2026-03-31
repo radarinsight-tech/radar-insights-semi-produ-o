@@ -39,6 +39,8 @@ export interface SemiAutoResult {
 
 interface SemiAutoPanelProps {
   analysis: PreAnalysisResult;
+  /** Result from analyze-attendance edge function — when present, pre-fills criteria from IA */
+  iaResult?: any;
   onConfirm?: (result: SemiAutoResult) => void;
 }
 
@@ -73,18 +75,40 @@ const CATEGORY_ICONS: Record<string, string> = {
 type FilterMode = "all" | "pending" | "accepted" | "adjusted" | "rejected";
 
 /* ─── Component ─── */
-const SemiAutoPanel = ({ analysis, onConfirm }: SemiAutoPanelProps) => {
+const SemiAutoPanel = ({ analysis, iaResult, onConfirm }: SemiAutoPanelProps) => {
+  // Build initial decisions: if iaResult has criterios, use them; otherwise use pre-analysis suggestions
   const [decisions, setDecisions] = useState<Map<number, CriterionDecision>>(() => {
     const map = new Map<number, CriterionDecision>();
+    const iaCriterios: any[] = iaResult?.criterios || [];
+
     for (const s of analysis.suggestions) {
-      map.set(s.numero, {
-        numero: s.numero,
-        sugestaoOriginal: s.sugestao,
-        decisaoFinal: s.sugestao,
-        status: s.confianca === "alta" ? "accepted" : "pending",
-        editadoManualmente: false,
-        confiancaOriginal: s.confianca,
-      });
+      // Try to find matching IA criterion
+      const iaCrit = iaCriterios.find((c: any) => c.numero === s.numero);
+
+      if (iaCrit) {
+        // Map IA resultado to SugestaoResultado
+        const iaResultado: SugestaoResultado =
+          iaCrit.resultado === "SIM" ? "SIM" :
+          iaCrit.resultado === "NÃO" ? "NÃO" : "PARCIAL";
+
+        map.set(s.numero, {
+          numero: s.numero,
+          sugestaoOriginal: iaResultado,
+          decisaoFinal: iaResultado,
+          status: "accepted", // IA results start as accepted
+          editadoManualmente: false,
+          confiancaOriginal: "alta", // IA results are high confidence
+        });
+      } else {
+        map.set(s.numero, {
+          numero: s.numero,
+          sugestaoOriginal: s.sugestao,
+          decisaoFinal: s.sugestao,
+          status: s.confianca === "alta" ? "accepted" : "pending",
+          editadoManualmente: false,
+          confiancaOriginal: s.confianca,
+        });
+      }
     }
     return map;
   });
@@ -202,14 +226,32 @@ const SemiAutoPanel = ({ analysis, onConfirm }: SemiAutoPanelProps) => {
     });
   };
 
+  // Enrich suggestions with IA result justifications when available
+  const enrichedSuggestions = useMemo(() => {
+    const iaCriterios: any[] = iaResult?.criterios || [];
+    return analysis.suggestions.map(s => {
+      const iaCrit = iaCriterios.find((c: any) => c.numero === s.numero);
+      if (iaCrit) {
+        return {
+          ...s,
+          justificativa: iaCrit.explicacao || s.justificativa,
+          evidencia: s.evidencia,
+          sugestao: (iaCrit.resultado === "SIM" ? "SIM" : iaCrit.resultado === "NÃO" ? "NÃO" : "PARCIAL") as SugestaoResultado,
+          confianca: "alta" as Confianca,
+        };
+      }
+      return s;
+    });
+  }, [analysis.suggestions, iaResult]);
+
   // Filter suggestions
   const filteredSuggestions = useMemo(() => {
-    return analysis.suggestions.filter(s => {
+    return enrichedSuggestions.filter(s => {
       if (filterMode === "all") return true;
       const d = decisions.get(s.numero);
       return d?.status === filterMode;
     });
-  }, [analysis.suggestions, decisions, filterMode]);
+  }, [enrichedSuggestions, decisions, filterMode]);
 
   // Group by category
   const grouped = useMemo(() => {

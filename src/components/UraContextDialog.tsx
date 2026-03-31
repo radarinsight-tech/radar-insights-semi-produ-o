@@ -261,17 +261,84 @@ function ChronologicalTimeline({ milestones }: { milestones: JourneyMilestone[] 
   );
 }
 
-/* ─── Raw Text Collapsible ──────────────────────────────────────── */
+/* ─── Raw Text Collapsible (color-coded by participant) ──────── */
+
+/** Post-attendance auto-message patterns */
+const POST_ATTENDANCE_PATTERNS = [
+  /queremos\s+saber\s+como\s+foi/i,
+  /pesquisa\s+de\s+satisfação/i,
+  /avalie\s+(?:nosso|o)\s+atendimento/i,
+  /notamos\s+que\s+voc[eê]\s+n[aã]o\s+finalizou/i,
+  /pesquisa\s+não\s+respondida/i,
+  /pesquisa\s+de\s+satisfa[cç][aã]o\s+encerrada/i,
+  /excelente\s*[\/|]\s*bom\s*[\/|]\s*regular/i,
+  /nota\s+de\s+\d+\s+a\s+\d+/i,
+];
+
+function isPostAttendanceAuto(text: string): boolean {
+  return POST_ATTENDANCE_PATTERNS.some(p => p.test(text));
+}
+
+interface ParsedBlock {
+  speaker: string;
+  timestamp: string;
+  text: string;
+  role: "cliente" | "marte" | "atendente";
+  isPostAuto: boolean;
+}
+
+function parseRawTextBlocks(rawText: string, clientName?: string): ParsedBlock[] {
+  // Try to extract client name from header
+  let extractedClient = clientName;
+  if (!extractedClient) {
+    const clientMatch = rawText.match(/Cliente[:\s]+([^\n]+)/i);
+    if (clientMatch) extractedClient = clientMatch[1].trim();
+  }
+
+  const blocks: ParsedBlock[] = [];
+  // Match blocks: "Speaker Name DD/MM/YYYY HH:MM" or "Speaker Name HH:MM"
+  const blockRegex = /^([A-ZÀ-Ü][A-ZÀ-Ü\s]+?)[\s]+(\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}:\d{2}|\d{1,2}:\d{2})\s*$/gm;
+  const matches = [...rawText.matchAll(blockRegex)];
+
+  if (matches.length === 0) return [];
+
+  for (let i = 0; i < matches.length; i++) {
+    const match = matches[i];
+    const speaker = match[1].trim();
+    const timestamp = match[2].trim();
+    const startIdx = match.index! + match[0].length;
+    const endIdx = i + 1 < matches.length ? matches[i + 1].index! : rawText.length;
+    const text = rawText.slice(startIdx, endIdx).trim();
+
+    // Determine role
+    let role: ParsedBlock["role"] = "atendente";
+    const speakerUpper = speaker.toUpperCase();
+    if (speakerUpper === "MARTE" || speakerUpper.includes("MARTE")) {
+      role = "marte";
+    } else if (extractedClient && speaker.toLowerCase().includes(extractedClient.toLowerCase().split(" ")[0])) {
+      role = "cliente";
+    }
+
+    const isPostAuto = role === "marte" && isPostAttendanceAuto(text);
+
+    blocks.push({ speaker, timestamp, text, role, isPostAuto });
+  }
+
+  return blocks;
+}
 
 function RawTextSection({ rawText }: { rawText: string }) {
   const [open, setOpen] = useState(false);
+
+  const blocks = useMemo(() => parseRawTextBlocks(rawText), [rawText]);
+  const hasBlocks = blocks.length > 0;
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger className="flex items-center gap-2 w-full rounded-xl border border-border/50 bg-muted/10 px-4 py-2.5 hover:bg-muted/20 transition-colors">
         <FileText className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="text-[11px] font-bold text-foreground uppercase tracking-wide">
-          Ver texto completo do atendimento
+          Acesso ao texto original do chat
         </span>
         <div className="ml-auto">
           {open
@@ -281,9 +348,41 @@ function RawTextSection({ rawText }: { rawText: string }) {
       </CollapsibleTrigger>
       <CollapsibleContent>
         <div className="mt-1.5 rounded-xl border border-border/40 bg-background/50 p-4 max-h-[40vh] overflow-y-auto">
-          <pre className="text-[11px] text-foreground/80 leading-relaxed whitespace-pre-wrap break-words font-mono">
-            {rawText}
-          </pre>
+          {hasBlocks ? (
+            <div className="space-y-3">
+              {blocks.map((block, i) => {
+                const nameColor = block.role === "cliente"
+                  ? "text-blue-600 dark:text-blue-400"
+                  : block.role === "marte"
+                    ? "text-gray-400"
+                    : "text-emerald-600 dark:text-emerald-400";
+                const textStyle = block.role === "marte" ? "italic text-gray-400" : "text-foreground/80";
+
+                return (
+                  <div key={i} className="text-[11px] leading-relaxed font-mono">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className={`font-bold ${nameColor}`}>{block.speaker}</span>
+                      {block.role === "marte" && (
+                        <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 text-gray-400 border-gray-300">URA</Badge>
+                      )}
+                      {block.isPostAuto && (
+                        <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 text-gray-400 border-gray-300">Pós-atendimento</Badge>
+                      )}
+                      <span className="text-muted-foreground/60 text-[10px]">{block.timestamp}</span>
+                    </div>
+                    <p className={`whitespace-pre-wrap break-words ${textStyle} ${block.isPostAuto ? "opacity-50" : ""}`}>
+                      {block.text}
+                    </p>
+                    {i < blocks.length - 1 && <hr className="border-border/30 mt-3" />}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <pre className="text-[11px] text-foreground/80 leading-relaxed whitespace-pre-wrap break-words font-mono">
+              {rawText}
+            </pre>
+          )}
         </div>
       </CollapsibleContent>
     </Collapsible>

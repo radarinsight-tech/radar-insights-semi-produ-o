@@ -322,6 +322,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           completedSteps={completedSteps}
           onStepClick={(step) => setCurrentStep(step)}
           hasPreAnalysis={!!preAnalysis}
+          hidePreAnalysis={initialStep === "semi-auto"}
         />
 
         {/* ═══ NON-EVALUABLE WARNING ═══ */}
@@ -355,6 +356,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
               <div className="px-8 py-8">
                 <SemiAutoPanel
                   analysis={preAnalysis}
+                  iaResult={result}
                   onConfirm={(semiResult: SemiAutoResult) => {
                     console.log("Semi-auto confirmed:", semiResult);
                   }}
@@ -626,20 +628,23 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
               </Badge>
             )}
             {/* Back step button */}
-            {preAnalysis && currentStep !== "pre-analise" && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 text-xs h-8 font-semibold"
-                onClick={() => {
-                  const steps: MentoriaStep[] = ["pre-analise", "semi-auto", "relatorio"];
-                  const idx = steps.indexOf(currentStep);
-                  if (idx > 0) setCurrentStep(steps[idx - 1]);
-                }}
-              >
-                <ChevronLeft className="h-3.5 w-3.5" /> Voltar etapa
-              </Button>
-            )}
+            {preAnalysis && (() => {
+              const availableSteps: MentoriaStep[] = initialStep === "semi-auto"
+                ? ["semi-auto", "relatorio"]
+                : ["pre-analise", "semi-auto", "relatorio"];
+              const idx = availableSteps.indexOf(currentStep);
+              if (idx <= 0) return null;
+              return (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 text-xs h-8 font-semibold"
+                  onClick={() => setCurrentStep(availableSteps[idx - 1])}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" /> Voltar etapa
+                </Button>
+              );
+            })()}
           </div>
           <div className="flex items-center gap-2">
             {/* Advance step button */}
@@ -648,10 +653,12 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                 size="sm"
                 className="gap-1.5 text-xs h-8 font-semibold"
                 onClick={() => {
-                  const steps: MentoriaStep[] = ["pre-analise", "semi-auto", "relatorio"];
-                  const idx = steps.indexOf(currentStep);
+                  const availableSteps: MentoriaStep[] = initialStep === "semi-auto"
+                    ? ["semi-auto", "relatorio"]
+                    : ["pre-analise", "semi-auto", "relatorio"];
+                  const idx = availableSteps.indexOf(currentStep);
                   setCompletedSteps(prev => new Set(prev).add(currentStep));
-                  if (idx < steps.length - 1) setCurrentStep(steps[idx + 1]);
+                  if (idx < availableSteps.length - 1) setCurrentStep(availableSteps[idx + 1]);
                 }}
               >
                 {currentStep === "pre-analise" ? "Avançar para Semi-Automático" : "Avançar para Relatório"}

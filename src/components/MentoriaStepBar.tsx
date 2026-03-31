@@ -14,10 +14,16 @@ interface MentoriaStepBarProps {
   completedSteps: Set<MentoriaStep>;
   onStepClick: (step: MentoriaStep) => void;
   hasPreAnalysis: boolean;
+  /** When true, hides the Pre-Análise step (audit mode: Semi-Auto → Relatório) */
+  hidePreAnalysis?: boolean;
 }
 
-const MentoriaStepBar = ({ currentStep, completedSteps, onStepClick, hasPreAnalysis }: MentoriaStepBarProps) => {
-  const steps = hasPreAnalysis ? STEPS : [STEPS[2]];
+const MentoriaStepBar = ({ currentStep, completedSteps, onStepClick, hasPreAnalysis, hidePreAnalysis }: MentoriaStepBarProps) => {
+  const steps = !hasPreAnalysis
+    ? [STEPS[2]]
+    : hidePreAnalysis
+      ? STEPS.filter(s => s.key !== "pre-analise")
+      : STEPS;
   const currentIdx = steps.findIndex(s => s.key === currentStep);
 
   return (
