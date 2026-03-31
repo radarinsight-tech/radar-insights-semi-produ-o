@@ -39,8 +39,7 @@ type StatusFilter =
   | "nao_avaliaveis"
   | "aptos_ia"
   | "audio"
-  | "fila_ia"
-  | "fila_manual"
+  | "aguardando_confirmacao"
   | "confirmados";
 
 interface UnifiedFile {
