@@ -953,6 +953,7 @@ const MentoriaLab = () => {
           result: sourceFile.result,
           ...metadata,
           hasAudio,
+          hasImage,
           attendantMatch: attendantMatchResult,
           transferred: attendantMatchResult?.transferred,
           uraContext: uraCtx,
