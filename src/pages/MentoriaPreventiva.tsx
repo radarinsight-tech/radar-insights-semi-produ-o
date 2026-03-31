@@ -626,7 +626,7 @@ const MentoriaPreventiva = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => { setShowInsights(!showInsights); setActiveResult(null); }}
+                    onClick={() => { setShowInsights(!showInsights); setActiveResult(null); setActiveRawText(null); }}
                   >
                     <BarChart3 className="h-3 w-3 mr-1" /> {showInsights ? "Ocultar Insights" : "Ver Insights"}
                   </Button>
