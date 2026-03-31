@@ -624,7 +624,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           </div>
         </div>
       </DialogContent>
-      <UraContextDialog open={uraOpen} onOpenChange={setUraOpen} rawText={rawText} atendente={atendente} structuredConversation={structuredConversation} />
+      <UraContextDialog open={uraOpen} onOpenChange={setUraOpen} rawText={rawText} atendente={atendente} structuredConversation={structuredConversation} audioBlobs={audioBlobs} imageBlobs={imageBlobs} />
     </Dialog>
   );
 };
