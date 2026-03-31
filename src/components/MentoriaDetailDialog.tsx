@@ -322,6 +322,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           completedSteps={completedSteps}
           onStepClick={(step) => setCurrentStep(step)}
           hasPreAnalysis={!!preAnalysis}
+          hidePreAnalysis={initialStep === "semi-auto"}
         />
 
         {/* ═══ NON-EVALUABLE WARNING ═══ */}
