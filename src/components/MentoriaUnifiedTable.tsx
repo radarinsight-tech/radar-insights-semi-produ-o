@@ -786,31 +786,6 @@ const MentoriaUnifiedTable = ({
                 <TooltipContent side="top"><p>Análise automática via IA — mais rápida, sem intervenção manual</p></TooltipContent>
               </Tooltip>
 
-              {/* Button 2: Analisar manualmente */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    className="gap-1.5 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
-                    onClick={() => {
-                      const ids = [...selectedIds].filter((id) =>
-                        categorized.some((f) => f.id === id && f.isAutoEligible)
-                      );
-                      if (onAnalyzeSelected) {
-                        onAnalyzeSelected(ids, 'manual');
-                      } else if (onBatchAnalyze) {
-                        onBatchAnalyze(ids.length);
-                      }
-                      setSelectedIds(new Set());
-                    }}
-                    disabled={isBusy}
-                  >
-                    <Search className="h-3.5 w-3.5" />
-                    🔍 Analisar manualmente ({selectedCount})
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top"><p>Análise manual — você revisa cada critério individualmente</p></TooltipContent>
-              </Tooltip>
 
               {/* Button 3: Excluir */}
               <Tooltip>
