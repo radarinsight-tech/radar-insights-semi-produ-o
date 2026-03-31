@@ -1478,7 +1478,7 @@ const MentoriaLab = () => {
     }
   };
 
-  const openMentoria = useCallback((f: LabFile, initialStep?: "pre-analise" | "semi-auto" | "relatorio") => {
+  const openMentoria = useCallback((f: LabFile, initialStep?: "revisao" | "relatorio") => {
     setSideFile(null);
     setMentoriaFile(f);
     setMentoriaInitialStep(initialStep);
