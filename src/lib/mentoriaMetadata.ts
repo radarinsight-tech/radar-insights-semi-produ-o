@@ -175,8 +175,18 @@ function isInvalidAttendantName(name: string): boolean {
 
 export function extractAtendente(text: string): string | undefined {
   const result = _extractAtendenteRaw(text);
+
+  if (!result) return undefined;
+
+  const lower = result.toLowerCase().trim();
+
+  // Block exact pronouns/labels
   const BLOCKED = ["seu", "sua", "seu atendente", "sua atendente"];
-  if (result && BLOCKED.includes(result.toLowerCase().trim())) return undefined;
+  if (BLOCKED.includes(lower)) return undefined;
+
+  // Block any name containing company/bot keywords
+  if (/bandaturbo|especialista\s+virtual|atendimento\s+autom|bot\s+|marte\b/i.test(lower)) return undefined;
+
   return result;
 }
 
