@@ -1252,6 +1252,7 @@ const MentoriaLab = () => {
         toast.error(
           `O limite máximo é de ${IMPORT_LIMIT} atendimentos por lote. Você tentou importar ${allPdfs.length}.`,
         );
+        setIsImporting(false); setImportingCount(0);
         return;
       }
 
