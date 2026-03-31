@@ -261,9 +261,18 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setUraOpen(true)} className="gap-1.5 text-xs h-8 font-semibold">
-                <Radio className="h-3.5 w-3.5" /> Contexto URA
-              </Button>
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" onClick={() => setUraOpen(true)} className="gap-1.5 text-xs h-8 font-semibold">
+                      <Radio className="h-3.5 w-3.5" /> Contexto URA
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs max-w-[300px]">
+                    Exibe a jornada do cliente antes do atendimento humano: tempo na URA, fila e início do atendimento.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               {currentStep === "relatorio" && (
                 <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5 text-xs h-8 font-semibold">
                   <Printer className="h-3.5 w-3.5" /> Imprimir Relatório
