@@ -271,6 +271,8 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+
   try {
     const { text } = await req.json();
     if (!text || typeof text !== "string") {
@@ -350,7 +352,6 @@ serve(async (req) => {
       });
     }
 
-    const startTime = Date.now();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: "LOVABLE_API_KEY não configurada" }), {
