@@ -3,15 +3,15 @@
  * processed each attendance: raw text, normalized text, parsed messages, detected events, and summary.
  */
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { normalizeRawText, parseStructuredConversation, extractUraContext, type ParsedMessage, type StructuredConversation } from "@/lib/conversationParser";
 import { classifyMessages, type ClassifiedMessage } from "@/lib/messageClassifier";
 import { buildJourneyTimeline, type JourneyMilestone } from "@/lib/uraJourneyTimeline";
-import { AlertTriangle, CheckCircle2, Clock, MessageSquare, Bot, User, Headphones, HelpCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, MessageSquare, Bot, User, Headphones, HelpCircle, ChevronDown, ChevronRight } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -162,14 +162,14 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             🔍 Diagnóstico do Parser {protocolo && <Badge variant="outline" className="font-mono text-xs">{protocolo}</Badge>}
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <div className="flex-1 overflow-y-auto -mx-6 px-6">
           <div className="space-y-5 pb-4">
 
             {/* Integrity check */}
@@ -237,7 +237,7 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
                 ].map(item => (
                   <div key={item.label} className="p-2 rounded bg-muted/50 border border-border">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{item.label}</p>
-                    <p className="text-sm font-medium text-foreground mt-0.5 truncate">{String(item.value)}</p>
+                    <p className="text-sm font-medium text-foreground mt-0.5 break-words whitespace-pre-wrap">{String(item.value)}</p>
                   </div>
                 ))}
               </div>
@@ -275,7 +275,7 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
                         {ROLE_CONFIG[m.role || "sistema"].label}
                       </Badge>
                       <span className="text-muted-foreground shrink-0">{EVENT_LABELS[m.type || "generic"]}</span>
-                      <span className="text-foreground truncate">{m.label}</span>
+                      <span className="text-foreground break-words whitespace-pre-wrap">{m.label}</span>
                     </div>
                   ))}
                 </div>
@@ -284,58 +284,65 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
 
             <Separator />
 
-            {/* Per-message details */}
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-2">
-                Mensagens Parseadas ({msgDiag.length})
-              </h3>
-              {msgDiag.length === 0 ? (
-                <div className="p-4 text-center bg-destructive/5 rounded-lg border border-destructive/20">
-                  <AlertTriangle className="h-5 w-5 text-destructive mx-auto mb-1" />
-                  <p className="text-sm font-medium text-destructive">Parser não extraiu nenhuma mensagem</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    O texto bruto tem {diagnostic.rawTextLines} linhas mas o parser retornou 0 mensagens.
-                    Verifique se o formato é compatível (inline ou bloco OPA).
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-1 max-h-[400px] overflow-y-auto">
-                  {msgDiag.map((m) => (
-                    <div
-                      key={m.index}
-                      className={`flex items-start gap-2 text-xs py-1.5 px-2 rounded ${
-                        m.warnings.length > 0 ? "bg-warning/5 border border-warning/20" : "border border-transparent hover:bg-muted/30"
-                      }`}
-                    >
-                      <span className="text-muted-foreground font-mono w-6 shrink-0 text-right">#{m.index}</span>
-                      <span className="text-muted-foreground font-mono w-12 shrink-0">
-                        {m.time || <span className="text-destructive">??:??</span>}
-                      </span>
-                      <Badge className={`${ROLE_CONFIG[m.role].color} text-[10px] px-1.5 shrink-0`}>
-                        {ROLE_CONFIG[m.role].label}
-                      </Badge>
-                      <span className="font-medium text-foreground w-24 shrink-0 truncate" title={m.speaker}>
-                        {m.speaker}
-                      </span>
-                      {m.eventType && (
-                        <span className="text-muted-foreground shrink-0">{EVENT_LABELS[m.eventType]}</span>
-                      )}
-                      {m.category && (
-                        <Badge variant="outline" className="text-[9px] px-1 shrink-0">{m.category}</Badge>
-                      )}
-                      <span className="text-muted-foreground truncate flex-1" title={m.text}>
-                        {m.textPreview}
-                      </span>
-                      {m.warnings.length > 0 && (
-                        <span className="text-warning shrink-0" title={m.warnings.join(", ")}>
-                          ⚠ {m.warnings.join(", ")}
+            {/* Per-message details — collapsible */}
+            <Collapsible>
+              <CollapsibleTrigger className="flex items-center gap-2 w-full text-left group">
+                <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:hidden" />
+                <ChevronDown className="h-4 w-4 text-muted-foreground hidden group-data-[state=open]:block" />
+                <h3 className="text-sm font-semibold text-foreground">
+                  Mensagens Parseadas ({msgDiag.length})
+                </h3>
+                <span className="text-xs text-muted-foreground">— clique para expandir</span>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                {msgDiag.length === 0 ? (
+                  <div className="p-4 text-center bg-destructive/5 rounded-lg border border-destructive/20 mt-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive mx-auto mb-1" />
+                    <p className="text-sm font-medium text-destructive">Parser não extraiu nenhuma mensagem</p>
+                    <p className="text-xs text-muted-foreground mt-1 break-words whitespace-pre-wrap">
+                      O texto bruto tem {diagnostic.rawTextLines} linhas mas o parser retornou 0 mensagens.
+                      Verifique se o formato é compatível (inline ou bloco OPA).
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1 mt-2">
+                    {msgDiag.map((m) => (
+                      <div
+                        key={m.index}
+                        className={`flex items-start gap-2 text-xs py-1.5 px-2 rounded ${
+                          m.warnings.length > 0 ? "bg-warning/5 border border-warning/20" : "border border-transparent hover:bg-muted/30"
+                        }`}
+                      >
+                        <span className="text-muted-foreground font-mono w-6 shrink-0 text-right">#{m.index}</span>
+                        <span className="text-muted-foreground font-mono w-12 shrink-0">
+                          {m.time || <span className="text-destructive">??:??</span>}
                         </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                        <Badge className={`${ROLE_CONFIG[m.role].color} text-[10px] px-1.5 shrink-0`}>
+                          {ROLE_CONFIG[m.role].label}
+                        </Badge>
+                        <span className="font-medium text-foreground w-24 shrink-0 truncate" title={m.speaker}>
+                          {m.speaker}
+                        </span>
+                        {m.eventType && (
+                          <span className="text-muted-foreground shrink-0">{EVENT_LABELS[m.eventType]}</span>
+                        )}
+                        {m.category && (
+                          <Badge variant="outline" className="text-[9px] px-1 shrink-0">{m.category}</Badge>
+                        )}
+                        <span className="text-muted-foreground break-words whitespace-pre-wrap flex-1" title={m.text}>
+                          {m.textPreview}
+                        </span>
+                        {m.warnings.length > 0 && (
+                          <span className="text-warning shrink-0" title={m.warnings.join(", ")}>
+                            ⚠ {m.warnings.join(", ")}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
 
             <Separator />
 
@@ -370,7 +377,7 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
               </pre>
             </div>
           </div>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
