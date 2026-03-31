@@ -53,6 +53,8 @@ interface MentoriaDetailDialogProps {
   nonEvaluableReason?: string;
   tipoAnalise?: string | null;
   initialStep?: MentoriaStep;
+  audioBlobs?: ExtractedAudio[];
+  imageBlobs?: ExtractedImage[];
 }
 
 const CATEGORY_ORDER = [
