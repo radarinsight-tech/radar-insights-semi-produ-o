@@ -1406,6 +1406,7 @@ const MentoriaLab = () => {
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    if (isImporting) return;
     handleFiles(e.dataTransfer.files);
   };
 
