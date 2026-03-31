@@ -237,7 +237,7 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
                 ].map(item => (
                   <div key={item.label} className="p-2 rounded bg-muted/50 border border-border">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{item.label}</p>
-                    <p className="text-sm font-medium text-foreground mt-0.5 truncate">{String(item.value)}</p>
+                    <p className="text-sm font-medium text-foreground mt-0.5 break-words whitespace-pre-wrap">{String(item.value)}</p>
                   </div>
                 ))}
               </div>
