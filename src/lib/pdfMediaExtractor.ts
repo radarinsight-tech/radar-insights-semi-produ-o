@@ -36,7 +36,7 @@ export async function extractAudioAttachments(
           lower.endsWith(".m4a") ||
           lower.endsWith(".ogg")
         ) {
-          const content: Uint8Array = attachment.content;
+          const content = attachment.content;
           if (content && content.length > 0) {
             const mimeMap: Record<string, string> = {
               ".mp3": "audio/mpeg",
