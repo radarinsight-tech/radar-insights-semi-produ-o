@@ -2128,7 +2128,9 @@ const MentoriaLab = () => {
               .maybeSingle();
 
             if (dbRow) {
-              const dbText = typeof dbRow.extracted_text === "string" ? dbRow.extracted_text : "";
+              const dbText = typeof (dbRow as any).raw_text === "string" && (dbRow as any).raw_text.length > 0
+                ? (dbRow as any).raw_text
+                : typeof dbRow.extracted_text === "string" ? dbRow.extracted_text : "";
               preparedFile = {
                 ...labFile,
                 status: "lido" as FileStatus,
