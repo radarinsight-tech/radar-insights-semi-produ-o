@@ -20,6 +20,7 @@ import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { extractAllMetadata, type PdfMetadata } from "@/lib/mentoriaMetadata";
 import logoSymbol from "@/assets/logo-symbol.png";
 import PreventiveInsights from "@/components/PreventiveInsights";
+import FormattedChatText from "@/components/FormattedChatText";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
 import MentoriaAttendenteHeader from "@/components/MentoriaAttendenteHeader";
 import MentoriaAttendenteHistory from "@/components/MentoriaAttendenteHistory";
