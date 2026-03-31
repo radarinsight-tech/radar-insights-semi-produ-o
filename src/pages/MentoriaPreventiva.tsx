@@ -464,8 +464,6 @@ const MentoriaPreventiva = () => {
     toast.success(`${successCount} de ${toAnalyze.length} análise(s) concluída(s).`);
   };
 
-  };
-
   // ── Access guard ──────────────────────────────────────────────────────
   if (permLoading) {
     return (
