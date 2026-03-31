@@ -137,18 +137,27 @@ function isLikelyPersonName(name: string): boolean {
 /** Prefixes to strip from attendant name fields (e.g. "Seu atendente: Bruna") */
 const ATTENDANT_PREFIXES = /^(?:seu\s+atendente|sua\s+atendente|seu|sua|atendente)\s*[:\-]?\s*/i;
 
-/** Check if a value is just a pronoun/prefix with no real name */
-function isOnlyPrefix(name: string): boolean {
-  return /^(seu|sua|atendente|seu\s+atendente|sua\s+atendente)$/i.test(name.trim());
+/** Names that are invalid as attendant — pronouns, labels, generic roles */
+const INVALID_ATTENDANT_NAMES = new Set([
+  "seu", "sua", "seu atendente", "sua atendente",
+  "atendente", "agente", "operador", "analista",
+  "consultor", "responsável", "responsavel", "nome",
+]);
+
+/** Check if a value is just a pronoun/prefix/label with no real name */
+function isInvalidAttendantName(name: string): boolean {
+  const lower = name.toLowerCase().trim();
+  return INVALID_ATTENDANT_NAMES.has(lower);
 }
 
 export function extractAtendente(text: string): string | undefined {
-  // Strategy 0: "Seu atendente\nNome" pattern (BandaTurbo PDFs)
-  const seuBlockPattern = /(?:seu|sua)\s+atendente\s*[:\-]?\s*\n\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.]+)/gi;
+  // Strategy 0: "Seu atendente\nNome" or "Seu atendente Nome" pattern (BandaTurbo PDFs)
+  // Matches both newline-separated and space-separated variants
+  const seuBlockPattern = /(?:seu|sua)\s+atendente\s*[:\-]?\s*[\n\s]\s*([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)+)/gi;
   const seuBlockMatches = [...text.matchAll(seuBlockPattern)];
   for (const m of seuBlockMatches) {
     const name = m[1].trim().replace(/\s+/g, " ");
-    if (name && !isBot(name) && !isOnlyPrefix(name) && name.length >= 3) {
+    if (name && !isBot(name) && !isInvalidAttendantName(name) && name.length >= 3) {
       return name;
     }
   }
@@ -167,7 +176,7 @@ export function extractAtendente(text: string): string | undefined {
       candidate = candidate.replace(ATTENDANT_PREFIXES, "").trim();
       // Take only the name part (before any extra info like date, id, etc.)
       const namePart = candidate.split(/[,\-\|\/]/)[0].trim();
-      if (namePart && !isBot(namePart) && !isOnlyPrefix(namePart) && isLikelyPersonName(namePart)) {
+      if (namePart && !isBot(namePart) && !isInvalidAttendantName(namePart) && isLikelyPersonName(namePart)) {
         return namePart;
       }
     }
