@@ -628,20 +628,23 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
               </Badge>
             )}
             {/* Back step button */}
-            {preAnalysis && currentStep !== "pre-analise" && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 text-xs h-8 font-semibold"
-                onClick={() => {
-                  const steps: MentoriaStep[] = ["pre-analise", "semi-auto", "relatorio"];
-                  const idx = steps.indexOf(currentStep);
-                  if (idx > 0) setCurrentStep(steps[idx - 1]);
-                }}
-              >
-                <ChevronLeft className="h-3.5 w-3.5" /> Voltar etapa
-              </Button>
-            )}
+            {preAnalysis && (() => {
+              const availableSteps: MentoriaStep[] = initialStep === "semi-auto"
+                ? ["semi-auto", "relatorio"]
+                : ["pre-analise", "semi-auto", "relatorio"];
+              const idx = availableSteps.indexOf(currentStep);
+              if (idx <= 0) return null;
+              return (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 text-xs h-8 font-semibold"
+                  onClick={() => setCurrentStep(availableSteps[idx - 1])}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" /> Voltar etapa
+                </Button>
+              );
+            })()}
           </div>
           <div className="flex items-center gap-2">
             {/* Advance step button */}
