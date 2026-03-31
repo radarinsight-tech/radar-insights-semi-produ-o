@@ -20,6 +20,7 @@ import { extractTextFromPdf } from "@/lib/pdfExtractor";
 import { extractAllMetadata, type PdfMetadata } from "@/lib/mentoriaMetadata";
 import logoSymbol from "@/assets/logo-symbol.png";
 import PreventiveInsights from "@/components/PreventiveInsights";
+import FormattedChatText from "@/components/FormattedChatText";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
 import MentoriaAttendenteHeader from "@/components/MentoriaAttendenteHeader";
 import MentoriaAttendenteHistory from "@/components/MentoriaAttendenteHistory";
@@ -140,6 +141,7 @@ const MentoriaPreventiva = () => {
   const [readingIds, setReadingIds] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState(false);
   const [activeResult, setActiveResult] = useState<PreventiveResult | null>(null);
+  const [activeRawText, setActiveRawText] = useState<string | null>(null);
   const [showCriterios, setShowCriterios] = useState(false);
   const [sampled, setSampled] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
@@ -624,7 +626,7 @@ const MentoriaPreventiva = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => { setShowInsights(!showInsights); setActiveResult(null); }}
+                    onClick={() => { setShowInsights(!showInsights); setActiveResult(null); setActiveRawText(null); }}
                   >
                     <BarChart3 className="h-3 w-3 mr-1" /> {showInsights ? "Ocultar Insights" : "Ver Insights"}
                   </Button>
@@ -635,7 +637,7 @@ const MentoriaPreventiva = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => { setFiles([]); setSampled(false); setActiveResult(null); setShowInsights(false); }}
+                      onClick={() => { setFiles([]); setSampled(false); setActiveResult(null); setActiveRawText(null); setShowInsights(false); }}
                     >
                       <X className="h-3 w-3 mr-1" /> Limpar tudo
                     </Button>
@@ -845,7 +847,7 @@ const MentoriaPreventiva = () => {
                                 variant="ghost"
                                 size="sm"
                                 className="h-6 px-2 text-[10px]"
-                                onClick={() => setActiveResult(f.result!)}
+                                onClick={() => { setActiveResult(f.result!); setActiveRawText(f.text || null); }}
                               >
                                 <Eye className="h-3 w-3 mr-0.5" /> Ver
                               </Button>
@@ -877,7 +879,7 @@ const MentoriaPreventiva = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-bold text-foreground">Resultado da Mentoria Preventiva</h2>
-                <Button variant="ghost" size="sm" onClick={() => setActiveResult(null)}>
+                <Button variant="ghost" size="sm" onClick={() => { setActiveResult(null); setActiveRawText(null); }}>
                   <X className="h-3 w-3 mr-1" /> Fechar
                 </Button>
               </div>
@@ -1008,7 +1010,12 @@ const MentoriaPreventiva = () => {
                         ))}
                       </div>
                     )}
-                  </Card>
+                    </Card>
+
+                  {/* Texto original do chat */}
+                  {activeRawText && (
+                    <FormattedChatText rawText={activeRawText} clientName={activeResult.cliente} />
+                  )}
                 </>
               )}
             </div>
