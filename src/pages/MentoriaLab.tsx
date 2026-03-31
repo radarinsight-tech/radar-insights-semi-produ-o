@@ -948,6 +948,8 @@ const MentoriaLab = () => {
           uraContext: uraCtx,
           uraStatus: uraCtx?.status,
           structuredConversation: structured,
+          audioBlobs: extractedAudioBlobs.length > 0 ? extractedAudioBlobs : undefined,
+          imageBlobs: extractedImageBlobs.length > 0 ? extractedImageBlobs : undefined,
         };
 
         setFiles((prev) => prev.map((f) => (f.id === labFile.id ? updatedFile : f)));
