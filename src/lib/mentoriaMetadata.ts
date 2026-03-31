@@ -253,9 +253,9 @@ function _extractAtendenteRaw(text: string): string | undefined {
     const match = text.match(pattern);
     if (match) {
       const name = match[1].trim();
-      if (!isBot(name) && name.length >= 3) {
-        // Capitalize properly
-        return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+      if (!isBot(name) && !isInvalidAttendantName(name) && name.length >= 3) {
+        // Capitalize first letter of each word, preserve rest
+        return name.replace(/\b([A-Za-zÀ-ÿ])/g, (c) => c.toUpperCase());
       }
     }
   }
