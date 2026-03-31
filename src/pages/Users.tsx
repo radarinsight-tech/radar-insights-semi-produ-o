@@ -371,10 +371,7 @@ const UsersPage = () => {
             </div>
           </div>
 
-          <Dialog open={inviteOpen} onOpenChange={(open) => {
-              setInviteOpen(open);
-              if (!open) loadProfiles();
-            }}>
+          <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
                 <UserPlus className="h-4 w-4" />
