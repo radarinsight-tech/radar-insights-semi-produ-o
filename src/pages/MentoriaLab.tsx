@@ -698,18 +698,19 @@ const MentoriaLab = () => {
           if (labFile.batchFileId) {
             const { data: dbRow } = await supabase
               .from("mentoria_batch_files")
-              .select("extracted_text, atendente, protocolo, data_atendimento, canal, has_audio")
+              .select("extracted_text, raw_text, atendente, protocolo, data_atendimento, canal, has_audio")
               .eq("id", labFile.batchFileId)
               .maybeSingle();
 
-            if (dbRow?.extracted_text && dbRow.extracted_text.trim().length > 0) {
+            const dbRawText = (dbRow as any)?.raw_text || dbRow?.extracted_text;
+            if (dbRawText && dbRawText.trim().length > 0) {
               console.info("[MentoriaLab][Importação][fallback_texto_banco]", {
                 id: labFile.batchFileId,
-                chars: dbRow.extracted_text.length,
+                chars: dbRawText.length,
               });
               hydratedFile = {
                 ...labFile,
-                text: dbRow.extracted_text,
+                text: dbRawText,
                 atendente: dbRow.atendente || labFile.atendente,
                 protocolo: dbRow.protocolo || labFile.protocolo,
                 data: dbRow.data_atendimento || labFile.data,
@@ -2122,13 +2123,15 @@ const MentoriaLab = () => {
             const { data: dbRow } = await supabase
               .from("mentoria_batch_files")
               .select(
-                "extracted_text, parsed_messages, result, atendente, protocolo, data_atendimento, canal, has_audio",
+                "extracted_text, raw_text, parsed_messages, result, atendente, protocolo, data_atendimento, canal, has_audio",
               )
               .eq("id", labFile.batchFileId)
               .maybeSingle();
 
             if (dbRow) {
-              const dbText = typeof dbRow.extracted_text === "string" ? dbRow.extracted_text : "";
+              const dbText = typeof (dbRow as any).raw_text === "string" && (dbRow as any).raw_text.length > 0
+                ? (dbRow as any).raw_text
+                : typeof dbRow.extracted_text === "string" ? dbRow.extracted_text : "";
               preparedFile = {
                 ...labFile,
                 status: "lido" as FileStatus,
