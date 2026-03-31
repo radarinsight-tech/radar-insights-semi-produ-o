@@ -433,13 +433,14 @@ const MentoriaUnifiedTable = ({
                   if (f.isNonEval) return "N/A";
                   if (isProcessingThis) return "Processando";
                   switch (f.status) {
-                    case "aguardando_revisao_ia": return "Fila IA";
-                    case "aguardando_revisao_manual": return "Fila Manual";
+                    case "aguardando_revisao_ia":
+                    case "aguardando_revisao_manual":
+                    case "analisado":
+                      return f.hasResult ? "Aguardando confirmação" : "Analisado";
                     case "confirmado": return "Confirmado";
                     case "reprovado": return "Reprovado";
-                    case "analisado": return "Analisado";
                     default:
-                      if (f.hasResult) return "Analisado";
+                      if (f.hasResult) return "Aguardando confirmação";
                       if (f.category === "em_analise") return "Em análise";
                       return "Pendente";
                   }
