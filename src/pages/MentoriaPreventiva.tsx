@@ -27,7 +27,7 @@ import FormattedChatText from "@/components/FormattedChatText";
 import SemiAutoPanel, { type SemiAutoResult } from "@/components/SemiAutoPanel";
 import MentoriaStepBar, { type MentoriaStep } from "@/components/MentoriaStepBar";
 import { runPreAnalysis, type PreAnalysisResult } from "@/lib/mentoriaPreAnalysis";
-import { parseConversation } from "@/lib/conversationParser";
+import { parseConversationText } from "@/lib/conversationParser";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
 import MentoriaAttendenteHeader from "@/components/MentoriaAttendenteHeader";
 import MentoriaAttendenteHistory from "@/components/MentoriaAttendenteHistory";
