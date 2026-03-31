@@ -1387,15 +1387,18 @@ const MentoriaLab = () => {
       }
 
       // Toast
+      setIsImporting(false);
+      setImportingCount(0);
+
       if (isZipSource) {
         const parts = [`${extractedPdfs.length} PDF(s) extraído(s) do ZIP`];
         if (pdfFiles.length > 0) parts.push(`${pdfFiles.length} PDF(s) avulso(s)`);
         if (totalIgnored > 0) parts.push(`${totalIgnored} arquivo(s) ignorado(s)`);
         toast.success(
-          `${allPdfs.length} atendimento(s) importado(s). ${parts.join(" · ")}. Leitura automática iniciada.`,
+          `${allPdfs.length} atendimento(s) adicionado(s) com sucesso. ${parts.join(" · ")}`,
         );
       } else {
-        toast.success(`${allPdfs.length} arquivo(s) importado(s). Leitura automática iniciada.`);
+        toast.success(`${allPdfs.length} atendimento(s) adicionado(s) com sucesso.`);
       }
     },
     [extractPdfsFromZip, generateBatchCode, runIngestionQueue, classifyBatchFiles, updateBatchStatus],
