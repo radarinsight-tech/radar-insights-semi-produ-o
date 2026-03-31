@@ -162,7 +162,7 @@ export default function ParserDiagnosticDialog({ open, onOpenChange, rawText, at
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             🔍 Diagnóstico do Parser {protocolo && <Badge variant="outline" className="font-mono text-xs">{protocolo}</Badge>}
