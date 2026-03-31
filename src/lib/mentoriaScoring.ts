@@ -64,8 +64,13 @@ function resultToPoints(resposta: SugestaoResultado, peso: number): number {
     case "SIM": return peso;
     case "PARCIAL": return Math.round(peso * 0.5 * 10) / 10;
     case "NÃO": return 0;
+    case "FORA DO ESCOPO": return 0; // excluded from calculation
     default: return 0;
   }
+}
+
+function isForaDoEscopo(resposta: SugestaoResultado): boolean {
+  return resposta === "FORA DO ESCOPO";
 }
 
 export function classify(nota100: number): Classificacao {
