@@ -1204,6 +1204,7 @@ const MentoriaLab = () => {
           prev ? { ...prev, status: "erro", totalFilesInSource: totalZipEntries, ignoredFiles: totalZipEntries } : prev,
         );
         toast.error("O ZIP não contém PDFs válidos para análise.");
+        setIsImporting(false); setImportingCount(0);
         return;
       }
 
