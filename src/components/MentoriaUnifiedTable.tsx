@@ -595,7 +595,7 @@ const MentoriaUnifiedTable = ({
                                     if (onConfirmSelected) onConfirmSelected([f.id]);
                                   }}
                                 >
-                                  <Check className="h-3 w-3" /> Confirmar
+                                  <Check className="h-3 w-3" /> Análise IA
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent side="top"><p>Confirmar nota como oficial e enviar para Performance</p></TooltipContent>
@@ -640,24 +640,6 @@ const MentoriaUnifiedTable = ({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-52">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <DropdownMenuItem onClick={() => { onMarkViewed?.(f.id); onOpenFile(f); }}>
-                                  <Eye className="h-3.5 w-3.5 mr-2" /> Preview
-                                </DropdownMenuItem>
-                              </TooltipTrigger>
-                              <TooltipContent side="left"><p>Pré-visualizar o PDF do atendimento</p></TooltipContent>
-                            </Tooltip>
-                            {f.hasResult && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <DropdownMenuItem onClick={() => { onMarkViewed?.(f.id); onOpenMentoria(f); }}>
-                                    <BookOpen className="h-3.5 w-3.5 mr-2" /> Ver
-                                  </DropdownMenuItem>
-                                </TooltipTrigger>
-                                <TooltipContent side="left"><p>Visualizar o resultado completo da análise</p></TooltipContent>
-                              </Tooltip>
-                            )}
                             {f.hasResult && !f.approvedAsOfficial && f.evaluationId && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
