@@ -2035,6 +2035,21 @@ const MentoriaLab = () => {
         }
       }
 
+      // Sweep: revert any file still stuck without a result
+      setFiles((prev) =>
+        prev.map((f) => {
+          const wasTargeted = toAnalyze.some((t) => t.id === f.id);
+          if (
+            wasTargeted &&
+            (f.status === "aguardando_revisao_ia" || (f.status as any) === "analisado") &&
+            !f.result
+          ) {
+            return { ...f, status: "lido", error: "Análise não concluída. Tente novamente." };
+          }
+          return f;
+        })
+      );
+
       setProcessing(false);
       if (options?.clearSelection !== false) {
         setSelected(new Set());
