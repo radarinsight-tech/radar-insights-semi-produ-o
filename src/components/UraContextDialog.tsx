@@ -502,7 +502,7 @@ const UraContextDialog = ({ open, onOpenChange, rawText, atendente, structuredCo
 
             {/* ═══ Raw Text Collapsible (always at the bottom when text exists) ═══ */}
             {rawText && (
-              <RawTextSection rawText={rawText} />
+              <RawTextSection rawText={rawText} audioBlobs={audioBlobs} imageBlobs={imageBlobs} />
             )}
           </div>
         </ScrollArea>
