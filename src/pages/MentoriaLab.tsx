@@ -1329,6 +1329,7 @@ const MentoriaLab = () => {
         console.error("Failed to create batch:", batchErr);
         toast.error("Erro ao registrar lote. Arquivos foram salvos.");
         setBatchInfo((prev) => (prev ? { ...prev, status: "erro" } : prev));
+        setIsImporting(false); setImportingCount(0);
         return;
       }
 
