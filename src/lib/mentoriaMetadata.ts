@@ -114,6 +114,8 @@ const BOT_NAMES = new Set([
 const INSTITUTIONAL_TERMS = new Set([
   "protocolo", "cliente", "sistema", "atendente", "agente", "operador",
   "informação", "informacao", "aviso", "nota", "observação", "observacao",
+  "setor", "departamento", "equipe", "time", "fila", "canal", "status",
+  "tipo", "data", "horário", "horario", "inicio", "início", "fim",
 ]);
 
 /** Regex for company-like names (contains Internet, Telecom, LTDA, etc.) */
