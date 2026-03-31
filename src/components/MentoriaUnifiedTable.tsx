@@ -567,11 +567,11 @@ const MentoriaUnifiedTable = ({
                       )}
                     </TableCell>
 
-                    {/* Ação — review actions for queue tabs, otherwise menu only */}
+                    {/* Ação — Confirm/Audit for analyzed items, menu for all */}
                     <TableCell className="py-3 w-[20%] text-right">
                       <div className="flex items-center justify-end gap-1 flex-nowrap">
-                        {/* Review queue: confirm/reject buttons */}
-                        {isInReviewQueue && (
+                        {/* Confirm + Audit buttons for items with results that are not yet confirmed */}
+                        {f.hasResult && f.status !== "confirmado" && (
                           <>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -585,29 +585,29 @@ const MentoriaUnifiedTable = ({
                                   <Check className="h-3 w-3" /> Confirmar
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent side="top"><p>Confirmar análise e enviar para Performance</p></TooltipContent>
+                              <TooltipContent side="top"><p>Confirmar nota como oficial e enviar para Performance</p></TooltipContent>
                             </Tooltip>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="h-7 px-2.5 gap-1 text-xs font-semibold border-destructive/40 text-destructive hover:bg-destructive/10"
+                                  className="h-7 px-2.5 gap-1 text-xs font-semibold border-primary/40 text-primary hover:bg-primary/10"
                                   onClick={() => {
-                                    setRejectTargetIds([f.id]);
-                                    setShowRejectConfirm(true);
+                                    onMarkViewed?.(f.id);
+                                    if (onAuditFile) onAuditFile(f);
                                   }}
                                 >
-                                  <XCircle className="h-3 w-3" /> Reprovar
+                                  <Search className="h-3 w-3" /> Auditar
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent side="top"><p>Reprovar e retornar para Pendentes</p></TooltipContent>
+                              <TooltipContent side="top"><p>Revisar os 19 critérios antes de confirmar</p></TooltipContent>
                             </Tooltip>
                           </>
                         )}
 
-                        {/* View result button for analyzed items */}
-                        {f.hasResult && (
+                        {/* View result button for confirmed items */}
+                        {f.hasResult && f.status === "confirmado" && (
                           <Button
                             size="sm"
                             variant="outline"
