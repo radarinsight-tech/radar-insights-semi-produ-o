@@ -595,7 +595,7 @@ const MentoriaUnifiedTable = ({
                                     if (onConfirmSelected) onConfirmSelected([f.id]);
                                   }}
                                 >
-                                  <Check className="h-3 w-3" /> Confirmar
+                                  <Check className="h-3 w-3" /> Análise IA
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent side="top"><p>Confirmar nota como oficial e enviar para Performance</p></TooltipContent>
