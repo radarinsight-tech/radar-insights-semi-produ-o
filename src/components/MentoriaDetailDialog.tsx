@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   CheckCircle2, XCircle, MinusCircle, ShieldAlert,
   MessageSquareQuote, Printer, X, Award, TrendingUp, AlertTriangle, Lightbulb,
@@ -255,12 +256,24 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                   <Badge className="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 text-[9px] px-2 py-0.5 h-auto border-0 normal-case tracking-normal font-semibold">🔍 Analisado manualmente</Badge>
                 )}
               </DialogTitle>
-              <p className="text-[11px] text-muted-foreground mt-1 truncate max-w-lg font-medium">{fileName}</p>
+              <p className="text-[11px] text-muted-foreground mt-1 truncate max-w-lg font-medium">
+                {fileName}
+                <span className="ml-2 text-muted-foreground/70">— Resultado consolidado da auditoria deste atendimento com nota, critérios e orientações de melhoria.</span>
+              </p>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setUraOpen(true)} className="gap-1.5 text-xs h-8 font-semibold">
-                <Radio className="h-3.5 w-3.5" /> Contexto URA
-              </Button>
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" onClick={() => setUraOpen(true)} className="gap-1.5 text-xs h-8 font-semibold">
+                      <Radio className="h-3.5 w-3.5" /> Contexto URA
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs max-w-[300px]">
+                    Exibe a jornada do cliente antes do atendimento humano: tempo na URA, fila e início do atendimento.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               {currentStep === "relatorio" && (
                 <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5 text-xs h-8 font-semibold">
                   <Printer className="h-3.5 w-3.5" /> Imprimir Relatório
@@ -592,17 +605,25 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
           <div className="flex items-center gap-2">
             {/* Advance step button */}
             {preAnalysis && currentStep === "revisao" && (
-              <Button
-                size="sm"
-                className="gap-1.5 text-xs h-8 font-semibold"
-                onClick={() => {
-                  setCompletedSteps(prev => new Set(prev).add("revisao"));
-                  setCurrentStep("relatorio");
-                }}
-              >
-                Confirmar Revisão
-                <ChevronRight className="h-3.5 w-3.5" />
-              </Button>
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      className="gap-1.5 text-xs h-8 font-semibold"
+                      onClick={() => {
+                        setCompletedSteps(prev => new Set(prev).add("revisao"));
+                        setCurrentStep("relatorio");
+                      }}
+                    >
+                      Etapa final →
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs max-w-[280px]">
+                    Avança para o Relatório de Mentoria com a nota consolidada.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
             {/* Finalize button - only on report step */}
             {currentStep === "relatorio" && workflowStatus !== "finalizado" && onMarkFinished && (
