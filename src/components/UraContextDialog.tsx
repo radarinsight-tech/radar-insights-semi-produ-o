@@ -287,41 +287,162 @@ interface ParsedBlock {
   isPostAuto: boolean;
 }
 
+/** PT-BR month names for date matching */
+const PT_MONTHS = "janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro";
+const PT_DATE_PATTERN = new RegExp(`(?:Lida\\s*-\\s*)?(\\d{1,2})\\s+de\\s+(${PT_MONTHS})\\s+de\\s+(\\d{4})\\s+(\\d{2}:\\d{2})`, "i");
+const SHORT_DATE_PATTERN = /^(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2})/;
+
+/** Header labels that should be skipped in block parsing */
+const HEADER_SKIP = /^(hor[aá]rio\s+de\s+abertura|in[ií]cio\s+do\s+atendimento|fim\s+do\s+atendimento|protocolo|cliente|atendente|data|canal|setor|tipo|status)\b/i;
+
+function isRawDateLine(line: string): { time: string } | null {
+  const cleaned = line.replace(/^Lida\s*-\s*/i, "").trim();
+  const ptMatch = cleaned.match(PT_DATE_PATTERN);
+  if (ptMatch) return { time: ptMatch[4] };
+  const shortMatch = cleaned.match(SHORT_DATE_PATTERN);
+  if (shortMatch) return { time: shortMatch[2] };
+  return null;
+}
+
+function isRawNameLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.length > 50 || trimmed.length < 2) return false;
+  if (/^\d/.test(trimmed)) return false;
+  if (!/^[A-Za-zÀ-ÿ]/.test(trimmed)) return false;
+  if (HEADER_SKIP.test(trimmed)) return false;
+  if (trimmed.split(/\s+/).length > 6) return false;
+  if (isRawDateLine(trimmed)) return false;
+  return true;
+}
+
 function parseRawTextBlocks(rawText: string, clientName?: string): ParsedBlock[] {
-  // Try to extract client name from header
+  // Extract client name from header
   let extractedClient = clientName;
   if (!extractedClient) {
     const clientMatch = rawText.match(/Cliente[:\s]+([^\n]+)/i);
     if (clientMatch) extractedClient = clientMatch[1].trim();
   }
 
+  const lines = rawText.split("\n");
   const blocks: ParsedBlock[] = [];
-  // Match blocks: "Speaker Name DD/MM/YYYY HH:MM" or "Speaker Name HH:MM"
-  const blockRegex = /^([A-ZÀ-Ü][A-ZÀ-Ü\s]+?)[\s]+(\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}:\d{2}|\d{1,2}:\d{2})\s*$/gm;
-  const matches = [...rawText.matchAll(blockRegex)];
 
-  if (matches.length === 0) return [];
+  // Detect format: check if dates come BEFORE or AFTER content
+  // BandaTurbo: Name → Content → Date
+  // OPA: Name → Date → Content
+  let formatACount = 0, formatBCount = 0;
+  for (let i = 0; i < lines.length - 1; i++) {
+    const t = lines[i].trim();
+    if (isRawNameLine(t)) {
+      let next = i + 1;
+      while (next < lines.length && !lines[next].trim()) next++;
+      if (next < lines.length) {
+        if (isRawDateLine(lines[next].trim())) formatACount++;
+        else formatBCount++;
+      }
+    }
+  }
 
-  for (let i = 0; i < matches.length; i++) {
-    const match = matches[i];
-    const speaker = match[1].trim();
-    const timestamp = match[2].trim();
-    const startIdx = match.index! + match[0].length;
-    const endIdx = i + 1 < matches.length ? matches[i + 1].index! : rawText.length;
-    const text = rawText.slice(startIdx, endIdx).trim();
+  const isFormatB = formatBCount > formatACount;
 
-    // Determine role
-    let role: ParsedBlock["role"] = "atendente";
-    const speakerUpper = speaker.toUpperCase();
-    if (speakerUpper === "MARTE" || speakerUpper.includes("MARTE")) {
-      role = "marte";
-    } else if (extractedClient && speaker.toLowerCase().includes(extractedClient.toLowerCase().split(" ")[0])) {
-      role = "cliente";
+  if (isFormatB) {
+    // BandaTurbo: Name → Message lines → Date line
+    const nameIndices: number[] = [];
+    for (let i = 0; i < lines.length; i++) {
+      if (isRawNameLine(lines[i].trim())) nameIndices.push(i);
     }
 
-    const isPostAuto = role === "marte" && isPostAttendanceAuto(text);
+    for (let n = 0; n < nameIndices.length; n++) {
+      const nameIdx = nameIndices[n];
+      const speaker = lines[nameIdx].trim();
+      const nextNameIdx = n + 1 < nameIndices.length ? nameIndices[n + 1] : lines.length;
 
-    blocks.push({ speaker, timestamp, text, role, isPostAuto });
+      const contentLines: string[] = [];
+      let timestamp = "";
+
+      for (let j = nameIdx + 1; j < nextNameIdx; j++) {
+        const trimmed = lines[j].trim();
+        if (!trimmed) continue;
+        const dateInfo = isRawDateLine(trimmed);
+        if (dateInfo) {
+          timestamp = dateInfo.time;
+        } else {
+          contentLines.push(trimmed);
+        }
+      }
+
+      if (contentLines.length === 0) continue;
+
+      let role: ParsedBlock["role"] = "atendente";
+      const speakerLower = speaker.toLowerCase();
+      if (/^marte$/i.test(speaker) || speakerLower.includes("marte")) {
+        role = "marte";
+      } else if (extractedClient) {
+        const clientFirst = extractedClient.toLowerCase().split(/\s+/)[0];
+        if (clientFirst && speakerLower.includes(clientFirst)) role = "cliente";
+      }
+
+      const text = contentLines.join("\n");
+      const isPostAuto = role === "marte" && isPostAttendanceAuto(text);
+      blocks.push({ speaker, timestamp, text, role, isPostAuto });
+    }
+  } else {
+    // Format A: Name → Date → Content (or fallback regex)
+    const blockRegex = /^([A-ZÀ-Ü][A-ZÀ-Ü\s]+?)[\s]+(\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}:\d{2}|\d{1,2}:\d{2})\s*$/gm;
+    const matches = [...rawText.matchAll(blockRegex)];
+
+    if (matches.length > 0) {
+      for (let i = 0; i < matches.length; i++) {
+        const match = matches[i];
+        const speaker = match[1].trim();
+        const timestamp = match[2].trim();
+        const startIdx = match.index! + match[0].length;
+        const endIdx = i + 1 < matches.length ? matches[i + 1].index! : rawText.length;
+        const text = rawText.slice(startIdx, endIdx).trim();
+
+        let role: ParsedBlock["role"] = "atendente";
+        const speakerUpper = speaker.toUpperCase();
+        if (speakerUpper === "MARTE" || speakerUpper.includes("MARTE")) role = "marte";
+        else if (extractedClient && speaker.toLowerCase().includes(extractedClient.toLowerCase().split(" ")[0])) role = "cliente";
+
+        const isPostAuto = role === "marte" && isPostAttendanceAuto(text);
+        blocks.push({ speaker, timestamp, text, role, isPostAuto });
+      }
+    }
+  }
+
+  // Fallback for flat text: try to split by PT-BR date patterns
+  if (blocks.length === 0) {
+    const dateSplitRegex = new RegExp(`((?:Lida\\s*-\\s*)?\\d{1,2}\\s+de\\s+(?:${PT_MONTHS})\\s+de\\s+\\d{4}\\s+\\d{2}:\\d{2})`, "gi");
+    const parts = rawText.split(dateSplitRegex).filter(Boolean);
+
+    if (parts.length >= 2) {
+      // Try to pair content chunks with dates
+      for (let i = 0; i < parts.length - 1; i += 2) {
+        const content = parts[i].trim();
+        const dateStr = parts[i + 1]?.trim() || "";
+        const dateInfo = isRawDateLine(dateStr);
+        if (!content || !dateInfo) continue;
+
+        // Try to split speaker from content
+        const firstNewline = content.indexOf("\n");
+        let speaker = "Desconhecido";
+        let text = content;
+        if (firstNewline > 0 && firstNewline < 50) {
+          const possibleName = content.slice(0, firstNewline).trim();
+          if (isRawNameLine(possibleName)) {
+            speaker = possibleName;
+            text = content.slice(firstNewline + 1).trim();
+          }
+        }
+
+        let role: ParsedBlock["role"] = "atendente";
+        if (/^marte$/i.test(speaker)) role = "marte";
+        else if (extractedClient && speaker.toLowerCase().includes(extractedClient.toLowerCase().split(" ")[0])) role = "cliente";
+
+        const isPostAuto = role === "marte" && isPostAttendanceAuto(text);
+        blocks.push({ speaker, timestamp: dateInfo.time, text, role, isPostAuto });
+      }
+    }
   }
 
   return blocks;
