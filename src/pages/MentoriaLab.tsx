@@ -1151,6 +1151,9 @@ const MentoriaLab = () => {
         return;
       }
 
+      setIsImporting(true);
+      setImportingCount(fileArray.length);
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
