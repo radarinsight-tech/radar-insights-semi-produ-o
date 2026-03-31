@@ -229,9 +229,11 @@ function BlockRenderer({ blocks }: { blocks: ParsedBlock[] }) {
 interface FormattedChatTextProps {
   rawText: string;
   clientName?: string;
+  audioBlobs?: ExtractedAudio[];
+  imageBlobs?: ExtractedImage[];
 }
 
-const FormattedChatText = ({ rawText, clientName }: FormattedChatTextProps) => {
+const FormattedChatText = ({ rawText, clientName, audioBlobs, imageBlobs }: FormattedChatTextProps) => {
   const [open, setOpen] = useState(false);
 
   const blocks = useMemo(() => parseRawTextBlocks(rawText, clientName), [rawText, clientName]);
