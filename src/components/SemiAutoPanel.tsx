@@ -75,18 +75,40 @@ const CATEGORY_ICONS: Record<string, string> = {
 type FilterMode = "all" | "pending" | "accepted" | "adjusted" | "rejected";
 
 /* ─── Component ─── */
-const SemiAutoPanel = ({ analysis, onConfirm }: SemiAutoPanelProps) => {
+const SemiAutoPanel = ({ analysis, iaResult, onConfirm }: SemiAutoPanelProps) => {
+  // Build initial decisions: if iaResult has criterios, use them; otherwise use pre-analysis suggestions
   const [decisions, setDecisions] = useState<Map<number, CriterionDecision>>(() => {
     const map = new Map<number, CriterionDecision>();
+    const iaCriterios: any[] = iaResult?.criterios || [];
+
     for (const s of analysis.suggestions) {
-      map.set(s.numero, {
-        numero: s.numero,
-        sugestaoOriginal: s.sugestao,
-        decisaoFinal: s.sugestao,
-        status: s.confianca === "alta" ? "accepted" : "pending",
-        editadoManualmente: false,
-        confiancaOriginal: s.confianca,
-      });
+      // Try to find matching IA criterion
+      const iaCrit = iaCriterios.find((c: any) => c.numero === s.numero);
+
+      if (iaCrit) {
+        // Map IA resultado to SugestaoResultado
+        const iaResultado: SugestaoResultado =
+          iaCrit.resultado === "SIM" ? "SIM" :
+          iaCrit.resultado === "NÃO" ? "NÃO" : "PARCIAL";
+
+        map.set(s.numero, {
+          numero: s.numero,
+          sugestaoOriginal: iaResultado,
+          decisaoFinal: iaResultado,
+          status: "accepted", // IA results start as accepted
+          editadoManualmente: false,
+          confiancaOriginal: "alta", // IA results are high confidence
+        });
+      } else {
+        map.set(s.numero, {
+          numero: s.numero,
+          sugestaoOriginal: s.sugestao,
+          decisaoFinal: s.sugestao,
+          status: s.confianca === "alta" ? "accepted" : "pending",
+          editadoManualmente: false,
+          confiancaOriginal: s.confianca,
+        });
+      }
     }
     return map;
   });
