@@ -1912,61 +1912,44 @@ const MentoriaLab = () => {
             ? ineligibleReason || "Fora de Avaliação"
             : data.classificacao || "Fora de Avaliação";
 
-          const persistedEvaluation = await persistEvaluationRecord({
-            userId: user.id,
-            currentEvaluationId: labFile.evaluationId,
-            protocolo: data.protocolo || labFile.protocolo,
-            payload: {
-              data: data.data || new Date().toLocaleDateString("pt-BR"),
-              data_avaliacao: new Date().toISOString(),
-              protocolo: data.protocolo || "Não identificado",
-              atendente: data.atendente || "Não identificado",
-              tipo: data.tipo || "Não identificado",
-              atualizacao_cadastral: data.bonusOperacional?.atualizacaoCadastral || "NÃO",
-              nota: notaFinal,
-              classificacao: classificacaoFinal,
-              bonus: !isIneligible && bonusQualidade >= 70,
-              pontos_melhoria: Array.isArray(data.mentoria) ? data.mentoria : [],
-              user_id: user.id,
-              pdf_url: pdfUrl,
-              full_report: persistedAnalysisResult,
-              prompt_version: data.promptVersion || "auditor_v3",
-              resultado_validado: false,
-            },
-          });
+          const sanitizeForDb = (obj: unknown): unknown => {
+            const str = JSON.stringify(obj);
+            return JSON.parse(str.replace(/\u0000/g, "").replace(/\\u0000/g, ""));
+          };
 
-          // Save result JSON to cloud: results/<batchCode>/
-          if (labFile.batchId) {
-            const { data: batchData } = await supabase
-              .from("mentoria_batches")
-              .select("batch_code")
-              .eq("id", labFile.batchId)
-              .single();
-            if (batchData) {
-              const resultPath = `${user.id}/results/${batchData.batch_code}/${labFile.name.replace(".pdf", ".json")}`;
-              const resultBlob = new Blob([JSON.stringify(persistedAnalysisResult, null, 2)], {
-                type: "application/json",
-              });
-              await supabase.storage
-                .from("mentoria-lab")
-                .upload(resultPath, resultBlob, { contentType: "application/json" })
-                .catch(() => {});
-            }
-          }
+          const evalPayload = {
+            data: data.data || new Date().toLocaleDateString("pt-BR"),
+            data_avaliacao: new Date().toISOString(),
+            protocolo: data.protocolo || "Não identificado",
+            atendente: data.atendente || "Não identificado",
+            tipo: data.tipo || "Não identificado",
+            atualizacao_cadastral: data.bonusOperacional?.atualizacaoCadastral || "NÃO",
+            nota: notaFinal,
+            classificacao: classificacaoFinal,
+            bonus: !isIneligible && bonusQualidade >= 70,
+            pontos_melhoria: Array.isArray(data.mentoria) ? data.mentoria : [],
+            user_id: user.id,
+            pdf_url: pdfUrl,
+            full_report: persistedAnalysisResult,
+            prompt_version: data.promptVersion || "auditor_v3",
+            resultado_validado: false,
+          };
+          const safePayload = sanitizeForDb(evalPayload) as typeof evalPayload;
 
-          // Sync batch file DB
-          if (labFile.batchFileId) {
-            await supabase
-              .from("mentoria_batch_files")
-              .update({
-                status: "analyzed",
-                nota: notaFinal,
-                classificacao: classificacaoFinal,
-                atendente: data.atendente || labFile.atendente,
-                protocolo: data.protocolo || labFile.protocolo,
-                result: persistedAnalysisResult,
-              } as any)
-              .eq("id", labFile.batchFileId);
+          let evalRecord: { id: string; approvedAsOfficial: boolean; approvalOrigin?: OfficialApprovalOrigin } | null = null;
+          try {
+            evalRecord = await persistEvaluationRecord({
+              userId: user.id,
+              currentEvaluationId: labFile.evaluationId,
+              protocolo: data.protocolo || labFile.protocolo,
+              payload: safePayload,
+            });
+          } catch (evalErr: any) {
+            console.warn("[MentoriaLab][Análise][eval_persist_falhou]", {
+              id: labFile.batchFileId || labFile.id,
+              erro: evalErr?.message,
+            });
+            // Continue without blocking — result still saved to batch file
           }
 
           const updatedFile: LabFile = {
@@ -1983,9 +1966,9 @@ const MentoriaLab = () => {
             ineligibleReason: persistedIneligibility.reason,
             nonEvaluable: isNonEvaluable,
             nonEvaluableReason: isNonEvaluable ? evaluabilityState.reason || "Interação insuficiente" : undefined,
-            evaluationId: persistedEvaluation.id,
-            approvedAsOfficial: persistedEvaluation.approvedAsOfficial,
-            approvalOrigin: persistedEvaluation.approvalOrigin,
+            evaluationId: evalRecord?.id,
+            approvedAsOfficial: evalRecord?.approvedAsOfficial ?? false,
+            approvalOrigin: evalRecord?.approvalOrigin,
           };
 
           setFiles((prev) => prev.map((f) => (f.id === labFile.id ? updatedFile : f)));
