@@ -654,15 +654,32 @@ const MentoriaUnifiedTable = ({
                           </Button>
                         )}
 
-                        {/* Overflow menu */}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7">
-                              <MoreHorizontal className="h-3.5 w-3.5" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-52">
-                            {f.hasResult && !f.approvedAsOfficial && f.evaluationId && (
+                        {/* Diagnóstico — botão discreto visível apenas para admin */}
+                        {isAdmin && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                onClick={() => onOpenDiagnostic(f)}
+                              >
+                                <Bug className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top"><p>Diagnóstico técnico do parser</p></TooltipContent>
+                          </Tooltip>
+                        )}
+
+                        {/* Overflow menu — apenas Aprovar Oficial */}
+                        {f.hasResult && !f.approvedAsOfficial && f.evaluationId && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-7 w-7">
+                                <MoreHorizontal className="h-3.5 w-3.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-52">
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <DropdownMenuItem
@@ -672,32 +689,11 @@ const MentoriaUnifiedTable = ({
                                     <ShieldCheck className="h-3.5 w-3.5 mr-2" /> Aprovar Oficial
                                   </DropdownMenuItem>
                                 </TooltipTrigger>
-                                <TooltipContent side="left"><p>Aprovar esta análise como avaliação oficial — aparecerá no módulo Avaliação Oficial</p></TooltipContent>
+                                <TooltipContent side="left"><p>Aprovar como avaliação oficial</p></TooltipContent>
                               </Tooltip>
-                            )}
-                            {isAdmin && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <DropdownMenuItem onClick={() => onOpenDiagnostic(f)}>
-                                    <Bug className="h-3.5 w-3.5 mr-2" /> Diagnóstico
-                                  </DropdownMenuItem>
-                                </TooltipTrigger>
-                                <TooltipContent side="left"><p>Ver diagnóstico técnico do parser — útil para identificar problemas na leitura do PDF</p></TooltipContent>
-                              </Tooltip>
-                            )}
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <DropdownMenuItem
-                                  className="text-destructive focus:text-destructive"
-                                  onClick={() => onRemoveFile(f.id)}
-                                >
-                                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Remover
-                                </DropdownMenuItem>
-                              </TooltipTrigger>
-                              <TooltipContent side="left"><p>Remover este atendimento do lote atual (não exclui da base)</p></TooltipContent>
-                            </Tooltip>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
