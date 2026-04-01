@@ -452,6 +452,7 @@ const MentoriaUnifiedTable = ({
                       return f.hasResult ? "Aguardando confirmação" : "Analisado";
                     case "confirmado": return "Confirmado";
                     case "reprovado": return "Reprovado";
+                    case "erro": return "Erro";
                     default:
                       if (f.hasResult) return "Aguardando confirmação";
                       if (f.category === "em_analise") return "Em análise";
