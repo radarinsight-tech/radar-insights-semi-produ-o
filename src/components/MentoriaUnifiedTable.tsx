@@ -743,10 +743,10 @@ const MentoriaUnifiedTable = ({
                     disabled={isBusy}
                   >
                     <Check className="h-3.5 w-3.5" />
-                    ✅ Confirmar selecionados ({selectedCount})
+                    ✅ Validar selecionados ({selectedCount})
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="top"><p>Confirmar análises selecionadas e enviar para Performance</p></TooltipContent>
+                <TooltipContent side="top"><p>Validar análises selecionadas e enviar para Performance</p></TooltipContent>
               </Tooltip>
 
               <Tooltip>
