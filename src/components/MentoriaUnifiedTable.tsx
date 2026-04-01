@@ -775,7 +775,7 @@ const MentoriaUnifiedTable = ({
           )}
 
           {/* Non-review tabs: Analyze + Delete buttons */}
-          {!isReviewTab && (
+          {!isReviewTab && selectedCount >= 2 && (
             <>
               {/* Button 1: Analisar com IA */}
               <Tooltip>
