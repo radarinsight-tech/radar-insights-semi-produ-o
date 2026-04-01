@@ -3462,7 +3462,7 @@ const MentoriaLab = () => {
                         confirmed++;
                       }
                       if (confirmed > 0) {
-                        toast.success(`Auditoria confirmada! ${confirmed} atendimento(s) adicionado(s) à Performance.`);
+                        toast.success(`Nota IA validada! ${confirmed} atendimento(s) adicionado(s) à Performance.`);
                       }
                     }}
                     onRejectSelected={async (ids: string[]) => {
