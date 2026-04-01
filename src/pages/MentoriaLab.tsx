@@ -1443,6 +1443,7 @@ const MentoriaLab = () => {
       // Global month filter (competência)
       if (filterMonth && filterMonth !== "todos") {
         if (!f.data) return true; // Include files without date (pending/unread)
+        if (f.status !== "confirmado") return true; // Only filter confirmed items by month
         const parts = f.data.split("/");
         if (parts.length !== 3) return false;
         const [filterYear, filterMon] = filterMonth.split("-").map(Number);
