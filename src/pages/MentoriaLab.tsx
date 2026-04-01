@@ -1657,7 +1657,15 @@ const MentoriaLab = () => {
         .select("id, resultado_validado, audit_log")
         .single();
 
-      if (error || !data) throw error ?? new Error("Falha ao salvar avaliação.");
+      if (error || !data) {
+        console.error("[persistEvaluationRecord][erro_insert]", {
+          message: error?.message,
+          code: error?.code,
+          details: error?.details,
+          hint: error?.hint,
+        });
+        throw error ?? new Error("Falha ao salvar avaliação.");
+      }
 
       return {
         id: data.id,
