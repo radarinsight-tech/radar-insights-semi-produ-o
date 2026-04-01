@@ -2345,7 +2345,7 @@ const MentoriaLab = () => {
         origem: "manual",
         data: new Date().toISOString(),
       });
-      toast.success("Avaliação aprovada como oficial! Agora aparece no ranking e histórico.");
+      toast.success("Avaliação oficializada no ranking! Agora aparece no ranking e histórico.");
     } catch {
       toast.error("Erro inesperado ao aprovar avaliação.");
     } finally {
