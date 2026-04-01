@@ -1927,7 +1927,9 @@ const MentoriaLab = () => {
             nota: notaFinal,
             classificacao: classificacaoFinal,
             bonus: !isIneligible && bonusQualidade >= 70,
-            pontos_melhoria: Array.isArray(data.mentoria) ? data.mentoria : [],
+            pontos_melhoria: Array.isArray(data.mentoria)
+              ? data.mentoria.map((item: unknown) => (typeof item === "string" ? item : String(item ?? "")))
+              : [],
             user_id: user.id,
             pdf_url: pdfUrl,
             full_report: persistedAnalysisResult,
