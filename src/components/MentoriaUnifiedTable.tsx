@@ -686,10 +686,10 @@ const MentoriaUnifiedTable = ({
                                     onClick={() => onApproveOfficial(f)}
                                     disabled={approvingIds.has(f.id)}
                                   >
-                                    <ShieldCheck className="h-3.5 w-3.5 mr-2" /> Aprovar Oficial
+                                    <ShieldCheck className="h-3.5 w-3.5 mr-2" /> Oficializar no Ranking
                                   </DropdownMenuItem>
                                 </TooltipTrigger>
-                                <TooltipContent side="left"><p>Aprovar como avaliação oficial</p></TooltipContent>
+                                <TooltipContent side="left"><p>Oficializar avaliação para ranking e bônus</p></TooltipContent>
                               </Tooltip>
                             </DropdownMenuContent>
                           </DropdownMenu>
