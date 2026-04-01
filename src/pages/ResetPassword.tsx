@@ -17,19 +17,30 @@ const ResetPassword = () => {
   const [isRecovery, setIsRecovery] = useState(false);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event) => {
-        if (event === "PASSWORD_RECOVERY") {
-          setIsRecovery(true);
-        }
-      }
-    );
+    const checkRecoveryState = async () => {
+      const hash = window.location.hash || "";
+      const search = window.location.search || "";
 
-    // Check hash for recovery token
-    const hash = window.location.hash;
-    if (hash.includes("type=recovery")) {
-      setIsRecovery(true);
-    }
+      if (hash.includes("type=recovery") || search.includes("type=recovery")) {
+        setIsRecovery(true);
+        return;
+      }
+
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        setIsRecovery(true);
+      }
+    };
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
+        setIsRecovery(true);
+      }
+    });
+
+    checkRecoveryState();
 
     return () => subscription.unsubscribe();
   }, []);
