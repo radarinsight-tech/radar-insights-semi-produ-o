@@ -636,7 +636,7 @@ const MentoriaUnifiedTable = ({
                                   <Search className="h-3 w-3" /> Auditar
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent side="top"><p>Revisar os 19 critérios antes de confirmar</p></TooltipContent>
+                              <TooltipContent side="top"><p>Revisar os 19 critérios antes de validar</p></TooltipContent>
                             </Tooltip>
                           </>
                         )}
