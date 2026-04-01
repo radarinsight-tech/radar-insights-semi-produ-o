@@ -1634,7 +1634,15 @@ const MentoriaLab = () => {
           .select("id, resultado_validado, audit_log")
           .single();
 
-        if (error || !data) throw error ?? new Error("Falha ao atualizar avaliação existente.");
+        if (error || !data) {
+          console.error("[persistEvaluationRecord][erro_update]", {
+            message: error?.message,
+            code: error?.code,
+            details: error?.details,
+            hint: error?.hint,
+          });
+          throw error ?? new Error("Falha ao atualizar avaliação existente.");
+        }
 
         return {
           id: data.id,
