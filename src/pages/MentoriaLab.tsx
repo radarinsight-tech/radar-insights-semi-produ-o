@@ -2345,7 +2345,7 @@ const MentoriaLab = () => {
         origem: "manual",
         data: new Date().toISOString(),
       });
-      toast.success("Avaliação aprovada como oficial! Agora aparece no ranking e histórico.");
+      toast.success("Avaliação oficializada no ranking! Agora aparece no ranking e histórico.");
     } catch {
       toast.error("Erro inesperado ao aprovar avaliação.");
     } finally {
@@ -3462,7 +3462,7 @@ const MentoriaLab = () => {
                         confirmed++;
                       }
                       if (confirmed > 0) {
-                        toast.success(`Auditoria confirmada! ${confirmed} atendimento(s) adicionado(s) à Performance.`);
+                        toast.success(`Nota IA validada! ${confirmed} atendimento(s) adicionado(s) à Performance.`);
                       }
                     }}
                     onRejectSelected={async (ids: string[]) => {

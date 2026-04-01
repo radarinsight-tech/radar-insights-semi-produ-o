@@ -617,10 +617,10 @@ const MentoriaUnifiedTable = ({
                                     if (onConfirmSelected) onConfirmSelected([f.id]);
                                   }}
                                 >
-                                  <Check className="h-3 w-3" /> Confirmar
+                                  <Check className="h-3 w-3" /> Validar Nota IA
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent side="top"><p>Confirmar nota como oficial e enviar para Performance</p></TooltipContent>
+                              <TooltipContent side="top"><p>Validar resultado da IA e enviar para Performance</p></TooltipContent>
                             </Tooltip>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -636,7 +636,7 @@ const MentoriaUnifiedTable = ({
                                   <Search className="h-3 w-3" /> Auditar
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent side="top"><p>Revisar os 19 critérios antes de confirmar</p></TooltipContent>
+                              <TooltipContent side="top"><p>Revisar os 19 critérios antes de validar</p></TooltipContent>
                             </Tooltip>
                           </>
                         )}
@@ -671,7 +671,7 @@ const MentoriaUnifiedTable = ({
                           </Tooltip>
                         )}
 
-                        {/* Overflow menu — apenas Aprovar Oficial */}
+                        {/* Overflow menu — Oficializar no Ranking */}
                         {f.hasResult && !f.approvedAsOfficial && f.evaluationId && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -686,10 +686,10 @@ const MentoriaUnifiedTable = ({
                                     onClick={() => onApproveOfficial(f)}
                                     disabled={approvingIds.has(f.id)}
                                   >
-                                    <ShieldCheck className="h-3.5 w-3.5 mr-2" /> Aprovar Oficial
+                                    <ShieldCheck className="h-3.5 w-3.5 mr-2" /> Oficializar no Ranking
                                   </DropdownMenuItem>
                                 </TooltipTrigger>
-                                <TooltipContent side="left"><p>Aprovar como avaliação oficial</p></TooltipContent>
+                                <TooltipContent side="left"><p>Oficializar avaliação para ranking e bônus</p></TooltipContent>
                               </Tooltip>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -743,10 +743,10 @@ const MentoriaUnifiedTable = ({
                     disabled={isBusy}
                   >
                     <Check className="h-3.5 w-3.5" />
-                    ✅ Confirmar selecionados ({selectedCount})
+                    ✅ Validar selecionados ({selectedCount})
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="top"><p>Confirmar análises selecionadas e enviar para Performance</p></TooltipContent>
+                <TooltipContent side="top"><p>Validar análises selecionadas e enviar para Performance</p></TooltipContent>
               </Tooltip>
 
               <Tooltip>
