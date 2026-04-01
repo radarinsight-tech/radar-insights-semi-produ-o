@@ -671,7 +671,7 @@ const MentoriaUnifiedTable = ({
                           </Tooltip>
                         )}
 
-                        {/* Overflow menu — apenas Aprovar Oficial */}
+                        {/* Overflow menu — Oficializar no Ranking */}
                         {f.hasResult && !f.approvedAsOfficial && f.evaluationId && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
