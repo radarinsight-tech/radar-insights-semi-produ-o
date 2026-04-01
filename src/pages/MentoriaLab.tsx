@@ -1989,7 +1989,6 @@ const MentoriaLab = () => {
         } catch (err: any) {
           const errorMsg = err?.message || "Erro inesperado na análise";
           errors++;
-          // Rollback: never leave file stuck in "em_analise" / "aguardando_revisao_ia"
           setFiles((prev) =>
             prev.map((f) =>
               f.id === labFile.id
@@ -1997,6 +1996,7 @@ const MentoriaLab = () => {
                 : f,
             ),
           );
+          setWorkflowStatuses((prev) => ({ ...prev, [labFile.id]: "nao_iniciado" }));
           if (labFile.batchFileId) {
             await supabase
               .from("mentoria_batch_files")
