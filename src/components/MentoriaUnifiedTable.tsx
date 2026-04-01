@@ -775,52 +775,51 @@ const MentoriaUnifiedTable = ({
           )}
 
           {/* Non-review tabs: Analyze + Delete buttons */}
+          {/* Analisar com IA — apenas lote (2+) */}
           {!isReviewTab && selectedCount >= 2 && (
-            <>
-              {/* Button 1: Analisar com IA */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    className="gap-1.5 font-semibold bg-blue-600 hover:bg-blue-700 text-white"
-                    onClick={() => {
-                      const ids = [...selectedIds].filter((id) =>
-                        categorized.some((f) => f.id === id && f.isAutoEligible)
-                      );
-                      if (onAnalyzeSelected) {
-                        onAnalyzeSelected(ids, 'ia');
-                      } else if (onBatchAnalyze) {
-                        onBatchAnalyze(ids.length);
-                      }
-                      setSelectedIds(new Set());
-                    }}
-                    disabled={isBusy}
-                  >
-                    {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
-                    ⚡ Analisar com IA ({selectedCount})
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top"><p>Análise automática via IA — mais rápida, sem intervenção manual</p></TooltipContent>
-              </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  className="gap-1.5 font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => {
+                    const ids = [...selectedIds].filter((id) =>
+                      categorized.some((f) => f.id === id && f.isAutoEligible)
+                    );
+                    if (onAnalyzeSelected) {
+                      onAnalyzeSelected(ids, 'ia');
+                    } else if (onBatchAnalyze) {
+                      onBatchAnalyze(ids.length);
+                    }
+                    setSelectedIds(new Set());
+                  }}
+                  disabled={isBusy}
+                >
+                  {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+                  ⚡ Analisar com IA ({selectedCount})
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top"><p>Análise automática via IA — mais rápida, sem intervenção manual</p></TooltipContent>
+            </Tooltip>
+          )}
 
-
-              {/* Button 3: Excluir */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-1.5 font-medium bg-red-100 text-red-700 border-red-300 hover:bg-red-200"
-                    onClick={() => setShowDeleteConfirm(true)}
-                    disabled={isBusy}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    🗑 Excluir ({selectedCount})
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top"><p>Excluir os atendimentos selecionados permanentemente</p></TooltipContent>
-              </Tooltip>
-            </>
+          {/* Excluir — sempre visível (1+) */}
+          {!isReviewTab && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 font-medium bg-red-100 text-red-700 border-red-300 hover:bg-red-200"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={isBusy}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  🗑 Excluir ({selectedCount})
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top"><p>Excluir os atendimentos selecionados permanentemente</p></TooltipContent>
+            </Tooltip>
           )}
 
           {/* Cancel button */}
