@@ -603,26 +603,7 @@ const MentoriaUnifiedTable = ({
                           </Tooltip>
                         )}
 
-                        {/* Botão Auditar para analisados aguardando revisão */}
-                        {(f.status === "analisado" || f.status === "aguardando_revisao_ia" || f.status === "aguardando_revisao_manual") && f.hasResult && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 px-2 text-xs gap-1"
-                                onClick={() => {
-                                  onMarkViewed?.(f.id);
-                                  if (onAuditFile) onAuditFile(f);
-                                }}
-                              >
-                                <Eye className="h-3 w-3" />
-                                Auditar
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top"><p>Revisar os 19 critérios antes de confirmar</p></TooltipContent>
-                          </Tooltip>
-                        )}
+
 
                         {/* Confirm + Audit buttons for items with results that are not yet confirmed */}
                         {f.hasResult && f.status !== "confirmado" && (
