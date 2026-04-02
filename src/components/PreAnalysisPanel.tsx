@@ -50,9 +50,9 @@ const PreAnalysisPanel = ({ analysis, onAcceptAll }: PreAnalysisPanelProps) => {
   const stats = useMemo(() => {
     const sim = analysis.suggestions.filter(s => s.sugestao === "SIM").length;
     const nao = analysis.suggestions.filter(s => s.sugestao === "NÃO").length;
-    const parcial = analysis.suggestions.filter(s => s.sugestao === "PARCIAL").length;
+    const fora = analysis.suggestions.filter(s => s.sugestao === "FORA DO ESCOPO").length;
     const alta = analysis.suggestions.filter(s => s.confianca === "alta").length;
-    return { sim, nao, parcial, alta };
+    return { sim, nao, fora, alta };
   }, [analysis.suggestions]);
 
   const toggleExpand = (num: number) => {
