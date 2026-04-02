@@ -62,7 +62,6 @@ export interface ScoringResult {
 function resultToPoints(resposta: SugestaoResultado, peso: number): number {
   switch (resposta) {
     case "SIM": return peso;
-    case "PARCIAL": return Math.round(peso * 0.5 * 10) / 10;
     case "NÃO": return 0;
     case "FORA DO ESCOPO": return 0; // excluded from calculation
     default: return 0;
