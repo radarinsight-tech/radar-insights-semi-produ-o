@@ -284,13 +284,13 @@ const c3: CriterionAnalyzer = (msgs, ctx) => {
 // 4. Respondeu dentro do tempo adequado?
 const c4: CriterionAnalyzer = (msgs, ctx) => {
   const avg = ctx.avgResponseTimeSec;
-  if (avg == null) return { sugestao: "PARCIAL", justificativa: "Não foi possível calcular tempo de resposta (timestamps ausentes).", confianca: "baixa" };
+  if (avg == null) return { sugestao: "NÃO", justificativa: "Não foi possível calcular tempo de resposta (timestamps ausentes).", confianca: "baixa" };
   
   const avgMin = avg / 60;
-  // Up to 3 min → SIM, up to 5 min → SIM (within resolution window), up to 8 min → PARCIAL
+  // Up to 3 min → SIM, up to 5 min → SIM (within resolution window), above → NÃO
   if (avgMin <= 3) return { sugestao: "SIM", justificativa: `Tempo médio de resposta: ${avgMin.toFixed(1)} minutos (adequado).`, confianca: "alta" };
   if (avgMin <= 5) return { sugestao: "SIM", justificativa: `Tempo médio de resposta: ${avgMin.toFixed(1)} minutos (dentro do limite aceitável).`, confianca: "media" };
-  if (avgMin <= 8) return { sugestao: "PARCIAL", justificativa: `Tempo médio de resposta: ${avgMin.toFixed(1)} minutos (levemente acima do ideal).`, confianca: "alta" };
+  if (avgMin <= 8) return { sugestao: "NÃO", justificativa: `Tempo médio de resposta: ${avgMin.toFixed(1)} minutos (acima do ideal).`, confianca: "alta" };
   return { sugestao: "NÃO", justificativa: `Tempo médio de resposta: ${avgMin.toFixed(1)} minutos (acima do esperado).`, confianca: "alta" };
 };
 
