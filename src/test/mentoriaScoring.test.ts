@@ -99,24 +99,29 @@ describe("Score calculation", () => {
 // ─── 3. Classification thresholds ───────────────────────────────────────
 
 describe("Classification thresholds (anti-regression)", () => {
-  it("85+ = Excelente", () => {
-    expect(classify(85)).toBe("Excelente");
+  it("90+ = Excelente", () => {
+    expect(classify(90)).toBe("Excelente");
     expect(classify(100)).toBe("Excelente");
   });
 
-  it("65-84 = Bom atendimento", () => {
+  it("80-89 = Muito bom", () => {
+    expect(classify(80)).toBe("Muito bom");
+    expect(classify(89)).toBe("Muito bom");
+  });
+
+  it("65-79 = Bom atendimento", () => {
     expect(classify(65)).toBe("Bom atendimento");
-    expect(classify(84)).toBe("Bom atendimento");
+    expect(classify(79)).toBe("Bom atendimento");
   });
 
-  it("45-64 = Abaixo do esperado", () => {
-    expect(classify(45)).toBe("Abaixo do esperado");
-    expect(classify(64)).toBe("Abaixo do esperado");
+  it("45-64 = Em desenvolvimento", () => {
+    expect(classify(45)).toBe("Em desenvolvimento");
+    expect(classify(64)).toBe("Em desenvolvimento");
   });
 
-  it("< 45 = Crítico", () => {
-    expect(classify(44)).toBe("Crítico");
-    expect(classify(0)).toBe("Crítico");
+  it("< 45 = Abaixo do esperado", () => {
+    expect(classify(44)).toBe("Abaixo do esperado");
+    expect(classify(0)).toBe("Abaixo do esperado");
   });
 });
 

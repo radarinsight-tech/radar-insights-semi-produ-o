@@ -89,8 +89,7 @@ const SemiAutoPanel = ({ analysis, iaResult, onConfirm }: SemiAutoPanelProps) =>
         // Map IA resultado to SugestaoResultado
         const iaResultado: SugestaoResultado =
           iaCrit.resultado === "SIM" ? "SIM" :
-          iaCrit.resultado === "NÃO" ? "NÃO" :
-          iaCrit.resultado === "FORA DO ESCOPO" ? "FORA DO ESCOPO" : "PARCIAL";
+          iaCrit.resultado === "FORA DO ESCOPO" ? "FORA DO ESCOPO" : "NÃO";
 
         map.set(s.numero, {
           numero: s.numero,
