@@ -74,6 +74,34 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 type FilterMode = "all" | "pending" | "accepted" | "adjusted" | "rejected";
 
+/* ─── Doubtful Criteria Alerts ─── */
+const SENSITIVE_CRITERIA = new Set([6, 11, 12, 17, 18]);
+
+interface CriterionAlert {
+  key: string;
+  label: string;
+  tooltip: string;
+}
+
+function getCriterionAlerts(
+  numero: number,
+  confianca: Confianca,
+  sugestao: SugestaoResultado,
+  evidencia?: string,
+): CriterionAlert[] {
+  const alerts: CriterionAlert[] = [];
+  if (confianca === "baixa") {
+    alerts.push({ key: "low-conf", label: "Baixa confiança", tooltip: "A IA tem baixa certeza neste critério — revise com atenção" });
+  }
+  if (sugestao === "SIM" && !evidencia) {
+    alerts.push({ key: "no-evidence", label: "Sem evidência", tooltip: "Sugestão SIM sem trecho de evidência no texto — valide manualmente" });
+  }
+  if (SENSITIVE_CRITERIA.has(numero)) {
+    alerts.push({ key: "sensitive", label: "Critério sensível", tooltip: "Este critério historicamente gera mais divergências — revise com cuidado" });
+  }
+  return alerts;
+}
+
 /* ─── Component ─── */
 const SemiAutoPanel = ({ analysis, iaResult, onConfirm }: SemiAutoPanelProps) => {
   // Build initial decisions: if iaResult has criterios, use them; otherwise use pre-analysis suggestions
