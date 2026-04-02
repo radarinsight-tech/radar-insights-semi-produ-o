@@ -42,13 +42,14 @@ export function classColorFromClassificacao(classificacao: string): string {
   switch (classificacao) {
     case "Excelente":
       return "bg-accent text-accent-foreground";
-    case "Bom":
+    case "Muito bom":
       return "bg-primary text-primary-foreground";
-    case "Regular":
+    case "Bom":
+    case "Bom atendimento":
+      return "bg-primary text-primary-foreground";
+    case "Em desenvolvimento":
       return "bg-warning text-warning-foreground";
-    case "Ruim":
-      return "bg-orange-500 text-white";
-    case "Crítico":
+    case "Abaixo do esperado":
       return "bg-destructive text-destructive-foreground";
     default:
       return "bg-muted text-muted-foreground";
