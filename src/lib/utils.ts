@@ -66,10 +66,10 @@ export interface BonusTier {
 }
 
 export function calcularBonus(nota: number): BonusTier {
-  if (nota >= 90) return { classificacao: "Excelente", percentual: 100, valor: 1200 };
-  if (nota >= 80) return { classificacao: "Ótimo", percentual: 58, valor: 700 };
-  if (nota >= 60) return { classificacao: "Bom", percentual: 25, valor: 300 };
-  return { classificacao: "Fraco", percentual: 0, valor: 0 };
+  if (nota >= 85) return { classificacao: "Excelente", percentual: 100, valor: 1200 };
+  if (nota >= 75) return { classificacao: "Muito bom", percentual: 58, valor: 700 };
+  if (nota >= 55) return { classificacao: "Bom", percentual: 25, valor: 300 };
+  return { classificacao: "Abaixo", percentual: 0, valor: 0 };
 }
 
 /**

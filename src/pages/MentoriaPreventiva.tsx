@@ -966,7 +966,7 @@ const PreventiveDetailDialog = ({
         numero: c.numero,
         nome: c.nome,
         categoria: c.categoria,
-        sugestao: (c.resultado === "SIM" ? "SIM" : c.resultado === "NÃO" ? "NÃO" : "PARCIAL") as any,
+        sugestao: (c.resultado === "SIM" ? "SIM" : c.resultado === "FORA DO ESCOPO" ? "FORA DO ESCOPO" : "NÃO") as any,
         confianca: "alta" as any,
         justificativa: c.explicacao,
         evidencia: undefined,
