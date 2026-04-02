@@ -128,39 +128,24 @@ describe("Classification thresholds (anti-regression)", () => {
 // ─── 4. Bonus tier mapping ─────────────────────────────────────────────
 
 describe("Bonus tier mapping (anti-regression)", () => {
-  const BONUS_BASE = 1200;
-
-  function bonusTier(nota: number): number {
-    if (nota >= 95) return BONUS_BASE;
-    if (nota >= 85) return BONUS_BASE * 0.9;
-    if (nota >= 70) return BONUS_BASE * 0.7;
-    if (nota >= 50) return BONUS_BASE * 0.3;
-    return 0;
-  }
-
-  it("95-100 = 100% (R$ 1200)", () => {
-    expect(bonusTier(95)).toBe(1200);
-    expect(bonusTier(100)).toBe(1200);
+  it("85-100 = R$ 1200", () => {
+    expect(calcularBonus(85).valor).toBe(1200);
+    expect(calcularBonus(100).valor).toBe(1200);
   });
 
-  it("85-94 = 90% (R$ 1080)", () => {
-    expect(bonusTier(85)).toBe(1080);
-    expect(bonusTier(94)).toBe(1080);
+  it("75-84 = R$ 700", () => {
+    expect(calcularBonus(75).valor).toBe(700);
+    expect(calcularBonus(84).valor).toBe(700);
   });
 
-  it("70-84 = 70% (R$ 840)", () => {
-    expect(bonusTier(70)).toBe(840);
-    expect(bonusTier(84)).toBe(840);
+  it("55-74 = R$ 300", () => {
+    expect(calcularBonus(55).valor).toBe(300);
+    expect(calcularBonus(74).valor).toBe(300);
   });
 
-  it("50-69 = 30% (R$ 360)", () => {
-    expect(bonusTier(50)).toBe(360);
-    expect(bonusTier(69)).toBe(360);
-  });
-
-  it("< 50 = 0%", () => {
-    expect(bonusTier(49)).toBe(0);
-    expect(bonusTier(0)).toBe(0);
+  it("< 55 = R$ 0", () => {
+    expect(calcularBonus(54).valor).toBe(0);
+    expect(calcularBonus(0).valor).toBe(0);
   });
 });
 
