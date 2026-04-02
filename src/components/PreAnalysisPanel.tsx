@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { CheckCircle2, XCircle, AlertCircle, Sparkles, Check, Pencil, MessageSquareQuote, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, Sparkles, Check, Pencil, MessageSquareQuote, ChevronDown, ChevronUp, TriangleAlert } from "lucide-react";
 import type { PreAnalysisSuggestion, PreAnalysisResult, SugestaoResultado, Confianca } from "@/lib/mentoriaPreAnalysis";
 
 interface PreAnalysisPanelProps {
