@@ -83,9 +83,10 @@ export function classify(nota100: number): Classificacao {
 export function classificacaoColor(cls: Classificacao): string {
   switch (cls) {
     case "Excelente": return "text-accent";
+    case "Muito bom": return "text-primary";
     case "Bom atendimento": return "text-primary";
-    case "Abaixo do esperado": return "text-warning";
-    case "Crítico": return "text-destructive";
+    case "Em desenvolvimento": return "text-warning";
+    case "Abaixo do esperado": return "text-destructive";
   }
 }
 
