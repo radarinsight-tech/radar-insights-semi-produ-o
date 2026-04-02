@@ -3104,6 +3104,9 @@ const MentoriaLab = () => {
           </TabsList>
 
           <TabsContent value="operacao" className="space-y-4 mt-4">
+            {/* Version Registry */}
+            <VersionRegistryCard />
+
             {/* Loading state */}
             {loadingFromDb && files.length === 0 && (
               <Card className="p-12 text-center">
