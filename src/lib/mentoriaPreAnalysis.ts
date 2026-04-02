@@ -307,7 +307,7 @@ const c5: CriterionAnalyzer = (msgs, ctx) => {
   }
   if (informal && informal.length >= 1) {
     const ev = findEvidence(msgs, informalPatterns, "atendente");
-    return { sugestao: "PARCIAL", justificativa: `Algumas expressões informais detectadas: ${informal.join(", ")}.`, evidencia: ev, confianca: "media" };
+    return { sugestao: "NÃO", justificativa: `Expressões informais detectadas: ${informal.join(", ")}.`, evidencia: ev, confianca: "media" };
   }
   if (prof && prof.length >= 2) {
     return { sugestao: "SIM", justificativa: "Linguagem profissional consistente ao longo do atendimento.", confianca: "media" };
