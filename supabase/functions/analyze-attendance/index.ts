@@ -207,15 +207,16 @@ REGRAS OBRIGATÓRIAS DE NOTA:
 
 ESCALA DE CLASSIFICAÇÃO (baseada na notaFinal):
 90–100 → Excelente
-70–89 → Bom atendimento
-50–69 → Regular
-0–49 → Abaixo do esperado
+80–89 → Muito bom
+65–79 → Bom atendimento
+45–64 → Em desenvolvimento
+0–44 → Abaixo do esperado
 
 BÔNUS DE QUALIDADE:
-0–49 → 0%
-50–69 → 30%
-70–89 → 70%
-90–100 → 100%
+0–54 → 0%
+55–74 → 25%
+75–84 → 58%
+85–100 → 100%
 
 BÔNUS OPERACIONAL:
 Dados cadastrais conferidos com o cliente:
