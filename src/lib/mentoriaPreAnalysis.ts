@@ -388,7 +388,7 @@ const c8: CriterionAnalyzer = (msgs, ctx) => {
   }
   if (lCount >= 1) {
     const ev = findEvidence(msgs, listenPatterns, "atendente");
-    return { sugestao: "PARCIAL", justificativa: "Sinais moderados de disposição para ouvir.", evidencia: ev, confianca: "baixa" };
+    return { sugestao: "NÃO", justificativa: "Sinais insuficientes de disposição para ouvir.", evidencia: ev, confianca: "baixa" };
   }
   return { sugestao: "NÃO", justificativa: "Não foram encontradas expressões de escuta ativa.", confianca: "baixa" };
 };
