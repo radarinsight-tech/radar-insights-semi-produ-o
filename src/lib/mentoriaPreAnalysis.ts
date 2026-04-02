@@ -340,7 +340,7 @@ const c6: CriterionAnalyzer = (msgs, ctx) => {
   }
   if (qCount >= 1) {
     const ev = findEvidence(msgs, /\?/, "atendente");
-    return { sugestao: "PARCIAL", justificativa: `Atendente fez ${qCount} pergunta(s), mas sem sondagem aprofundada.`, evidencia: ev, confianca: "media" };
+    return { sugestao: "NÃO", justificativa: `Atendente fez ${qCount} pergunta(s), mas sem sondagem aprofundada.`, evidencia: ev, confianca: "media" };
   }
   return { sugestao: "NÃO", justificativa: "Atendente não fez perguntas para compreender o problema.", confianca: "media" };
 };
