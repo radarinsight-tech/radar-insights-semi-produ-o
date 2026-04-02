@@ -416,7 +416,7 @@ const c9: CriterionAnalyzer = (msgs, ctx) => {
   }
   if (pCount >= 1) {
     const ev = findEvidence(msgs, proactivePatterns, "atendente");
-    return { sugestao: "PARCIAL", justificativa: "Alguma proatividade detectada, mas poderia ser mais ágil.", evidencia: ev, confianca: "baixa" };
+    return { sugestao: "NÃO", justificativa: "Proatividade insuficiente — poderia ser mais ágil.", evidencia: ev, confianca: "baixa" };
   }
   return { sugestao: "NÃO", justificativa: "Não foram encontradas evidências claras de agilidade ou proatividade.", confianca: "baixa" };
 };
