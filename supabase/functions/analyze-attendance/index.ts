@@ -473,7 +473,7 @@ ${text}`,
                   pontosObtidos: { type: "number", description: "Total de pontos obtidos" },
                   pontosPossiveis: { type: "number", description: "Total de pontos possíveis (excluindo FORA DO ESCOPO). DEVE ser > 0 se auditoria_realizada." },
                   notaFinal: { type: "number", description: "(obtidos/possiveis)*100. DEVE ser > 0 se auditoria_realizada e houver critérios avaliados." },
-                  classificacao: { type: "string", enum: ["Excelente", "Bom atendimento", "Regular", "Abaixo do esperado", "Fora de Avaliação"], description: "90-100=Excelente, 70-89=Bom atendimento, 50-69=Regular, 0-49=Abaixo do esperado, Fora de Avaliação para não auditados" },
+                  classificacao: { type: "string", enum: ["Excelente", "Muito bom", "Bom atendimento", "Em desenvolvimento", "Abaixo do esperado", "Fora de Avaliação"], description: "90-100=Excelente, 80-89=Muito bom, 65-79=Bom atendimento, 45-64=Em desenvolvimento, 0-44=Abaixo do esperado, Fora de Avaliação para não auditados" },
                   bonusQualidade: { type: "number", description: "0, 30, 70 ou 100" },
                   bonusOperacional: {
                     type: "object",

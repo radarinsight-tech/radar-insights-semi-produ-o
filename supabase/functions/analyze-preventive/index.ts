@@ -67,7 +67,7 @@ Quando não realizada, informar o motivo em motivoInviável.
 --------------------------------------------------
 REGRA DE DECISÃO EM CASO DE DÚVIDA
 Evidência clara     → SIM
-Evidência parcial   → SIM (registrar melhoria nas oportunidadesMelhoria)
+Evidência parcial ou inconclusiva → NÃO (registrar melhoria nas oportunidadesMelhoria)
 Ausência de evidência → NÃO
 Critério não aplicável ao contexto → FORA DO ESCOPO
 Nunca inventar evidências. Usar apenas falas reais do diálogo.
