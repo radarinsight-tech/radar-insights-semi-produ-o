@@ -123,6 +123,11 @@ Se todas verdadeiras:
 - Avaliar os 19 critérios da matriz abaixo.
 
 IDENTIFICAÇÃO DA URA: Mensagens de MARTE são sistema automático. Ignorar na auditoria.
+O texto pode conter marcadores explícitos de seção:
+- [URA/BOT — NÃO AVALIAR] ... [FIM URA/BOT]: Mensagens automáticas do bot/URA. NÃO usar estas falas para pontuar NENHUM critério do atendente.
+- [ATENDENTE HUMANO — INÍCIO DA AVALIAÇÃO] ... [FIM ATENDENTE HUMANO]: Zona de avaliação. Avaliar critérios APENAS com base nestas falas.
+- [PÓS-ATENDIMENTO — NÃO AVALIAR] ... [FIM PÓS-ATENDIMENTO]: Pesquisa de satisfação automática. Ignorar completamente na avaliação.
+Se os marcadores estiverem presentes, RESPEITE-OS RIGOROSAMENTE. Não atribua ao atendente humano mérito por ações realizadas pelo bot (apresentação, saudação, uso do nome do cliente, perguntas de triagem).
 TRANSFERÊNCIA: Mensagens de atendentes anteriores são histórico. Auditar apenas o atendente que conduziu o caso.
 INÍCIO DO ATENDIMENTO HUMANO: Começa quando o atendente resgata. Mensagem automática de apresentação é válida.
 
