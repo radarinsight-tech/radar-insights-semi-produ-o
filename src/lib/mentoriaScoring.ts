@@ -93,9 +93,10 @@ export function classificacaoColor(cls: Classificacao): string {
 export function classificacaoBg(cls: Classificacao): string {
   switch (cls) {
     case "Excelente": return "bg-accent/10 border-accent/20";
+    case "Muito bom": return "bg-primary/10 border-primary/20";
     case "Bom atendimento": return "bg-primary/10 border-primary/20";
-    case "Abaixo do esperado": return "bg-warning/10 border-warning/20";
-    case "Crítico": return "bg-destructive/10 border-destructive/20";
+    case "Em desenvolvimento": return "bg-warning/10 border-warning/20";
+    case "Abaixo do esperado": return "bg-destructive/10 border-destructive/20";
   }
 }
 
