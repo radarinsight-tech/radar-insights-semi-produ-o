@@ -379,7 +379,7 @@ const c8: CriterionAnalyzer = (msgs, ctx) => {
   
   // In reactive executions, listening is limited since attendant didn't engage
   if (ctx.reactiveExecution.isReactive && lCount < 2) {
-    return { sugestao: "PARCIAL", justificativa: "Atendimento de execução reativa — interação limitada para avaliar escuta ativa. O atendente executou sem engajamento conversacional.", confianca: "media" };
+    return { sugestao: "NÃO", justificativa: "Atendimento de execução reativa — interação limitada para avaliar escuta ativa. O atendente executou sem engajamento conversacional.", confianca: "media" };
   }
   
   if (lCount >= 3) {
