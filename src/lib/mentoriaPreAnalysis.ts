@@ -499,7 +499,7 @@ const c14: CriterionAnalyzer = (msgs, ctx) => {
   }
   if (tests && tests.length >= 1) {
     const ev = findEvidence(msgs, testPatterns, "atendente");
-    return { sugestao: "PARCIAL", justificativa: "Teste parcial identificado, mas sem confirmação completa.", evidencia: ev, confianca: "media" };
+    return { sugestao: "NÃO", justificativa: "Teste parcial identificado, mas sem confirmação completa.", evidencia: ev, confianca: "media" };
   }
   return { sugestao: "NÃO", justificativa: "Atendimento técnico sem testes realizados com o cliente.", confianca: "media" };
 };
