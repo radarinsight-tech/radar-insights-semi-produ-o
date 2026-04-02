@@ -365,7 +365,7 @@ const c7: CriterionAnalyzer = (msgs, ctx) => {
   }
   if (ack && ack.length >= 1) {
     const ev = findEvidence(msgs, ackPatterns, "atendente");
-    return { sugestao: "PARCIAL", justificativa: "Indicação parcial de identificação da demanda.", evidencia: ev, confianca: "baixa" };
+    return { sugestao: "NÃO", justificativa: "Indicação fraca de identificação da demanda.", evidencia: ev, confianca: "baixa" };
   }
   return { sugestao: "NÃO", justificativa: "Não há evidência clara de que o atendente identificou a solicitação.", confianca: "baixa" };
 };
