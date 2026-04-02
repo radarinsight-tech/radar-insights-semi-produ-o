@@ -29,10 +29,10 @@ export function formatNota(value: number): string {
 export function classificarNota(value: number): string {
   const nota = notaToScale10(value);
   if (nota >= 9.0) return "Excelente";
-  if (nota >= 7.0) return "Bom";
-  if (nota >= 5.0) return "Regular";
-  if (nota >= 3.0) return "Ruim";
-  return "Crítico";
+  if (nota >= 8.0) return "Muito bom";
+  if (nota >= 6.5) return "Bom";
+  if (nota >= 4.5) return "Em desenvolvimento";
+  return "Abaixo do esperado";
 }
 
 /**
