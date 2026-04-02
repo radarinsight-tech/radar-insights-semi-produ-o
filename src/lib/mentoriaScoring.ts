@@ -193,10 +193,10 @@ export interface CriterionFailureRate {
 export function analyzeCriteriaFailures(
   evaluations: Array<{ full_report: any }>
 ): CriterionFailureRate[] {
-  const counters = new Map<number, { nao: number; parcial: number; sim: number; total: number }>();
+  const counters = new Map<number, { nao: number; sim: number; total: number }>();
 
   for (const cw of CRITERIA_WEIGHTS) {
-    counters.set(cw.numero, { nao: 0, parcial: 0, sim: 0, total: 0 });
+    counters.set(cw.numero, { nao: 0, sim: 0, total: 0 });
   }
 
   for (const ev of evaluations) {
@@ -209,7 +209,6 @@ export function analyzeCriteriaFailures(
       counter.total++;
       if (c.resultado === "SIM") counter.sim++;
       else if (c.resultado === "NÃO") counter.nao++;
-      else counter.parcial++;
     }
   }
 
@@ -220,7 +219,6 @@ export function analyzeCriteriaFailures(
       nome: cw.nome,
       categoria: cw.categoria,
       totalFalhas: c.nao,
-      totalParcial: c.parcial,
       totalAcertos: c.sim,
       totalAvaliacoes: c.total,
       taxaFalha: c.total > 0 ? Math.round((c.nao / c.total) * 100) : 0,
