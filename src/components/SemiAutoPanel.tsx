@@ -10,7 +10,7 @@ import {
 import {
   CheckCircle2, XCircle, AlertCircle, Sparkles, Check, X, Pencil,
   MessageSquareQuote, ChevronDown, ChevronUp, ShieldCheck, Filter,
-  Zap, Eye, RotateCcw, Send,
+  Zap, Eye, RotateCcw, Send, TriangleAlert,
 } from "lucide-react";
 import type { PreAnalysisResult, PreAnalysisSuggestion, SugestaoResultado, Confianca } from "@/lib/mentoriaPreAnalysis";
 import {
@@ -73,6 +73,34 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 type FilterMode = "all" | "pending" | "accepted" | "adjusted" | "rejected";
+
+/* ─── Doubtful Criteria Alerts ─── */
+const SENSITIVE_CRITERIA = new Set([6, 11, 12, 17, 18]);
+
+interface CriterionAlert {
+  key: string;
+  label: string;
+  tooltip: string;
+}
+
+function getCriterionAlerts(
+  numero: number,
+  confianca: Confianca,
+  sugestao: SugestaoResultado,
+  evidencia?: string,
+): CriterionAlert[] {
+  const alerts: CriterionAlert[] = [];
+  if (confianca === "baixa") {
+    alerts.push({ key: "low-conf", label: "Baixa confiança", tooltip: "A IA tem baixa certeza neste critério — revise com atenção" });
+  }
+  if (sugestao === "SIM" && !evidencia) {
+    alerts.push({ key: "no-evidence", label: "Sem evidência", tooltip: "Sugestão SIM sem trecho de evidência no texto — valide manualmente" });
+  }
+  if (SENSITIVE_CRITERIA.has(numero)) {
+    alerts.push({ key: "sensitive", label: "Critério sensível", tooltip: "Este critério historicamente gera mais divergências — revise com cuidado" });
+  }
+  return alerts;
+}
 
 /* ─── Component ─── */
 const SemiAutoPanel = ({ analysis, iaResult, onConfirm }: SemiAutoPanelProps) => {
@@ -453,6 +481,26 @@ const SemiAutoPanel = ({ analysis, iaResult, onConfirm }: SemiAutoPanelProps) =>
                               Revisão obrigatória
                             </Badge>
                           )}
+
+                          {/* Doubtful criteria alerts */}
+                          {(() => {
+                            const alerts = getCriterionAlerts(item.numero, item.confianca, decision.sugestaoOriginal, item.evidencia);
+                            if (alerts.length === 0) return null;
+                            return alerts.map(alert => (
+                              <TooltipProvider key={alert.key}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-semibold bg-warning/10 text-warning border-warning/30 gap-0.5">
+                                      <TriangleAlert className="h-2.5 w-2.5" /> {alert.label}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs max-w-[250px]">
+                                    {alert.tooltip}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ));
+                          })()}
 
                           {/* Expand */}
                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => toggleExpand(item.numero)} disabled={confirmed}>
