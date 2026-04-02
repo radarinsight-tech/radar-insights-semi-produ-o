@@ -329,7 +329,7 @@ const c6: CriterionAnalyzer = (msgs, ctx) => {
   if (ctx.hasPriorContext && ctx.reactiveExecution.isReactive) {
     if (qCount >= 1) {
       const ev = findEvidence(msgs, /\?/, "atendente");
-      return { sugestao: "PARCIAL", justificativa: "A demanda estava indicada no contexto anterior. Atendente fez pergunta(s), mas sem validação confirmatória da necessidade real.", evidencia: ev, confianca: "media" };
+      return { sugestao: "NÃO", justificativa: "A demanda estava indicada no contexto anterior. Atendente fez pergunta(s), mas sem validação confirmatória da necessidade real.", evidencia: ev, confianca: "media" };
     }
     return { sugestao: "NÃO", justificativa: "A demanda estava indicada no contexto anterior, mas não houve validação ativa com o cliente. Atendente executou diretamente sem confirmar.", confianca: "alta" };
   }
