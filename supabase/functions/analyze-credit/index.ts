@@ -88,8 +88,13 @@ A análise SEMPRE começa pela Regra 01 (isenção) e sobe progressivamente. A R
    - ESTA É A REGRA DE FALLBACK: se nenhuma regra anterior se aplicar, usar esta.
 
 5. REGRA ESPECIAL — DÉBITO COM PROVEDOR DE INTERNET (sobrepõe todas as outras)
-   - Verificar se existe débito com provedor de internet, operadora de internet, provedor regional ou empresa do mesmo segmento de telecomunicações/internet.
-   - Se existir:
+   - Verificar se existe REGISTRO NEGATIVO, PENDÊNCIA, DÍVIDA ou APONTAMENTO com provedor de internet, operadora de internet, provedor regional ou empresa do mesmo segmento de telecomunicações/internet.
+   - ATENÇÃO — DISTINÇÃO CRÍTICA:
+     * Blocos como "Consultas anteriores", "Consultas realizadas", "Informante", "Origem da consulta", "Empresas que consultaram" indicam apenas que a empresa CONSULTOU o CPF/CNPJ. Isso NÃO é débito.
+     * Nomes de provedores/operadoras que aparecem SOMENTE nesses blocos de consulta NÃO devem ativar esta regra.
+     * possui_debito_provedor = true SOMENTE se o provedor/operadora aparecer como CREDOR em registro negativo, pendência financeira, dívida ou apontamento no SPC/Serasa.
+     * Na dúvida entre "consultou o CPF" e "tem dívida", marcar possui_debito_provedor = false.
+   - Se existir débito CONFIRMADO com provedor:
      - possui_debito_provedor = true
      - taxa_instalacao = 0
      - taxa_analise_credito = 1000
@@ -97,7 +102,7 @@ A análise SEMPRE começa pela Regra 01 (isenção) e sobe progressivamente. A R
      - regra_aplicada = "regra_especial_debito_provedor"
      - classificacao_final = "taxa_1000"
      - motivo_decisao = "Débito identificado com provedor de internet ou empresa do mesmo segmento. Taxa fixa de R$1.000,00 aplicada, valor revertido em abatimento decrescente das parcelas do plano contratado."
-   - Esta regra é NÃO CUMULATIVA com as demais. Se aplicada, SOBREPÕE qualquer outra faixa.
+     - Esta regra é NÃO CUMULATIVA com as demais. Se aplicada, SOBREPÕE qualquer outra faixa.
 
 VALIDAÇÃO DOCUMENTAL:
 - Documentos aceitos (SOMENTE em nome do contratante):
