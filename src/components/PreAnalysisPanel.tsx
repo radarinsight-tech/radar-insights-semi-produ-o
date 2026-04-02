@@ -218,6 +218,26 @@ const PreAnalysisPanel = ({ analysis, onAcceptAll }: PreAnalysisPanelProps) => {
                             <Sparkles className="h-2.5 w-2.5" /> Auto
                           </Badge>
 
+                          {/* Doubtful criteria alerts */}
+                          {(() => {
+                            const alerts = getCriterionAlerts(item.numero, item.confianca, item.sugestao, item.evidencia);
+                            if (alerts.length === 0) return null;
+                            return alerts.map(alert => (
+                              <TooltipProvider key={alert.key}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-semibold bg-warning/10 text-warning border-warning/30 gap-0.5">
+                                      <TriangleAlert className="h-2.5 w-2.5" /> {alert.label}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs max-w-[250px]">
+                                    {alert.tooltip}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ));
+                          })()}
+
                           {/* Accept button */}
                           {!isAccepted ? (
                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => acceptItem(item.numero)}>
