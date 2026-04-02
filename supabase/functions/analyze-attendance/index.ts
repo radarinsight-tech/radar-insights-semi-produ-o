@@ -133,7 +133,7 @@ INÍCIO DO ATENDIMENTO HUMANO: Começa quando o atendente resgata. Mensagem auto
 
 REGRA DE DECISÃO:
 - Evidência clara → SIM
-- Evidência parcial → SIM (registrar melhoria)
+- Evidência parcial ou inconclusiva → NÃO (registrar melhoria)
 - Ausência de evidência → NÃO
 - Critério não aplicável → FORA DO ESCOPO
 - Nunca inventar evidências.
