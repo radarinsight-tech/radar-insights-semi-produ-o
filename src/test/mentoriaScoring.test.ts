@@ -68,13 +68,13 @@ describe("Score calculation", () => {
     const result = calculateScore(makeRespostas("NÃO"));
     expect(result.nota100).toBe(0);
     expect(result.pontosObtidos).toBe(0);
-    expect(result.classificacao).toBe("Crítico");
+    expect(result.classificacao).toBe("Abaixo do esperado");
   });
 
-  it("all PARCIAL should give ~50", () => {
-    const result = calculateScore(makeRespostas("PARCIAL"));
-    expect(result.nota100).toBeGreaterThanOrEqual(49);
-    expect(result.nota100).toBeLessThanOrEqual(51);
+  it("all FORA DO ESCOPO should give 0 with 0 possíveis", () => {
+    const result = calculateScore(makeRespostas("FORA DO ESCOPO"));
+    expect(result.nota100).toBe(0);
+    expect(result.pontosPossiveis).toBe(0);
   });
 
   it("missing criteria default to NÃO", () => {
