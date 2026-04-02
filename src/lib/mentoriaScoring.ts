@@ -184,7 +184,6 @@ export interface CriterionFailureRate {
   nome: string;
   categoria: string;
   totalFalhas: number;
-  totalParcial: number;
   totalAcertos: number;
   totalAvaliacoes: number;
   taxaFalha: number; // 0-100
