@@ -219,7 +219,7 @@ const c1: CriterionAnalyzer = (msgs, ctx) => {
     }
     // Greeting with attendant name from speaker field (implicit presentation)
     if (/(?:olá|oi|bom\s+dia|boa\s+tarde|boa\s+noite)/i.test(firstAtt.text) && firstAtt.speaker && firstAtt.speaker.length >= 2) {
-      return { sugestao: "PARCIAL", justificativa: "Atendente cumprimentou mas não se identificou explicitamente pelo nome no texto.", evidencia: firstAtt.text.slice(0, 100), confianca: "media" };
+      return { sugestao: "NÃO", justificativa: "Atendente cumprimentou mas não se identificou explicitamente pelo nome no texto.", evidencia: firstAtt.text.slice(0, 100), confianca: "media" };
     }
   }
   return { sugestao: "NÃO", justificativa: "Não foi encontrada apresentação do atendente no histórico.", confianca: "media" };
