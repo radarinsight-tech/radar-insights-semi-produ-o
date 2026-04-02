@@ -437,7 +437,7 @@ const c10: CriterionAnalyzer = (msgs, ctx) => {
   }
   if (retencao && retencao.length >= 1) {
     const ev = findEvidence(msgs, retencaoPatterns, "atendente");
-    return { sugestao: "PARCIAL", justificativa: "Tentativa de retenção foi feita mas de forma superficial.", evidencia: ev, confianca: "media" };
+    return { sugestao: "NÃO", justificativa: "Tentativa de retenção foi feita mas de forma superficial.", evidencia: ev, confianca: "media" };
   }
   return { sugestao: "NÃO", justificativa: "Cliente mencionou cancelamento mas atendente não buscou retenção.", confianca: "alta" };
 };
