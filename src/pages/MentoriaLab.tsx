@@ -1774,7 +1774,9 @@ const MentoriaLab = () => {
               fileId: labFile.batchFileId || labFile.id,
               fileName: labFile.name,
             });
-            const response = await supabase.functions.invoke("analyze-attendance", { body: { text } });
+            // Build marked text with URA/HUMANO/PÓS-ATENDIMENTO markers from structured data
+            const markedText = buildMarkedText(labFile.structuredConversation, text);
+            const response = await supabase.functions.invoke("analyze-attendance", { body: { text: markedText } });
 
             // Categorize invoke errors
             if (response.error || response.data?.error) {
