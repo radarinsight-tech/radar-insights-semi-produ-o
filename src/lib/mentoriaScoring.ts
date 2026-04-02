@@ -40,7 +40,7 @@ export const CRITERIA_WEIGHTS: CriterionWeight[] = [
 
 export const TOTAL_POSSIBLE = CRITERIA_WEIGHTS.reduce((s, c) => s + c.peso, 0); // 100
 
-export type Classificacao = "Excelente" | "Bom atendimento" | "Abaixo do esperado" | "Crítico";
+export type Classificacao = "Excelente" | "Muito bom" | "Bom atendimento" | "Em desenvolvimento" | "Abaixo do esperado";
 
 export interface ScoringResult {
   pontosObtidos: number;
