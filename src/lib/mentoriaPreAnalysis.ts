@@ -354,7 +354,7 @@ const c7: CriterionAnalyzer = (msgs, ctx) => {
   if (ctx.hasPriorContext && ctx.reactiveExecution.isReactive) {
     if (ack && ack.length >= 1) {
       const ev = findEvidence(msgs, ackPatterns, "atendente");
-      return { sugestao: "PARCIAL", justificativa: "Atendente executou a solicitação com base no histórico, sem condução confirmatória com o cliente.", evidencia: ev, confianca: "media" };
+      return { sugestao: "NÃO", justificativa: "Atendente executou a solicitação com base no histórico, sem condução confirmatória com o cliente.", evidencia: ev, confianca: "media" };
     }
     return { sugestao: "NÃO", justificativa: "Solicitação resolvida a partir de contexto prévio, sem que o atendente confirmasse ou validasse a demanda com o cliente.", confianca: "media" };
   }
