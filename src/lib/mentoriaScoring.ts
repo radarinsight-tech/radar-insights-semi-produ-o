@@ -73,10 +73,11 @@ function isForaDoEscopo(resposta: SugestaoResultado): boolean {
 }
 
 export function classify(nota100: number): Classificacao {
-  if (nota100 >= 85) return "Excelente";
+  if (nota100 >= 90) return "Excelente";
+  if (nota100 >= 80) return "Muito bom";
   if (nota100 >= 65) return "Bom atendimento";
-  if (nota100 >= 45) return "Abaixo do esperado";
-  return "Crítico";
+  if (nota100 >= 45) return "Em desenvolvimento";
+  return "Abaixo do esperado";
 }
 
 export function classificacaoColor(cls: Classificacao): string {
