@@ -109,9 +109,9 @@ const PreAnalysisPanel = ({ analysis, onAcceptAll }: PreAnalysisPanelProps) => {
             <span className="text-muted-foreground">NÃO</span>
           </span>
           <span className="flex items-center gap-1.5">
-            <AlertCircle className="h-3.5 w-3.5 text-warning" />
-            <span className="font-bold text-warning">{stats.parcial}</span>
-            <span className="text-muted-foreground">PARCIAL</span>
+            <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="font-bold text-muted-foreground">{stats.fora}</span>
+            <span className="text-muted-foreground">N/A</span>
           </span>
           <span className="text-muted-foreground ml-auto">
             Confiança alta: <span className="font-bold text-foreground">{stats.alta}/19</span>
