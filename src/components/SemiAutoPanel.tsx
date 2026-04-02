@@ -10,7 +10,7 @@ import {
 import {
   CheckCircle2, XCircle, AlertCircle, Sparkles, Check, X, Pencil,
   MessageSquareQuote, ChevronDown, ChevronUp, ShieldCheck, Filter,
-  Zap, Eye, RotateCcw, Send,
+  Zap, Eye, RotateCcw, Send, TriangleAlert,
 } from "lucide-react";
 import type { PreAnalysisResult, PreAnalysisSuggestion, SugestaoResultado, Confianca } from "@/lib/mentoriaPreAnalysis";
 import {
