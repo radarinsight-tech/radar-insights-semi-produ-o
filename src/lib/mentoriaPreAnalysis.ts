@@ -534,7 +534,7 @@ const c16: CriterionAnalyzer = (msgs, ctx) => {
   }
   if (satis && satis.length >= 1) {
     const ev = findEvidence(msgs, satisfPatterns, "cliente");
-    return { sugestao: "PARCIAL", justificativa: "Cliente expressou alguma satisfação, mas de forma moderada.", evidencia: ev, confianca: "media" };
+    return { sugestao: "SIM", justificativa: "Cliente expressou satisfação de forma moderada.", evidencia: ev, confianca: "media" };
   }
   return { sugestao: "NÃO", justificativa: "Não há expressões claras de satisfação do cliente.", confianca: "baixa" };
 };
