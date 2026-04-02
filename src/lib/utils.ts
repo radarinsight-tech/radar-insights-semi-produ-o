@@ -29,10 +29,10 @@ export function formatNota(value: number): string {
 export function classificarNota(value: number): string {
   const nota = notaToScale10(value);
   if (nota >= 9.0) return "Excelente";
-  if (nota >= 7.0) return "Bom";
-  if (nota >= 5.0) return "Regular";
-  if (nota >= 3.0) return "Ruim";
-  return "Crítico";
+  if (nota >= 8.0) return "Muito bom";
+  if (nota >= 6.5) return "Bom";
+  if (nota >= 4.5) return "Em desenvolvimento";
+  return "Abaixo do esperado";
 }
 
 /**
@@ -42,13 +42,14 @@ export function classColorFromClassificacao(classificacao: string): string {
   switch (classificacao) {
     case "Excelente":
       return "bg-accent text-accent-foreground";
-    case "Bom":
+    case "Muito bom":
       return "bg-primary text-primary-foreground";
-    case "Regular":
+    case "Bom":
+    case "Bom atendimento":
+      return "bg-primary text-primary-foreground";
+    case "Em desenvolvimento":
       return "bg-warning text-warning-foreground";
-    case "Ruim":
-      return "bg-orange-500 text-white";
-    case "Crítico":
+    case "Abaixo do esperado":
       return "bg-destructive text-destructive-foreground";
     default:
       return "bg-muted text-muted-foreground";
@@ -65,10 +66,10 @@ export interface BonusTier {
 }
 
 export function calcularBonus(nota: number): BonusTier {
-  if (nota >= 90) return { classificacao: "Excelente", percentual: 100, valor: 1200 };
-  if (nota >= 80) return { classificacao: "Ótimo", percentual: 58, valor: 700 };
-  if (nota >= 60) return { classificacao: "Bom", percentual: 25, valor: 300 };
-  return { classificacao: "Fraco", percentual: 0, valor: 0 };
+  if (nota >= 85) return { classificacao: "Excelente", percentual: 100, valor: 1200 };
+  if (nota >= 75) return { classificacao: "Muito bom", percentual: 58, valor: 700 };
+  if (nota >= 55) return { classificacao: "Bom", percentual: 25, valor: 300 };
+  return { classificacao: "Abaixo", percentual: 0, valor: 0 };
 }
 
 /**

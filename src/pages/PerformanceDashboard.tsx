@@ -667,15 +667,14 @@ const PerformanceDashboard = () => {
 /* ═══ Attendant Detail Subcomponent ═══ */
 const AttendantDetail = ({ attendant }: { attendant: AttendantPerf }) => {
   const critPerf = useMemo(() => {
-    const counters = new Map<number, { sim: number; nao: number; parcial: number; total: number }>();
+    const counters = new Map<number, { sim: number; nao: number; total: number }>();
     for (const score of attendant.scores) {
       for (const det of score.detalhesPorCriterio) {
-        if (!counters.has(det.numero)) counters.set(det.numero, { sim: 0, nao: 0, parcial: 0, total: 0 });
+        if (!counters.has(det.numero)) counters.set(det.numero, { sim: 0, nao: 0, total: 0 });
         const c = counters.get(det.numero)!;
         c.total++;
         if (det.resposta === "SIM") c.sim++;
         else if (det.resposta === "NÃO") c.nao++;
-        else c.parcial++;
       }
     }
     return [...counters.entries()]

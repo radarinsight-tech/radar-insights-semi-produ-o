@@ -1,13 +1,13 @@
 /**
  * Mentoria Pre-Analysis Engine
- * Automatically suggests SIM/NÃO/PARCIAL for the 19 mentorship criteria
+ * Automatically suggests SIM/NÃO/FORA DO ESCOPO for the 19 mentorship criteria
  * based on structured conversation analysis.
  */
 
 import type { ParsedMessage, StructuredConversation } from "./conversationParser";
 import type { UraContext } from "./uraContextSummarizer";
 
-export type SugestaoResultado = "SIM" | "NÃO" | "PARCIAL" | "FORA DO ESCOPO";
+export type SugestaoResultado = "SIM" | "NÃO" | "FORA DO ESCOPO";
 export type Confianca = "alta" | "media" | "baixa";
 
 export interface PreAnalysisSuggestion {
@@ -219,7 +219,7 @@ const c1: CriterionAnalyzer = (msgs, ctx) => {
     }
     // Greeting with attendant name from speaker field (implicit presentation)
     if (/(?:olá|oi|bom\s+dia|boa\s+tarde|boa\s+noite)/i.test(firstAtt.text) && firstAtt.speaker && firstAtt.speaker.length >= 2) {
-      return { sugestao: "PARCIAL", justificativa: "Atendente cumprimentou mas não se identificou explicitamente pelo nome no texto.", evidencia: firstAtt.text.slice(0, 100), confianca: "media" };
+      return { sugestao: "NÃO", justificativa: "Atendente cumprimentou mas não se identificou explicitamente pelo nome no texto.", evidencia: firstAtt.text.slice(0, 100), confianca: "media" };
     }
   }
   return { sugestao: "NÃO", justificativa: "Não foi encontrada apresentação do atendente no histórico.", confianca: "media" };
@@ -284,13 +284,13 @@ const c3: CriterionAnalyzer = (msgs, ctx) => {
 // 4. Respondeu dentro do tempo adequado?
 const c4: CriterionAnalyzer = (msgs, ctx) => {
   const avg = ctx.avgResponseTimeSec;
-  if (avg == null) return { sugestao: "PARCIAL", justificativa: "Não foi possível calcular tempo de resposta (timestamps ausentes).", confianca: "baixa" };
+  if (avg == null) return { sugestao: "NÃO", justificativa: "Não foi possível calcular tempo de resposta (timestamps ausentes).", confianca: "baixa" };
   
   const avgMin = avg / 60;
-  // Up to 3 min → SIM, up to 5 min → SIM (within resolution window), up to 8 min → PARCIAL
+  // Up to 3 min → SIM, up to 5 min → SIM (within resolution window), above → NÃO
   if (avgMin <= 3) return { sugestao: "SIM", justificativa: `Tempo médio de resposta: ${avgMin.toFixed(1)} minutos (adequado).`, confianca: "alta" };
   if (avgMin <= 5) return { sugestao: "SIM", justificativa: `Tempo médio de resposta: ${avgMin.toFixed(1)} minutos (dentro do limite aceitável).`, confianca: "media" };
-  if (avgMin <= 8) return { sugestao: "PARCIAL", justificativa: `Tempo médio de resposta: ${avgMin.toFixed(1)} minutos (levemente acima do ideal).`, confianca: "alta" };
+  if (avgMin <= 8) return { sugestao: "NÃO", justificativa: `Tempo médio de resposta: ${avgMin.toFixed(1)} minutos (acima do ideal).`, confianca: "alta" };
   return { sugestao: "NÃO", justificativa: `Tempo médio de resposta: ${avgMin.toFixed(1)} minutos (acima do esperado).`, confianca: "alta" };
 };
 
@@ -307,7 +307,7 @@ const c5: CriterionAnalyzer = (msgs, ctx) => {
   }
   if (informal && informal.length >= 1) {
     const ev = findEvidence(msgs, informalPatterns, "atendente");
-    return { sugestao: "PARCIAL", justificativa: `Algumas expressões informais detectadas: ${informal.join(", ")}.`, evidencia: ev, confianca: "media" };
+    return { sugestao: "NÃO", justificativa: `Expressões informais detectadas: ${informal.join(", ")}.`, evidencia: ev, confianca: "media" };
   }
   if (prof && prof.length >= 2) {
     return { sugestao: "SIM", justificativa: "Linguagem profissional consistente ao longo do atendimento.", confianca: "media" };
@@ -329,7 +329,7 @@ const c6: CriterionAnalyzer = (msgs, ctx) => {
   if (ctx.hasPriorContext && ctx.reactiveExecution.isReactive) {
     if (qCount >= 1) {
       const ev = findEvidence(msgs, /\?/, "atendente");
-      return { sugestao: "PARCIAL", justificativa: "A demanda estava indicada no contexto anterior. Atendente fez pergunta(s), mas sem validação confirmatória da necessidade real.", evidencia: ev, confianca: "media" };
+      return { sugestao: "NÃO", justificativa: "A demanda estava indicada no contexto anterior. Atendente fez pergunta(s), mas sem validação confirmatória da necessidade real.", evidencia: ev, confianca: "media" };
     }
     return { sugestao: "NÃO", justificativa: "A demanda estava indicada no contexto anterior, mas não houve validação ativa com o cliente. Atendente executou diretamente sem confirmar.", confianca: "alta" };
   }
@@ -340,7 +340,7 @@ const c6: CriterionAnalyzer = (msgs, ctx) => {
   }
   if (qCount >= 1) {
     const ev = findEvidence(msgs, /\?/, "atendente");
-    return { sugestao: "PARCIAL", justificativa: `Atendente fez ${qCount} pergunta(s), mas sem sondagem aprofundada.`, evidencia: ev, confianca: "media" };
+    return { sugestao: "NÃO", justificativa: `Atendente fez ${qCount} pergunta(s), mas sem sondagem aprofundada.`, evidencia: ev, confianca: "media" };
   }
   return { sugestao: "NÃO", justificativa: "Atendente não fez perguntas para compreender o problema.", confianca: "media" };
 };
@@ -354,7 +354,7 @@ const c7: CriterionAnalyzer = (msgs, ctx) => {
   if (ctx.hasPriorContext && ctx.reactiveExecution.isReactive) {
     if (ack && ack.length >= 1) {
       const ev = findEvidence(msgs, ackPatterns, "atendente");
-      return { sugestao: "PARCIAL", justificativa: "Atendente executou a solicitação com base no histórico, sem condução confirmatória com o cliente.", evidencia: ev, confianca: "media" };
+      return { sugestao: "NÃO", justificativa: "Atendente executou a solicitação com base no histórico, sem condução confirmatória com o cliente.", evidencia: ev, confianca: "media" };
     }
     return { sugestao: "NÃO", justificativa: "Solicitação resolvida a partir de contexto prévio, sem que o atendente confirmasse ou validasse a demanda com o cliente.", confianca: "media" };
   }
@@ -365,7 +365,7 @@ const c7: CriterionAnalyzer = (msgs, ctx) => {
   }
   if (ack && ack.length >= 1) {
     const ev = findEvidence(msgs, ackPatterns, "atendente");
-    return { sugestao: "PARCIAL", justificativa: "Indicação parcial de identificação da demanda.", evidencia: ev, confianca: "baixa" };
+    return { sugestao: "NÃO", justificativa: "Indicação fraca de identificação da demanda.", evidencia: ev, confianca: "baixa" };
   }
   return { sugestao: "NÃO", justificativa: "Não há evidência clara de que o atendente identificou a solicitação.", confianca: "baixa" };
 };
@@ -379,7 +379,7 @@ const c8: CriterionAnalyzer = (msgs, ctx) => {
   
   // In reactive executions, listening is limited since attendant didn't engage
   if (ctx.reactiveExecution.isReactive && lCount < 2) {
-    return { sugestao: "PARCIAL", justificativa: "Atendimento de execução reativa — interação limitada para avaliar escuta ativa. O atendente executou sem engajamento conversacional.", confianca: "media" };
+    return { sugestao: "NÃO", justificativa: "Atendimento de execução reativa — interação limitada para avaliar escuta ativa. O atendente executou sem engajamento conversacional.", confianca: "media" };
   }
   
   if (lCount >= 3) {
@@ -388,7 +388,7 @@ const c8: CriterionAnalyzer = (msgs, ctx) => {
   }
   if (lCount >= 1) {
     const ev = findEvidence(msgs, listenPatterns, "atendente");
-    return { sugestao: "PARCIAL", justificativa: "Sinais moderados de disposição para ouvir.", evidencia: ev, confianca: "baixa" };
+    return { sugestao: "NÃO", justificativa: "Sinais insuficientes de disposição para ouvir.", evidencia: ev, confianca: "baixa" };
   }
   return { sugestao: "NÃO", justificativa: "Não foram encontradas expressões de escuta ativa.", confianca: "baixa" };
 };
@@ -405,7 +405,7 @@ const c9: CriterionAnalyzer = (msgs, ctx) => {
   if (ctx.reactiveExecution.isReactive) {
     if (pCount >= 1 || (avgTime != null && avgTime <= 120)) {
       const ev = findEvidence(msgs, proactivePatterns, "atendente");
-      return { sugestao: "PARCIAL", justificativa: "Atendente foi ágil na execução, porém atuou de forma reativa com base no contexto prévio, sem proatividade na condução do atendimento.", evidencia: ev, confianca: "media" };
+      return { sugestao: "NÃO", justificativa: "Atendente foi ágil na execução, porém atuou de forma reativa com base no contexto prévio, sem proatividade na condução do atendimento.", evidencia: ev, confianca: "media" };
     }
     return { sugestao: "NÃO", justificativa: "Execução reativa sem evidências de agilidade ou proatividade na condução.", confianca: "media" };
   }
@@ -416,7 +416,7 @@ const c9: CriterionAnalyzer = (msgs, ctx) => {
   }
   if (pCount >= 1) {
     const ev = findEvidence(msgs, proactivePatterns, "atendente");
-    return { sugestao: "PARCIAL", justificativa: "Alguma proatividade detectada, mas poderia ser mais ágil.", evidencia: ev, confianca: "baixa" };
+    return { sugestao: "NÃO", justificativa: "Proatividade insuficiente — poderia ser mais ágil.", evidencia: ev, confianca: "baixa" };
   }
   return { sugestao: "NÃO", justificativa: "Não foram encontradas evidências claras de agilidade ou proatividade.", confianca: "baixa" };
 };
@@ -437,7 +437,7 @@ const c10: CriterionAnalyzer = (msgs, ctx) => {
   }
   if (retencao && retencao.length >= 1) {
     const ev = findEvidence(msgs, retencaoPatterns, "atendente");
-    return { sugestao: "PARCIAL", justificativa: "Tentativa de retenção foi feita mas de forma superficial.", evidencia: ev, confianca: "media" };
+    return { sugestao: "NÃO", justificativa: "Tentativa de retenção foi feita mas de forma superficial.", evidencia: ev, confianca: "media" };
   }
   return { sugestao: "NÃO", justificativa: "Cliente mencionou cancelamento mas atendente não buscou retenção.", confianca: "alta" };
 };
@@ -499,7 +499,7 @@ const c14: CriterionAnalyzer = (msgs, ctx) => {
   }
   if (tests && tests.length >= 1) {
     const ev = findEvidence(msgs, testPatterns, "atendente");
-    return { sugestao: "PARCIAL", justificativa: "Teste parcial identificado, mas sem confirmação completa.", evidencia: ev, confianca: "media" };
+    return { sugestao: "NÃO", justificativa: "Teste parcial identificado, mas sem confirmação completa.", evidencia: ev, confianca: "media" };
   }
   return { sugestao: "NÃO", justificativa: "Atendimento técnico sem testes realizados com o cliente.", confianca: "media" };
 };
@@ -534,7 +534,7 @@ const c16: CriterionAnalyzer = (msgs, ctx) => {
   }
   if (satis && satis.length >= 1) {
     const ev = findEvidence(msgs, satisfPatterns, "cliente");
-    return { sugestao: "PARCIAL", justificativa: "Cliente expressou alguma satisfação, mas de forma moderada.", evidencia: ev, confianca: "media" };
+    return { sugestao: "SIM", justificativa: "Cliente expressou satisfação de forma moderada.", evidencia: ev, confianca: "media" };
   }
   return { sugestao: "NÃO", justificativa: "Não há expressões claras de satisfação do cliente.", confianca: "baixa" };
 };

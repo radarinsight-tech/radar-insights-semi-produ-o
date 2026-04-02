@@ -40,7 +40,7 @@ export const CRITERIA_WEIGHTS: CriterionWeight[] = [
 
 export const TOTAL_POSSIBLE = CRITERIA_WEIGHTS.reduce((s, c) => s + c.peso, 0); // 100
 
-export type Classificacao = "Excelente" | "Bom atendimento" | "Abaixo do esperado" | "Crítico";
+export type Classificacao = "Excelente" | "Muito bom" | "Bom atendimento" | "Em desenvolvimento" | "Abaixo do esperado";
 
 export interface ScoringResult {
   pontosObtidos: number;
@@ -62,7 +62,6 @@ export interface ScoringResult {
 function resultToPoints(resposta: SugestaoResultado, peso: number): number {
   switch (resposta) {
     case "SIM": return peso;
-    case "PARCIAL": return Math.round(peso * 0.5 * 10) / 10;
     case "NÃO": return 0;
     case "FORA DO ESCOPO": return 0; // excluded from calculation
     default: return 0;
@@ -74,27 +73,30 @@ function isForaDoEscopo(resposta: SugestaoResultado): boolean {
 }
 
 export function classify(nota100: number): Classificacao {
-  if (nota100 >= 85) return "Excelente";
+  if (nota100 >= 90) return "Excelente";
+  if (nota100 >= 80) return "Muito bom";
   if (nota100 >= 65) return "Bom atendimento";
-  if (nota100 >= 45) return "Abaixo do esperado";
-  return "Crítico";
+  if (nota100 >= 45) return "Em desenvolvimento";
+  return "Abaixo do esperado";
 }
 
 export function classificacaoColor(cls: Classificacao): string {
   switch (cls) {
     case "Excelente": return "text-accent";
+    case "Muito bom": return "text-primary";
     case "Bom atendimento": return "text-primary";
-    case "Abaixo do esperado": return "text-warning";
-    case "Crítico": return "text-destructive";
+    case "Em desenvolvimento": return "text-warning";
+    case "Abaixo do esperado": return "text-destructive";
   }
 }
 
 export function classificacaoBg(cls: Classificacao): string {
   switch (cls) {
     case "Excelente": return "bg-accent/10 border-accent/20";
+    case "Muito bom": return "bg-primary/10 border-primary/20";
     case "Bom atendimento": return "bg-primary/10 border-primary/20";
-    case "Abaixo do esperado": return "bg-warning/10 border-warning/20";
-    case "Crítico": return "bg-destructive/10 border-destructive/20";
+    case "Em desenvolvimento": return "bg-warning/10 border-warning/20";
+    case "Abaixo do esperado": return "bg-destructive/10 border-destructive/20";
   }
 }
 
@@ -168,7 +170,7 @@ export function scoreFromFullReport(fullReport: any): ScoringResult | null {
 
   const respostas: Array<{ numero: number; resposta: SugestaoResultado }> = criterios.map((c: any) => ({
     numero: c.numero,
-    resposta: c.resultado === "SIM" ? "SIM" : c.resultado === "NÃO" ? "NÃO" : c.resultado === "FORA DO ESCOPO" ? "FORA DO ESCOPO" : "PARCIAL",
+    resposta: (c.resultado === "SIM" ? "SIM" : c.resultado === "FORA DO ESCOPO" ? "FORA DO ESCOPO" : "NÃO") as SugestaoResultado,
   }));
 
   return calculateScore(respostas);
@@ -182,7 +184,6 @@ export interface CriterionFailureRate {
   nome: string;
   categoria: string;
   totalFalhas: number;
-  totalParcial: number;
   totalAcertos: number;
   totalAvaliacoes: number;
   taxaFalha: number; // 0-100
@@ -192,10 +193,10 @@ export interface CriterionFailureRate {
 export function analyzeCriteriaFailures(
   evaluations: Array<{ full_report: any }>
 ): CriterionFailureRate[] {
-  const counters = new Map<number, { nao: number; parcial: number; sim: number; total: number }>();
+  const counters = new Map<number, { nao: number; sim: number; total: number }>();
 
   for (const cw of CRITERIA_WEIGHTS) {
-    counters.set(cw.numero, { nao: 0, parcial: 0, sim: 0, total: 0 });
+    counters.set(cw.numero, { nao: 0, sim: 0, total: 0 });
   }
 
   for (const ev of evaluations) {
@@ -208,7 +209,6 @@ export function analyzeCriteriaFailures(
       counter.total++;
       if (c.resultado === "SIM") counter.sim++;
       else if (c.resultado === "NÃO") counter.nao++;
-      else counter.parcial++;
     }
   }
 
@@ -219,7 +219,6 @@ export function analyzeCriteriaFailures(
       nome: cw.nome,
       categoria: cw.categoria,
       totalFalhas: c.nao,
-      totalParcial: c.parcial,
       totalAcertos: c.sim,
       totalAvaliacoes: c.total,
       taxaFalha: c.total > 0 ? Math.round((c.nao / c.total) * 100) : 0,

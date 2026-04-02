@@ -19,7 +19,6 @@ const confiancaConfig: Record<Confianca, { label: string; color: string }> = {
 const sugestaoConfig: Record<SugestaoResultado, { label: string; icon: typeof CheckCircle2; color: string; bg: string }> = {
   SIM: { label: "SIM", icon: CheckCircle2, color: "text-accent", bg: "bg-accent/10 border-accent/20" },
   NÃO: { label: "NÃO", icon: XCircle, color: "text-destructive", bg: "bg-destructive/10 border-destructive/20" },
-  PARCIAL: { label: "PARCIAL", icon: AlertCircle, color: "text-warning", bg: "bg-warning/10 border-warning/20" },
   "FORA DO ESCOPO": { label: "N/A", icon: AlertCircle, color: "text-muted-foreground", bg: "bg-muted/50 border-muted-foreground/20" },
 };
 
@@ -51,9 +50,9 @@ const PreAnalysisPanel = ({ analysis, onAcceptAll }: PreAnalysisPanelProps) => {
   const stats = useMemo(() => {
     const sim = analysis.suggestions.filter(s => s.sugestao === "SIM").length;
     const nao = analysis.suggestions.filter(s => s.sugestao === "NÃO").length;
-    const parcial = analysis.suggestions.filter(s => s.sugestao === "PARCIAL").length;
+    const fora = analysis.suggestions.filter(s => s.sugestao === "FORA DO ESCOPO").length;
     const alta = analysis.suggestions.filter(s => s.confianca === "alta").length;
-    return { sim, nao, parcial, alta };
+    return { sim, nao, fora, alta };
   }, [analysis.suggestions]);
 
   const toggleExpand = (num: number) => {
@@ -110,9 +109,9 @@ const PreAnalysisPanel = ({ analysis, onAcceptAll }: PreAnalysisPanelProps) => {
             <span className="text-muted-foreground">NÃO</span>
           </span>
           <span className="flex items-center gap-1.5">
-            <AlertCircle className="h-3.5 w-3.5 text-warning" />
-            <span className="font-bold text-warning">{stats.parcial}</span>
-            <span className="text-muted-foreground">PARCIAL</span>
+            <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="font-bold text-muted-foreground">{stats.fora}</span>
+            <span className="text-muted-foreground">N/A</span>
           </span>
           <span className="text-muted-foreground ml-auto">
             Confiança alta: <span className="font-bold text-foreground">{stats.alta}/19</span>
