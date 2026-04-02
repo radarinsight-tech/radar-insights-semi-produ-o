@@ -405,7 +405,7 @@ const c9: CriterionAnalyzer = (msgs, ctx) => {
   if (ctx.reactiveExecution.isReactive) {
     if (pCount >= 1 || (avgTime != null && avgTime <= 120)) {
       const ev = findEvidence(msgs, proactivePatterns, "atendente");
-      return { sugestao: "PARCIAL", justificativa: "Atendente foi ágil na execução, porém atuou de forma reativa com base no contexto prévio, sem proatividade na condução do atendimento.", evidencia: ev, confianca: "media" };
+      return { sugestao: "NÃO", justificativa: "Atendente foi ágil na execução, porém atuou de forma reativa com base no contexto prévio, sem proatividade na condução do atendimento.", evidencia: ev, confianca: "media" };
     }
     return { sugestao: "NÃO", justificativa: "Execução reativa sem evidências de agilidade ou proatividade na condução.", confianca: "media" };
   }
