@@ -1,6 +1,6 @@
 /**
  * Mentoria Pre-Analysis Engine
- * Automatically suggests SIM/NÃO/PARCIAL for the 19 mentorship criteria
+ * Automatically suggests SIM/NÃO/FORA DO ESCOPO for the 19 mentorship criteria
  * based on structured conversation analysis.
  */
 
