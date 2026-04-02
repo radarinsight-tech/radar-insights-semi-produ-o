@@ -14,6 +14,7 @@ import {
   scoreFromFullReport,
   analyzeCriteriaFailures,
 } from "@/lib/mentoriaScoring";
+import { calcularBonus } from "@/lib/utils";
 import type { SugestaoResultado } from "@/lib/mentoriaPreAnalysis";
 
 // ─── Helpers ────────────────────────────────────────────────────────────
