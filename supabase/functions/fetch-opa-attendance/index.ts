@@ -50,24 +50,22 @@ function transformMessages(messages: OpaMessage[]): string {
     .join("\n");
 }
 
-async function opaFetch(path: string, params?: Record<string, string>) {
+async function opaFetch(path: string, body?: Record<string, unknown>) {
   const url = new URL(path, OPA_BASE_URL);
-  if (params) {
-    for (const [k, v] of Object.entries(params)) {
-      url.searchParams.set(k, v);
-    }
-  }
 
   const res = await fetch(url.toString(), {
+    method: "GET",
     headers: {
       Authorization: `Bearer ${OPA_TOKEN}`,
       Accept: "application/json",
+      "Content-Type": "application/json",
     },
+    ...(body ? { body: JSON.stringify(body) } : {}),
   });
 
   if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Opa API ${res.status}: ${body}`);
+    const text = await res.text();
+    throw new Error(`Opa API ${res.status}: ${text}`);
   }
   return res.json();
 }
