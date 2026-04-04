@@ -19,6 +19,69 @@ interface OpaMessage {
   [key: string]: unknown;
 }
 
+function buildQueryString(body?: Record<string, unknown>): string {
+  if (!body) return "";
+
+  const params = new URLSearchParams();
+  const filter = body.filter;
+  const options = body.options;
+
+  if (filter && typeof filter === "object" && !Array.isArray(filter)) {
+    for (const [key, value] of Object.entries(filter)) {
+      if (value !== undefined && value !== null && value !== "") {
+        params.set(key, String(value));
+      }
+    }
+  }
+
+  if (options && typeof options === "object" && !Array.isArray(options)) {
+    for (const [key, value] of Object.entries(options)) {
+      if (value !== undefined && value !== null && value !== "") {
+        params.set(key, String(value));
+      }
+    }
+  }
+
+  return params.toString();
+}
+
+function isHtmlResponse(contentType: string | null, text: string): boolean {
+  const trimmed = text.trimStart();
+  return (
+    contentType?.toLowerCase().includes("text/html") === true ||
+    trimmed.startsWith("<!DOCTYPE") ||
+    trimmed.startsWith("<html")
+  );
+}
+
+async function parseOpaResponse(res: Response): Promise<unknown> {
+  const contentType = res.headers.get("content-type");
+  const text = await res.text();
+
+  if (isHtmlResponse(contentType, text)) {
+    const error = new Error("OPA_HTML_RESPONSE");
+    (error as Error & { status?: number; bodyPreview?: string }).status = res.status;
+    (error as Error & { status?: number; bodyPreview?: string }).bodyPreview = text.slice(0, 300);
+    throw error;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    if (isHtmlResponse(contentType, text)) {
+      const error = new Error("OPA_HTML_RESPONSE");
+      (error as Error & { status?: number; bodyPreview?: string }).status = res.status;
+      (error as Error & { status?: number; bodyPreview?: string }).bodyPreview = text.slice(0, 300);
+      throw error;
+    }
+
+    const error = new Error(`Opa API ${res.status}: ${text.slice(0, 300)}`);
+    (error as Error & { status?: number; bodyPreview?: string }).status = res.status;
+    (error as Error & { status?: number; bodyPreview?: string }).bodyPreview = text.slice(0, 300);
+    throw error;
+  }
+}
+
 function extractText(mensagem: string | Record<string, unknown> | null | undefined): string {
   if (!mensagem) return "";
   if (typeof mensagem === "string") return mensagem.trim();
@@ -59,20 +122,67 @@ function transformMessages(messages: OpaMessage[]): string {
 
 async function opaFetch(path: string, body?: Record<string, unknown>) {
   const url = new URL(path, OPA_BASE_URL);
-  const res = await fetch(url.toString(), {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${OPA_TOKEN}`,
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Opa API ${res.status}: ${text}`);
+  const headers = {
+    Authorization: `Bearer ${OPA_TOKEN}`,
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+
+  const tryPost = async () => {
+    const res = await fetch(url.toString(), {
+      method: "POST",
+      headers,
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+
+    const data = await parseOpaResponse(res);
+    if (!res.ok) {
+      throw new Error(`Opa API ${res.status}: ${JSON.stringify(data).slice(0, 300)}`);
+    }
+    return data;
+  };
+
+  const tryGet = async () => {
+    const queryString = buildQueryString(body);
+    const fallbackUrl = queryString ? `${url.toString()}?${queryString}` : url.toString();
+    const res = await fetch(fallbackUrl, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${OPA_TOKEN}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await parseOpaResponse(res);
+    if (!res.ok) {
+      throw new Error(`Opa API ${res.status}: ${JSON.stringify(data).slice(0, 300)}`);
+    }
+    return data;
+  };
+
+  try {
+    return await tryPost();
+  } catch (postError) {
+    const postDetails = postError as Error & { status?: number; bodyPreview?: string };
+    if (postDetails.message !== "OPA_HTML_RESPONSE") {
+      throw postError;
+    }
+
+    try {
+      return await tryGet();
+    } catch (getError) {
+      const getDetails = getError as Error & { status?: number; bodyPreview?: string };
+      const postStatus = postDetails.status ?? "unknown";
+      const getStatus = getDetails.status ?? "unknown";
+      const postBody = postDetails.bodyPreview ?? postDetails.message;
+      const getBody = getDetails.bodyPreview ?? getDetails.message;
+
+      throw new Error(
+        `Opa API fallback failed. POST status ${postStatus}: ${postBody}. GET status ${getStatus}: ${getBody}`
+      );
+    }
   }
-  return res.json();
 }
 
 Deno.serve(async (req) => {
