@@ -60,7 +60,7 @@ function transformMessages(messages: OpaMessage[]): string {
 async function opaFetch(path: string, body?: Record<string, unknown>) {
   const url = new URL(path, OPA_BASE_URL);
   const res = await fetch(url.toString(), {
-    method: "GET",
+    method: "POST",
     headers: {
       Authorization: `Bearer ${OPA_TOKEN}`,
       Accept: "application/json",
