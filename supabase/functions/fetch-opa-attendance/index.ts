@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
       if (dataFim) query.dataFim = dataFim;
       if (limite) query.limite = String(limite);
 
-      const data = await opaFetch("/atendimentos", query);
+      const data = await opaFetch("/api/v1/atendimento", query);
 
       const attendances = Array.isArray(data) ? data : data?.atendimentos ?? data?.data ?? [];
 
@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      const data = await opaFetch(`/atendimentos/${attendanceId}/mensagens`);
+      const data = await opaFetch("/api/v1/atendimento/mensagem", { id_rota: attendanceId });
 
       const rawMessages: OpaMessage[] = Array.isArray(data)
         ? data
