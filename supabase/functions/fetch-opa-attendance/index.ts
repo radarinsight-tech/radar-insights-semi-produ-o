@@ -7,27 +7,35 @@ const OPA_BASE_URL = Deno.env.get("OPA_SUITE_BASE_URL") || "";
 const OPA_TOKEN = Deno.env.get("OPA_SUITE_TOKEN") || "";
 
 interface OpaMessage {
-  id: string;
-  mensagem?: string;
+  _id: string;
+  id_rota?: string;
+  mensagem?: string | Record<string, unknown> | null;
   data?: string;
   tipo?: string;
   tipoDestinatario?: string;
   id_user?: string | null;
-  id_atend?: { id?: string; nome?: string; tipo?: string } | string | null;
+  id_atend?: string | null;
   arquivo?: string | null;
   [key: string]: unknown;
 }
 
+function extractText(mensagem: string | Record<string, unknown> | null | undefined): string {
+  if (!mensagem) return "";
+  if (typeof mensagem === "string") return mensagem.trim();
+  const titulo = typeof mensagem.titulo === "string" ? mensagem.titulo.trim() : "";
+  let opcoes = "";
+  if (Array.isArray(mensagem.opcoes)) {
+    const textos = mensagem.opcoes
+      .map((o: Record<string, unknown>) => (typeof o.texto === "string" ? o.texto : ""))
+      .filter(Boolean);
+    if (textos.length) opcoes = `Opções: ${textos.join("; ")}`;
+  }
+  return [titulo, opcoes].filter(Boolean).join(" | ");
+}
+
 function classifyAuthor(msg: OpaMessage): string {
   if (msg.id_user) return "Cliente";
-
-  const atend = msg.id_atend;
-  if (atend && typeof atend === "object") {
-    if (atend.tipo === "bot") return "Bot";
-    return atend.nome || "Atendente";
-  }
-  if (atend && typeof atend === "string") return "Atendente";
-
+  if (msg.id_atend) return "Atendente";
   return "Sistema";
 }
 
@@ -35,14 +43,13 @@ function transformMessages(messages: OpaMessage[]): string {
   const sorted = [...messages].sort(
     (a, b) => new Date(a.data || "").getTime() - new Date(b.data || "").getTime()
   );
-
   return sorted
     .map((msg) => {
       const author = classifyAuthor(msg);
       const ts = msg.data
         ? new Date(msg.data).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
         : "??";
-      const text = (msg.mensagem || "").trim();
+      const text = extractText(msg.mensagem);
       if (!text) return null;
       return `[${ts}] ${author}: ${text}`;
     })
@@ -52,7 +59,6 @@ function transformMessages(messages: OpaMessage[]): string {
 
 async function opaFetch(path: string, body?: Record<string, unknown>) {
   const url = new URL(path, OPA_BASE_URL);
-
   const res = await fetch(url.toString(), {
     method: "GET",
     headers: {
@@ -62,7 +68,6 @@ async function opaFetch(path: string, body?: Record<string, unknown>) {
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
-
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Opa API ${res.status}: ${text}`);
@@ -85,7 +90,6 @@ Deno.serve(async (req) => {
 
     const { action, ...params } = await req.json();
 
-    // --- LIST: listar atendimentos finalizados ---
     if (action === "list") {
       const { status, dataInicio, dataFim, limite } = params as {
         status?: string;
@@ -94,30 +98,27 @@ Deno.serve(async (req) => {
         limite?: number;
       };
 
-      const filter: Record<string, unknown> = {};
-      filter.status = status || "F"; // F = finalizado
-      if (dataInicio) filter.dataInicio = dataInicio;
-      if (dataFim) filter.dataFim = dataFim;
+      const filter: Record<string, unknown> = { status: status || "F" };
+      if (dataInicio) filter.dataInicialAbertura = dataInicio;
+      if (dataFim) filter.dataFinalAbertura = dataFim;
 
-      const options: Record<string, unknown> = {};
-      if (limite) options.limite = limite;
+      const data = await opaFetch("/api/v1/atendimento", {
+        filter,
+        options: { limit: limite || 100 },
+      });
 
-      const data = await opaFetch("/api/v1/atendimento", { filter, options });
+      const attendances: Record<string, unknown>[] = Array.isArray(data?.data) ? data.data : [];
 
-      const attendances = Array.isArray(data) ? data : data?.atendimentos ?? data?.data ?? [];
-
-      const list = attendances.map((a: Record<string, unknown>) => ({
-        id: a.id,
-        protocolo: a.protocolo || a.id,
-        cliente: a.cliente || a.nome_cliente || null,
-        atendente: typeof a.atendente === "object" && a.atendente
-          ? (a.atendente as Record<string, unknown>).nome
-          : a.atendente || null,
-        status: a.status,
-        data_inicio: a.data_inicio || a.dataInicio || null,
-        data_fim: a.data_fim || a.dataFim || null,
+      const list = attendances.map((a) => ({
+        id: a._id,
+        protocolo: a.protocolo || a._id,
+        cliente: a.id_cliente || null,
+        atendente: a.id_atendente || null,
+        status: a.status || null,
+        data_inicio: a.date || null,
+        data_fim: a.fim || null,
         canal: a.canal || null,
-        setor: a.setor || a.departamento || null,
+        setor: a.setor || null,
       }));
 
       return new Response(JSON.stringify({ attendances: list, total: list.length }), {
@@ -125,7 +126,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- MESSAGES: buscar mensagens + transformer ---
     if (action === "messages") {
       const { attendanceId } = params as { attendanceId?: string };
       if (!attendanceId) {
@@ -135,20 +135,18 @@ Deno.serve(async (req) => {
         );
       }
 
-      const data = await opaFetch("/api/v1/atendimento/mensagem", { id_rota: attendanceId });
+      const data = await opaFetch("/api/v1/atendimento/mensagem", {
+        filter: { id_rota: attendanceId },
+        options: { limit: 100 },
+      });
 
-      const rawMessages: OpaMessage[] = Array.isArray(data)
-        ? data
-        : data?.mensagens ?? data?.data ?? [];
-
+      const rawMessages: OpaMessage[] = Array.isArray(data?.data) ? data.data : [];
       const structuredText = transformMessages(rawMessages);
 
-      // Extrair nome do atendente (primeiro humano encontrado)
       let attendantName: string | null = null;
       for (const msg of rawMessages) {
-        const atend = msg.id_atend;
-        if (atend && typeof atend === "object" && atend.tipo !== "bot" && atend.nome) {
-          attendantName = atend.nome;
+        if (msg.id_atend && !msg.id_user) {
+          attendantName = String(msg.id_atend);
           break;
         }
       }
