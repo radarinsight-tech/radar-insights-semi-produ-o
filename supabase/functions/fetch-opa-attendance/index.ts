@@ -94,14 +94,15 @@ Deno.serve(async (req) => {
         limite?: number;
       };
 
-      const query: Record<string, string> = {};
-      if (status) query.status = status;
-      else query.status = "F"; // F = finalizado
-      if (dataInicio) query.dataInicio = dataInicio;
-      if (dataFim) query.dataFim = dataFim;
-      if (limite) query.limite = String(limite);
+      const filter: Record<string, unknown> = {};
+      filter.status = status || "F"; // F = finalizado
+      if (dataInicio) filter.dataInicio = dataInicio;
+      if (dataFim) filter.dataFim = dataFim;
 
-      const data = await opaFetch("/api/v1/atendimento", query);
+      const options: Record<string, unknown> = {};
+      if (limite) options.limite = limite;
+
+      const data = await opaFetch("/api/v1/atendimento", { filter, options });
 
       const attendances = Array.isArray(data) ? data : data?.atendimentos ?? data?.data ?? [];
 
