@@ -3835,6 +3835,25 @@ const MentoriaLab = () => {
                         </PopoverContent>
                       </Popover>
                     </div>
+
+                    {/* Attendant filter — in top card before fetch */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Atendente</label>
+                      <Select value={opa.filterAtendente} onValueChange={opa.setFilterAtendente}>
+                        <SelectTrigger className="w-[180px] h-9 text-xs">
+                          <SelectValue placeholder="Todos atendentes" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Todos atendentes</SelectItem>
+                          <SelectItem value="sem_atendente">Sem atendente</SelectItem>
+                          <SelectItem value="somente_humanos">Somente humanos</SelectItem>
+                          <SelectItem value="somente_bot">Somente BOT/sistema</SelectItem>
+                          {opa.atendentes.map((a) => (
+                            <SelectItem key={a} value={a}>{friendlyName(a)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   {/* Action button */}
