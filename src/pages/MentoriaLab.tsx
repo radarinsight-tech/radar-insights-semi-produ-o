@@ -4219,7 +4219,31 @@ const MentoriaLab = () => {
         audioBlobs={mentoriaFile?.audioBlobs}
         imageBlobs={mentoriaFile?.imageBlobs}
       />
-      {/* Parser Diagnostic Dialog (admin-only) */}
+      {/* Opa Suite MentoriaDetailDialog */}
+      <MentoriaDetailDialog
+        open={!!opaMentoriaFile}
+        onOpenChange={(open) => {
+          if (!open) setOpaMentoriaFile(null);
+        }}
+        result={opaMentoriaFile?.result}
+        fileName={opaMentoriaFile?.name || ""}
+        rawText={opaMentoriaFile?.text}
+        atendente={opaMentoriaFile?.atendente}
+        structuredConversation={opaMentoriaFile?.structuredConversation}
+        workflowStatus={opaMentoriaFile ? getOpaWorkflowStatus(opaMentoriaFile.id) : undefined}
+        onMarkFinished={() => {
+          if (opaMentoriaFile) {
+            setOpaWorkflowStatuses((prev) => ({ ...prev, [opaMentoriaFile.id]: "finalizado" }));
+            toast.success("Atendimento marcado como finalizado.");
+          }
+        }}
+        onNextFile={() => {}}
+        hasNextFile={false}
+        nonEvaluable={opaMentoriaFile?.nonEvaluable}
+        nonEvaluableReason={opaMentoriaFile?.nonEvaluableReason}
+        tipoAnalise={opaMentoriaFile?.tipo_analise}
+        initialStep={opaMentoriaInitialStep}
+      />
       <ParserDiagnosticDialog
         open={!!diagnosticFile}
         onOpenChange={() => setDiagnosticFile(null)}
