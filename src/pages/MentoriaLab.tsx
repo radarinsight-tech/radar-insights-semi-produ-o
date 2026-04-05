@@ -455,6 +455,9 @@ const MentoriaLab = () => {
     }
   }, []);
 
+  // ── Opa Suite hook ──
+  const opa = useOpaImport({ onTextReady: handleOpaTextReady, isAnalyzing: opaAnalyzing });
+
   // Load persisted batches and files from database on mount
   useEffect(() => {
     const loadPersistedData = async () => {
