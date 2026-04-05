@@ -571,7 +571,17 @@ const MentoriaLab = () => {
     });
   }, [opaFiles, opaSearchTerm, opaFilterAtendente, opaFilterAuditoriaFrom, opaFilterAuditoriaTo]);
 
-  // Opa atendentes list
+  // Opa atendentes list — classify as human vs bot/system
+  const BOT_KEYWORDS = ["bot", "sistema", "automático", "automatico", "virtual", "ura", "chatbot", "autoatendimento"];
+  const isLikelyBot = (name: string) => {
+    const lower = name.toLowerCase();
+    // Pure ObjectId-like strings (24 hex chars) are system IDs
+    if (/^[a-f0-9]{24}$/i.test(name)) return true;
+    return BOT_KEYWORDS.some((kw) => lower.includes(kw));
+  };
+  const isRawId = (name: string) => /^[a-f0-9]{24}$/i.test(name) || /^[0-9a-f-]{36}$/i.test(name);
+  const friendlyName = (name: string) => isRawId(name) ? `Atendente (${name.slice(0, 6)}…)` : name;
+
   const opaAtendentes = useMemo(() => {
     const set = new Set(opaFiles.map((f) => f.atendente).filter(Boolean) as string[]);
     return [...set].sort();
