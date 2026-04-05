@@ -3547,6 +3547,19 @@ const MentoriaLab = () => {
                 )}
               </>
             )}
+
+            {/* Version Registry — collapsible, secondary position */}
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground hover:text-foreground w-full justify-start mt-2">
+                  <Bookmark className="h-3.5 w-3.5" />
+                  Registro de Versão
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <VersionRegistryCard />
+              </CollapsibleContent>
+            </Collapsible>
           </TabsContent>
 
           <TabsContent value="performance" className="space-y-4 mt-4">
