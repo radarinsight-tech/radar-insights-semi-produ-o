@@ -3131,7 +3131,7 @@ const MentoriaLab = () => {
 
         {/* Tabs navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-xs border border-border bg-muted/60 p-1 rounded-lg">
+          <TabsList className="grid w-full grid-cols-3 max-w-md border border-border bg-muted/60 p-1 rounded-lg">
             <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
