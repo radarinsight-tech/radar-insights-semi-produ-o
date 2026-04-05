@@ -3893,10 +3893,13 @@ const MentoriaLab = () => {
                       </Popover>
                     </div>
 
-                    {/* Attendant filter — in top card before fetch */}
+                    {/* Attendant category filter — in top card before fetch */}
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Atendente</label>
-                      <Select value={opa.filterAtendente} onValueChange={opa.setFilterAtendente}>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Categoria</label>
+                      <Select value={opa.filterAtendente} onValueChange={(v) => {
+                        opa.setFilterAtendente(v);
+                        if (v !== "somente_humanos") setOpaHumanSpecific("todos_humanos");
+                      }}>
                         <SelectTrigger className="w-[180px] h-9 text-xs">
                           <SelectValue placeholder="Todos atendentes" />
                         </SelectTrigger>
@@ -3905,12 +3908,27 @@ const MentoriaLab = () => {
                           <SelectItem value="sem_atendente">Sem atendente</SelectItem>
                           <SelectItem value="somente_humanos">Somente humanos</SelectItem>
                           <SelectItem value="somente_bot">Somente BOT/sistema</SelectItem>
-                          {opa.atendentes.map((a) => (
-                            <SelectItem key={a} value={a}>{friendlyName(a)}</SelectItem>
-                          ))}
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {/* Secondary: specific human attendant selector */}
+                    {opa.filterAtendente === "somente_humanos" && (
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Atendente</label>
+                        <Select value={opaHumanSpecific} onValueChange={setOpaHumanSpecific}>
+                          <SelectTrigger className="w-[200px] h-9 text-xs">
+                            <SelectValue placeholder="Todos humanos" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todos_humanos">Todos humanos</SelectItem>
+                            {opaHumanAttendants.map((name) => (
+                              <SelectItem key={name} value={name}>{name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
 
                   {/* Action button */}
