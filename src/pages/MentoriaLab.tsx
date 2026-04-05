@@ -3588,19 +3588,75 @@ const MentoriaLab = () => {
 
           <TabsContent value="opa" className="space-y-4 mt-4">
 
-            {/* ── Idle: empty state — mirrors Operação empty upload card ── */}
-            {!opa.hasData && opa.state === "idle" && (
-              <Card
-                className={cn(
-                  "p-8 transition-all group text-center cursor-pointer hover:shadow-md hover:border-primary/40"
-                )}
-                onClick={opa.fetchList}
-              >
+            {/* ── Empty / Idle state — mirrors Operação empty upload card ── */}
+            {!opa.hasData && opa.state !== "loading-list" && opa.state !== "error" && (
+              <Card className="p-8 transition-all group text-center">
                 <Radio className="h-8 w-8 text-primary mx-auto mb-3" />
                 <h3 className="text-sm font-bold text-foreground mb-1">Importar da Opa Suite</h3>
-                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                  Busque atendimentos finalizados da Opa Suite para analisar no Radar Insight.
+                <p className="text-xs text-muted-foreground max-w-md mx-auto mb-5">
+                  Configure os filtros abaixo e clique em <strong>Buscar atendimentos</strong> para carregar atendimentos finalizados da Opa Suite.
                 </p>
+
+                {/* Filters inside idle card */}
+                <div className="flex flex-wrap items-center gap-3 justify-center mb-5">
+                  {/* Period */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-[200px] justify-start text-left text-xs font-normal h-10",
+                          !opa.dateFrom && "text-muted-foreground",
+                        )}
+                      >
+                        <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+                        {opa.dateFrom
+                          ? opa.dateTo
+                            ? `${format(opa.dateFrom, "dd/MM")} – ${format(opa.dateTo, "dd/MM/yy")}`
+                            : `A partir de ${format(opa.dateFrom, "dd/MM/yy")}`
+                          : "Período"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="range"
+                        selected={
+                          opa.dateFrom && opa.dateTo
+                            ? { from: opa.dateFrom, to: opa.dateTo }
+                            : opa.dateFrom
+                              ? { from: opa.dateFrom, to: undefined }
+                              : undefined
+                        }
+                        onSelect={(range) => {
+                          opa.setDateFrom(range?.from);
+                          opa.setDateTo(range?.to);
+                        }}
+                        numberOfMonths={2}
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                      {(opa.dateFrom || opa.dateTo) && (
+                        <div className="px-3 pb-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full text-xs"
+                            onClick={() => {
+                              opa.setDateFrom(undefined);
+                              opa.setDateTo(undefined);
+                            }}
+                          >
+                            Limpar período
+                          </Button>
+                        </div>
+                      )}
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <Button onClick={opa.fetchList} className="gap-2">
+                  <Radio className="h-4 w-4" />
+                  Buscar atendimentos
+                </Button>
               </Card>
             )}
 
@@ -3638,7 +3694,7 @@ const MentoriaLab = () => {
                 {/* Import card — col-span-3, mirrors upload card */}
                 <Card className="lg:col-span-3 p-4">
                   <div
-                    onClick={opa.fetchList}
+                    onClick={() => !opa.isLoading && opa.fetchList()}
                     className={cn(
                       "border-2 border-dashed rounded-lg h-[110px] flex flex-col items-center justify-center transition-colors",
                       opa.isLoading
@@ -3681,7 +3737,7 @@ const MentoriaLab = () => {
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-foreground">{opa.attendances.length} atendimentos</span>
-                        <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 h-auto shrink-0 text-accent")}>
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-auto shrink-0 text-accent">
                           Finalizados
                         </Badge>
                       </div>
@@ -3694,18 +3750,16 @@ const MentoriaLab = () => {
                   </div>
 
                   {/* Divider + Summary counters — same pattern as Operação */}
-                  <>
-                    <div className="border-t border-border/50 my-2.5" />
-                    <div className="flex items-center gap-3 flex-wrap text-[11px]">
-                      <span className="font-semibold text-foreground">{opa.filteredAttendances.length} Exibidos</span>
-                      {opa.atendentes.length > 0 && (
-                        <span className="text-primary font-medium">👤 {opa.atendentes.length} Atendentes</span>
-                      )}
-                      {opa.activeFilters > 0 && (
-                        <span className="text-warning font-medium">🔍 {opa.activeFilters} Filtro(s)</span>
-                      )}
-                    </div>
-                  </>
+                  <div className="border-t border-border/50 my-2.5" />
+                  <div className="flex items-center gap-3 flex-wrap text-[11px]">
+                    <span className="font-semibold text-foreground">{opa.filteredAttendances.length} Exibidos</span>
+                    {opa.atendentes.length > 0 && (
+                      <span className="text-primary font-medium">👤 {opa.atendentes.length} Atendentes</span>
+                    )}
+                    {opa.activeFilters > 0 && (
+                      <span className="text-warning font-medium">🔍 {opa.activeFilters} Filtro(s)</span>
+                    )}
+                  </div>
                 </Card>
               </div>
             )}
