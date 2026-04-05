@@ -545,16 +545,51 @@ const MentoriaLab = () => {
     dedup();
   }, [opa.attendances]);
 
+  // ── Registered attendants from DB for friendly name resolution ──
+  const [registeredAttendants, setRegisteredAttendants] = useState<import("@/lib/attendantMatcher").RegisteredAttendant[]>([]);
+  useEffect(() => {
+    getRegisteredAttendants().then(setRegisteredAttendants).catch(() => {});
+  }, []);
+
+  // Opa atendentes list — classify as human vs bot/system
+  const BOT_KEYWORDS = ["bot", "sistema", "automático", "automatico", "virtual", "ura", "chatbot", "autoatendimento"];
+  const isLikelyBot = (name: string) => {
+    if (!name) return false;
+    const lower = name.toLowerCase();
+    if (/^[a-f0-9]{24}$/i.test(name)) return true;
+    if (/^[0-9a-f-]{36}$/i.test(name)) return true;
+    return BOT_KEYWORDS.some((kw) => lower.includes(kw));
+  };
+  const isRawId = (name: string) => /^[a-f0-9]{24}$/i.test(name) || /^[0-9a-f-]{36}$/i.test(name);
+
+  // Resolve friendly name: first try registered attendants DB, then fallback
+  const friendlyName = useCallback((name: string): string => {
+    if (!name) return "Sem atendente";
+    // Check registered attendants for a match
+    const normalizedInput = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const match = registeredAttendants.find((a) => {
+      const n = a.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      const nick = a.nickname?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      return n === normalizedInput || n.includes(normalizedInput) || normalizedInput.includes(n) ||
+        (nick && (nick === normalizedInput || nick.includes(normalizedInput) || normalizedInput.includes(nick)));
+    });
+    if (match) return match.name;
+    // Fallback: mask raw IDs
+    if (isRawId(name)) return `Atendente (${name.slice(0, 6)}…)`;
+    return name;
+  }, [registeredAttendants]);
+
   // Opa filtered files — uses opa.filterAtendente as single source
   const opaFilteredFiles = useMemo(() => {
     const currentFilter = opa.filterAtendente;
     return opaFiles.filter((f) => {
       if (opaSearchTerm) {
         const q = opaSearchTerm.toLowerCase();
+        const displayName = f.atendente ? friendlyName(f.atendente) : "";
         if (
           !f.name.toLowerCase().includes(q) &&
           !f.protocolo?.toLowerCase().includes(q) &&
-          !(f.atendente ? friendlyName(f.atendente) : "").toLowerCase().includes(q)
+          !displayName.toLowerCase().includes(q)
         ) return false;
       }
       if (currentFilter === "sem_atendente") {
@@ -564,7 +599,9 @@ const MentoriaLab = () => {
       } else if (currentFilter === "somente_bot") {
         if (!f.atendente || !isLikelyBot(f.atendente)) return false;
       } else if (currentFilter !== "todos") {
-        if (f.atendente !== currentFilter) return false;
+        // Compare using friendly name since filter values use friendly names
+        const displayName = f.atendente ? friendlyName(f.atendente) : "";
+        if (displayName !== currentFilter && f.atendente !== currentFilter) return false;
       }
       if (opaFilterAuditoriaFrom || opaFilterAuditoriaTo) {
         if (!f.analyzedAt) return false;
@@ -577,23 +614,18 @@ const MentoriaLab = () => {
       }
       return true;
     });
-  }, [opaFiles, opaSearchTerm, opa.filterAtendente, opaFilterAuditoriaFrom, opaFilterAuditoriaTo]);
-
-  // Opa atendentes list — classify as human vs bot/system
-  const BOT_KEYWORDS = ["bot", "sistema", "automático", "automatico", "virtual", "ura", "chatbot", "autoatendimento"];
-  const isLikelyBot = (name: string) => {
-    const lower = name.toLowerCase();
-    // Pure ObjectId-like strings (24 hex chars) are system IDs
-    if (/^[a-f0-9]{24}$/i.test(name)) return true;
-    return BOT_KEYWORDS.some((kw) => lower.includes(kw));
-  };
-  const isRawId = (name: string) => /^[a-f0-9]{24}$/i.test(name) || /^[0-9a-f-]{36}$/i.test(name);
-  const friendlyName = (name: string) => isRawId(name) ? `Atendente (${name.slice(0, 6)}…)` : name;
+  }, [opaFiles, opaSearchTerm, opa.filterAtendente, opaFilterAuditoriaFrom, opaFilterAuditoriaTo, friendlyName]);
 
   const opaAtendentes = useMemo(() => {
-    const set = new Set(opaFiles.map((f) => f.atendente).filter(Boolean) as string[]);
-    return [...set].sort();
-  }, [opaFiles]);
+    const map = new Map<string, string>(); // friendly -> friendly (dedup)
+    opaFiles.forEach((f) => {
+      if (f.atendente) {
+        const fn = friendlyName(f.atendente);
+        if (!map.has(fn)) map.set(fn, fn);
+      }
+    });
+    return [...map.keys()].sort();
+  }, [opaFiles, friendlyName]);
 
   // Opa counts
   const opaCounts = useMemo(() => {
