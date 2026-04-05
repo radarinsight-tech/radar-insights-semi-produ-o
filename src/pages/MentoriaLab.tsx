@@ -4342,22 +4342,7 @@ const MentoriaLab = () => {
               </>
             )}
 
-            {/* ═══ ANALYSIS RESULT ═══ */}
-            {(opaResult || opaAnalyzing) && (
-              <Card className="p-4 border-primary/20 bg-primary/5">
-                <div className="flex items-center gap-2 mb-3 text-sm font-medium text-foreground">
-                  <ShieldCheck className="h-4 w-4 text-primary" />
-                  <span>Resultado da Auditoria</span>
-                  {opaResult && (
-                    <Badge variant="outline" className="ml-auto text-xs">
-                      {opaResult.protocolo !== "—" ? `Protocolo: ${opaResult.protocolo}` : ""}
-                      {opaResult.atendente !== "—" ? ` • ${opaResult.atendente}` : ""}
-                    </Badge>
-                  )}
-                </div>
-                <AnalysisResult data={opaResult} />
-              </Card>
-            )}
+            {/* Analysis result removed — audit is accessed via action column / MentoriaDetailDialog */}
 
             {/* Version Registry — collapsible, secondary position */}
             <Collapsible>
