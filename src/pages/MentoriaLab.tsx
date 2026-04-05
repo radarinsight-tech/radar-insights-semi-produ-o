@@ -633,6 +633,24 @@ const MentoriaLab = () => {
     return [...map.keys()].sort();
   }, [opaFiles, friendlyName]);
 
+  // Human-only attendants list for the secondary selector
+  const opaHumanAttendants = useMemo(() => {
+    const map = new Map<string, string>();
+    opaFiles.forEach((f) => {
+      if (f.atendente && !isLikelyBot(f.atendente)) {
+        const fn = friendlyName(f.atendente);
+        if (!map.has(fn)) map.set(fn, fn);
+      }
+    });
+    // Also add registered attendants that participate in evaluation
+    registeredAttendants.forEach((a) => {
+      if (a.participates_evaluation && a.active && !map.has(a.name)) {
+        map.set(a.name, a.name);
+      }
+    });
+    return [...map.keys()].sort();
+  }, [opaFiles, friendlyName, registeredAttendants]);
+
   // Opa counts
   const opaCounts = useMemo(() => {
     const source = opaFilteredFiles;
