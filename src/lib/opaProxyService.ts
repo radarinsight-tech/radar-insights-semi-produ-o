@@ -39,8 +39,19 @@ async function opaFetch<T>(body: Record<string, unknown>): Promise<T> {
   return res.json();
 }
 
-export async function listOpaAttendances(limite = 100): Promise<OpaListResponse> {
-  return opaFetch<OpaListResponse>({ action: "list", limite });
+export interface OpaListParams {
+  limite?: number;
+  status?: string;
+  dataInicio?: string;
+  dataFim?: string;
+}
+
+export async function listOpaAttendances(params: OpaListParams = {}): Promise<OpaListResponse> {
+  const body: Record<string, unknown> = { action: "list", limite: params.limite ?? 100 };
+  if (params.status) body.status = params.status;
+  if (params.dataInicio) body.dataInicio = params.dataInicio;
+  if (params.dataFim) body.dataFim = params.dataFim;
+  return opaFetch<OpaListResponse>(body);
 }
 
 export async function getOpaAttendanceMessages(attendanceId: string): Promise<OpaMessagesResponse> {
