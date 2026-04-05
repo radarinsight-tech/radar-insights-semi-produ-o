@@ -556,8 +556,15 @@ const MentoriaLab = () => {
           !f.atendente?.toLowerCase().includes(q)
         ) return false;
       }
-      if (opaFilterAtendente === "sem_atendente" && f.atendente) return false;
-      if (opaFilterAtendente !== "todos" && opaFilterAtendente !== "sem_atendente" && f.atendente !== opaFilterAtendente) return false;
+      if (opaFilterAtendente === "sem_atendente") {
+        if (f.atendente) return false;
+      } else if (opaFilterAtendente === "somente_humanos") {
+        if (!f.atendente || isLikelyBot(f.atendente)) return false;
+      } else if (opaFilterAtendente === "somente_bot") {
+        if (!f.atendente || !isLikelyBot(f.atendente)) return false;
+      } else if (opaFilterAtendente !== "todos") {
+        if (f.atendente !== opaFilterAtendente) return false;
+      }
       if (opaFilterAuditoriaFrom || opaFilterAuditoriaTo) {
         if (!f.analyzedAt) return false;
         if (opaFilterAuditoriaFrom && f.analyzedAt < opaFilterAuditoriaFrom) return false;
