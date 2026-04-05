@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import { Radio, Loader2, RefreshCw, AlertCircle, MessageSquareQuote, Search, CalendarIcon, X } from "lucide-react";
+import { Radio, Loader2, RefreshCw, AlertCircle, MessageSquareQuote, Search, CalendarIcon, X, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,7 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
   const [total, setTotal] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [lastFetch, setLastFetch] = useState<Date | null>(null);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -53,7 +54,6 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
 
   const buildParams = useCallback((): OpaListParams => {
     const params: OpaListParams = { limite: 100 };
-    // Always fetch finalized by default
     params.status = "F";
     if (dateFrom) params.dataInicio = format(dateFrom, "yyyy-MM-dd");
     if (dateTo) params.dataFim = format(dateTo, "yyyy-MM-dd");
@@ -67,6 +67,7 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
       const res = await listOpaAttendances(buildParams());
       setAttendances(res.attendances || []);
       setTotal(res.total ?? res.attendances?.length ?? 0);
+      setLastFetch(new Date());
       setState("list");
     } catch (err: any) {
       console.error("[OpaImport] list error:", err);
@@ -105,15 +106,11 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
 
   const filteredAttendances = useMemo(() => {
     let result = attendances;
-
-    // Atendente filter
     if (filterAtendente === "sem_atendente") {
       result = result.filter((a) => !a.atendente?.trim());
     } else if (filterAtendente !== "todos") {
       result = result.filter((a) => a.atendente?.trim() === filterAtendente);
     }
-
-    // Search
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
       result = result.filter((a) =>
@@ -123,7 +120,6 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
         (a.cliente || "").toLowerCase().includes(q)
       );
     }
-
     return result;
   }, [attendances, searchTerm, filterAtendente]);
 
@@ -137,81 +133,54 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
   };
 
   const isLoading = effectiveState === "loading-list" || effectiveState === "loading-messages" || effectiveState === "analyzing";
+  const hasData = attendances.length > 0;
 
-  // ── Idle state — prompt to fetch ──
-  if (effectiveState === "idle") {
-    return (
-      <div className="space-y-4">
-        <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
-          <div className="p-4 rounded-full bg-primary/10">
-            <Radio className="h-8 w-8 text-primary" />
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-foreground">Importar da Opa Suite</p>
-            <p className="text-xs text-muted-foreground max-w-sm">
-              Busque atendimentos finalizados da Opa Suite para analisar no Radar Insight.
-            </p>
-          </div>
-          <Button onClick={fetchList} className="gap-2">
-            <Search className="h-4 w-4" />
-            Buscar atendimentos
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  const activeFilters = [
+    filterAtendente !== "todos" ? 1 : 0,
+    dateFrom ? 1 : 0,
+    searchTerm.trim() ? 1 : 0,
+  ].reduce((a, b) => a + b, 0);
 
-  // ── Loading list ──
-  if (effectiveState === "loading-list") {
-    return (
-      <div className="space-y-4">
-        <div className="flex flex-col items-center justify-center py-16 space-y-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm font-medium text-foreground">Buscando atendimentos...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Loading messages ──
-  if (effectiveState === "loading-messages") {
-    return (
-      <div className="space-y-4">
-        <div className="flex flex-col items-center justify-center py-16 space-y-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm font-medium text-foreground">Carregando mensagens do atendimento...</p>
-          <p className="text-xs text-muted-foreground">Preparando texto para análise</p>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Analyzing ──
-  if (effectiveState === "analyzing") {
-    return (
-      <div className="space-y-4">
-        <div className="flex flex-col items-center justify-center py-16 space-y-3">
-          <div className="h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-          <p className="text-base font-semibold text-foreground">Analisando atendimento...</p>
-          <p className="text-sm text-muted-foreground text-center max-w-xs">
-            O Radar Insight está processando o atendimento importado.
+  // ── Top grid: Import card (left) + Info card (right) — mirrors Operação ──
+  const renderTopGrid = () => {
+    // Idle / no data: full-width import card (mirrors Operação empty state)
+    if (!hasData && effectiveState === "idle") {
+      return (
+        <Card
+          className={cn(
+            "p-8 transition-all group text-center cursor-pointer hover:shadow-md hover:border-primary/40"
+          )}
+          onClick={fetchList}
+        >
+          <Radio className="h-8 w-8 text-primary mx-auto mb-3" />
+          <h3 className="text-sm font-bold text-foreground mb-1">Importar da Opa Suite</h3>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            Busque atendimentos finalizados da Opa Suite para analisar no Radar Insight.
           </p>
-        </div>
-      </div>
-    );
-  }
+        </Card>
+      );
+    }
 
-  // ── Error state ──
-  if (effectiveState === "error") {
-    return (
-      <div className="space-y-4">
-        <div className="flex flex-col items-center justify-center py-16 space-y-3">
-          <div className="p-3 rounded-full bg-destructive/10">
+    // Loading list (no data yet)
+    if (!hasData && effectiveState === "loading-list") {
+      return (
+        <Card className="p-12 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">Buscando atendimentos da Opa Suite...</p>
+        </Card>
+      );
+    }
+
+    // Error (no data)
+    if (!hasData && effectiveState === "error") {
+      return (
+        <Card className="p-8 text-center">
+          <div className="p-3 rounded-full bg-destructive/10 w-fit mx-auto mb-3">
             <AlertCircle className="h-7 w-7 text-destructive" />
           </div>
-          <p className="text-sm font-semibold text-foreground">Erro ao conectar com a Opa Suite</p>
-          <p className="text-xs text-muted-foreground text-center max-w-sm">{errorMsg}</p>
-          <div className="flex gap-2">
+          <p className="text-sm font-semibold text-foreground mb-1">Erro ao conectar com a Opa Suite</p>
+          <p className="text-xs text-muted-foreground mb-3 max-w-sm mx-auto">{errorMsg}</p>
+          <div className="flex gap-2 justify-center">
             <Button onClick={fetchList} variant="outline" size="sm" className="gap-1.5 text-xs">
               <RefreshCw className="h-3.5 w-3.5" />
               Tentar novamente
@@ -220,24 +189,103 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
               Voltar
             </Button>
           </div>
-        </div>
+        </Card>
+      );
+    }
+
+    // Has data: 2-column grid like Operação
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        {/* Import card — left (col-span-3), mirrors upload card */}
+        <Card className="lg:col-span-3 p-4">
+          <div
+            onClick={fetchList}
+            className={cn(
+              "border-2 border-dashed rounded-lg h-[110px] flex flex-col items-center justify-center transition-colors",
+              isLoading
+                ? "border-primary/40 bg-primary/5 cursor-default"
+                : "border-primary/30 cursor-pointer hover:border-primary/50 hover:bg-primary/5"
+            )}
+          >
+            {effectiveState === "loading-list" ? (
+              <>
+                <Loader2 className="h-5 w-5 text-primary animate-spin mb-1.5" />
+                <p className="text-sm font-semibold text-primary">Buscando atendimentos...</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Conectando com a Opa Suite</p>
+              </>
+            ) : effectiveState === "loading-messages" ? (
+              <>
+                <Loader2 className="h-5 w-5 text-primary animate-spin mb-1.5" />
+                <p className="text-sm font-semibold text-primary">Carregando mensagens...</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Preparando texto para análise</p>
+              </>
+            ) : effectiveState === "analyzing" ? (
+              <>
+                <div className="h-5 w-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin mb-1.5" />
+                <p className="text-sm font-semibold text-primary">Analisando atendimento...</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Processando via Radar Insight</p>
+              </>
+            ) : (
+              <>
+                <Radio className="h-5 w-5 text-primary/60 mb-1.5" />
+                <p className="text-sm font-medium text-muted-foreground">Atualizar lista da Opa Suite</p>
+                <p className="text-[10px] text-muted-foreground/70 mt-0.5">clique para buscar novos atendimentos</p>
+              </>
+            )}
+          </div>
+        </Card>
+
+        {/* Info card — right (col-span-2), mirrors "Último Lote" */}
+        <Card className="lg:col-span-2 p-4 flex flex-col justify-between">
+          <div>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Opa Suite</p>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-foreground">{attendances.length} atendimentos</span>
+                <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-auto shrink-0 text-accent">
+                  Finalizados
+                </Badge>
+              </div>
+              {lastFetch && (
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <span>Atualizado em {lastFetch.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Summary counters */}
+          <>
+            <div className="border-t border-border/50 my-2.5" />
+            <div className="flex items-center gap-3 flex-wrap text-[11px]">
+              <span className="font-semibold text-foreground">{filteredAttendances.length} Exibidos</span>
+              {atendentes.length > 0 && (
+                <span className="text-primary font-medium">👤 {atendentes.length} Atendentes</span>
+              )}
+              {activeFilters > 0 && (
+                <span className="text-warning font-medium">🔍 {activeFilters} Filtro(s)</span>
+              )}
+            </div>
+          </>
+        </Card>
       </div>
     );
-  }
+  };
 
-  // ── List state — with filters matching MentoriaLab pattern ──
-  return (
-    <div className="space-y-4">
-      {/* ── Filter bar — same pattern as MentoriaLab main filters ── */}
-      <TooltipProvider delayDuration={300}>
-        <div className="flex flex-wrap items-center gap-3">
+  // ── Filters bar — mirrors Operação exactly ──
+  const renderFilters = () => {
+    if (!hasData) return null;
+
+    return (
+      <div className="flex flex-wrap items-center gap-3">
+        <TooltipProvider delayDuration={300}>
           {/* Search */}
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="relative flex-1 min-w-[180px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar protocolo, canal ou atendente..."
+                  placeholder="Buscar atendente ou protocolo..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9"
@@ -249,10 +297,10 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
                 )}
               </div>
             </TooltipTrigger>
-            <TooltipContent side="bottom"><p>Filtre por protocolo, canal ou nome do atendente</p></TooltipContent>
+            <TooltipContent side="bottom"><p>Digite o nome do atendente ou número do protocolo para filtrar</p></TooltipContent>
           </Tooltip>
 
-          {/* Atendente selector */}
+          {/* Atendente */}
           <Tooltip>
             <TooltipTrigger asChild>
               <div>
@@ -273,7 +321,7 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
             <TooltipContent side="bottom"><p>Filtrar por atendente específico</p></TooltipContent>
           </Tooltip>
 
-          {/* Period — range calendar */}
+          {/* Period */}
           <Tooltip>
             <TooltipTrigger asChild>
               <div>
@@ -331,7 +379,7 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
                 </Popover>
               </div>
             </TooltipTrigger>
-            <TooltipContent side="bottom"><p>Filtrar atendimentos por período</p></TooltipContent>
+            <TooltipContent side="bottom"><p>Filtrar atendimentos por período de data</p></TooltipContent>
           </Tooltip>
 
           {/* Counter */}
@@ -341,7 +389,7 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
                 {filteredAttendances.length} de {attendances.length}
               </span>
             </TooltipTrigger>
-            <TooltipContent side="bottom"><p>Total exibido / total carregado</p></TooltipContent>
+            <TooltipContent side="bottom"><p>Total de atendimentos exibidos / total carregado</p></TooltipContent>
           </Tooltip>
 
           {/* Refresh */}
@@ -359,11 +407,17 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
             </TooltipTrigger>
             <TooltipContent side="bottom"><p>Atualizar lista de atendimentos</p></TooltipContent>
           </Tooltip>
-        </div>
-      </TooltipProvider>
+        </TooltipProvider>
+      </div>
+    );
+  };
 
-      {/* ── Table ── */}
-      {filteredAttendances.length === 0 ? (
+  // ── Table ──
+  const renderTable = () => {
+    if (!hasData) return null;
+
+    if (filteredAttendances.length === 0) {
+      return (
         <div className="py-12 text-center">
           <p className="text-sm text-muted-foreground">
             {attendances.length === 0
@@ -374,64 +428,74 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
             Atualizar lista
           </Button>
         </div>
-      ) : (
-        <div className="overflow-y-auto max-h-[480px] rounded-lg border border-border">
-          <Table className="w-full table-fixed">
-            <TableHeader>
-              <TableRow className="bg-muted/40">
-                <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[18%]">Protocolo</TableHead>
-                <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[12%]">Canal</TableHead>
-                <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[12%]">Status</TableHead>
-                <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[20%]">Início</TableHead>
-                <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[20%]">Fim</TableHead>
-                <TableHead className="text-[10px] font-bold uppercase tracking-wider text-right w-[18%] pr-5">Ação</TableHead>
+      );
+    }
+
+    return (
+      <div className="overflow-y-auto max-h-[480px] rounded-lg border border-border">
+        <Table className="w-full table-fixed">
+          <TableHeader>
+            <TableRow className="bg-muted/40">
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[18%]">Protocolo</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[12%]">Canal</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[12%]">Status</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[20%]">Início</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[20%]">Fim</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-right w-[18%] pr-5">Ação</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredAttendances.map((att) => (
+              <TableRow
+                key={att.id}
+                className={cn(
+                  "transition-colors",
+                  selectedId === att.id ? "bg-primary/5" : "hover:bg-muted/50"
+                )}
+              >
+                <TableCell className="text-xs font-medium truncate">{att.protocolo || "—"}</TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="text-[10px] capitalize">{att.canal || "—"}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    className={cn(
+                      "text-[10px]",
+                      att.status === "F"
+                        ? "bg-accent/10 text-accent border-accent/30"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {att.status === "F" ? "Finalizado" : att.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground truncate">{formatDate(att.data_inicio)}</TableCell>
+                <TableCell className="text-xs text-muted-foreground truncate">{formatDate(att.data_fim)}</TableCell>
+                <TableCell className="text-right pr-5">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[11px] gap-1.5"
+                    onClick={() => handleSelect(att)}
+                    disabled={selectedId === att.id}
+                  >
+                    <MessageSquareQuote className="h-3 w-3" />
+                    Analisar
+                  </Button>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAttendances.map((att) => (
-                <TableRow
-                  key={att.id}
-                  className={cn(
-                    "transition-colors",
-                    selectedId === att.id ? "bg-primary/5" : "hover:bg-muted/50"
-                  )}
-                >
-                  <TableCell className="text-xs font-medium truncate">{att.protocolo || "—"}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-[10px] capitalize">{att.canal || "—"}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={cn(
-                        "text-[10px]",
-                        att.status === "F"
-                          ? "bg-accent/10 text-accent border-accent/30"
-                          : "bg-muted text-muted-foreground"
-                      )}
-                    >
-                      {att.status === "F" ? "Finalizado" : att.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground truncate">{formatDate(att.data_inicio)}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground truncate">{formatDate(att.data_fim)}</TableCell>
-                  <TableCell className="text-right pr-5">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-[11px] gap-1.5"
-                      onClick={() => handleSelect(att)}
-                      disabled={selectedId === att.id}
-                    >
-                      <MessageSquareQuote className="h-3 w-3" />
-                      Analisar
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      {renderTopGrid()}
+      {renderFilters()}
+      {renderTable()}
     </div>
   );
 };
