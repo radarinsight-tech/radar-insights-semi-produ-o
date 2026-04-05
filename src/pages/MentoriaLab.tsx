@@ -480,13 +480,37 @@ const MentoriaLab = () => {
   // ── Opa Suite hook ──
   const opa = useOpaImport({ onTextReady: handleOpaTextReady, isAnalyzing: opaAnalyzing });
 
-  // Convert OpaAttendances to LabFile format when list is fetched
+  // Convert OpaAttendances to LabFile format when list is fetched — with dedup
   useEffect(() => {
-    if (opa.attendances.length > 0) {
+    if (opa.attendances.length === 0) return;
+
+    const dedup = async () => {
+      // Collect all protocolos from fetched attendances
+      const protocolos = opa.attendances
+        .map((a) => a.protocolo)
+        .filter(Boolean) as string[];
+
+      // Query evaluations table for already-imported protocolos
+      let alreadyImportedProtocolos = new Set<string>();
+      if (protocolos.length > 0) {
+        const { data: existing } = await supabase
+          .from("evaluations")
+          .select("protocolo")
+          .in("protocolo", protocolos);
+        if (existing) {
+          alreadyImportedProtocolos = new Set(existing.map((e) => e.protocolo));
+        }
+      }
+
       setOpaFiles((prev) => {
         const existingIds = new Set(prev.map((f) => f.id));
         const newFiles: LabFile[] = opa.attendances
           .filter((att) => !existingIds.has(att.id))
+          .filter((att) => {
+            // Skip attendances already imported (by protocolo)
+            if (att.protocolo && alreadyImportedProtocolos.has(att.protocolo)) return false;
+            return true;
+          })
           .map((att) => ({
             id: att.id,
             file: new File([], `opa-${att.protocolo || att.id}.txt`),
@@ -499,11 +523,26 @@ const MentoriaLab = () => {
             data: att.data_inicio ? new Date(att.data_inicio).toLocaleDateString("pt-BR") : undefined,
             canal: att.canal || undefined,
           }));
+
         // Merge: keep existing (possibly analyzed) files + add new ones
         const updatedPrev = prev.filter((f) => opa.attendances.some((att) => att.id === f.id));
-        return [...updatedPrev, ...newFiles];
+        const merged = [...updatedPrev, ...newFiles];
+
+        // Notify user about deduplication results
+        const totalFetched = opa.attendances.length;
+        const duplicatesSkipped = totalFetched - newFiles.length - updatedPrev.length;
+        if (duplicatesSkipped > 0) {
+          toast.info(`${duplicatesSkipped} atendimento(s) já importado(s) foram ignorados.`);
+        }
+        if (merged.length === 0 && totalFetched > 0) {
+          toast.warning("Nenhum novo atendimento encontrado. Todos já foram importados anteriormente.");
+        }
+
+        return merged;
       });
-    }
+    };
+
+    dedup();
   }, [opa.attendances]);
 
   // Opa filtered files
