@@ -556,8 +556,15 @@ const MentoriaLab = () => {
           !f.atendente?.toLowerCase().includes(q)
         ) return false;
       }
-      if (opaFilterAtendente === "sem_atendente" && f.atendente) return false;
-      if (opaFilterAtendente !== "todos" && opaFilterAtendente !== "sem_atendente" && f.atendente !== opaFilterAtendente) return false;
+      if (opaFilterAtendente === "sem_atendente") {
+        if (f.atendente) return false;
+      } else if (opaFilterAtendente === "somente_humanos") {
+        if (!f.atendente || isLikelyBot(f.atendente)) return false;
+      } else if (opaFilterAtendente === "somente_bot") {
+        if (!f.atendente || !isLikelyBot(f.atendente)) return false;
+      } else if (opaFilterAtendente !== "todos") {
+        if (f.atendente !== opaFilterAtendente) return false;
+      }
       if (opaFilterAuditoriaFrom || opaFilterAuditoriaTo) {
         if (!f.analyzedAt) return false;
         if (opaFilterAuditoriaFrom && f.analyzedAt < opaFilterAuditoriaFrom) return false;
@@ -571,7 +578,17 @@ const MentoriaLab = () => {
     });
   }, [opaFiles, opaSearchTerm, opaFilterAtendente, opaFilterAuditoriaFrom, opaFilterAuditoriaTo]);
 
-  // Opa atendentes list
+  // Opa atendentes list — classify as human vs bot/system
+  const BOT_KEYWORDS = ["bot", "sistema", "automático", "automatico", "virtual", "ura", "chatbot", "autoatendimento"];
+  const isLikelyBot = (name: string) => {
+    const lower = name.toLowerCase();
+    // Pure ObjectId-like strings (24 hex chars) are system IDs
+    if (/^[a-f0-9]{24}$/i.test(name)) return true;
+    return BOT_KEYWORDS.some((kw) => lower.includes(kw));
+  };
+  const isRawId = (name: string) => /^[a-f0-9]{24}$/i.test(name) || /^[0-9a-f-]{36}$/i.test(name);
+  const friendlyName = (name: string) => isRawId(name) ? `Atendente (${name.slice(0, 6)}…)` : name;
+
   const opaAtendentes = useMemo(() => {
     const set = new Set(opaFiles.map((f) => f.atendente).filter(Boolean) as string[]);
     return [...set].sort();
@@ -3957,8 +3974,10 @@ const MentoriaLab = () => {
                             <SelectContent>
                               <SelectItem value="todos">Todos atendentes</SelectItem>
                               <SelectItem value="sem_atendente">Sem atendente</SelectItem>
+                              <SelectItem value="somente_humanos">Somente humanos</SelectItem>
+                              <SelectItem value="somente_bot">Somente BOT/sistema</SelectItem>
                               {opaAtendentes.map((a) => (
-                                <SelectItem key={a} value={a}>{a}</SelectItem>
+                                <SelectItem key={a} value={a}>{friendlyName(a)}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -4120,7 +4139,19 @@ const MentoriaLab = () => {
 
             {/* ═══ ANALYSIS RESULT ═══ */}
             {(opaResult || opaAnalyzing) && (
-              <AnalysisResult data={opaResult} />
+              <Card className="p-4 border-primary/20 bg-primary/5">
+                <div className="flex items-center gap-2 mb-3 text-sm font-medium text-foreground">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                  <span>Resultado da Auditoria</span>
+                  {opaResult && (
+                    <Badge variant="outline" className="ml-auto text-xs">
+                      {opaResult.protocolo !== "—" ? `Protocolo: ${opaResult.protocolo}` : ""}
+                      {opaResult.atendente !== "—" ? ` • ${opaResult.atendente}` : ""}
+                    </Badge>
+                  )}
+                </div>
+                <AnalysisResult data={opaResult} />
+              </Card>
             )}
 
             {/* Version Registry — collapsible, secondary position */}
