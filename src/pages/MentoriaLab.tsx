@@ -3587,14 +3587,340 @@ const MentoriaLab = () => {
           </TabsContent>
 
           <TabsContent value="opa" className="space-y-4 mt-4">
-            {/* Opa Suite reuses main flow layout: filters on top, then content below */}
-            <OpaImportPanel onTextReady={handleOpaTextReady} isAnalyzing={opaAnalyzing} />
 
-            {/* Result panel — same visual as main flow result cards */}
-            {(opaResult || opaAnalyzing) && (
-              <div className="mt-4">
-                <AnalysisResult data={opaResult} />
+            {/* ── Idle: empty state — mirrors Operação empty upload card ── */}
+            {!opa.hasData && opa.state === "idle" && (
+              <Card
+                className={cn(
+                  "p-8 transition-all group text-center cursor-pointer hover:shadow-md hover:border-primary/40"
+                )}
+                onClick={opa.fetchList}
+              >
+                <Radio className="h-8 w-8 text-primary mx-auto mb-3" />
+                <h3 className="text-sm font-bold text-foreground mb-1">Importar da Opa Suite</h3>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  Busque atendimentos finalizados da Opa Suite para analisar no Radar Insight.
+                </p>
+              </Card>
+            )}
+
+            {/* ── Loading list (no data yet) ── */}
+            {!opa.hasData && opa.state === "loading-list" && (
+              <Card className="p-12 text-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">Buscando atendimentos da Opa Suite...</p>
+              </Card>
+            )}
+
+            {/* ── Error (no data) ── */}
+            {!opa.hasData && opa.state === "error" && (
+              <Card className="p-8 text-center">
+                <div className="p-3 rounded-full bg-destructive/10 w-fit mx-auto mb-3">
+                  <AlertCircle className="h-7 w-7 text-destructive" />
+                </div>
+                <p className="text-sm font-semibold text-foreground mb-1">Erro ao conectar com a Opa Suite</p>
+                <p className="text-xs text-muted-foreground mb-3 max-w-sm mx-auto">{opa.errorMsg}</p>
+                <div className="flex gap-2 justify-center">
+                  <Button onClick={opa.fetchList} variant="outline" size="sm" className="gap-1.5 text-xs">
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Tentar novamente
+                  </Button>
+                  <Button onClick={opa.resetToIdle} variant="ghost" size="sm" className="text-xs">
+                    Voltar
+                  </Button>
+                </div>
+              </Card>
+            )}
+
+            {/* ── Grid: Import card (left) + Info card (right) — same as Operação ── */}
+            {opa.hasData && (
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                {/* Import card — col-span-3, mirrors upload card */}
+                <Card className="lg:col-span-3 p-4">
+                  <div
+                    onClick={opa.fetchList}
+                    className={cn(
+                      "border-2 border-dashed rounded-lg h-[110px] flex flex-col items-center justify-center transition-colors",
+                      opa.isLoading
+                        ? "border-primary/40 bg-primary/5 cursor-default"
+                        : "border-primary/30 cursor-pointer hover:border-primary/50 hover:bg-primary/5"
+                    )}
+                  >
+                    {opa.state === "loading-list" ? (
+                      <>
+                        <Loader2 className="h-5 w-5 text-primary animate-spin mb-1.5" />
+                        <p className="text-sm font-semibold text-primary">Buscando atendimentos...</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Conectando com a Opa Suite</p>
+                      </>
+                    ) : opa.state === "loading-messages" ? (
+                      <>
+                        <Loader2 className="h-5 w-5 text-primary animate-spin mb-1.5" />
+                        <p className="text-sm font-semibold text-primary">Carregando mensagens...</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Preparando texto para análise</p>
+                      </>
+                    ) : opa.state === "analyzing" ? (
+                      <>
+                        <div className="h-5 w-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin mb-1.5" />
+                        <p className="text-sm font-semibold text-primary">Analisando atendimento...</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Processando via Radar Insight</p>
+                      </>
+                    ) : (
+                      <>
+                        <Radio className="h-5 w-5 text-primary/60 mb-1.5" />
+                        <p className="text-sm font-medium text-muted-foreground">Atualizar lista da Opa Suite</p>
+                        <p className="text-[10px] text-muted-foreground/70 mt-0.5">clique para buscar novos atendimentos</p>
+                      </>
+                    )}
+                  </div>
+                </Card>
+
+                {/* Info card — col-span-2, mirrors "Último Lote" */}
+                <Card className="lg:col-span-2 p-4 flex flex-col justify-between">
+                  <div>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Opa Suite</p>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-foreground">{opa.attendances.length} atendimentos</span>
+                        <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 h-auto shrink-0 text-accent")}>
+                          Finalizados
+                        </Badge>
+                      </div>
+                      {opa.lastFetch && (
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                          <span>Atualizado em {opa.lastFetch.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Divider + Summary counters — same pattern as Operação */}
+                  <>
+                    <div className="border-t border-border/50 my-2.5" />
+                    <div className="flex items-center gap-3 flex-wrap text-[11px]">
+                      <span className="font-semibold text-foreground">{opa.filteredAttendances.length} Exibidos</span>
+                      {opa.atendentes.length > 0 && (
+                        <span className="text-primary font-medium">👤 {opa.atendentes.length} Atendentes</span>
+                      )}
+                      {opa.activeFilters > 0 && (
+                        <span className="text-warning font-medium">🔍 {opa.activeFilters} Filtro(s)</span>
+                      )}
+                    </div>
+                  </>
+                </Card>
               </div>
+            )}
+
+            {/* ── Filters — same layout as Operação filter bar ── */}
+            {opa.hasData && (
+              <div className="flex flex-wrap items-center gap-3">
+                <TooltipProvider delayDuration={300}>
+                  {/* Search */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative flex-1 min-w-[180px]">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Buscar atendente ou protocolo..."
+                          value={opa.searchTerm}
+                          onChange={(e) => opa.setSearchTerm(e.target.value)}
+                          className="pl-9"
+                        />
+                        {opa.searchTerm && (
+                          <button onClick={() => opa.setSearchTerm("")} className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <X className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom"><p>Digite o nome do atendente ou número do protocolo para filtrar</p></TooltipContent>
+                  </Tooltip>
+
+                  {/* Atendente */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <Select value={opa.filterAtendente} onValueChange={opa.setFilterAtendente}>
+                          <SelectTrigger className="w-[160px]">
+                            <SelectValue placeholder="Atendente" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todos">Todos atendentes</SelectItem>
+                            <SelectItem value="sem_atendente">Sem atendente</SelectItem>
+                            {opa.atendentes.map((a) => (
+                              <SelectItem key={a} value={a}>{a}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom"><p>Filtrar por atendente específico</p></TooltipContent>
+                  </Tooltip>
+
+                  {/* Period */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-[180px] justify-start text-left text-xs font-normal h-10",
+                                !opa.dateFrom && "text-muted-foreground",
+                              )}
+                            >
+                              <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+                              {opa.dateFrom
+                                ? opa.dateTo
+                                  ? `${format(opa.dateFrom, "dd/MM")} – ${format(opa.dateTo, "dd/MM/yy")}`
+                                  : `A partir de ${format(opa.dateFrom, "dd/MM/yy")}`
+                                : "Período"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="range"
+                              selected={
+                                opa.dateFrom && opa.dateTo
+                                  ? { from: opa.dateFrom, to: opa.dateTo }
+                                  : opa.dateFrom
+                                    ? { from: opa.dateFrom, to: undefined }
+                                    : undefined
+                              }
+                              onSelect={(range) => {
+                                opa.setDateFrom(range?.from);
+                                opa.setDateTo(range?.to);
+                              }}
+                              numberOfMonths={2}
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                            {(opa.dateFrom || opa.dateTo) && (
+                              <div className="px-3 pb-3">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="w-full text-xs"
+                                  onClick={() => {
+                                    opa.setDateFrom(undefined);
+                                    opa.setDateTo(undefined);
+                                  }}
+                                >
+                                  Limpar período
+                                </Button>
+                              </div>
+                            )}
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom"><p>Filtrar atendimentos por período de data</p></TooltipContent>
+                  </Tooltip>
+
+                  {/* Counter */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="ml-auto text-xs text-muted-foreground cursor-default">
+                        {opa.filteredAttendances.length} de {opa.attendances.length}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom"><p>Total de atendimentos exibidos / total carregado</p></TooltipContent>
+                  </Tooltip>
+
+                  {/* Refresh */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9"
+                        onClick={opa.fetchList}
+                        disabled={opa.isLoading}
+                      >
+                        <RefreshCw className={cn("h-4 w-4", opa.isLoading && "animate-spin")} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom"><p>Atualizar lista de atendimentos</p></TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
+
+            {/* ── Table — same structure as Operação table area ── */}
+            {opa.hasData && opa.filteredAttendances.length === 0 && (
+              <div className="py-12 text-center">
+                <p className="text-sm text-muted-foreground">
+                  {opa.attendances.length === 0
+                    ? "Nenhum atendimento encontrado com os filtros aplicados."
+                    : `Nenhum resultado para "${opa.searchTerm}".`}
+                </p>
+                <Button variant="outline" size="sm" className="mt-3 text-xs" onClick={opa.fetchList}>
+                  Atualizar lista
+                </Button>
+              </div>
+            )}
+
+            {opa.hasData && opa.filteredAttendances.length > 0 && (
+              <div className="overflow-y-auto max-h-[480px] rounded-lg border border-border">
+                <Table className="w-full table-fixed">
+                  <TableHeader>
+                    <TableRow className="bg-muted/40">
+                      <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[18%]">Protocolo</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[12%]">Canal</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[12%]">Status</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[20%]">Início</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[20%]">Fim</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase tracking-wider text-right w-[18%] pr-5">Ação</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {opa.filteredAttendances.map((att) => (
+                      <TableRow
+                        key={att.id}
+                        className={cn(
+                          "transition-colors",
+                          opa.selectedId === att.id ? "bg-primary/5" : "hover:bg-muted/50"
+                        )}
+                      >
+                        <TableCell className="text-xs font-medium truncate">{att.protocolo || "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-[10px] capitalize">{att.canal || "—"}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={cn(
+                              "text-[10px]",
+                              att.status === "F"
+                                ? "bg-accent/10 text-accent border-accent/30"
+                                : "bg-muted text-muted-foreground"
+                            )}
+                          >
+                            {att.status === "F" ? "Finalizado" : att.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground truncate">{opa.formatDate(att.data_inicio)}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground truncate">{opa.formatDate(att.data_fim)}</TableCell>
+                        <TableCell className="text-right pr-5">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-[11px] gap-1.5"
+                            onClick={() => opa.handleSelect(att)}
+                            disabled={opa.selectedId === att.id}
+                          >
+                            <MessageSquareQuote className="h-3 w-3" />
+                            Analisar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+
+            {/* ── Result — exact same component as Operação ── */}
+            {(opaResult || opaAnalyzing) && (
+              <AnalysisResult data={opaResult} />
             )}
           </TabsContent>
         </Tabs>
