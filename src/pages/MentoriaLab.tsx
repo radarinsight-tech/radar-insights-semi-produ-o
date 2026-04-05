@@ -3149,6 +3149,14 @@ const MentoriaLab = () => {
                   <p>Visualize métricas, bônus e evolução dos atendentes da competência selecionada</p>
                 </TooltipContent>
               </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="opa" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground hover:bg-accent/60 transition-colors rounded-md font-medium">Opa Suite</TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[300px] text-center">
+                  <p>Importe atendimentos diretamente da Opa Suite para análise</p>
+                </TooltipContent>
+              </Tooltip>
             </TooltipProvider>
           </TabsList>
 
