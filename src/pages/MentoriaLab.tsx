@@ -620,7 +620,7 @@ const MentoriaLab = () => {
       }
       return true;
     });
-  }, [opaFiles, opaSearchTerm, opa.filterAtendente, opaHumanSpecific, opaFilterAuditoriaFrom, opaFilterAuditoriaTo, friendlyName]);
+  }, [opaFiles, opaSearchTerm, opa.filterAtendente, opaHumanSelected, opaFilterAuditoriaFrom, opaFilterAuditoriaTo, friendlyName]);
 
   const opaAtendentes = useMemo(() => {
     const map = new Map<string, string>(); // friendly -> friendly (dedup)
