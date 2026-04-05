@@ -581,9 +581,24 @@ const MentoriaUnifiedTable = ({
                       )}
                     </TableCell>
 
-                    {/* Ação — Análise IA / Confirm+Audit / menu */}
+                    {/* Ação — Preview / Análise IA / Confirm+Audit / Delete / menu */}
                     <TableCell className="py-3 w-[20%] text-right">
                       <div className="flex items-center justify-end gap-1 flex-nowrap">
+                        {/* Preview — always available */}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                              onClick={() => { onMarkViewed?.(f.id); onOpenFile(f); }}
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top"><p>Visualizar detalhes do atendimento</p></TooltipContent>
+                        </Tooltip>
+
                         {/* Botão Análise IA para pendentes/lidos */}
                         {(f.status === "lido" || f.status === "pendente") && !f.hasResult && (
                           <Tooltip>
@@ -603,7 +618,24 @@ const MentoriaUnifiedTable = ({
                           </Tooltip>
                         )}
 
-
+                        {/* Retry for error rows */}
+                        {f.status === "erro" && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2 text-xs gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+                                onClick={() => onStartMentoria(f)}
+                                disabled={isBusy}
+                              >
+                                <PlayCircle className="h-3 w-3" />
+                                Tentar novamente
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top"><p>Tentar analisar novamente este atendimento</p></TooltipContent>
+                          </Tooltip>
+                        )}
 
                         {/* Confirm + Audit buttons for items with results that are not yet confirmed */}
                         {f.hasResult && f.status !== "confirmado" && (
@@ -653,6 +685,22 @@ const MentoriaUnifiedTable = ({
                             Ver
                           </Button>
                         )}
+
+                        {/* Delete per-row */}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                              onClick={() => onRemoveFile(f.id)}
+                              disabled={isBusy}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top"><p>Excluir este atendimento</p></TooltipContent>
+                        </Tooltip>
 
                         {/* Diagnóstico — botão discreto visível apenas para admin */}
                         {isAdmin && (
