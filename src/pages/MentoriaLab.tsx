@@ -4321,10 +4321,38 @@ const MentoriaLab = () => {
         atendente={opaMentoriaFile?.atendente}
         structuredConversation={opaMentoriaFile?.structuredConversation}
         workflowStatus={opaMentoriaFile ? getOpaWorkflowStatus(opaMentoriaFile.id) : undefined}
-        onMarkFinished={() => {
-          if (opaMentoriaFile) {
-            setOpaWorkflowStatuses((prev) => ({ ...prev, [opaMentoriaFile.id]: "finalizado" }));
-            toast.success("Atendimento marcado como finalizado.");
+        onMarkFinished={async () => {
+          if (!opaMentoriaFile) return;
+          setOpaWorkflowStatuses((prev) => ({ ...prev, [opaMentoriaFile.id]: "finalizado" }));
+          setOpaFiles((prev) => prev.map((f) => f.id === opaMentoriaFile.id ? { ...f, status: "confirmado" as FileStatus } : f));
+          // Persist to evaluations table for Performance tracking
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && opaMentoriaFile.result) {
+              const r = opaMentoriaFile.result;
+              const companyId = await supabase.rpc("get_my_company_id").then((res) => res.data);
+              await supabase.from("evaluations").insert({
+                user_id: user.id,
+                atendente: opaMentoriaFile.atendente || "Desconhecido",
+                protocolo: opaMentoriaFile.protocolo || opaMentoriaFile.id,
+                tipo: r.tipo || "opa_suite",
+                nota: r.notaFinal ?? r.nota ?? 0,
+                classificacao: r.classificacao || "—",
+                data: opaMentoriaFile.data || new Date().toLocaleDateString("pt-BR"),
+                bonus: (r.bonusQualidade ?? 0) >= 80,
+                atualizacao_cadastral: r.bonusOperacional?.atualizacaoCadastral || "NÃO",
+                pontos_melhoria: r.mentoria || r.pontosMelhoria || [],
+                full_report: r,
+                resultado_validado: true,
+                prompt_version: r.versao || "opa-suite",
+                company_id: companyId || null,
+                audit_log: buildOfficialAuditLog("opa_suite_manual", user.id),
+              } as any);
+              toast.success("Auditoria finalizada e enviada para Performance.");
+            }
+          } catch (err: any) {
+            console.error("[OpaAudit] save error:", err);
+            toast.error("Erro ao salvar auditoria. Tente novamente.");
           }
         }}
         onNextFile={() => {}}
