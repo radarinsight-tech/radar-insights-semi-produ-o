@@ -4146,7 +4146,10 @@ const MentoriaLab = () => {
                   onStartMentoria={(f) => handleOpaStartMentoria(f as any)}
                   onApproveOfficial={() => {}}
                   onRemoveFile={(id) => setOpaFiles((prev) => prev.filter((f) => f.id !== id))}
-                  onOpenDiagnostic={() => {}}
+                  onOpenDiagnostic={(f) => {
+                    const opaFile = opaFiles.find((of) => of.id === f.id);
+                    if (opaFile) setDiagnosticFile(opaFile);
+                  }}
                   onAnalyzeNext={() => {
                     const pending = opaFilteredFiles.find((f) => f.status === "pendente");
                     if (pending) {
@@ -4171,7 +4174,37 @@ const MentoriaLab = () => {
                   }}
                   onConfirmSelected={async (ids: string[]) => {
                     setOpaFiles((prev) => prev.map((f) => ids.includes(f.id) ? { ...f, status: "confirmado" as FileStatus } : f));
-                    toast.success(`${ids.length} atendimento(s) confirmado(s).`);
+                    try {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) return;
+                      const companyId = await supabase.rpc("get_my_company_id").then((res) => res.data);
+                      for (const id of ids) {
+                        const file = opaFiles.find((f) => f.id === id);
+                        if (!file?.result) continue;
+                        const r = file.result;
+                        await supabase.from("evaluations").insert({
+                          user_id: user.id,
+                          atendente: file.atendente || "Desconhecido",
+                          protocolo: file.protocolo || file.id,
+                          tipo: r.tipo || "opa_suite",
+                          nota: r.notaFinal ?? r.nota ?? 0,
+                          classificacao: r.classificacao || "\u2014",
+                          data: file.data || new Date().toLocaleDateString("pt-BR"),
+                          bonus: (r.bonusQualidade ?? 0) >= 80,
+                          atualizacao_cadastral: r.bonusOperacional?.atualizacaoCadastral || "N\u00c3O",
+                          pontos_melhoria: r.mentoria || r.pontosMelhoria || [],
+                          full_report: r,
+                          resultado_validado: true,
+                          prompt_version: r.versao || "opa-suite",
+                          company_id: companyId || null,
+                          audit_log: buildOfficialAuditLog("manual", undefined),
+                        } as any);
+                      }
+                      toast.success(`${ids.length} atendimento(s) confirmado(s) e enviado(s) para Performance.`);
+                    } catch (err: any) {
+                      console.error("[OpaConfirm] save error:", err);
+                      toast.error("Erro ao salvar confirma\u00e7\u00e3o.");
+                    }
                   }}
                   onRejectSelected={async (ids: string[]) => {
                     setOpaFiles((prev) => prev.map((f) => ids.includes(f.id) ? { ...f, status: "pendente" as FileStatus, result: undefined } : f));
