@@ -427,19 +427,20 @@ const MentoriaLab = () => {
     meta: { protocolo: string; atendente: string; canal: string; attendanceId: string },
   ) => {
     setOpaAnalyzing(true);
-    setOpaResult(null);
-    setOpaFullReport(null);
+    // Update the file status to show it's being analyzed
+    setOpaFiles((prev) => prev.map((f) => f.id === meta.attendanceId ? { ...f, status: "lido" as FileStatus } : f));
     try {
       const response = await supabase.functions.invoke("analyze-attendance", { body: { text } });
       if (response.error || response.data?.error) {
         const detail = response.data?.error || response.error?.message || "Erro desconhecido";
         toast.error(`Erro na análise: ${detail}`);
+        setOpaFiles((prev) => prev.map((f) => f.id === meta.attendanceId ? { ...f, status: "erro" as FileStatus, error: detail } : f));
         setOpaAnalyzing(false);
         return;
       }
       const d = response.data;
       setOpaFullReport(d);
-      setOpaResult({
+      const analysisResult: AnalysisData = {
         protocolo: d.protocolo || meta.protocolo || "—",
         atendente: d.atendente || meta.atendente || "—",
         tipo: d.tipo || "—",
@@ -454,11 +455,23 @@ const MentoriaLab = () => {
         noInteraction: d.statusAtendimento === "fora_de_avaliacao" || d.motivo === "sem_interacao_do_cliente",
         impeditivo: d.statusAuditoria === "impedimento_detectado",
         motivoImpeditivo: d.motivoImpeditivo,
-      });
+      };
+      setOpaResult(analysisResult);
+      // Update the opaFile with result data
+      setOpaFiles((prev) => prev.map((f) => f.id === meta.attendanceId ? {
+        ...f,
+        status: "analisado" as FileStatus,
+        result: d,
+        atendente: d.atendente || meta.atendente || f.atendente,
+        protocolo: d.protocolo || meta.protocolo || f.protocolo,
+        analyzedAt: new Date(),
+      } : f));
+      setOpaWorkflowStatuses((prev) => ({ ...prev, [meta.attendanceId]: "finalizado" }));
       toast.success("Análise concluída com sucesso!");
     } catch (err: any) {
       console.error("[OpaImport] analyze error:", err);
       toast.error("Erro ao analisar atendimento da Opa Suite");
+      setOpaFiles((prev) => prev.map((f) => f.id === meta.attendanceId ? { ...f, status: "erro" as FileStatus, error: "Erro ao analisar" } : f));
     } finally {
       setOpaAnalyzing(false);
     }
@@ -466,6 +479,100 @@ const MentoriaLab = () => {
 
   // ── Opa Suite hook ──
   const opa = useOpaImport({ onTextReady: handleOpaTextReady, isAnalyzing: opaAnalyzing });
+
+  // Convert OpaAttendances to LabFile format when list is fetched
+  useEffect(() => {
+    if (opa.attendances.length > 0) {
+      setOpaFiles((prev) => {
+        const existingIds = new Set(prev.map((f) => f.id));
+        const newFiles: LabFile[] = opa.attendances
+          .filter((att) => !existingIds.has(att.id))
+          .map((att) => ({
+            id: att.id,
+            file: new File([], `opa-${att.protocolo || att.id}.txt`),
+            name: att.protocolo || att.id,
+            size: 0,
+            addedAt: att.data_inicio ? new Date(att.data_inicio) : new Date(),
+            status: "pendente" as FileStatus,
+            atendente: att.atendente || undefined,
+            protocolo: att.protocolo || undefined,
+            data: att.data_inicio ? new Date(att.data_inicio).toLocaleDateString("pt-BR") : undefined,
+            canal: att.canal || undefined,
+          }));
+        // Merge: keep existing (possibly analyzed) files + add new ones
+        const updatedPrev = prev.filter((f) => opa.attendances.some((att) => att.id === f.id));
+        return [...updatedPrev, ...newFiles];
+      });
+    }
+  }, [opa.attendances]);
+
+  // Opa filtered files
+  const opaFilteredFiles = useMemo(() => {
+    return opaFiles.filter((f) => {
+      if (opaSearchTerm) {
+        const q = opaSearchTerm.toLowerCase();
+        if (
+          !f.name.toLowerCase().includes(q) &&
+          !f.protocolo?.toLowerCase().includes(q) &&
+          !f.atendente?.toLowerCase().includes(q)
+        ) return false;
+      }
+      if (opaFilterAtendente === "sem_atendente" && f.atendente) return false;
+      if (opaFilterAtendente !== "todos" && opaFilterAtendente !== "sem_atendente" && f.atendente !== opaFilterAtendente) return false;
+      if (opaFilterAuditoriaFrom || opaFilterAuditoriaTo) {
+        if (!f.analyzedAt) return false;
+        if (opaFilterAuditoriaFrom && f.analyzedAt < opaFilterAuditoriaFrom) return false;
+        if (opaFilterAuditoriaTo) {
+          const endOfDay = new Date(opaFilterAuditoriaTo);
+          endOfDay.setHours(23, 59, 59, 999);
+          if (f.analyzedAt > endOfDay) return false;
+        }
+      }
+      return true;
+    });
+  }, [opaFiles, opaSearchTerm, opaFilterAtendente, opaFilterAuditoriaFrom, opaFilterAuditoriaTo]);
+
+  // Opa atendentes list
+  const opaAtendentes = useMemo(() => {
+    const set = new Set(opaFiles.map((f) => f.atendente).filter(Boolean) as string[]);
+    return [...set].sort();
+  }, [opaFiles]);
+
+  // Opa counts
+  const opaCounts = useMemo(() => {
+    const source = opaFilteredFiles;
+    return {
+      total: source.length,
+      pendente: source.filter((f) => f.status === "pendente").length,
+      lido: source.filter((f) => f.status === "lido").length,
+      analisado: source.filter((f) => f.status === "analisado").length,
+      erro: source.filter((f) => f.status === "erro").length,
+      naoAvaliavel: 0,
+    };
+  }, [opaFilteredFiles]);
+
+  const getOpaWorkflowStatus = useCallback((fileId: string): WorkflowStatus => opaWorkflowStatuses[fileId] || "nao_iniciado", [opaWorkflowStatuses]);
+
+  const openOpaMentoria = useCallback((f: LabFile, initialStep?: "revisao" | "relatorio") => {
+    setOpaMentoriaFile(f);
+    setOpaMentoriaInitialStep(initialStep);
+    setOpaHighlightedFileId(f.id);
+    setOpaWorkflowStatuses((prev) => ({ ...prev, [f.id]: prev[f.id] === "finalizado" ? "finalizado" : "em_analise" }));
+  }, []);
+
+  const handleOpaStartMentoria = useCallback(async (labFile: LabFile) => {
+    // For Opa files, we need to fetch messages first if not already analyzed
+    if (labFile.status === "pendente") {
+      const att = opa.attendances.find((a) => a.id === labFile.id);
+      if (att) {
+        opa.handleSelect(att);
+      }
+      return;
+    }
+    if (labFile.status === "analisado" && labFile.result) {
+      openOpaMentoria(labFile);
+    }
+  }, [opa, openOpaMentoria]);
 
   // Load persisted batches and files from database on mount
   useEffect(() => {
