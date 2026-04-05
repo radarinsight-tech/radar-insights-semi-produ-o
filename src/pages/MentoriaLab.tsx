@@ -4,6 +4,7 @@ import JSZip from "jszip";
 import { format } from "date-fns";
 import {
   ArrowLeft,
+  Bookmark,
   LogOut,
   Upload,
   FileText,
