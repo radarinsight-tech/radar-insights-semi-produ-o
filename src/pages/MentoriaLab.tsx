@@ -4128,7 +4128,7 @@ const MentoriaLab = () => {
 
                 {/* ═══ UNIFIED TABLE ═══ */}
                 <MentoriaUnifiedTable
-                  files={opaFilteredFiles}
+                  files={opaFilteredFiles.map((f) => ({ ...f, atendente: f.atendente ? friendlyName(f.atendente) : f.atendente }))}
                   getWorkflowStatus={getOpaWorkflowStatus}
                   highlightedFileId={opaHighlightedFileId}
                   readingIds={new Set<string>()}
