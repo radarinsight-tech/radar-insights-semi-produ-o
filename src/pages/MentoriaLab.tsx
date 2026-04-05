@@ -372,6 +372,15 @@ const MentoriaLab = () => {
   const [opaAnalyzing, setOpaAnalyzing] = useState(false);
   const [opaResult, setOpaResult] = useState<AnalysisData | null>(null);
   const [opaFullReport, setOpaFullReport] = useState<any>(null);
+  const [opaFiles, setOpaFiles] = useState<LabFile[]>([]);
+  const [opaSearchTerm, setOpaSearchTerm] = useState("");
+  const [opaFilterAtendente, setOpaFilterAtendente] = useState("todos");
+  const [opaFilterAuditoriaFrom, setOpaFilterAuditoriaFrom] = useState<Date | undefined>();
+  const [opaFilterAuditoriaTo, setOpaFilterAuditoriaTo] = useState<Date | undefined>();
+  const [opaWorkflowStatuses, setOpaWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
+  const [opaMentoriaFile, setOpaMentoriaFile] = useState<LabFile | null>(null);
+  const [opaMentoriaInitialStep, setOpaMentoriaInitialStep] = useState<"revisao" | "relatorio" | undefined>(undefined);
+  const [opaHighlightedFileId, setOpaHighlightedFileId] = useState<string | null>(null);
   const { isAdmin } = useUserPermissions();
   const {
     excludedNames: globalExcludedNames,
