@@ -4106,12 +4106,9 @@ const MentoriaLab = () => {
                   batchStats={{ analyzing: 0, completed: 0, failed: 0 }}
                   isAdmin={isAdmin}
                   onOpenFile={(f) => {
-                    const att = opa.attendances.find((a) => a.id === f.id);
-                    if (att && f.status === "pendente") {
-                      opa.handleSelect(att);
-                    } else if (f.status === "analisado") {
-                      openOpaMentoria(f as any, "relatorio");
-                    }
+                    // Open side panel for preview
+                    const opaFile = opaFiles.find((of) => of.id === f.id);
+                    if (opaFile) setSideFile(opaFile);
                   }}
                   onOpenMentoria={(f) => openOpaMentoria(f as any, "relatorio")}
                   onStartMentoria={(f) => handleOpaStartMentoria(f as any)}
