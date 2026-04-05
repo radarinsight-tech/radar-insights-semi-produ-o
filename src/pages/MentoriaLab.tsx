@@ -375,6 +375,7 @@ const MentoriaLab = () => {
   const [opaFiles, setOpaFiles] = useState<LabFile[]>([]);
   const [opaSearchTerm, setOpaSearchTerm] = useState("");
   const [_opaFilterAtendente_UNUSED, _setOpaFilterAtendente_UNUSED] = useState("todos"); // kept for compat; real filter is opa.filterAtendente
+  const [opaHumanSpecific, setOpaHumanSpecific] = useState("todos_humanos"); // specific human attendant when somente_humanos is selected
   const [opaFilterAuditoriaFrom, setOpaFilterAuditoriaFrom] = useState<Date | undefined>();
   const [opaFilterAuditoriaTo, setOpaFilterAuditoriaTo] = useState<Date | undefined>();
   const [opaWorkflowStatuses, setOpaWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
@@ -594,8 +595,13 @@ const MentoriaLab = () => {
       }
       if (currentFilter === "sem_atendente") {
         if (f.atendente) return false;
-      } else if (currentFilter === "somente_humanos") {
+    } else if (currentFilter === "somente_humanos") {
         if (!f.atendente || isLikelyBot(f.atendente)) return false;
+        // If a specific human is selected, filter further
+        if (opaHumanSpecific && opaHumanSpecific !== "todos_humanos") {
+          const displayName = friendlyName(f.atendente);
+          if (displayName !== opaHumanSpecific && f.atendente !== opaHumanSpecific) return false;
+        }
       } else if (currentFilter === "somente_bot") {
         if (!f.atendente || !isLikelyBot(f.atendente)) return false;
       } else if (currentFilter !== "todos") {
@@ -614,7 +620,7 @@ const MentoriaLab = () => {
       }
       return true;
     });
-  }, [opaFiles, opaSearchTerm, opa.filterAtendente, opaFilterAuditoriaFrom, opaFilterAuditoriaTo, friendlyName]);
+  }, [opaFiles, opaSearchTerm, opa.filterAtendente, opaHumanSpecific, opaFilterAuditoriaFrom, opaFilterAuditoriaTo, friendlyName]);
 
   const opaAtendentes = useMemo(() => {
     const map = new Map<string, string>(); // friendly -> friendly (dedup)
@@ -626,6 +632,24 @@ const MentoriaLab = () => {
     });
     return [...map.keys()].sort();
   }, [opaFiles, friendlyName]);
+
+  // Human-only attendants list for the secondary selector
+  const opaHumanAttendants = useMemo(() => {
+    const map = new Map<string, string>();
+    opaFiles.forEach((f) => {
+      if (f.atendente && !isLikelyBot(f.atendente)) {
+        const fn = friendlyName(f.atendente);
+        if (!map.has(fn)) map.set(fn, fn);
+      }
+    });
+    // Also add registered attendants that participate in evaluation
+    registeredAttendants.forEach((a) => {
+      if (a.participates_evaluation && a.active && !map.has(a.name)) {
+        map.set(a.name, a.name);
+      }
+    });
+    return [...map.keys()].sort();
+  }, [opaFiles, friendlyName, registeredAttendants]);
 
   // Opa counts
   const opaCounts = useMemo(() => {
@@ -3869,10 +3893,13 @@ const MentoriaLab = () => {
                       </Popover>
                     </div>
 
-                    {/* Attendant filter — in top card before fetch */}
+                    {/* Attendant category filter — in top card before fetch */}
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Atendente</label>
-                      <Select value={opa.filterAtendente} onValueChange={opa.setFilterAtendente}>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Categoria</label>
+                      <Select value={opa.filterAtendente} onValueChange={(v) => {
+                        opa.setFilterAtendente(v);
+                        if (v !== "somente_humanos") setOpaHumanSpecific("todos_humanos");
+                      }}>
                         <SelectTrigger className="w-[180px] h-9 text-xs">
                           <SelectValue placeholder="Todos atendentes" />
                         </SelectTrigger>
@@ -3881,12 +3908,27 @@ const MentoriaLab = () => {
                           <SelectItem value="sem_atendente">Sem atendente</SelectItem>
                           <SelectItem value="somente_humanos">Somente humanos</SelectItem>
                           <SelectItem value="somente_bot">Somente BOT/sistema</SelectItem>
-                          {opa.atendentes.map((a) => (
-                            <SelectItem key={a} value={a}>{friendlyName(a)}</SelectItem>
-                          ))}
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {/* Secondary: specific human attendant selector */}
+                    {opa.filterAtendente === "somente_humanos" && (
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Atendente</label>
+                        <Select value={opaHumanSpecific} onValueChange={setOpaHumanSpecific}>
+                          <SelectTrigger className="w-[200px] h-9 text-xs">
+                            <SelectValue placeholder="Todos humanos" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todos_humanos">Todos humanos</SelectItem>
+                            {opaHumanAttendants.map((name) => (
+                              <SelectItem key={name} value={name}>{name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
 
                   {/* Action button */}
@@ -4015,28 +4057,43 @@ const MentoriaLab = () => {
                       <TooltipContent side="bottom"><p>Filtrar por atendente ou protocolo</p></TooltipContent>
                     </Tooltip>
 
-                    {/* Atendente */}
+                    {/* Atendente category */}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div>
-                          <Select value={opa.filterAtendente} onValueChange={opa.setFilterAtendente}>
+                          <Select value={opa.filterAtendente} onValueChange={(v) => {
+                            opa.setFilterAtendente(v);
+                            if (v !== "somente_humanos") setOpaHumanSpecific("todos_humanos");
+                          }}>
                             <SelectTrigger className="w-[160px]">
-                              <SelectValue placeholder="Atendente" />
+                              <SelectValue placeholder="Categoria" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="todos">Todos atendentes</SelectItem>
                               <SelectItem value="sem_atendente">Sem atendente</SelectItem>
                               <SelectItem value="somente_humanos">Somente humanos</SelectItem>
                               <SelectItem value="somente_bot">Somente BOT/sistema</SelectItem>
-                              {opaAtendentes.map((a) => (
-                                <SelectItem key={a} value={a}>{friendlyName(a)}</SelectItem>
-                              ))}
                             </SelectContent>
                           </Select>
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent side="bottom"><p>Filtrar tabela por atendente</p></TooltipContent>
+                      <TooltipContent side="bottom"><p>Filtrar tabela por categoria</p></TooltipContent>
                     </Tooltip>
+
+                    {/* Specific human attendant */}
+                    {opa.filterAtendente === "somente_humanos" && (
+                      <Select value={opaHumanSpecific} onValueChange={setOpaHumanSpecific}>
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Todos humanos" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos_humanos">Todos humanos</SelectItem>
+                          {opaHumanAttendants.map((name) => (
+                            <SelectItem key={name} value={name}>{name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
 
                     {/* Period filter */}
                     <Tooltip>
