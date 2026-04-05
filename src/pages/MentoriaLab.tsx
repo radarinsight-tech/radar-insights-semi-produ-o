@@ -75,6 +75,8 @@ import MentoriaBonusPanel from "@/components/MentoriaBonusPanel";
 import MentoriaReportExport from "@/components/MentoriaReportExport";
 import { buildMarkedText } from "@/lib/buildMarkedText";
 import VersionRegistryCard from "@/components/VersionRegistryCard";
+import OpaImportPanel from "@/components/OpaImportPanel";
+import AnalysisResult, { type AnalysisData } from "@/components/AnalysisResult";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro" | "aguardando_revisao_ia" | "aguardando_revisao_manual" | "confirmado" | "reprovado";
 type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
@@ -363,6 +365,9 @@ const MentoriaLab = () => {
      failed: 0,
    });
   const [batchProcessing, setBatchProcessing] = useState(false);
+  const [opaAnalyzing, setOpaAnalyzing] = useState(false);
+  const [opaResult, setOpaResult] = useState<AnalysisData | null>(null);
+  const [opaFullReport, setOpaFullReport] = useState<any>(null);
   const { isAdmin } = useUserPermissions();
   const {
     excludedNames: globalExcludedNames,
@@ -402,6 +407,49 @@ const MentoriaLab = () => {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [loadingFromDb, setLoadingFromDb] = useState(true);
+
+  // ── Opa Suite handler ──
+  const handleOpaTextReady = useCallback(async (
+    text: string,
+    meta: { protocolo: string; atendente: string; canal: string; attendanceId: string },
+  ) => {
+    setOpaAnalyzing(true);
+    setOpaResult(null);
+    setOpaFullReport(null);
+    try {
+      const response = await supabase.functions.invoke("analyze-attendance", { body: { text } });
+      if (response.error || response.data?.error) {
+        const detail = response.data?.error || response.error?.message || "Erro desconhecido";
+        toast.error(`Erro na análise: ${detail}`);
+        setOpaAnalyzing(false);
+        return;
+      }
+      const d = response.data;
+      setOpaFullReport(d);
+      setOpaResult({
+        protocolo: d.protocolo || meta.protocolo || "—",
+        atendente: d.atendente || meta.atendente || "—",
+        tipo: d.tipo || "—",
+        atualizacaoCadastral: d.bonusOperacional?.atualizacaoCadastral || "NÃO",
+        notaFinal: d.notaFinal ?? d.nota ?? 0,
+        classificacao: d.classificacao || "—",
+        bonus: (d.bonusQualidade ?? 0) >= 80,
+        bonusQualidade: d.bonusQualidade ?? 0,
+        pontosMelhoria: d.mentoria || d.pontosMelhoria || [],
+        pontosObtidos: d.pontosObtidos,
+        pontosPossiveis: d.pontosPossiveis,
+        noInteraction: d.statusAtendimento === "fora_de_avaliacao" || d.motivo === "sem_interacao_do_cliente",
+        impeditivo: d.statusAuditoria === "impedimento_detectado",
+        motivoImpeditivo: d.motivoImpeditivo,
+      });
+      toast.success("Análise concluída com sucesso!");
+    } catch (err: any) {
+      console.error("[OpaImport] analyze error:", err);
+      toast.error("Erro ao analisar atendimento da Opa Suite");
+    } finally {
+      setOpaAnalyzing(false);
+    }
+  }, []);
 
   // Load persisted batches and files from database on mount
   useEffect(() => {
@@ -3083,7 +3131,7 @@ const MentoriaLab = () => {
 
         {/* Tabs navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-xs border border-border bg-muted/60 p-1 rounded-lg">
+          <TabsList className="grid w-full grid-cols-3 max-w-md border border-border bg-muted/60 p-1 rounded-lg">
             <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -3099,6 +3147,14 @@ const MentoriaLab = () => {
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-[300px] text-center">
                   <p>Visualize métricas, bônus e evolução dos atendentes da competência selecionada</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="opa" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground hover:bg-accent/60 transition-colors rounded-md font-medium">Opa Suite</TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[300px] text-center">
+                  <p>Importe atendimentos diretamente da Opa Suite para análise</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -3510,6 +3566,13 @@ const MentoriaLab = () => {
                 Analise atendimentos para visualizar dados de performance.
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="opa" className="space-y-4 mt-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <OpaImportPanel onTextReady={handleOpaTextReady} isAnalyzing={opaAnalyzing} />
+              <AnalysisResult data={opaResult} />
+            </div>
           </TabsContent>
         </Tabs>
       </main>
