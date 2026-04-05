@@ -4096,37 +4096,70 @@ const MentoriaLab = () => {
                         <div>
                           <Select value={opa.filterAtendente} onValueChange={(v) => {
                             opa.setFilterAtendente(v);
-                            if (v !== "somente_humanos") setOpaHumanSpecific("todos_humanos");
+                            if (v !== "somente_humanos") setOpaHumanSelected(new Set());
                           }}>
-                            <SelectTrigger className="w-[160px]">
-                              <SelectValue placeholder="Categoria" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="todos">Todos atendentes</SelectItem>
-                              <SelectItem value="sem_atendente">Sem atendente</SelectItem>
-                              <SelectItem value="somente_humanos">Somente humanos</SelectItem>
-                              <SelectItem value="somente_bot">Somente BOT/sistema</SelectItem>
-                            </SelectContent>
-                          </Select>
+                             <SelectTrigger className="w-[160px]">
+                               <SelectValue placeholder="Categoria" />
+                             </SelectTrigger>
+                             <SelectContent>
+                               <SelectItem value="todos">Todos atendentes</SelectItem>
+                               <SelectItem value="sem_atendente">Sem atendente</SelectItem>
+                               <SelectItem value="somente_humanos">Somente humanos</SelectItem>
+                               <SelectItem value="somente_bot">Somente BOT/sistema</SelectItem>
+                             </SelectContent>
+                           </Select>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="bottom"><p>Filtrar tabela por categoria</p></TooltipContent>
                     </Tooltip>
 
-                    {/* Specific human attendant */}
-                    {opa.filterAtendente === "somente_humanos" && (
-                      <Select value={opaHumanSpecific} onValueChange={setOpaHumanSpecific}>
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Todos humanos" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="todos_humanos">Todos humanos</SelectItem>
-                          {opaHumanAttendants.map((name) => (
-                            <SelectItem key={name} value={name}>{name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                     {/* Multi-select human attendants (table bar) */}
+                     {opa.filterAtendente === "somente_humanos" && (
+                       <Popover>
+                         <PopoverTrigger asChild>
+                           <Button variant="outline" className="h-10 text-xs justify-start gap-1.5 font-normal min-w-[180px]">
+                             <Filter className="h-3.5 w-3.5 shrink-0" />
+                             {opaHumanSelected.size === 0
+                               ? "Todos humanos"
+                               : `${opaHumanSelected.size} selecionado(s)`}
+                           </Button>
+                         </PopoverTrigger>
+                         <PopoverContent className="w-[260px] p-0" align="start">
+                           <div className="p-2 border-b border-border">
+                             <p className="text-xs font-semibold text-muted-foreground">Selecionar atendentes</p>
+                           </div>
+                           <div className="max-h-[220px] overflow-y-auto p-2 space-y-1">
+                             {opaHumanAttendants.length === 0 ? (
+                               <p className="text-xs text-muted-foreground py-2 text-center">Nenhum atendente humano encontrado</p>
+                             ) : (
+                               opaHumanAttendants.map((name) => (
+                                 <label key={name} className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent/50 cursor-pointer text-xs">
+                                   <Checkbox
+                                     checked={opaHumanSelected.has(name)}
+                                     onCheckedChange={(checked) => {
+                                       setOpaHumanSelected((prev) => {
+                                         const next = new Set(prev);
+                                         if (checked) next.add(name);
+                                         else next.delete(name);
+                                         return next;
+                                       });
+                                     }}
+                                   />
+                                   <span className="truncate">{name}</span>
+                                 </label>
+                               ))
+                             )}
+                           </div>
+                           {opaHumanSelected.size > 0 && (
+                             <div className="p-2 border-t border-border">
+                               <Button variant="ghost" size="sm" className="w-full text-xs h-7" onClick={() => setOpaHumanSelected(new Set())}>
+                                 Limpar seleção
+                               </Button>
+                             </div>
+                           )}
+                         </PopoverContent>
+                       </Popover>
+                     )}
 
                     {/* Period filter */}
                     <Tooltip>
