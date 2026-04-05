@@ -3974,8 +3974,10 @@ const MentoriaLab = () => {
                             <SelectContent>
                               <SelectItem value="todos">Todos atendentes</SelectItem>
                               <SelectItem value="sem_atendente">Sem atendente</SelectItem>
+                              <SelectItem value="somente_humanos">Somente humanos</SelectItem>
+                              <SelectItem value="somente_bot">Somente BOT/sistema</SelectItem>
                               {opaAtendentes.map((a) => (
-                                <SelectItem key={a} value={a}>{a}</SelectItem>
+                                <SelectItem key={a} value={a}>{friendlyName(a)}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
