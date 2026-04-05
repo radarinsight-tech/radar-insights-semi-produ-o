@@ -545,25 +545,26 @@ const MentoriaLab = () => {
     dedup();
   }, [opa.attendances]);
 
-  // Opa filtered files
+  // Opa filtered files — uses opa.filterAtendente as single source
   const opaFilteredFiles = useMemo(() => {
+    const currentFilter = opa.filterAtendente;
     return opaFiles.filter((f) => {
       if (opaSearchTerm) {
         const q = opaSearchTerm.toLowerCase();
         if (
           !f.name.toLowerCase().includes(q) &&
           !f.protocolo?.toLowerCase().includes(q) &&
-          !f.atendente?.toLowerCase().includes(q)
+          !(f.atendente ? friendlyName(f.atendente) : "").toLowerCase().includes(q)
         ) return false;
       }
-      if (opaFilterAtendente === "sem_atendente") {
+      if (currentFilter === "sem_atendente") {
         if (f.atendente) return false;
-      } else if (opaFilterAtendente === "somente_humanos") {
+      } else if (currentFilter === "somente_humanos") {
         if (!f.atendente || isLikelyBot(f.atendente)) return false;
-      } else if (opaFilterAtendente === "somente_bot") {
+      } else if (currentFilter === "somente_bot") {
         if (!f.atendente || !isLikelyBot(f.atendente)) return false;
-      } else if (opaFilterAtendente !== "todos") {
-        if (f.atendente !== opaFilterAtendente) return false;
+      } else if (currentFilter !== "todos") {
+        if (f.atendente !== currentFilter) return false;
       }
       if (opaFilterAuditoriaFrom || opaFilterAuditoriaTo) {
         if (!f.analyzedAt) return false;
@@ -576,7 +577,7 @@ const MentoriaLab = () => {
       }
       return true;
     });
-  }, [opaFiles, opaSearchTerm, opaFilterAtendente, opaFilterAuditoriaFrom, opaFilterAuditoriaTo]);
+  }, [opaFiles, opaSearchTerm, opa.filterAtendente, opaFilterAuditoriaFrom, opaFilterAuditoriaTo]);
 
   // Opa atendentes list — classify as human vs bot/system
   const BOT_KEYWORDS = ["bot", "sistema", "automático", "automatico", "virtual", "ura", "chatbot", "autoatendimento"];
