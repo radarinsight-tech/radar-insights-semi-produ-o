@@ -518,7 +518,7 @@ const MentoriaLab = () => {
             size: 0,
             addedAt: att.data_inicio ? new Date(att.data_inicio) : new Date(),
             status: "pendente" as FileStatus,
-            atendente: att.atendente ? friendlyName(att.atendente) : undefined,
+            atendente: att.atendente?.trim() || undefined,
             protocolo: att.protocolo || undefined,
             data: att.data_inicio ? new Date(att.data_inicio).toLocaleDateString("pt-BR") : undefined,
             canal: att.canal || undefined,
@@ -545,16 +545,51 @@ const MentoriaLab = () => {
     dedup();
   }, [opa.attendances]);
 
+  // ── Registered attendants from DB for friendly name resolution ──
+  const [registeredAttendants, setRegisteredAttendants] = useState<import("@/lib/attendantMatcher").RegisteredAttendant[]>([]);
+  useEffect(() => {
+    getRegisteredAttendants().then(setRegisteredAttendants).catch(() => {});
+  }, []);
+
+  // Opa atendentes list — classify as human vs bot/system
+  const BOT_KEYWORDS = ["bot", "sistema", "automático", "automatico", "virtual", "ura", "chatbot", "autoatendimento"];
+  const isLikelyBot = (name: string) => {
+    if (!name) return false;
+    const lower = name.toLowerCase();
+    if (/^[a-f0-9]{24}$/i.test(name)) return true;
+    if (/^[0-9a-f-]{36}$/i.test(name)) return true;
+    return BOT_KEYWORDS.some((kw) => lower.includes(kw));
+  };
+  const isRawId = (name: string) => /^[a-f0-9]{24}$/i.test(name) || /^[0-9a-f-]{36}$/i.test(name);
+
+  // Resolve friendly name: first try registered attendants DB, then fallback
+  const friendlyName = useCallback((name: string): string => {
+    if (!name) return "Sem atendente";
+    // Check registered attendants for a match
+    const normalizedInput = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const match = registeredAttendants.find((a) => {
+      const n = a.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      const nick = a.nickname?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      return n === normalizedInput || n.includes(normalizedInput) || normalizedInput.includes(n) ||
+        (nick && (nick === normalizedInput || nick.includes(normalizedInput) || normalizedInput.includes(nick)));
+    });
+    if (match) return match.name;
+    // Fallback: mask raw IDs
+    if (isRawId(name)) return `Atendente (${name.slice(0, 6)}…)`;
+    return name;
+  }, [registeredAttendants]);
+
   // Opa filtered files — uses opa.filterAtendente as single source
   const opaFilteredFiles = useMemo(() => {
     const currentFilter = opa.filterAtendente;
     return opaFiles.filter((f) => {
       if (opaSearchTerm) {
         const q = opaSearchTerm.toLowerCase();
+        const displayName = f.atendente ? friendlyName(f.atendente) : "";
         if (
           !f.name.toLowerCase().includes(q) &&
           !f.protocolo?.toLowerCase().includes(q) &&
-          !(f.atendente ? friendlyName(f.atendente) : "").toLowerCase().includes(q)
+          !displayName.toLowerCase().includes(q)
         ) return false;
       }
       if (currentFilter === "sem_atendente") {
@@ -564,7 +599,9 @@ const MentoriaLab = () => {
       } else if (currentFilter === "somente_bot") {
         if (!f.atendente || !isLikelyBot(f.atendente)) return false;
       } else if (currentFilter !== "todos") {
-        if (f.atendente !== currentFilter) return false;
+        // Compare using friendly name since filter values use friendly names
+        const displayName = f.atendente ? friendlyName(f.atendente) : "";
+        if (displayName !== currentFilter && f.atendente !== currentFilter) return false;
       }
       if (opaFilterAuditoriaFrom || opaFilterAuditoriaTo) {
         if (!f.analyzedAt) return false;
@@ -577,23 +614,18 @@ const MentoriaLab = () => {
       }
       return true;
     });
-  }, [opaFiles, opaSearchTerm, opa.filterAtendente, opaFilterAuditoriaFrom, opaFilterAuditoriaTo]);
-
-  // Opa atendentes list — classify as human vs bot/system
-  const BOT_KEYWORDS = ["bot", "sistema", "automático", "automatico", "virtual", "ura", "chatbot", "autoatendimento"];
-  const isLikelyBot = (name: string) => {
-    const lower = name.toLowerCase();
-    // Pure ObjectId-like strings (24 hex chars) are system IDs
-    if (/^[a-f0-9]{24}$/i.test(name)) return true;
-    return BOT_KEYWORDS.some((kw) => lower.includes(kw));
-  };
-  const isRawId = (name: string) => /^[a-f0-9]{24}$/i.test(name) || /^[0-9a-f-]{36}$/i.test(name);
-  const friendlyName = (name: string) => isRawId(name) ? `Atendente (${name.slice(0, 6)}…)` : name;
+  }, [opaFiles, opaSearchTerm, opa.filterAtendente, opaFilterAuditoriaFrom, opaFilterAuditoriaTo, friendlyName]);
 
   const opaAtendentes = useMemo(() => {
-    const set = new Set(opaFiles.map((f) => f.atendente).filter(Boolean) as string[]);
-    return [...set].sort();
-  }, [opaFiles]);
+    const map = new Map<string, string>(); // friendly -> friendly (dedup)
+    opaFiles.forEach((f) => {
+      if (f.atendente) {
+        const fn = friendlyName(f.atendente);
+        if (!map.has(fn)) map.set(fn, fn);
+      }
+    });
+    return [...map.keys()].sort();
+  }, [opaFiles, friendlyName]);
 
   // Opa counts
   const opaCounts = useMemo(() => {
@@ -4096,7 +4128,7 @@ const MentoriaLab = () => {
 
                 {/* ═══ UNIFIED TABLE ═══ */}
                 <MentoriaUnifiedTable
-                  files={opaFilteredFiles}
+                  files={opaFilteredFiles.map((f) => ({ ...f, atendente: f.atendente ? friendlyName(f.atendente) : f.atendente }))}
                   getWorkflowStatus={getOpaWorkflowStatus}
                   highlightedFileId={opaHighlightedFileId}
                   readingIds={new Set<string>()}
@@ -4114,7 +4146,10 @@ const MentoriaLab = () => {
                   onStartMentoria={(f) => handleOpaStartMentoria(f as any)}
                   onApproveOfficial={() => {}}
                   onRemoveFile={(id) => setOpaFiles((prev) => prev.filter((f) => f.id !== id))}
-                  onOpenDiagnostic={() => {}}
+                  onOpenDiagnostic={(f) => {
+                    const opaFile = opaFiles.find((of) => of.id === f.id);
+                    if (opaFile) setDiagnosticFile(opaFile);
+                  }}
                   onAnalyzeNext={() => {
                     const pending = opaFilteredFiles.find((f) => f.status === "pendente");
                     if (pending) {
@@ -4139,7 +4174,37 @@ const MentoriaLab = () => {
                   }}
                   onConfirmSelected={async (ids: string[]) => {
                     setOpaFiles((prev) => prev.map((f) => ids.includes(f.id) ? { ...f, status: "confirmado" as FileStatus } : f));
-                    toast.success(`${ids.length} atendimento(s) confirmado(s).`);
+                    try {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) return;
+                      const companyId = await supabase.rpc("get_my_company_id").then((res) => res.data);
+                      for (const id of ids) {
+                        const file = opaFiles.find((f) => f.id === id);
+                        if (!file?.result) continue;
+                        const r = file.result;
+                        await supabase.from("evaluations").insert({
+                          user_id: user.id,
+                          atendente: file.atendente || "Desconhecido",
+                          protocolo: file.protocolo || file.id,
+                          tipo: r.tipo || "opa_suite",
+                          nota: r.notaFinal ?? r.nota ?? 0,
+                          classificacao: r.classificacao || "\u2014",
+                          data: file.data || new Date().toLocaleDateString("pt-BR"),
+                          bonus: (r.bonusQualidade ?? 0) >= 80,
+                          atualizacao_cadastral: r.bonusOperacional?.atualizacaoCadastral || "N\u00c3O",
+                          pontos_melhoria: r.mentoria || r.pontosMelhoria || [],
+                          full_report: r,
+                          resultado_validado: true,
+                          prompt_version: r.versao || "opa-suite",
+                          company_id: companyId || null,
+                          audit_log: buildOfficialAuditLog("manual", undefined),
+                        } as any);
+                      }
+                      toast.success(`${ids.length} atendimento(s) confirmado(s) e enviado(s) para Performance.`);
+                    } catch (err: any) {
+                      console.error("[OpaConfirm] save error:", err);
+                      toast.error("Erro ao salvar confirma\u00e7\u00e3o.");
+                    }
                   }}
                   onRejectSelected={async (ids: string[]) => {
                     setOpaFiles((prev) => prev.map((f) => ids.includes(f.id) ? { ...f, status: "pendente" as FileStatus, result: undefined } : f));
