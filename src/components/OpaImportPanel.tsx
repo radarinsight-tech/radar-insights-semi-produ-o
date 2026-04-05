@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -36,21 +36,29 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("F");
+  const [filterAtendente, setFilterAtendente] = useState("todos");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
-  const [dateFromOpen, setDateFromOpen] = useState(false);
-  const [dateToOpen, setDateToOpen] = useState(false);
 
   const effectiveState: PanelState = isAnalyzing ? "analyzing" : state;
 
+  // Extract unique atendentes from loaded data
+  const atendentes = useMemo(() => {
+    const names = new Set<string>();
+    attendances.forEach((a) => {
+      if (a.atendente?.trim()) names.add(a.atendente.trim());
+    });
+    return Array.from(names).sort();
+  }, [attendances]);
+
   const buildParams = useCallback((): OpaListParams => {
     const params: OpaListParams = { limite: 100 };
-    if (statusFilter && statusFilter !== "todos") params.status = statusFilter;
+    // Always fetch finalized by default
+    params.status = "F";
     if (dateFrom) params.dataInicio = format(dateFrom, "yyyy-MM-dd");
     if (dateTo) params.dataFim = format(dateTo, "yyyy-MM-dd");
     return params;
-  }, [statusFilter, dateFrom, dateTo]);
+  }, [dateFrom, dateTo]);
 
   const fetchList = useCallback(async () => {
     setState("loading-list");
@@ -96,15 +104,28 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
   }, [onTextReady]);
 
   const filteredAttendances = useMemo(() => {
-    if (!searchTerm.trim()) return attendances;
-    const q = searchTerm.toLowerCase();
-    return attendances.filter((a) =>
-      (a.protocolo || "").toLowerCase().includes(q) ||
-      (a.canal || "").toLowerCase().includes(q) ||
-      (a.atendente || "").toLowerCase().includes(q) ||
-      (a.cliente || "").toLowerCase().includes(q)
-    );
-  }, [attendances, searchTerm]);
+    let result = attendances;
+
+    // Atendente filter
+    if (filterAtendente === "sem_atendente") {
+      result = result.filter((a) => !a.atendente?.trim());
+    } else if (filterAtendente !== "todos") {
+      result = result.filter((a) => a.atendente?.trim() === filterAtendente);
+    }
+
+    // Search
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      result = result.filter((a) =>
+        (a.protocolo || "").toLowerCase().includes(q) ||
+        (a.canal || "").toLowerCase().includes(q) ||
+        (a.atendente || "").toLowerCase().includes(q) ||
+        (a.cliente || "").toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [attendances, searchTerm, filterAtendente]);
 
   const formatDate = (d: string) => {
     if (!d) return "—";
@@ -115,188 +136,76 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
     }
   };
 
-  const clearDates = () => {
-    setDateFrom(undefined);
-    setDateTo(undefined);
-  };
+  const isLoading = effectiveState === "loading-list" || effectiveState === "loading-messages" || effectiveState === "analyzing";
 
-  // ── Filter bar (reused across states) ──
-  const FilterBar = () => (
-    <div className="flex flex-wrap items-end gap-3 px-5 py-4 border-b border-border bg-muted/30">
-      {/* Search */}
-      <div className="space-y-1 flex-1 min-w-[180px] max-w-[280px]">
-        <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Busca</Label>
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Protocolo, canal ou atendente..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8 h-9 text-xs bg-background"
-          />
-        </div>
-      </div>
-
-      {/* Status */}
-      <div className="space-y-1 min-w-[130px]">
-        <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Status</Label>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="h-9 text-xs bg-background w-[130px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos</SelectItem>
-            <SelectItem value="F">Finalizado</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Date From */}
-      <div className="space-y-1">
-        <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">De</Label>
-        <Popover open={dateFromOpen} onOpenChange={setDateFromOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className={cn("h-9 w-[140px] justify-start text-left text-xs bg-background", !dateFrom && "text-muted-foreground")}>
-              <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-              {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Início"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={dateFrom}
-              onSelect={(d) => { setDateFrom(d); setDateFromOpen(false); }}
-              locale={ptBR}
-              className={cn("p-3 pointer-events-auto")}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      {/* Date To */}
-      <div className="space-y-1">
-        <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Até</Label>
-        <Popover open={dateToOpen} onOpenChange={setDateToOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className={cn("h-9 w-[140px] justify-start text-left text-xs bg-background", !dateTo && "text-muted-foreground")}>
-              <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-              {dateTo ? format(dateTo, "dd/MM/yyyy") : "Fim"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={dateTo}
-              onSelect={(d) => { setDateTo(d); setDateToOpen(false); }}
-              locale={ptBR}
-              className={cn("p-3 pointer-events-auto")}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      {(dateFrom || dateTo) && (
-        <Button variant="ghost" size="icon" className="h-9 w-9 mt-auto" onClick={clearDates} aria-label="Limpar datas">
-          <X className="h-3.5 w-3.5" />
-        </Button>
-      )}
-
-      {/* Fetch / Refresh */}
-      <Button size="sm" className="h-9 gap-1.5 text-xs mt-auto" onClick={fetchList} disabled={effectiveState === "loading-list"}>
-        {effectiveState === "loading-list" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-        {state === "idle" ? "Buscar" : "Atualizar"}
-      </Button>
-    </div>
-  );
-
-  // ── Idle state ──
+  // ── Idle state — prompt to fetch ──
   if (effectiveState === "idle") {
     return (
-      <Card className="overflow-hidden">
-        <div className="px-5 py-4 border-b border-border flex items-center gap-2">
-          <Radio className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-bold text-foreground">Importar da Opa Suite</h3>
-        </div>
-        <FilterBar />
-        <div className="flex flex-col items-center justify-center py-12 space-y-3 text-center px-6">
-          <div className="p-3 rounded-full bg-primary/10">
-            <Radio className="h-7 w-7 text-primary" />
+      <div className="space-y-4">
+        <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
+          <div className="p-4 rounded-full bg-primary/10">
+            <Radio className="h-8 w-8 text-primary" />
           </div>
-          <p className="text-sm text-muted-foreground max-w-sm">
-            Configure os filtros acima e clique em <strong>Buscar</strong> para listar atendimentos da Opa Suite.
-          </p>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">Importar da Opa Suite</p>
+            <p className="text-xs text-muted-foreground max-w-sm">
+              Busque atendimentos finalizados da Opa Suite para analisar no Radar Insight.
+            </p>
+          </div>
+          <Button onClick={fetchList} className="gap-2">
+            <Search className="h-4 w-4" />
+            Buscar atendimentos
+          </Button>
         </div>
-      </Card>
+      </div>
     );
   }
 
   // ── Loading list ──
   if (effectiveState === "loading-list") {
     return (
-      <Card className="overflow-hidden">
-        <div className="px-5 py-4 border-b border-border flex items-center gap-2">
-          <Radio className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-bold text-foreground">Importar da Opa Suite</h3>
-        </div>
-        <FilterBar />
-        <div className="flex flex-col items-center justify-center py-14 space-y-3">
+      <div className="space-y-4">
+        <div className="flex flex-col items-center justify-center py-16 space-y-3">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-sm font-medium text-foreground">Buscando atendimentos...</p>
         </div>
-      </Card>
+      </div>
     );
   }
 
   // ── Loading messages ──
   if (effectiveState === "loading-messages") {
     return (
-      <Card className="overflow-hidden">
-        <div className="px-5 py-4 border-b border-border flex items-center gap-2">
-          <Radio className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-bold text-foreground">Importar da Opa Suite</h3>
-        </div>
-        <FilterBar />
-        <div className="flex flex-col items-center justify-center py-14 space-y-3">
+      <div className="space-y-4">
+        <div className="flex flex-col items-center justify-center py-16 space-y-3">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-sm font-medium text-foreground">Carregando mensagens do atendimento...</p>
           <p className="text-xs text-muted-foreground">Preparando texto para análise</p>
         </div>
-      </Card>
+      </div>
     );
   }
 
   // ── Analyzing ──
   if (effectiveState === "analyzing") {
     return (
-      <Card className="overflow-hidden">
-        <div className="px-5 py-4 border-b border-border flex items-center gap-2">
-          <Radio className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-bold text-foreground">Importar da Opa Suite</h3>
-        </div>
-        <FilterBar />
-        <div className="flex flex-col items-center justify-center py-14 space-y-3">
+      <div className="space-y-4">
+        <div className="flex flex-col items-center justify-center py-16 space-y-3">
           <div className="h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
           <p className="text-base font-semibold text-foreground">Analisando atendimento...</p>
           <p className="text-sm text-muted-foreground text-center max-w-xs">
             O Radar Insight está processando o atendimento importado.
           </p>
         </div>
-      </Card>
+      </div>
     );
   }
 
   // ── Error state ──
   if (effectiveState === "error") {
     return (
-      <Card className="overflow-hidden">
-        <div className="px-5 py-4 border-b border-border flex items-center gap-2">
-          <Radio className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-bold text-foreground">Importar da Opa Suite</h3>
-        </div>
-        <FilterBar />
-        <div className="flex flex-col items-center justify-center py-12 space-y-3">
+      <div className="space-y-4">
+        <div className="flex flex-col items-center justify-center py-16 space-y-3">
           <div className="p-3 rounded-full bg-destructive/10">
             <AlertCircle className="h-7 w-7 text-destructive" />
           </div>
@@ -312,24 +221,150 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
             </Button>
           </div>
         </div>
-      </Card>
+      </div>
     );
   }
 
-  // ── List state ──
+  // ── List state — with filters matching MentoriaLab pattern ──
   return (
-    <Card className="overflow-hidden">
-      <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Radio className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-bold text-foreground">Atendimentos Opa Suite</h3>
-          <Badge variant="outline" className="text-[10px]">{total} encontrados</Badge>
-        </div>
-      </div>
-      <FilterBar />
+    <div className="space-y-4">
+      {/* ── Filter bar — same pattern as MentoriaLab main filters ── */}
+      <TooltipProvider delayDuration={300}>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Search */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="relative flex-1 min-w-[180px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar protocolo, canal ou atendente..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+                {searchTerm && (
+                  <button onClick={() => setSearchTerm("")} className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <X className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom"><p>Filtre por protocolo, canal ou nome do atendente</p></TooltipContent>
+          </Tooltip>
 
+          {/* Atendente selector */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <Select value={filterAtendente} onValueChange={setFilterAtendente}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Atendente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos atendentes</SelectItem>
+                    <SelectItem value="sem_atendente">Sem atendente</SelectItem>
+                    {atendentes.map((a) => (
+                      <SelectItem key={a} value={a}>{a}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom"><p>Filtrar por atendente específico</p></TooltipContent>
+          </Tooltip>
+
+          {/* Period — range calendar */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-[180px] justify-start text-left text-xs font-normal h-10",
+                        !dateFrom && "text-muted-foreground",
+                      )}
+                    >
+                      <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+                      {dateFrom
+                        ? dateTo
+                          ? `${format(dateFrom, "dd/MM")} – ${format(dateTo, "dd/MM/yy")}`
+                          : `A partir de ${format(dateFrom, "dd/MM/yy")}`
+                        : "Período"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="range"
+                      selected={
+                        dateFrom && dateTo
+                          ? { from: dateFrom, to: dateTo }
+                          : dateFrom
+                            ? { from: dateFrom, to: undefined }
+                            : undefined
+                      }
+                      onSelect={(range) => {
+                        setDateFrom(range?.from);
+                        setDateTo(range?.to);
+                      }}
+                      locale={ptBR}
+                      numberOfMonths={2}
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                    {(dateFrom || dateTo) && (
+                      <div className="px-3 pb-3">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full text-xs"
+                          onClick={() => {
+                            setDateFrom(undefined);
+                            setDateTo(undefined);
+                          }}
+                        >
+                          Limpar período
+                        </Button>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom"><p>Filtrar atendimentos por período</p></TooltipContent>
+          </Tooltip>
+
+          {/* Counter */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="ml-auto text-xs text-muted-foreground cursor-default">
+                {filteredAttendances.length} de {attendances.length}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom"><p>Total exibido / total carregado</p></TooltipContent>
+          </Tooltip>
+
+          {/* Refresh */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                onClick={fetchList}
+                disabled={isLoading}
+              >
+                <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom"><p>Atualizar lista de atendimentos</p></TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+
+      {/* ── Table ── */}
       {filteredAttendances.length === 0 ? (
-        <div className="py-12 text-center px-6">
+        <div className="py-12 text-center">
           <p className="text-sm text-muted-foreground">
             {attendances.length === 0
               ? "Nenhum atendimento encontrado com os filtros aplicados."
@@ -340,7 +375,7 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
           </Button>
         </div>
       ) : (
-        <div className="overflow-y-auto max-h-[480px]">
+        <div className="overflow-y-auto max-h-[480px] rounded-lg border border-border">
           <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow className="bg-muted/40">
@@ -397,13 +432,7 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
           </Table>
         </div>
       )}
-
-      {filteredAttendances.length > 0 && searchTerm && (
-        <div className="px-5 py-2 border-t border-border text-[10px] text-muted-foreground">
-          Mostrando {filteredAttendances.length} de {attendances.length} atendimentos
-        </div>
-      )}
-    </Card>
+    </div>
   );
 };
 
