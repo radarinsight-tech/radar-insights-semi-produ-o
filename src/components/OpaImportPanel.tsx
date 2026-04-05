@@ -340,16 +340,16 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
           </Button>
         </div>
       ) : (
-        <div className="overflow-auto max-h-[480px]">
-          <Table>
+        <div className="overflow-y-auto max-h-[480px]">
+          <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow className="bg-muted/40">
-                <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[140px]">Protocolo</TableHead>
-                <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[100px]">Canal</TableHead>
-                <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[100px]">Status</TableHead>
-                <TableHead className="text-[10px] font-bold uppercase tracking-wider">Início</TableHead>
-                <TableHead className="text-[10px] font-bold uppercase tracking-wider">Fim</TableHead>
-                <TableHead className="text-[10px] font-bold uppercase tracking-wider text-right w-[100px]">Ação</TableHead>
+                <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[18%]">Protocolo</TableHead>
+                <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[12%]">Canal</TableHead>
+                <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[12%]">Status</TableHead>
+                <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[20%]">Início</TableHead>
+                <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[20%]">Fim</TableHead>
+                <TableHead className="text-[10px] font-bold uppercase tracking-wider text-right w-[18%] pr-5">Ação</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -361,7 +361,7 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
                     selectedId === att.id ? "bg-primary/5" : "hover:bg-muted/50"
                   )}
                 >
-                  <TableCell className="text-xs font-medium">{att.protocolo || "—"}</TableCell>
+                  <TableCell className="text-xs font-medium truncate">{att.protocolo || "—"}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-[10px] capitalize">{att.canal || "—"}</Badge>
                   </TableCell>
@@ -377,9 +377,9 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
                       {att.status === "F" ? "Finalizado" : att.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{formatDate(att.data_inicio)}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{formatDate(att.data_fim)}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-xs text-muted-foreground truncate">{formatDate(att.data_inicio)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground truncate">{formatDate(att.data_fim)}</TableCell>
+                  <TableCell className="text-right pr-5">
                     <Button
                       size="sm"
                       variant="outline"
