@@ -374,7 +374,7 @@ const MentoriaLab = () => {
   const [opaFullReport, setOpaFullReport] = useState<any>(null);
   const [opaFiles, setOpaFiles] = useState<LabFile[]>([]);
   const [opaSearchTerm, setOpaSearchTerm] = useState("");
-  const [opaFilterAtendente, setOpaFilterAtendente] = useState("todos");
+  const [_opaFilterAtendente_UNUSED, _setOpaFilterAtendente_UNUSED] = useState("todos"); // kept for compat; real filter is opa.filterAtendente
   const [opaFilterAuditoriaFrom, setOpaFilterAuditoriaFrom] = useState<Date | undefined>();
   const [opaFilterAuditoriaTo, setOpaFilterAuditoriaTo] = useState<Date | undefined>();
   const [opaWorkflowStatuses, setOpaWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
@@ -518,7 +518,7 @@ const MentoriaLab = () => {
             size: 0,
             addedAt: att.data_inicio ? new Date(att.data_inicio) : new Date(),
             status: "pendente" as FileStatus,
-            atendente: att.atendente || undefined,
+            atendente: att.atendente ? friendlyName(att.atendente) : undefined,
             protocolo: att.protocolo || undefined,
             data: att.data_inicio ? new Date(att.data_inicio).toLocaleDateString("pt-BR") : undefined,
             canal: att.canal || undefined,
@@ -545,25 +545,26 @@ const MentoriaLab = () => {
     dedup();
   }, [opa.attendances]);
 
-  // Opa filtered files
+  // Opa filtered files — uses opa.filterAtendente as single source
   const opaFilteredFiles = useMemo(() => {
+    const currentFilter = opa.filterAtendente;
     return opaFiles.filter((f) => {
       if (opaSearchTerm) {
         const q = opaSearchTerm.toLowerCase();
         if (
           !f.name.toLowerCase().includes(q) &&
           !f.protocolo?.toLowerCase().includes(q) &&
-          !f.atendente?.toLowerCase().includes(q)
+          !(f.atendente ? friendlyName(f.atendente) : "").toLowerCase().includes(q)
         ) return false;
       }
-      if (opaFilterAtendente === "sem_atendente") {
+      if (currentFilter === "sem_atendente") {
         if (f.atendente) return false;
-      } else if (opaFilterAtendente === "somente_humanos") {
+      } else if (currentFilter === "somente_humanos") {
         if (!f.atendente || isLikelyBot(f.atendente)) return false;
-      } else if (opaFilterAtendente === "somente_bot") {
+      } else if (currentFilter === "somente_bot") {
         if (!f.atendente || !isLikelyBot(f.atendente)) return false;
-      } else if (opaFilterAtendente !== "todos") {
-        if (f.atendente !== opaFilterAtendente) return false;
+      } else if (currentFilter !== "todos") {
+        if (f.atendente !== currentFilter) return false;
       }
       if (opaFilterAuditoriaFrom || opaFilterAuditoriaTo) {
         if (!f.analyzedAt) return false;
@@ -576,7 +577,7 @@ const MentoriaLab = () => {
       }
       return true;
     });
-  }, [opaFiles, opaSearchTerm, opaFilterAtendente, opaFilterAuditoriaFrom, opaFilterAuditoriaTo]);
+  }, [opaFiles, opaSearchTerm, opa.filterAtendente, opaFilterAuditoriaFrom, opaFilterAuditoriaTo]);
 
   // Opa atendentes list — classify as human vs bot/system
   const BOT_KEYWORDS = ["bot", "sistema", "automático", "automatico", "virtual", "ura", "chatbot", "autoatendimento"];
@@ -3835,6 +3836,25 @@ const MentoriaLab = () => {
                         </PopoverContent>
                       </Popover>
                     </div>
+
+                    {/* Attendant filter — in top card before fetch */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Atendente</label>
+                      <Select value={opa.filterAtendente} onValueChange={opa.setFilterAtendente}>
+                        <SelectTrigger className="w-[180px] h-9 text-xs">
+                          <SelectValue placeholder="Todos atendentes" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Todos atendentes</SelectItem>
+                          <SelectItem value="sem_atendente">Sem atendente</SelectItem>
+                          <SelectItem value="somente_humanos">Somente humanos</SelectItem>
+                          <SelectItem value="somente_bot">Somente BOT/sistema</SelectItem>
+                          {opa.atendentes.map((a) => (
+                            <SelectItem key={a} value={a}>{friendlyName(a)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   {/* Action button */}
@@ -3967,7 +3987,7 @@ const MentoriaLab = () => {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div>
-                          <Select value={opaFilterAtendente} onValueChange={setOpaFilterAtendente}>
+                          <Select value={opa.filterAtendente} onValueChange={opa.setFilterAtendente}>
                             <SelectTrigger className="w-[160px]">
                               <SelectValue placeholder="Atendente" />
                             </SelectTrigger>
@@ -4086,12 +4106,9 @@ const MentoriaLab = () => {
                   batchStats={{ analyzing: 0, completed: 0, failed: 0 }}
                   isAdmin={isAdmin}
                   onOpenFile={(f) => {
-                    const att = opa.attendances.find((a) => a.id === f.id);
-                    if (att && f.status === "pendente") {
-                      opa.handleSelect(att);
-                    } else if (f.status === "analisado") {
-                      openOpaMentoria(f as any, "relatorio");
-                    }
+                    // Open side panel for preview
+                    const opaFile = opaFiles.find((of) => of.id === f.id);
+                    if (opaFile) setSideFile(opaFile);
                   }}
                   onOpenMentoria={(f) => openOpaMentoria(f as any, "relatorio")}
                   onStartMentoria={(f) => handleOpaStartMentoria(f as any)}
@@ -4301,10 +4318,38 @@ const MentoriaLab = () => {
         atendente={opaMentoriaFile?.atendente}
         structuredConversation={opaMentoriaFile?.structuredConversation}
         workflowStatus={opaMentoriaFile ? getOpaWorkflowStatus(opaMentoriaFile.id) : undefined}
-        onMarkFinished={() => {
-          if (opaMentoriaFile) {
-            setOpaWorkflowStatuses((prev) => ({ ...prev, [opaMentoriaFile.id]: "finalizado" }));
-            toast.success("Atendimento marcado como finalizado.");
+        onMarkFinished={async () => {
+          if (!opaMentoriaFile) return;
+          setOpaWorkflowStatuses((prev) => ({ ...prev, [opaMentoriaFile.id]: "finalizado" }));
+          setOpaFiles((prev) => prev.map((f) => f.id === opaMentoriaFile.id ? { ...f, status: "confirmado" as FileStatus } : f));
+          // Persist to evaluations table for Performance tracking
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && opaMentoriaFile.result) {
+              const r = opaMentoriaFile.result;
+              const companyId = await supabase.rpc("get_my_company_id").then((res) => res.data);
+              await supabase.from("evaluations").insert({
+                user_id: user.id,
+                atendente: opaMentoriaFile.atendente || "Desconhecido",
+                protocolo: opaMentoriaFile.protocolo || opaMentoriaFile.id,
+                tipo: r.tipo || "opa_suite",
+                nota: r.notaFinal ?? r.nota ?? 0,
+                classificacao: r.classificacao || "—",
+                data: opaMentoriaFile.data || new Date().toLocaleDateString("pt-BR"),
+                bonus: (r.bonusQualidade ?? 0) >= 80,
+                atualizacao_cadastral: r.bonusOperacional?.atualizacaoCadastral || "NÃO",
+                pontos_melhoria: r.mentoria || r.pontosMelhoria || [],
+                full_report: r,
+                resultado_validado: true,
+                prompt_version: r.versao || "opa-suite",
+                company_id: companyId || null,
+                audit_log: buildOfficialAuditLog("manual", undefined),
+              } as any);
+              toast.success("Auditoria finalizada e enviada para Performance.");
+            }
+          } catch (err: any) {
+            console.error("[OpaAudit] save error:", err);
+            toast.error("Erro ao salvar auditoria. Tente novamente.");
           }
         }}
         onNextFile={() => {}}
