@@ -3567,6 +3567,13 @@ const MentoriaLab = () => {
               </div>
             )}
           </TabsContent>
+
+          <TabsContent value="opa" className="space-y-4 mt-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <OpaImportPanel onTextReady={handleOpaTextReady} isAnalyzing={opaAnalyzing} />
+              <AnalysisResult data={opaResult} />
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
 
