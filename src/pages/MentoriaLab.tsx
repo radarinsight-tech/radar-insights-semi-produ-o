@@ -4346,7 +4346,7 @@ const MentoriaLab = () => {
                 resultado_validado: true,
                 prompt_version: r.versao || "opa-suite",
                 company_id: companyId || null,
-                audit_log: buildOfficialAuditLog("opa_suite_manual", user.id),
+                audit_log: buildOfficialAuditLog("manual", undefined),
               } as any);
               toast.success("Auditoria finalizada e enviada para Performance.");
             }
