@@ -3987,7 +3987,7 @@ const MentoriaLab = () => {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div>
-                          <Select value={opaFilterAtendente} onValueChange={setOpaFilterAtendente}>
+                          <Select value={opa.filterAtendente} onValueChange={opa.setFilterAtendente}>
                             <SelectTrigger className="w-[160px]">
                               <SelectValue placeholder="Atendente" />
                             </SelectTrigger>
