@@ -3567,10 +3567,15 @@ const MentoriaLab = () => {
           </TabsContent>
 
           <TabsContent value="opa" className="space-y-4 mt-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <OpaImportPanel onTextReady={handleOpaTextReady} isAnalyzing={opaAnalyzing} />
-              <AnalysisResult data={opaResult} />
-            </div>
+            {/* Opa Suite reuses main flow layout: filters on top, then content below */}
+            <OpaImportPanel onTextReady={handleOpaTextReady} isAnalyzing={opaAnalyzing} />
+
+            {/* Result panel — same visual as main flow result cards */}
+            {(opaResult || opaAnalyzing) && (
+              <div className="mt-4">
+                <AnalysisResult data={opaResult} />
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </main>
