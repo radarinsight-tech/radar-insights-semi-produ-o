@@ -374,7 +374,7 @@ const MentoriaLab = () => {
   const [opaFullReport, setOpaFullReport] = useState<any>(null);
   const [opaFiles, setOpaFiles] = useState<LabFile[]>([]);
   const [opaSearchTerm, setOpaSearchTerm] = useState("");
-  const [opaFilterAtendente, setOpaFilterAtendente] = useState("todos");
+  const [_opaFilterAtendente_UNUSED, _setOpaFilterAtendente_UNUSED] = useState("todos"); // kept for compat; real filter is opa.filterAtendente
   const [opaFilterAuditoriaFrom, setOpaFilterAuditoriaFrom] = useState<Date | undefined>();
   const [opaFilterAuditoriaTo, setOpaFilterAuditoriaTo] = useState<Date | undefined>();
   const [opaWorkflowStatuses, setOpaWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
