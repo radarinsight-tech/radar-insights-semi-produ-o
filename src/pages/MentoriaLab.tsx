@@ -375,7 +375,7 @@ const MentoriaLab = () => {
   const [opaFiles, setOpaFiles] = useState<LabFile[]>([]);
   const [opaSearchTerm, setOpaSearchTerm] = useState("");
   const [_opaFilterAtendente_UNUSED, _setOpaFilterAtendente_UNUSED] = useState("todos"); // kept for compat; real filter is opa.filterAtendente
-  const [opaHumanSpecific, setOpaHumanSpecific] = useState("todos_humanos"); // specific human attendant when somente_humanos is selected
+  const [opaHumanSelected, setOpaHumanSelected] = useState<Set<string>>(new Set()); // multi-select human attendants
   const [opaFilterAuditoriaFrom, setOpaFilterAuditoriaFrom] = useState<Date | undefined>();
   const [opaFilterAuditoriaTo, setOpaFilterAuditoriaTo] = useState<Date | undefined>();
   const [opaWorkflowStatuses, setOpaWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
@@ -597,10 +597,10 @@ const MentoriaLab = () => {
         if (f.atendente) return false;
     } else if (currentFilter === "somente_humanos") {
         if (!f.atendente || isLikelyBot(f.atendente)) return false;
-        // If a specific human is selected, filter further
-        if (opaHumanSpecific && opaHumanSpecific !== "todos_humanos") {
+        // If specific humans are selected, filter further
+        if (opaHumanSelected.size > 0) {
           const displayName = friendlyName(f.atendente);
-          if (displayName !== opaHumanSpecific && f.atendente !== opaHumanSpecific) return false;
+          if (!opaHumanSelected.has(displayName) && !opaHumanSelected.has(f.atendente)) return false;
         }
       } else if (currentFilter === "somente_bot") {
         if (!f.atendente || !isLikelyBot(f.atendente)) return false;
@@ -620,7 +620,7 @@ const MentoriaLab = () => {
       }
       return true;
     });
-  }, [opaFiles, opaSearchTerm, opa.filterAtendente, opaHumanSpecific, opaFilterAuditoriaFrom, opaFilterAuditoriaTo, friendlyName]);
+  }, [opaFiles, opaSearchTerm, opa.filterAtendente, opaHumanSelected, opaFilterAuditoriaFrom, opaFilterAuditoriaTo, friendlyName]);
 
   const opaAtendentes = useMemo(() => {
     const map = new Map<string, string>(); // friendly -> friendly (dedup)
@@ -3898,7 +3898,7 @@ const MentoriaLab = () => {
                       <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Categoria</label>
                       <Select value={opa.filterAtendente} onValueChange={(v) => {
                         opa.setFilterAtendente(v);
-                        if (v !== "somente_humanos") setOpaHumanSpecific("todos_humanos");
+                        if (v !== "somente_humanos") setOpaHumanSelected(new Set());
                       }}>
                         <SelectTrigger className="w-[180px] h-9 text-xs">
                           <SelectValue placeholder="Todos atendentes" />
@@ -3912,23 +3912,56 @@ const MentoriaLab = () => {
                       </Select>
                     </div>
 
-                    {/* Secondary: specific human attendant selector */}
-                    {opa.filterAtendente === "somente_humanos" && (
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Atendente</label>
-                        <Select value={opaHumanSpecific} onValueChange={setOpaHumanSpecific}>
-                          <SelectTrigger className="w-[200px] h-9 text-xs">
-                            <SelectValue placeholder="Todos humanos" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="todos_humanos">Todos humanos</SelectItem>
-                            {opaHumanAttendants.map((name) => (
-                              <SelectItem key={name} value={name}>{name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
+                     {/* Secondary: multi-select human attendants */}
+                     {opa.filterAtendente === "somente_humanos" && (
+                       <div className="space-y-1.5">
+                         <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Atendentes</label>
+                         <Popover>
+                           <PopoverTrigger asChild>
+                             <Button variant="outline" className="w-[220px] h-9 text-xs justify-start gap-1.5 font-normal">
+                               <Filter className="h-3.5 w-3.5 shrink-0" />
+                               {opaHumanSelected.size === 0
+                                 ? "Todos humanos"
+                                 : `${opaHumanSelected.size} selecionado(s)`}
+                             </Button>
+                           </PopoverTrigger>
+                           <PopoverContent className="w-[260px] p-0" align="start">
+                             <div className="p-2 border-b border-border">
+                               <p className="text-xs font-semibold text-muted-foreground">Selecionar atendentes</p>
+                             </div>
+                             <div className="max-h-[220px] overflow-y-auto p-2 space-y-1">
+                               {opaHumanAttendants.length === 0 ? (
+                                 <p className="text-xs text-muted-foreground py-2 text-center">Nenhum atendente humano encontrado</p>
+                               ) : (
+                                 opaHumanAttendants.map((name) => (
+                                   <label key={name} className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent/50 cursor-pointer text-xs">
+                                     <Checkbox
+                                       checked={opaHumanSelected.has(name)}
+                                       onCheckedChange={(checked) => {
+                                         setOpaHumanSelected((prev) => {
+                                           const next = new Set(prev);
+                                           if (checked) next.add(name);
+                                           else next.delete(name);
+                                           return next;
+                                         });
+                                       }}
+                                     />
+                                     <span className="truncate">{name}</span>
+                                   </label>
+                                 ))
+                               )}
+                             </div>
+                             {opaHumanSelected.size > 0 && (
+                               <div className="p-2 border-t border-border">
+                                 <Button variant="ghost" size="sm" className="w-full text-xs h-7" onClick={() => setOpaHumanSelected(new Set())}>
+                                   Limpar seleção
+                                 </Button>
+                               </div>
+                             )}
+                           </PopoverContent>
+                         </Popover>
+                       </div>
+                     )}
                   </div>
 
                   {/* Action button */}
@@ -4063,37 +4096,70 @@ const MentoriaLab = () => {
                         <div>
                           <Select value={opa.filterAtendente} onValueChange={(v) => {
                             opa.setFilterAtendente(v);
-                            if (v !== "somente_humanos") setOpaHumanSpecific("todos_humanos");
+                            if (v !== "somente_humanos") setOpaHumanSelected(new Set());
                           }}>
-                            <SelectTrigger className="w-[160px]">
-                              <SelectValue placeholder="Categoria" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="todos">Todos atendentes</SelectItem>
-                              <SelectItem value="sem_atendente">Sem atendente</SelectItem>
-                              <SelectItem value="somente_humanos">Somente humanos</SelectItem>
-                              <SelectItem value="somente_bot">Somente BOT/sistema</SelectItem>
-                            </SelectContent>
-                          </Select>
+                             <SelectTrigger className="w-[160px]">
+                               <SelectValue placeholder="Categoria" />
+                             </SelectTrigger>
+                             <SelectContent>
+                               <SelectItem value="todos">Todos atendentes</SelectItem>
+                               <SelectItem value="sem_atendente">Sem atendente</SelectItem>
+                               <SelectItem value="somente_humanos">Somente humanos</SelectItem>
+                               <SelectItem value="somente_bot">Somente BOT/sistema</SelectItem>
+                             </SelectContent>
+                           </Select>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="bottom"><p>Filtrar tabela por categoria</p></TooltipContent>
                     </Tooltip>
 
-                    {/* Specific human attendant */}
-                    {opa.filterAtendente === "somente_humanos" && (
-                      <Select value={opaHumanSpecific} onValueChange={setOpaHumanSpecific}>
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Todos humanos" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="todos_humanos">Todos humanos</SelectItem>
-                          {opaHumanAttendants.map((name) => (
-                            <SelectItem key={name} value={name}>{name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                     {/* Multi-select human attendants (table bar) */}
+                     {opa.filterAtendente === "somente_humanos" && (
+                       <Popover>
+                         <PopoverTrigger asChild>
+                           <Button variant="outline" className="h-10 text-xs justify-start gap-1.5 font-normal min-w-[180px]">
+                             <Filter className="h-3.5 w-3.5 shrink-0" />
+                             {opaHumanSelected.size === 0
+                               ? "Todos humanos"
+                               : `${opaHumanSelected.size} selecionado(s)`}
+                           </Button>
+                         </PopoverTrigger>
+                         <PopoverContent className="w-[260px] p-0" align="start">
+                           <div className="p-2 border-b border-border">
+                             <p className="text-xs font-semibold text-muted-foreground">Selecionar atendentes</p>
+                           </div>
+                           <div className="max-h-[220px] overflow-y-auto p-2 space-y-1">
+                             {opaHumanAttendants.length === 0 ? (
+                               <p className="text-xs text-muted-foreground py-2 text-center">Nenhum atendente humano encontrado</p>
+                             ) : (
+                               opaHumanAttendants.map((name) => (
+                                 <label key={name} className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent/50 cursor-pointer text-xs">
+                                   <Checkbox
+                                     checked={opaHumanSelected.has(name)}
+                                     onCheckedChange={(checked) => {
+                                       setOpaHumanSelected((prev) => {
+                                         const next = new Set(prev);
+                                         if (checked) next.add(name);
+                                         else next.delete(name);
+                                         return next;
+                                       });
+                                     }}
+                                   />
+                                   <span className="truncate">{name}</span>
+                                 </label>
+                               ))
+                             )}
+                           </div>
+                           {opaHumanSelected.size > 0 && (
+                             <div className="p-2 border-t border-border">
+                               <Button variant="ghost" size="sm" className="w-full text-xs h-7" onClick={() => setOpaHumanSelected(new Set())}>
+                                 Limpar seleção
+                               </Button>
+                             </div>
+                           )}
+                         </PopoverContent>
+                       </Popover>
+                     )}
 
                     {/* Period filter */}
                     <Tooltip>
@@ -4276,22 +4342,7 @@ const MentoriaLab = () => {
               </>
             )}
 
-            {/* ═══ ANALYSIS RESULT ═══ */}
-            {(opaResult || opaAnalyzing) && (
-              <Card className="p-4 border-primary/20 bg-primary/5">
-                <div className="flex items-center gap-2 mb-3 text-sm font-medium text-foreground">
-                  <ShieldCheck className="h-4 w-4 text-primary" />
-                  <span>Resultado da Auditoria</span>
-                  {opaResult && (
-                    <Badge variant="outline" className="ml-auto text-xs">
-                      {opaResult.protocolo !== "—" ? `Protocolo: ${opaResult.protocolo}` : ""}
-                      {opaResult.atendente !== "—" ? ` • ${opaResult.atendente}` : ""}
-                    </Badge>
-                  )}
-                </div>
-                <AnalysisResult data={opaResult} />
-              </Card>
-            )}
+            {/* Analysis result removed — audit is accessed via action column / MentoriaDetailDialog */}
 
             {/* Version Registry — collapsible, secondary position */}
             <Collapsible>
