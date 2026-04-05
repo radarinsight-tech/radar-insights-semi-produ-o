@@ -597,10 +597,10 @@ const MentoriaLab = () => {
         if (f.atendente) return false;
     } else if (currentFilter === "somente_humanos") {
         if (!f.atendente || isLikelyBot(f.atendente)) return false;
-        // If a specific human is selected, filter further
-        if (opaHumanSpecific && opaHumanSpecific !== "todos_humanos") {
+        // If specific humans are selected, filter further
+        if (opaHumanSelected.size > 0) {
           const displayName = friendlyName(f.atendente);
-          if (displayName !== opaHumanSpecific && f.atendente !== opaHumanSpecific) return false;
+          if (!opaHumanSelected.has(displayName) && !opaHumanSelected.has(f.atendente)) return false;
         }
       } else if (currentFilter === "somente_bot") {
         if (!f.atendente || !isLikelyBot(f.atendente)) return false;
