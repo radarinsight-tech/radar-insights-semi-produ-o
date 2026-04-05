@@ -408,6 +408,49 @@ const MentoriaLab = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [loadingFromDb, setLoadingFromDb] = useState(true);
 
+  // ── Opa Suite handler ──
+  const handleOpaTextReady = useCallback(async (
+    text: string,
+    meta: { protocolo: string; atendente: string; canal: string; attendanceId: string },
+  ) => {
+    setOpaAnalyzing(true);
+    setOpaResult(null);
+    setOpaFullReport(null);
+    try {
+      const response = await supabase.functions.invoke("analyze-attendance", { body: { text } });
+      if (response.error || response.data?.error) {
+        const detail = response.data?.error || response.error?.message || "Erro desconhecido";
+        toast.error(`Erro na análise: ${detail}`);
+        setOpaAnalyzing(false);
+        return;
+      }
+      const d = response.data;
+      setOpaFullReport(d);
+      setOpaResult({
+        protocolo: d.protocolo || meta.protocolo || "—",
+        atendente: d.atendente || meta.atendente || "—",
+        tipo: d.tipo || "—",
+        atualizacaoCadastral: d.bonusOperacional?.atualizacaoCadastral || "NÃO",
+        notaFinal: d.notaFinal ?? d.nota ?? 0,
+        classificacao: d.classificacao || "—",
+        bonus: (d.bonusQualidade ?? 0) >= 80,
+        bonusQualidade: d.bonusQualidade ?? 0,
+        pontosMelhoria: d.mentoria || d.pontosMelhoria || [],
+        pontosObtidos: d.pontosObtidos,
+        pontosPossiveis: d.pontosPossiveis,
+        noInteraction: d.statusAtendimento === "fora_de_avaliacao" || d.motivo === "sem_interacao_do_cliente",
+        impeditivo: d.statusAuditoria === "impedimento_detectado",
+        motivoImpeditivo: d.motivoImpeditivo,
+      });
+      toast.success("Análise concluída com sucesso!");
+    } catch (err: any) {
+      console.error("[OpaImport] analyze error:", err);
+      toast.error("Erro ao analisar atendimento da Opa Suite");
+    } finally {
+      setOpaAnalyzing(false);
+    }
+  }, []);
+
   // Load persisted batches and files from database on mount
   useEffect(() => {
     const loadPersistedData = async () => {
