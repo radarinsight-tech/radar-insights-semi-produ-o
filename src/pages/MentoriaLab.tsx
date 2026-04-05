@@ -4,6 +4,7 @@ import JSZip from "jszip";
 import { format } from "date-fns";
 import {
   ArrowLeft,
+  Bookmark,
   LogOut,
   Upload,
   FileText,
@@ -48,6 +49,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -3161,8 +3163,6 @@ const MentoriaLab = () => {
           </TabsList>
 
           <TabsContent value="operacao" className="space-y-4 mt-4">
-            {/* Version Registry */}
-            <VersionRegistryCard />
 
             {/* Loading state */}
             {loadingFromDb && files.length === 0 && (
@@ -3549,6 +3549,19 @@ const MentoriaLab = () => {
                 )}
               </>
             )}
+
+            {/* Version Registry — collapsible, secondary position */}
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground hover:text-foreground w-full justify-start mt-2">
+                  <Bookmark className="h-3.5 w-3.5" />
+                  Registro de Versão
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <VersionRegistryCard />
+              </CollapsibleContent>
+            </Collapsible>
           </TabsContent>
 
           <TabsContent value="performance" className="space-y-4 mt-4">
@@ -3569,10 +3582,15 @@ const MentoriaLab = () => {
           </TabsContent>
 
           <TabsContent value="opa" className="space-y-4 mt-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <OpaImportPanel onTextReady={handleOpaTextReady} isAnalyzing={opaAnalyzing} />
-              <AnalysisResult data={opaResult} />
-            </div>
+            {/* Opa Suite reuses main flow layout: filters on top, then content below */}
+            <OpaImportPanel onTextReady={handleOpaTextReady} isAnalyzing={opaAnalyzing} />
+
+            {/* Result panel — same visual as main flow result cards */}
+            {(opaResult || opaAnalyzing) && (
+              <div className="mt-4">
+                <AnalysisResult data={opaResult} />
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </main>
