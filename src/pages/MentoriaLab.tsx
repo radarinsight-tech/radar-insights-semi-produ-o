@@ -77,8 +77,10 @@ import MentoriaBonusPanel from "@/components/MentoriaBonusPanel";
 import MentoriaReportExport from "@/components/MentoriaReportExport";
 import { buildMarkedText } from "@/lib/buildMarkedText";
 import VersionRegistryCard from "@/components/VersionRegistryCard";
-import OpaImportPanel from "@/components/OpaImportPanel";
 import AnalysisResult, { type AnalysisData } from "@/components/AnalysisResult";
+import { useOpaImport } from "@/hooks/useOpaImport";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Radio, RefreshCw, AlertCircle, MessageSquareQuote } from "lucide-react";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro" | "aguardando_revisao_ia" | "aguardando_revisao_manual" | "confirmado" | "reprovado";
 type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
