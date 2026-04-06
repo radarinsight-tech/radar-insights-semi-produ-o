@@ -4493,7 +4493,7 @@ const MentoriaLab = () => {
                           atendente: file.atendente || "Desconhecido",
                           protocolo: file.protocolo || file.id,
                           tipo: r.tipo || "opa_suite",
-                          nota: r.notaFinal ?? r.nota ?? 0,
+                          nota: normalizeNotaForDB(r.notaFinal ?? r.nota ?? 0),
                           classificacao: r.classificacao || "\u2014",
                           data: normalizeDateForDB(file.data || new Date().toLocaleDateString("pt-BR")),
                           bonus: (r.bonusQualidade ?? 0) >= 80,
