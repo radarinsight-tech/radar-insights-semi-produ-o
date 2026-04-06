@@ -82,6 +82,7 @@ import { useOpaImport } from "@/hooks/useOpaImport";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Radio, RefreshCw, AlertCircle, MessageSquareQuote } from "lucide-react";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { saveMentoriaSession, loadMentoriaSession, clearMentoriaSession, type MentoriaSessionState } from "@/hooks/useMentoriaSession";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro" | "aguardando_revisao_ia" | "aguardando_revisao_manual" | "confirmado" | "reprovado";
 type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
