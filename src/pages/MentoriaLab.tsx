@@ -4360,7 +4360,7 @@ const MentoriaLab = () => {
                         const file = opaFiles.find((f) => f.id === id);
                         if (!file?.result) continue;
                         const r = file.result;
-                        await supabase.from("evaluations").insert({
+                        const insertPayload = {
                           user_id: user.id,
                           atendente: file.atendente || "Desconhecido",
                           protocolo: file.protocolo || file.id,
@@ -4376,12 +4376,15 @@ const MentoriaLab = () => {
                           prompt_version: r.versao || "opa-suite",
                           company_id: companyId || null,
                           audit_log: buildOfficialAuditLog("manual", undefined),
-                        } as any);
-                      }
+                        };
+                        if (import.meta.env.DEV) console.log("[OpaConfirmBatch][payload]", JSON.stringify(insertPayload, null, 2));
+                        const { error: insertErr } = await supabase.from("evaluations").insert(insertPayload as any);
+                        if (insertErr) throw insertErr;
+                       }
                       toast.success(`${ids.length} atendimento(s) confirmado(s) e enviado(s) para Performance.`);
                     } catch (err: any) {
                       console.error("[OpaConfirm] save error:", err);
-                      toast.error("Erro ao salvar confirma\u00e7\u00e3o.");
+                      toast.error(err?.message ? `Erro: ${err.message}` : "Erro ao salvar confirma\u00e7\u00e3o.");
                     }
                   }}
                   onRejectSelected={async (ids: string[]) => {
