@@ -189,6 +189,14 @@ import {
 } from "@/lib/officialEvaluations";
 import { logAudit } from "@/lib/officialEvaluations";
 
+/** Convert DD/MM/YYYY → YYYY-MM-DD for Postgres `text` column; pass through if already ISO-ish */
+const normalizeDateForDB = (raw: string | undefined | null): string => {
+  if (!raw) return new Date().toISOString().slice(0, 10);
+  const brMatch = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (brMatch) return `${brMatch[3]}-${brMatch[2]}-${brMatch[1]}`;
+  return raw; // already YYYY-MM-DD or other format — keep as-is
+};
+
 const IMPORT_LIMIT = 1000;
 const IMPORT_RECOMMENDED = 500;
 const ANALYZE_LIMIT = 50;
@@ -1980,6 +1988,10 @@ const MentoriaLab = () => {
         };
       }
 
+      if (import.meta.env.DEV) {
+        console.log("[persistEvaluationRecord][payload]", JSON.stringify(payload, null, 2));
+      }
+
       const { data, error } = await supabase
         .from("evaluations")
         .insert(payload as any)
@@ -2249,7 +2261,7 @@ const MentoriaLab = () => {
           };
 
           const evalPayload = {
-            data: data.data || new Date().toLocaleDateString("pt-BR"),
+            data: normalizeDateForDB(data.data || new Date().toLocaleDateString("pt-BR")),
             data_avaliacao: new Date().toISOString(),
             protocolo: data.protocolo || "Não identificado",
             atendente: data.atendente || "Não identificado",
@@ -4348,14 +4360,14 @@ const MentoriaLab = () => {
                         const file = opaFiles.find((f) => f.id === id);
                         if (!file?.result) continue;
                         const r = file.result;
-                        await supabase.from("evaluations").insert({
+                        const insertPayload = {
                           user_id: user.id,
                           atendente: file.atendente || "Desconhecido",
                           protocolo: file.protocolo || file.id,
                           tipo: r.tipo || "opa_suite",
                           nota: r.notaFinal ?? r.nota ?? 0,
                           classificacao: r.classificacao || "\u2014",
-                          data: file.data || new Date().toLocaleDateString("pt-BR"),
+                          data: normalizeDateForDB(file.data || new Date().toLocaleDateString("pt-BR")),
                           bonus: (r.bonusQualidade ?? 0) >= 80,
                           atualizacao_cadastral: r.bonusOperacional?.atualizacaoCadastral || "N\u00c3O",
                           pontos_melhoria: r.mentoria || r.pontosMelhoria || [],
@@ -4364,12 +4376,15 @@ const MentoriaLab = () => {
                           prompt_version: r.versao || "opa-suite",
                           company_id: companyId || null,
                           audit_log: buildOfficialAuditLog("manual", undefined),
-                        } as any);
-                      }
+                        };
+                        if (import.meta.env.DEV) console.log("[OpaConfirmBatch][payload]", JSON.stringify(insertPayload, null, 2));
+                        const { error: insertErr } = await supabase.from("evaluations").insert(insertPayload as any);
+                        if (insertErr) throw insertErr;
+                       }
                       toast.success(`${ids.length} atendimento(s) confirmado(s) e enviado(s) para Performance.`);
                     } catch (err: any) {
                       console.error("[OpaConfirm] save error:", err);
-                      toast.error("Erro ao salvar confirma\u00e7\u00e3o.");
+                      toast.error(err?.message ? `Erro: ${err.message}` : "Erro ao salvar confirma\u00e7\u00e3o.");
                     }
                   }}
                   onRejectSelected={async (ids: string[]) => {
@@ -4551,14 +4566,14 @@ const MentoriaLab = () => {
             if (user && opaMentoriaFile.result) {
               const r = opaMentoriaFile.result;
               const companyId = await supabase.rpc("get_my_company_id").then((res) => res.data);
-              await supabase.from("evaluations").insert({
+              const insertPayload = {
                 user_id: user.id,
                 atendente: opaMentoriaFile.atendente || "Desconhecido",
                 protocolo: opaMentoriaFile.protocolo || opaMentoriaFile.id,
                 tipo: r.tipo || "opa_suite",
                 nota: r.notaFinal ?? r.nota ?? 0,
                 classificacao: r.classificacao || "—",
-                data: opaMentoriaFile.data || new Date().toLocaleDateString("pt-BR"),
+                data: normalizeDateForDB(opaMentoriaFile.data || new Date().toLocaleDateString("pt-BR")),
                 bonus: (r.bonusQualidade ?? 0) >= 80,
                 atualizacao_cadastral: r.bonusOperacional?.atualizacaoCadastral || "NÃO",
                 pontos_melhoria: r.mentoria || r.pontosMelhoria || [],
@@ -4567,12 +4582,15 @@ const MentoriaLab = () => {
                 prompt_version: r.versao || "opa-suite",
                 company_id: companyId || null,
                 audit_log: buildOfficialAuditLog("manual", undefined),
-              } as any);
+              };
+              if (import.meta.env.DEV) console.log("[OpaAudit][payload]", JSON.stringify(insertPayload, null, 2));
+              const { error: insertErr } = await supabase.from("evaluations").insert(insertPayload as any);
+              if (insertErr) throw insertErr;
               toast.success("Auditoria finalizada e enviada para Performance.");
             }
           } catch (err: any) {
             console.error("[OpaAudit] save error:", err);
-            toast.error("Erro ao salvar auditoria. Tente novamente.");
+            toast.error(err?.message ? `Erro: ${err.message}` : "Erro ao salvar auditoria. Tente novamente.");
           }
         }}
         onNextFile={() => {}}
