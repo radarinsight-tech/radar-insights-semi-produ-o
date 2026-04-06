@@ -238,14 +238,16 @@ const PERF_NAV: { key: PerformanceSection; label: string; icon: string; tooltip:
 ];
 
 const PerformanceSections = ({
-  files,
+  filterMonth,
+  refreshKey,
   globalExcludedNames,
   globalExcludedSet,
   excludeAttendants,
   restoreAttendants,
   batchAutoApprove,
 }: {
-  files: any[];
+  filterMonth: string;
+  refreshKey: number;
   globalExcludedNames: Map<string, any>;
   globalExcludedSet: Set<string>;
   excludeAttendants: (names: string[]) => void;
@@ -253,14 +255,134 @@ const PerformanceSections = ({
   batchAutoApprove: (ids: string[]) => Promise<void>;
 }) => {
   const [activeSection, setActiveSection] = useState<PerformanceSection>("bonus_panel");
+  const [perfFiles, setPerfFiles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
+  // Fetch evaluations directly from DB by company + month + resultado_validado
+  useEffect(() => {
+    let cancelled = false;
+    const fetchEvals = async () => {
+      setLoading(true);
+      try {
+        const companyId = await supabase.rpc("get_my_company_id").then((r) => r.data);
+
+        let query = supabase
+          .from("evaluations")
+          .select("*")
+          .eq("resultado_validado", true)
+          .eq("excluded_from_ranking", false)
+          .order("created_at", { ascending: false });
+
+        if (companyId) {
+          query = query.eq("company_id", companyId);
+        }
+
+        // Filter by month if set (data is stored as YYYY-MM-DD text)
+        if (filterMonth && filterMonth !== "todos") {
+          const [year, month] = filterMonth.split("-");
+          // data column is YYYY-MM-DD or DD/MM/YYYY — handle both
+          // We'll filter client-side after fetch for safety
+        }
+
+        const { data, error } = await query;
+        if (error) {
+          console.error("[Performance] Error fetching evaluations:", error);
+          setLoading(false);
+          return;
+        }
+        if (cancelled) return;
+
+        // Filter by month client-side (handles both date formats)
+        let rows = data || [];
+        if (filterMonth && filterMonth !== "todos") {
+          const [filterYear, filterMon] = filterMonth.split("-").map(Number);
+          rows = rows.filter((row: any) => {
+            const d = row.data as string;
+            if (!d) return false;
+            // YYYY-MM-DD
+            const isoMatch = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (isoMatch) return +isoMatch[1] === filterYear && +isoMatch[2] === filterMon;
+            // DD/MM/YYYY
+            const brMatch = d.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+            if (brMatch) return +brMatch[3] === filterYear && +brMatch[2] === filterMon;
+            return false;
+          });
+        }
+
+        // Deduplicate by protocolo
+        const seen = new Map<string, any>();
+        for (const row of rows) {
+          const key = typeof row.protocolo === "string" && row.protocolo.trim() ? row.protocolo.trim() : row.id;
+          if (!seen.has(key)) seen.set(key, row);
+        }
+
+        // Map to the file-like shape expected by child components
+        const mapped = Array.from(seen.values()).map((row: any) => {
+          const fullReport = row.full_report as Record<string, any> | null;
+          return {
+            id: row.id,
+            name: row.protocolo || row.id,
+            atendente: row.atendente || "—",
+            data: row.data || "",
+            canal: fullReport?.canal || row.tipo || "",
+            status: "analisado" as const,
+            approvedAsOfficial: true,
+            evaluationId: row.id,
+            result: {
+              notaFinal: Number(row.nota) || 0,
+              classificacao: row.classificacao || "—",
+              atendente: row.atendente || "—",
+              protocolo: row.protocolo || "—",
+              data: row.data || "",
+              tipo: row.tipo || "—",
+              mentoria: Array.isArray(row.pontos_melhoria) ? row.pontos_melhoria : [],
+              pontosMelhoria: Array.isArray(row.pontos_melhoria) ? row.pontos_melhoria : [],
+              bonusQualidade: Number(row.nota) || 0,
+              criterios: fullReport?.criterios || {},
+              pontosFortes: fullReport?.pontosFortes || [],
+              versao: row.prompt_version || "official",
+              ...(fullReport || {}),
+            },
+          };
+        });
+
+        if (import.meta.env.DEV) {
+          console.log(`[Performance] Loaded ${mapped.length} evaluations for month=${filterMonth}`);
+        }
+
+        setPerfFiles(mapped);
+      } catch (err) {
+        console.error("[Performance] Unexpected error:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchEvals();
+    return () => { cancelled = true; };
+  }, [filterMonth, refreshKey]);
+
   const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="py-12 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          Carregando dados de performance...
+        </div>
+      );
+    }
+    if (perfFiles.length === 0) {
+      return (
+        <div className="py-8 text-center text-sm text-muted-foreground">
+          Nenhuma avaliação confirmada encontrada para este período.
+        </div>
+      );
+    }
     switch (activeSection) {
       case "bonus_panel":
         return (
           <MentoriaBonusPanel
-            files={files}
+            files={perfFiles}
             excludedNames={globalExcludedNames}
             onExclude={excludeAttendants}
             onRestore={restoreAttendants}
@@ -268,19 +390,19 @@ const PerformanceSections = ({
           />
         );
       case "resumo":
-        return <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} section="resumo" />;
+        return <MentoriaInsights files={perfFiles} excludedAttendants={globalExcludedSet} section="resumo" />;
       case "bonus":
-        return <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} section="perf_bonus" />;
+        return <MentoriaInsights files={perfFiles} excludedAttendants={globalExcludedSet} section="perf_bonus" />;
       case "detalhada":
-        return <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} section="detalhada" />;
+        return <MentoriaInsights files={perfFiles} excludedAttendants={globalExcludedSet} section="detalhada" />;
       case "recomendados":
-        return <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} section="recomendados" />;
+        return <MentoriaInsights files={perfFiles} excludedAttendants={globalExcludedSet} section="recomendados" />;
       case "padroes":
-        return <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} section="padroes" />;
+        return <MentoriaInsights files={perfFiles} excludedAttendants={globalExcludedSet} section="padroes" />;
       case "roteiro":
-        return <MentoriaInsights files={files} excludedAttendants={globalExcludedSet} section="roteiro" />;
+        return <MentoriaInsights files={perfFiles} excludedAttendants={globalExcludedSet} section="roteiro" />;
       case "graficos":
-        return <MentoriaCharts files={files} excludedAttendants={globalExcludedSet} />;
+        return <MentoriaCharts files={perfFiles} excludedAttendants={globalExcludedSet} />;
       default:
         return null;
     }
@@ -381,6 +503,7 @@ const MentoriaLab = () => {
      failed: 0,
    });
   const [batchProcessing, setBatchProcessing] = useState(false);
+  const [perfRefreshKey, setPerfRefreshKey] = useState(0);
   const [opaAnalyzing, setOpaAnalyzing] = useState(false);
   const [opaResult, setOpaResult] = useState<AnalysisData | null>(null);
   const [opaFullReport, setOpaFullReport] = useState<any>(null);
@@ -2289,6 +2412,7 @@ const MentoriaLab = () => {
               protocolo: data.protocolo || labFile.protocolo,
               payload: safePayload,
             });
+            if (evalRecord?.approvedAsOfficial) setPerfRefreshKey((k) => k + 1);
           } catch (evalErr: any) {
             console.warn("[MentoriaLab][Análise][eval_persist_falhou]", {
               id: labFile.batchFileId || labFile.id,
@@ -2688,6 +2812,7 @@ const MentoriaLab = () => {
         data: new Date().toISOString(),
       });
       toast.success("Avaliação oficializada no ranking! Agora aparece no ranking e histórico.");
+      setPerfRefreshKey((k) => k + 1);
     } catch {
       toast.error("Erro inesperado ao aprovar avaliação.");
     } finally {
@@ -2752,6 +2877,7 @@ const MentoriaLab = () => {
           approvedIds.has(f.id) ? { ...f, approvedAsOfficial: true, approvalOrigin: "automatic" as const } : f,
         ),
       );
+      setPerfRefreshKey((k) => k + 1);
     },
     [files, normalizedExcludedAttendants],
   );
@@ -3853,20 +3979,15 @@ const MentoriaLab = () => {
           </TabsContent>
 
           <TabsContent value="performance" className="space-y-4 mt-4">
-            {files.length > 0 && filteredFiles.some((f) => f.status === "analisado" || f.status === "confirmado") ? (
               <PerformanceSections
-                files={filteredFiles}
+                filterMonth={filterMonth}
+                refreshKey={perfRefreshKey}
                 globalExcludedNames={globalExcludedNames}
                 globalExcludedSet={globalExcludedSet}
                 excludeAttendants={excludeAttendants}
                 restoreAttendants={restoreAttendants}
                 batchAutoApprove={batchAutoApprove}
               />
-            ) : (
-              <div className="py-8 text-center text-sm text-muted-foreground">
-                Analise atendimentos para visualizar dados de performance.
-              </div>
-            )}
           </TabsContent>
 
           <TabsContent value="opa" className="space-y-4 mt-4">
@@ -4382,6 +4503,7 @@ const MentoriaLab = () => {
                         if (insertErr) throw insertErr;
                        }
                       toast.success(`${ids.length} atendimento(s) confirmado(s) e enviado(s) para Performance.`);
+                      setPerfRefreshKey((k) => k + 1);
                     } catch (err: any) {
                       console.error("[OpaConfirm] save error:", err);
                       toast.error(err?.message ? `Erro: ${err.message}` : "Erro ao salvar confirma\u00e7\u00e3o.");
@@ -4587,6 +4709,7 @@ const MentoriaLab = () => {
               const { error: insertErr } = await supabase.from("evaluations").insert(insertPayload as any);
               if (insertErr) throw insertErr;
               toast.success("Auditoria finalizada e enviada para Performance.");
+              setPerfRefreshKey((k) => k + 1);
             }
           } catch (err: any) {
             console.error("[OpaAudit] save error:", err);
