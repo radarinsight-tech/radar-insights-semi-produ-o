@@ -78,19 +78,27 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
 
   const fetchMore = useCallback(async () => {
     const nextOffset = currentOffset + 100;
+    if (import.meta.env.DEV) console.log("[OpaImport] fetchMore called, currentOffset:", currentOffset, "nextOffset:", nextOffset);
     setLoadingMore(true);
     try {
       const res = await listOpaAttendances(buildParams(nextOffset));
       const newItems = (res.attendances || []);
+      if (import.meta.env.DEV) console.log("[OpaImport] fetchMore received:", newItems.length, "items, hasMore:", res.hasMore);
       setAttendances(prev => {
         const existingIds = new Set(prev.map(a => a.id));
         const unique = newItems.filter(a => !existingIds.has(a.id));
+        if (import.meta.env.DEV) console.log("[OpaImport] fetchMore merge: prev=", prev.length, "unique=", unique.length, "total=", prev.length + unique.length);
         return [...prev, ...unique];
       });
       setCurrentOffset(nextOffset);
-      setHasMore(res.hasMore ?? false);
+      setHasMore(res.hasMore ?? (newItems.length >= 100));
       setLastFetch(new Date());
-      toast.success(`+${newItems.length} atendimentos carregados`);
+      if (newItems.length > 0) {
+        toast.success(`+${newItems.length} atendimentos carregados`);
+      } else {
+        toast.info("Nenhum novo atendimento nesta página.");
+        setHasMore(false);
+      }
     } catch (err: any) {
       console.error("[OpaImport] load more error:", err);
       toast.error(err?.message || "Erro ao carregar mais atendimentos");

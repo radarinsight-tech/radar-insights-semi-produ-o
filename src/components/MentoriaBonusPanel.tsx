@@ -25,7 +25,7 @@ import {
   type AttendantAutoSelection,
   type AmostraStatus,
 } from "@/lib/mentoriaAutoSelection";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
