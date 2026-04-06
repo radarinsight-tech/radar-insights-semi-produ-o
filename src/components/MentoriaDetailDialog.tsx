@@ -298,10 +298,13 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
 
         {/* ═══ STEP BAR ═══ */}
         <MentoriaStepBar
-          currentStep={preAnalysis ? currentStep : "relatorio"}
+          currentStep={currentStep}
           completedSteps={completedSteps}
-          onStepClick={(step) => setCurrentStep(step)}
-          hasPreAnalysis={!!preAnalysis}
+          onStepClick={(step) => {
+            if (isReadonly && step === "revisao") return;
+            setCurrentStep(step);
+          }}
+          hasPreAnalysis={!isReadonly}
         />
 
         {/* ═══ NON-EVALUABLE WARNING ═══ */}
