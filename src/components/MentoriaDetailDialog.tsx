@@ -125,7 +125,97 @@ const findRelevantExcerpt = (rawText: string | undefined, explicacao: string): s
   return null;
 };
 
-const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation, workflowStatus, onMarkFinished, onNextFile, hasNextFile, nonEvaluable, nonEvaluableReason, tipoAnalise, initialStep, audioBlobs, imageBlobs, mode = "review" }: MentoriaDetailDialogProps) => {
+/* ═══ MANUAL REVIEW FALLBACK (when preAnalysis is null) ═══ */
+interface ManualReviewFallbackProps {
+  result: any;
+  onSave: (patch: { notaFinal: number; classificacao: string; observacoes: string }) => void;
+  onGoToReport: () => void;
+}
+
+const CLASSIFICACOES = ["Excelente", "Muito bom", "Bom atendimento", "Necessita mentoria", "Abaixo do esperado"];
+
+const ManualReviewFallback = ({ result, onSave, onGoToReport }: ManualReviewFallbackProps) => {
+  const [notaFinal, setNotaFinal] = useState<number>(result?.notaFinal ?? result?.nota ?? 0);
+  const [classificacao, setClassificacao] = useState<string>(result?.classificacao ?? "Bom atendimento");
+  const [observacoes, setObservacoes] = useState<string>("");
+
+  return (
+    <ScrollArea className="h-full">
+      <div className="px-8 py-8 space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+          <Edit3 className="h-5 w-5 text-primary shrink-0" />
+          <div>
+            <p className="text-sm font-bold text-foreground">Revisão Manual</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              A pré-análise automática não está disponível para este atendimento. Preencha os campos abaixo para registrar sua avaliação manual.
+            </p>
+          </div>
+        </div>
+
+        {/* Nota */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-foreground uppercase tracking-wider">Nota Final (0–100)</label>
+          <Input
+            type="number"
+            min={0}
+            max={100}
+            value={notaFinal}
+            onChange={(e) => setNotaFinal(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
+            className="max-w-[160px]"
+          />
+        </div>
+
+        {/* Classificação */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-foreground uppercase tracking-wider">Classificação</label>
+          <Select value={classificacao} onValueChange={setClassificacao}>
+            <SelectTrigger className="max-w-[280px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CLASSIFICACOES.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Observações */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-foreground uppercase tracking-wider">Observações</label>
+          <Textarea
+            rows={4}
+            placeholder="Descreva pontos de melhoria, destaques ou observações sobre o atendimento..."
+            value={observacoes}
+            onChange={(e) => setObservacoes(e.target.value)}
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-3 pt-2">
+          <Button
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={() => onSave({ notaFinal, classificacao, observacoes })}
+          >
+            <Save className="h-3.5 w-3.5" /> Salvar Revisão
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={onGoToReport}
+          >
+            Ir para Relatório <ChevronRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+    </ScrollArea>
+  );
+};
+
+
   const isReadonly = mode === "report";
   const [uraOpen, setUraOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<MentoriaStep>(initialStep || (isReadonly ? "relatorio" : "revisao"));
