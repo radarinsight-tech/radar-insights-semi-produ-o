@@ -244,8 +244,10 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
     subtotal: subtotais ? subtotais[subtotalKey(cat)] : null,
   }));
 
-  const availableSteps: MentoriaStep[] = preAnalysis ? ["revisao", "relatorio"] : ["relatorio"];
-  const currentIdx = availableSteps.indexOf(currentStep);
+  // In report mode, only show relatorio. In review mode, always include revisao.
+  const availableSteps: MentoriaStep[] = isReadonly
+    ? ["relatorio"]
+    : (preAnalysis ? ["revisao", "relatorio"] : ["revisao", "relatorio"]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
