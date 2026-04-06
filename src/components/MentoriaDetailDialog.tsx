@@ -342,6 +342,17 @@ const MentoriaDetailDialog = ({
     printWindow.document.close();
     setTimeout(() => { printWindow.print(); printWindow.close(); }, 600);
   };
+  // Group items for display (must be before early returns)
+  const grouped = useMemo(() => {
+    let items = cardItems;
+    if (!isReadonly && filterMode !== "all") {
+      items = items.filter(i => decisions.get(i.numero)?.status === filterMode);
+    }
+    return CATEGORY_ORDER.map(cat => ({
+      categoria: cat,
+      items: items.filter(i => i.categoria === cat),
+    }));
+  }, [cardItems, isReadonly, filterMode, decisions]);
 
   if (!result) return null;
 
@@ -357,25 +368,12 @@ const MentoriaDetailDialog = ({
   const totalObtidos = criterios.reduce((s: number, c: any) => s + (c.pontosObtidos || 0), 0);
   const totalPossiveis = criterios.reduce((s: number, c: any) => s + (c.pesoMaximo || 0), 0);
 
-  // Determine effective score for display
   const displayNota = !isReadonly && currentScore ? currentScore.nota100 : nota;
   const displayClassificacao = !isReadonly && currentScore ? currentScore.classificacao : classificacao;
   const displayObtidos = !isReadonly && currentScore ? currentScore.pontosObtidos : (result.pontosObtidos ?? totalObtidos);
   const displayPossiveis = !isReadonly && currentScore ? currentScore.pontosPossiveis : (result.pontosPossiveis ?? totalPossiveis);
 
   const criterionMode: CriterionMode = isReadonly ? "readonly" : "audit";
-
-  // Group items for display
-  const grouped = useMemo(() => {
-    let items = cardItems;
-    if (!isReadonly && filterMode !== "all") {
-      items = items.filter(i => decisions.get(i.numero)?.status === filterMode);
-    }
-    return CATEGORY_ORDER.map(cat => ({
-      categoria: cat,
-      items: items.filter(i => i.categoria === cat),
-    }));
-  }, [cardItems, isReadonly, filterMode, decisions]);
 
   // Impeditivo case
   if (result.impeditivo) {
