@@ -690,9 +690,13 @@ const MentoriaLab = () => {
 
   const getOpaWorkflowStatus = useCallback((fileId: string): WorkflowStatus => opaWorkflowStatuses[fileId] || "nao_iniciado", [opaWorkflowStatuses]);
 
-  const openOpaMentoria = useCallback((f: LabFile, initialStep?: "revisao" | "relatorio") => {
+  const openOpaMentoria = useCallback((f: LabFile, mode: "report" | "review" = "review") => {
     // If file lacks result data, don't open empty modal — trigger auto-fetch instead
     if (!f.result) {
+      if (mode === "report") {
+        toast.warning("Este atendimento ainda não foi analisado.");
+        return;
+      }
       const att = opa.attendances.find((a) => a.id === f.id);
       if (att) {
         toast.info("Carregando dados do atendimento...");
@@ -703,9 +707,12 @@ const MentoriaLab = () => {
       return;
     }
     setOpaMentoriaFile(f);
-    setOpaMentoriaInitialStep(initialStep);
+    setOpaMentoriaMode(mode);
+    setOpaMentoriaInitialStep(mode === "report" ? "relatorio" : "revisao");
     setOpaHighlightedFileId(f.id);
-    setOpaWorkflowStatuses((prev) => ({ ...prev, [f.id]: prev[f.id] === "finalizado" ? "finalizado" : "em_analise" }));
+    if (mode !== "report") {
+      setOpaWorkflowStatuses((prev) => ({ ...prev, [f.id]: prev[f.id] === "finalizado" ? "finalizado" : "em_analise" }));
+    }
   }, [opa]);
 
   const handleOpaStartMentoria = useCallback(async (labFile: LabFile) => {
