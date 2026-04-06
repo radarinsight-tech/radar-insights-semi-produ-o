@@ -248,6 +248,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
   const availableSteps: MentoriaStep[] = isReadonly
     ? ["relatorio"]
     : (preAnalysis ? ["revisao", "relatorio"] : ["revisao", "relatorio"]);
+  const currentIdx = availableSteps.indexOf(currentStep);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
