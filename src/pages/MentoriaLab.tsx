@@ -644,7 +644,7 @@ const MentoriaLab = () => {
   const opaHumanAttendants = useMemo(() => {
     const map = new Map<string, string>();
     opaFiles.forEach((f) => {
-      if (f.atendente && !isLikelyBot(f.atendente)) {
+      if (f.atendente && !isLikelyBot(f.atendente, f)) {
         const fn = friendlyName(f.atendente);
         if (!map.has(fn)) map.set(fn, fn);
       }
