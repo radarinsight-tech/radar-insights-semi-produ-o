@@ -523,6 +523,8 @@ const MentoriaLab = () => {
             addedAt: att.data_inicio ? new Date(att.data_inicio) : new Date(),
             status: "pendente" as FileStatus,
             atendente: att.atendente?.trim() || undefined,
+            atendente_raw: att.atendente_raw || undefined,
+            atendente_is_technical_id: att.atendente_is_technical_id ?? false,
             protocolo: att.protocolo || undefined,
             data: att.data_inicio ? new Date(att.data_inicio).toLocaleDateString("pt-BR") : undefined,
             canal: att.canal || undefined,
