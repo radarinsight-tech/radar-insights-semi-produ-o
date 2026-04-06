@@ -3172,6 +3172,8 @@ const MentoriaLab = () => {
       setHighlightedFileId(null);
       setShowClearConfirm(false);
       setClearConfirmStep(null);
+      setOpaFiles([]);
+      clearMentoriaSession();
       toast.success("Dados limpos. Avaliações oficiais foram preservadas.");
     } catch (err) {
       console.error("Erro ao limpar dados:", err);
