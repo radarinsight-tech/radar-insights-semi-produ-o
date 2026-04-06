@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import UraContextDialog from "@/components/UraContextDialog";
 import SemiAutoPanel, { type SemiAutoResult } from "@/components/SemiAutoPanel";
 import MentoriaStepBar, { type MentoriaStep, STEPS } from "@/components/MentoriaStepBar";
-import { runPreAnalysis, type PreAnalysisResult } from "@/lib/mentoriaPreAnalysis";
+import { runPreAnalysis, type PreAnalysisResult, type PreAnalysisSuggestion, type SugestaoResultado, type Confianca } from "@/lib/mentoriaPreAnalysis";
 import type { UraContext } from "@/lib/uraContextSummarizer";
 import { extractUraContext } from "@/lib/conversationParser";
 
