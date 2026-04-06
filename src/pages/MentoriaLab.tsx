@@ -702,6 +702,8 @@ const MentoriaLab = () => {
     if (opa.attendances.length === 0) return;
 
     const dedup = async () => {
+      if (import.meta.env.DEV) console.log("[OpaDedup] Running dedup, opa.attendances:", opa.attendances.length);
+
       // Collect all protocolos from fetched attendances
       const protocolos = opa.attendances
         .map((a) => a.protocolo)
@@ -743,24 +745,28 @@ const MentoriaLab = () => {
             canal: att.canal || undefined,
           }));
 
+        if (import.meta.env.DEV) console.log("[OpaDedup] prev:", prev.length, "newFiles:", newFiles.length, "alreadyImported:", alreadyImportedProtocolos.size);
+
         // Merge: keep ALL existing files (never drop processed ones) + add new ones
         // Only remove files that are still "pendente" AND no longer in the attendances list
+        const attendanceIds = new Set(opa.attendances.map((att) => att.id));
         const updatedPrev = prev.filter((f) => {
           // Always keep files that have been read, analyzed, confirmed, or have results
           if (f.status !== "pendente") return true;
           if (f.result) return true;
           // For pendente files, keep if still present in attendances list
-          return opa.attendances.some((att) => att.id === f.id);
+          return attendanceIds.has(f.id);
         });
         const merged = [...updatedPrev, ...newFiles];
 
+        if (import.meta.env.DEV) console.log("[OpaDedup] updatedPrev:", updatedPrev.length, "merged:", merged.length);
+
         // Notify user about deduplication results
-        const totalFetched = opa.attendances.length;
-        const duplicatesSkipped = totalFetched - newFiles.length - updatedPrev.length;
-        if (duplicatesSkipped > 0) {
-          toast.info(`${duplicatesSkipped} atendimento(s) já importado(s) foram ignorados.`);
+        const newlySkipped = opa.attendances.filter((att) => !existingIds.has(att.id) && att.protocolo && alreadyImportedProtocolos.has(att.protocolo)).length;
+        if (newlySkipped > 0) {
+          toast.info(`${newlySkipped} atendimento(s) já importado(s) foram ignorados.`);
         }
-        if (merged.length === 0 && totalFetched > 0) {
+        if (merged.length === 0 && opa.attendances.length > 0) {
           toast.warning("Nenhum novo atendimento encontrado. Todos já foram importados anteriormente.");
         }
 
