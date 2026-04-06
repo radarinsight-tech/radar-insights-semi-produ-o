@@ -4574,6 +4574,7 @@ const MentoriaLab = () => {
         nonEvaluableReason={opaMentoriaFile?.nonEvaluableReason}
         tipoAnalise={opaMentoriaFile?.tipo_analise}
         initialStep={opaMentoriaInitialStep}
+        mode={opaMentoriaMode}
       />
       </ErrorBoundary>
       <ParserDiagnosticDialog
