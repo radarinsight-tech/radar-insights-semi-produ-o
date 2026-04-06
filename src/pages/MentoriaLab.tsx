@@ -1988,6 +1988,10 @@ const MentoriaLab = () => {
         };
       }
 
+      if (import.meta.env.DEV) {
+        console.log("[persistEvaluationRecord][payload]", JSON.stringify(payload, null, 2));
+      }
+
       const { data, error } = await supabase
         .from("evaluations")
         .insert(payload as any)
