@@ -87,6 +87,8 @@ export async function listOpaAttendances(params: OpaListParams = {}): Promise<Op
   return {
     attendances,
     total: raw.total ?? attendances.length,
+    offset: raw.offset ?? 0,
+    hasMore: raw.hasMore ?? false,
     attendantsLookup: raw.attendantsLookup ?? undefined,
   };
 }
