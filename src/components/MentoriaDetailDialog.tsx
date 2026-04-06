@@ -5,13 +5,17 @@ import type { ExtractedAudio, ExtractedImage } from "@/lib/pdfMediaExtractor";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   CheckCircle2, XCircle, MinusCircle, ShieldAlert,
   MessageSquareQuote, Printer, X, Award, TrendingUp, AlertTriangle, Lightbulb,
-  User, Calendar, FileText, Hash, Radio, ChevronRight, ChevronLeft, List, CheckSquare
+  User, Calendar, FileText, Hash, Radio, ChevronRight, ChevronLeft, List, CheckSquare, Save, Edit3
 } from "lucide-react";
+import { toast } from "sonner";
 import UraContextDialog from "@/components/UraContextDialog";
 import SemiAutoPanel, { type SemiAutoResult } from "@/components/SemiAutoPanel";
 import MentoriaStepBar, { type MentoriaStep, STEPS } from "@/components/MentoriaStepBar";
