@@ -4582,6 +4582,12 @@ const MentoriaLab = () => {
         tipoAnalise={opaMentoriaFile?.tipo_analise}
         initialStep={opaMentoriaInitialStep}
         mode={opaMentoriaMode}
+        fileId={opaMentoriaFile?.id}
+        onSemiAutoSaved={(merged) => {
+          if (opaMentoriaFile) {
+            setOpaFiles((prev) => prev.map((f) => f.id === opaMentoriaFile.id ? { ...f, result: merged } : f));
+          }
+        }}
       />
       </ErrorBoundary>
       <ParserDiagnosticDialog
