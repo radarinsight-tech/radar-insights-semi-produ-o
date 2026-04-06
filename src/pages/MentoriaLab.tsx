@@ -4708,6 +4708,7 @@ const MentoriaLab = () => {
               const { error: insertErr } = await supabase.from("evaluations").insert(insertPayload as any);
               if (insertErr) throw insertErr;
               toast.success("Auditoria finalizada e enviada para Performance.");
+              setPerfRefreshKey((k) => k + 1);
             }
           } catch (err: any) {
             console.error("[OpaAudit] save error:", err);
