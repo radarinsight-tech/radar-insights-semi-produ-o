@@ -4521,6 +4521,12 @@ const MentoriaLab = () => {
         initialStep={mentoriaInitialStep}
         audioBlobs={mentoriaFile?.audioBlobs}
         imageBlobs={mentoriaFile?.imageBlobs}
+        fileId={mentoriaFile?.id}
+        onSemiAutoSaved={(merged) => {
+          if (mentoriaFile) {
+            setFiles((prev) => prev.map((f) => f.id === mentoriaFile.id ? { ...f, result: merged } : f));
+          }
+        }}
       />
       {/* Opa Suite MentoriaDetailDialog */}
       <ErrorBoundary fallbackTitle="Erro ao exibir auditoria Opa Suite">
