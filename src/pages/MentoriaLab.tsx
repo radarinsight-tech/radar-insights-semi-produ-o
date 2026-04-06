@@ -4363,7 +4363,7 @@ const MentoriaLab = () => {
                           tipo: r.tipo || "opa_suite",
                           nota: r.notaFinal ?? r.nota ?? 0,
                           classificacao: r.classificacao || "\u2014",
-                          data: file.data || new Date().toLocaleDateString("pt-BR"),
+                          data: normalizeDateForDB(file.data || new Date().toLocaleDateString("pt-BR")),
                           bonus: (r.bonusQualidade ?? 0) >= 80,
                           atualizacao_cadastral: r.bonusOperacional?.atualizacaoCadastral || "N\u00c3O",
                           pontos_melhoria: r.mentoria || r.pontosMelhoria || [],
