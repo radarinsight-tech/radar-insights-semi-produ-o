@@ -4502,6 +4502,7 @@ const MentoriaLab = () => {
                         if (insertErr) throw insertErr;
                        }
                       toast.success(`${ids.length} atendimento(s) confirmado(s) e enviado(s) para Performance.`);
+                      setPerfRefreshKey((k) => k + 1);
                     } catch (err: any) {
                       console.error("[OpaConfirm] save error:", err);
                       toast.error(err?.message ? `Erro: ${err.message}` : "Erro ao salvar confirma\u00e7\u00e3o.");
