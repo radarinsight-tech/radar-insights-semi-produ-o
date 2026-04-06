@@ -385,6 +385,7 @@ const MentoriaLab = () => {
   const [opaWorkflowStatuses, setOpaWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
   const [opaMentoriaFile, setOpaMentoriaFile] = useState<LabFile | null>(null);
   const [opaMentoriaInitialStep, setOpaMentoriaInitialStep] = useState<"revisao" | "relatorio" | undefined>(undefined);
+  const [opaMentoriaMode, setOpaMentoriaMode] = useState<"report" | "review">("review");
   const [opaHighlightedFileId, setOpaHighlightedFileId] = useState<string | null>(null);
   const { isAdmin } = useUserPermissions();
   const {
