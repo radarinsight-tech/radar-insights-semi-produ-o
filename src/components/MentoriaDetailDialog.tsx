@@ -615,8 +615,8 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                 {workflowStatus === "finalizado" ? "Finalizado" : workflowStatus === "em_analise" ? "Em análise" : "Não iniciado"}
               </Badge>
             )}
-            {/* Back step button */}
-            {preAnalysis && (() => {
+            {/* Back step button — hidden in report mode */}
+            {!isReadonly && (() => {
               if (currentIdx <= 0) return null;
               return (
                 <Button
