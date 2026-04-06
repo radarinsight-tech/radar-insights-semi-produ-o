@@ -124,9 +124,12 @@ interface LabFile {
   addedAt: Date;
   status: FileStatus;
   text?: string;
+  rawText?: string;
   result?: any;
   error?: string;
   atendente?: string;
+  atendente_raw?: string;
+  atendente_is_technical_id?: boolean;
   protocolo?: string;
   data?: string;
   canal?: string;
@@ -425,11 +428,24 @@ const MentoriaLab = () => {
   // ── Opa Suite handler ──
   const handleOpaTextReady = useCallback(async (
     text: string,
-    meta: { protocolo: string; atendente: string; canal: string; attendanceId: string },
+    meta: {
+      protocolo: string;
+      atendente: string;
+      canal: string;
+      attendanceId: string;
+      rawText?: string;
+      structuredConversation?: Array<{ timestamp?: string; author: string; text: string }>;
+    },
   ) => {
     setOpaAnalyzing(true);
-    // Update the file status to show it's being analyzed
-    setOpaFiles((prev) => prev.map((f) => f.id === meta.attendanceId ? { ...f, status: "lido" as FileStatus } : f));
+    // Persist rawText and structuredConversation into the LabFile immediately
+    setOpaFiles((prev) => prev.map((f) => f.id === meta.attendanceId ? {
+      ...f,
+      status: "lido" as FileStatus,
+      text: text,
+      rawText: meta.rawText || text,
+      structuredConversation: meta.structuredConversation as any,
+    } : f));
     try {
       const response = await supabase.functions.invoke("analyze-attendance", { body: { text } });
       if (response.error || response.data?.error) {
@@ -520,6 +536,8 @@ const MentoriaLab = () => {
             addedAt: att.data_inicio ? new Date(att.data_inicio) : new Date(),
             status: "pendente" as FileStatus,
             atendente: att.atendente?.trim() || undefined,
+            atendente_raw: att.atendente_raw || undefined,
+            atendente_is_technical_id: att.atendente_is_technical_id ?? false,
             protocolo: att.protocolo || undefined,
             data: att.data_inicio ? new Date(att.data_inicio).toLocaleDateString("pt-BR") : undefined,
             canal: att.canal || undefined,
@@ -553,12 +571,16 @@ const MentoriaLab = () => {
   }, []);
 
   // Opa atendentes list — classify as human vs bot/system
+  // CRITICAL: Raw ObjectIds are NOT bots — they are unresolved humans
   const BOT_KEYWORDS = ["bot", "sistema", "automático", "automatico", "virtual", "ura", "chatbot", "autoatendimento"];
-  const isLikelyBot = (name: string) => {
+  const isLikelyBot = (name: string, file?: LabFile) => {
     if (!name) return false;
+    // If the proxy already told us this is a technical ID, it's an unresolved human, NOT a bot
+    if (file?.atendente_is_technical_id) return false;
     const lower = name.toLowerCase();
-    if (/^[a-f0-9]{24}$/i.test(name)) return true;
-    if (/^[0-9a-f-]{36}$/i.test(name)) return true;
+    // Raw ObjectIds / UUIDs are unresolved humans, NOT bots
+    if (/^[a-f0-9]{24}$/i.test(name)) return false;
+    if (/^[0-9a-f-]{36}$/i.test(name)) return false;
     return BOT_KEYWORDS.some((kw) => lower.includes(kw));
   };
   const isRawId = (name: string) => /^[a-f0-9]{24}$/i.test(name) || /^[0-9a-f-]{36}$/i.test(name);
@@ -596,14 +618,14 @@ const MentoriaLab = () => {
       if (currentFilter === "sem_atendente") {
         if (f.atendente) return false;
     } else if (currentFilter === "somente_humanos") {
-        if (!f.atendente || isLikelyBot(f.atendente)) return false;
+        if (!f.atendente || isLikelyBot(f.atendente, f)) return false;
         // If specific humans are selected, filter further
         if (opaHumanSelected.size > 0) {
           const displayName = friendlyName(f.atendente);
           if (!opaHumanSelected.has(displayName) && !opaHumanSelected.has(f.atendente)) return false;
         }
       } else if (currentFilter === "somente_bot") {
-        if (!f.atendente || !isLikelyBot(f.atendente)) return false;
+        if (!f.atendente || !isLikelyBot(f.atendente, f)) return false;
       } else if (currentFilter !== "todos") {
         // Compare using friendly name since filter values use friendly names
         const displayName = f.atendente ? friendlyName(f.atendente) : "";
@@ -637,7 +659,7 @@ const MentoriaLab = () => {
   const opaHumanAttendants = useMemo(() => {
     const map = new Map<string, string>();
     opaFiles.forEach((f) => {
-      if (f.atendente && !isLikelyBot(f.atendente)) {
+      if (f.atendente && !isLikelyBot(f.atendente, f)) {
         const fn = friendlyName(f.atendente);
         if (!map.has(fn)) map.set(fn, fn);
       }

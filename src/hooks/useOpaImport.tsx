@@ -11,7 +11,14 @@ import {
 export type OpaPanelState = "idle" | "loading-list" | "list" | "loading-messages" | "analyzing" | "error";
 
 export interface UseOpaImportOptions {
-  onTextReady: (text: string, meta: { protocolo: string; atendente: string; canal: string; attendanceId: string }) => void;
+  onTextReady: (text: string, meta: {
+    protocolo: string;
+    atendente: string;
+    canal: string;
+    attendanceId: string;
+    rawText?: string;
+    structuredConversation?: Array<{ timestamp?: string; author: string; text: string }>;
+  }) => void;
   isAnalyzing: boolean;
 }
 
@@ -81,6 +88,8 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
         atendente: att.atendente,
         canal: att.canal,
         attendanceId: att.id,
+        rawText: res.rawText,
+        structuredConversation: res.structuredConversation,
       });
     } catch (err: any) {
       console.error("[OpaImport] messages error:", err);
