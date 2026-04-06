@@ -61,6 +61,7 @@ export interface OpaListParams {
 
 export async function listOpaAttendances(params: OpaListParams = {}): Promise<OpaListResponse> {
   const body: Record<string, unknown> = { action: "list", limite: params.limite ?? 100 };
+  if (typeof params.offset === "number" && params.offset > 0) body.offset = params.offset;
   if (params.status) body.status = params.status;
   if (params.dataInicio) body.dataInicio = params.dataInicio;
   if (params.dataFim) body.dataFim = params.dataFim;
