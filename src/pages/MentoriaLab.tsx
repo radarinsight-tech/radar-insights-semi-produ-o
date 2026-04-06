@@ -503,6 +503,7 @@ const MentoriaLab = () => {
      failed: 0,
    });
   const [batchProcessing, setBatchProcessing] = useState(false);
+  const [perfRefreshKey, setPerfRefreshKey] = useState(0);
   const [opaAnalyzing, setOpaAnalyzing] = useState(false);
   const [opaResult, setOpaResult] = useState<AnalysisData | null>(null);
   const [opaFullReport, setOpaFullReport] = useState<any>(null);
