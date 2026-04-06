@@ -525,6 +525,27 @@ const OpaImportPanel = ({ onTextReady, isAnalyzing }: OpaImportPanelProps) => {
       {renderTopGrid()}
       {renderFilters()}
       {renderTable()}
+      {hasData && hasMore && (
+        <div className="flex items-center justify-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={fetchMore}
+            disabled={loadingMore || isLoading}
+          >
+            {loadingMore ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            Carregar próximos 100
+          </Button>
+          <span className="text-[11px] text-muted-foreground">
+            {attendances.length} carregados
+          </span>
+        </div>
+      )}
     </div>
   );
 };
