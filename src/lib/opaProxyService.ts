@@ -53,6 +53,7 @@ async function opaFetch<T>(body: Record<string, unknown>): Promise<T> {
 
 export interface OpaListParams {
   limite?: number;
+  offset?: number;
   status?: string;
   dataInicio?: string;
   dataFim?: string;
