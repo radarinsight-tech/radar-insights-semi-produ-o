@@ -3975,20 +3975,15 @@ const MentoriaLab = () => {
           </TabsContent>
 
           <TabsContent value="performance" className="space-y-4 mt-4">
-            {files.length > 0 && filteredFiles.some((f) => f.status === "analisado" || f.status === "confirmado") ? (
               <PerformanceSections
-                files={filteredFiles}
+                filterMonth={filterMonth}
+                refreshKey={perfRefreshKey}
                 globalExcludedNames={globalExcludedNames}
                 globalExcludedSet={globalExcludedSet}
                 excludeAttendants={excludeAttendants}
                 restoreAttendants={restoreAttendants}
                 batchAutoApprove={batchAutoApprove}
               />
-            ) : (
-              <div className="py-8 text-center text-sm text-muted-foreground">
-                Analise atendimentos para visualizar dados de performance.
-              </div>
-            )}
           </TabsContent>
 
           <TabsContent value="opa" className="space-y-4 mt-4">
