@@ -4700,7 +4700,7 @@ const MentoriaLab = () => {
                 atendente: opaMentoriaFile.atendente || "Desconhecido",
                 protocolo: opaMentoriaFile.protocolo || opaMentoriaFile.id,
                 tipo: r.tipo || "opa_suite",
-                nota: r.notaFinal ?? r.nota ?? 0,
+                nota: normalizeNotaForDB(r.notaFinal ?? r.nota ?? 0),
                 classificacao: r.classificacao || "—",
                 data: normalizeDateForDB(opaMentoriaFile.data || new Date().toLocaleDateString("pt-BR")),
                 bonus: (r.bonusQualidade ?? 0) >= 80,
