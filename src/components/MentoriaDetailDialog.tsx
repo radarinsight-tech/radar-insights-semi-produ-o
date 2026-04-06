@@ -694,10 +694,11 @@ const MentoriaDetailDialog = ({
                           </div>
                           <div className="space-y-2">
                             {items.map(item => {
-                              const decision = normalizedDecisions.get(item.numero);
+                              const decision = normalizedDecisions.get(item.numero)
+                                ?? createDefaultDecision(item);
 
-                              if (import.meta.env.DEV && isAudit && !isConfirmed && !decision) {
-                                console.error("[MentoriaDetailDialog] Missing decision for visible criterion", { numero: item.numero });
+                              if (import.meta.env.DEV && isAudit && !isConfirmed && !normalizedDecisions.has(item.numero)) {
+                                console.error("[MentoriaDetailDialog] Missing decision for visible criterion — fallback applied", { numero: item.numero });
                               }
 
                               return (
@@ -705,11 +706,11 @@ const MentoriaDetailDialog = ({
                                   key={item.numero}
                                   item={item}
                                   mode={criterionMode}
-                                  decision={decision}
+                                  decision={isAudit ? decision : undefined}
                                   confirmed={isConfirmed}
-                                  onAccept={acceptItem}
-                                  onAdjust={adjustItem}
-                                  onReject={rejectItem}
+                                  onAccept={isAudit && !isConfirmed ? acceptItem : undefined}
+                                  onAdjust={isAudit && !isConfirmed ? adjustItem : undefined}
+                                  onReject={isAudit && !isConfirmed ? rejectItem : undefined}
                                 />
                               );
                             })}
