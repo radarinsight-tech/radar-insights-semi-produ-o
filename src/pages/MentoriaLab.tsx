@@ -189,6 +189,13 @@ import {
 } from "@/lib/officialEvaluations";
 import { logAudit } from "@/lib/officialEvaluations";
 
+/** Clamp nota to numeric(3,1) range: 0.0–99.9 */
+const normalizeNotaForDB = (nota: number | null | undefined): number => {
+  const n = Number(nota ?? 0);
+  const clamped = Math.max(0, Math.min(n, 99.9));
+  return parseFloat(clamped.toFixed(1));
+};
+
 /** Convert DD/MM/YYYY → YYYY-MM-DD for Postgres `text` column; pass through if already ISO-ish */
 const normalizeDateForDB = (raw: string | undefined | null): string => {
   if (!raw) return new Date().toISOString().slice(0, 10);
