@@ -603,14 +603,14 @@ const MentoriaLab = () => {
       if (currentFilter === "sem_atendente") {
         if (f.atendente) return false;
     } else if (currentFilter === "somente_humanos") {
-        if (!f.atendente || isLikelyBot(f.atendente)) return false;
+        if (!f.atendente || isLikelyBot(f.atendente, f)) return false;
         // If specific humans are selected, filter further
         if (opaHumanSelected.size > 0) {
           const displayName = friendlyName(f.atendente);
           if (!opaHumanSelected.has(displayName) && !opaHumanSelected.has(f.atendente)) return false;
         }
       } else if (currentFilter === "somente_bot") {
-        if (!f.atendente || !isLikelyBot(f.atendente)) return false;
+        if (!f.atendente || !isLikelyBot(f.atendente, f)) return false;
       } else if (currentFilter !== "todos") {
         // Compare using friendly name since filter values use friendly names
         const displayName = f.atendente ? friendlyName(f.atendente) : "";
