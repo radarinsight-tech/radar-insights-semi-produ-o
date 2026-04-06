@@ -551,7 +551,7 @@ const MentoriaLab = () => {
 
   // Global month filter (competência)
   const now = new Date();
-  const [filterMonth, setFilterMonth] = useState(() => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+  const [filterMonth, setFilterMonth] = useState(() => _savedSession.current?.filterMonth || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
 
   const monthOptions = useMemo(() => {
     const options: { value: string; label: string }[] = [];
