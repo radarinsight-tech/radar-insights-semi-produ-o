@@ -2876,6 +2876,7 @@ const MentoriaLab = () => {
           approvedIds.has(f.id) ? { ...f, approvedAsOfficial: true, approvalOrigin: "automatic" as const } : f,
         ),
       );
+      setPerfRefreshKey((k) => k + 1);
     },
     [files, normalizedExcludedAttendants],
   );
