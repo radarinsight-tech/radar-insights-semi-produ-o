@@ -116,7 +116,7 @@ const ConversationView = ({ rawText, atendente, structuredConversation }: Conver
     );
 
     return { classified: cls, uraContext: ctx, humanMessages: human, templateMessages: templates, hasStructure: true, structured: sc };
-  }, [rawText, atendente, structuredConversation]);
+  }, [safeText, atendente, structuredConversation]);
 
   if (!hasStructure) {
     // If we have structured messages (even < 2), show them as chat
