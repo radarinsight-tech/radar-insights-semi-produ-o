@@ -90,6 +90,8 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
         atendente: att.atendente,
         canal: att.canal,
         attendanceId: att.id,
+        rawText: res.rawText,
+        structuredConversation: res.structuredConversation,
       });
     } catch (err: any) {
       console.error("[OpaImport] messages error:", err);
