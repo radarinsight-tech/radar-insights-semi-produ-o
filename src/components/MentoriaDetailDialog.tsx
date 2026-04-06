@@ -309,6 +309,10 @@ const MentoriaDetailDialog = ({
   const acceptItem = (numero: number) => {
     const d = normalizedDecisions.get(numero);
     if (!d) return;
+    if (d.status === "accepted" && d.decisaoFinal === d.sugestaoOriginal && !d.editadoManualmente) {
+      toast.info("Este critério já está aceito.");
+      return;
+    }
     updateDecision(numero, { status: "accepted", decisaoFinal: d.sugestaoOriginal, editadoManualmente: false });
   };
 
