@@ -556,12 +556,16 @@ const MentoriaLab = () => {
   }, []);
 
   // Opa atendentes list — classify as human vs bot/system
+  // CRITICAL: Raw ObjectIds are NOT bots — they are unresolved humans
   const BOT_KEYWORDS = ["bot", "sistema", "automático", "automatico", "virtual", "ura", "chatbot", "autoatendimento"];
-  const isLikelyBot = (name: string) => {
+  const isLikelyBot = (name: string, file?: LabFile) => {
     if (!name) return false;
+    // If the proxy already told us this is a technical ID, it's an unresolved human, NOT a bot
+    if (file?.atendente_is_technical_id) return false;
     const lower = name.toLowerCase();
-    if (/^[a-f0-9]{24}$/i.test(name)) return true;
-    if (/^[0-9a-f-]{36}$/i.test(name)) return true;
+    // Raw ObjectIds / UUIDs are unresolved humans, NOT bots
+    if (/^[a-f0-9]{24}$/i.test(name)) return false;
+    if (/^[0-9a-f-]{36}$/i.test(name)) return false;
     return BOT_KEYWORDS.some((kw) => lower.includes(kw));
   };
   const isRawId = (name: string) => /^[a-f0-9]{24}$/i.test(name) || /^[0-9a-f-]{36}$/i.test(name);
