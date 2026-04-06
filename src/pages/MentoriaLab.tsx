@@ -81,6 +81,7 @@ import AnalysisResult, { type AnalysisData } from "@/components/AnalysisResult";
 import { useOpaImport } from "@/hooks/useOpaImport";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Radio, RefreshCw, AlertCircle, MessageSquareQuote } from "lucide-react";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro" | "aguardando_revisao_ia" | "aguardando_revisao_manual" | "confirmado" | "reprovado";
 type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
@@ -689,11 +690,22 @@ const MentoriaLab = () => {
   const getOpaWorkflowStatus = useCallback((fileId: string): WorkflowStatus => opaWorkflowStatuses[fileId] || "nao_iniciado", [opaWorkflowStatuses]);
 
   const openOpaMentoria = useCallback((f: LabFile, initialStep?: "revisao" | "relatorio") => {
+    // If file lacks result data, don't open empty modal — trigger auto-fetch instead
+    if (!f.result) {
+      const att = opa.attendances.find((a) => a.id === f.id);
+      if (att) {
+        toast.info("Carregando dados do atendimento...");
+        opa.handleSelect(att);
+      } else {
+        toast.warning("Dados do atendimento não disponíveis. Tente buscar novamente.");
+      }
+      return;
+    }
     setOpaMentoriaFile(f);
     setOpaMentoriaInitialStep(initialStep);
     setOpaHighlightedFileId(f.id);
     setOpaWorkflowStatuses((prev) => ({ ...prev, [f.id]: prev[f.id] === "finalizado" ? "finalizado" : "em_analise" }));
-  }, []);
+  }, [opa]);
 
   const handleOpaStartMentoria = useCallback(async (labFile: LabFile) => {
     // For Opa files, we need to fetch messages first if not already analyzed
@@ -4395,8 +4407,8 @@ const MentoriaLab = () => {
           {sideFile && (
             <div className="mt-4 space-y-4">
               {sideFile.status === "pendente" && !readingIds.has(sideFile.id) && (
-                <Button variant="outline" className="w-full gap-2" onClick={() => readFile(sideFile)}>
-                  <BookOpen className="h-4 w-4" /> Iniciar leitura automática
+                <Button variant="outline" className="w-full gap-2" disabled={readingIds.size > 0} onClick={() => readFile(sideFile)}>
+                  <BookOpen className="h-4 w-4" /> {readingIds.size > 0 ? "Aguarde..." : "Iniciar leitura automática"}
                 </Button>
               )}
 
@@ -4502,6 +4514,7 @@ const MentoriaLab = () => {
         imageBlobs={mentoriaFile?.imageBlobs}
       />
       {/* Opa Suite MentoriaDetailDialog */}
+      <ErrorBoundary fallbackTitle="Erro ao exibir auditoria Opa Suite">
       <MentoriaDetailDialog
         open={!!opaMentoriaFile}
         onOpenChange={(open) => {
@@ -4554,6 +4567,7 @@ const MentoriaLab = () => {
         tipoAnalise={opaMentoriaFile?.tipo_analise}
         initialStep={opaMentoriaInitialStep}
       />
+      </ErrorBoundary>
       <ParserDiagnosticDialog
         open={!!diagnosticFile}
         onOpenChange={() => setDiagnosticFile(null)}
