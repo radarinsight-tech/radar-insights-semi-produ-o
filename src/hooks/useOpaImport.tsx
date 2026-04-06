@@ -165,6 +165,31 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
     searchTerm.trim() ? 1 : 0,
   ].reduce((a, b) => a + b, 0);
 
+  /** Hydrate hook state from a previously saved snapshot (sessionStorage) */
+  const hydrateState = useCallback((snapshot: {
+    attendances: OpaAttendance[];
+    total: number;
+    hasMore: boolean;
+    currentOffset: number;
+    dateFrom?: string;
+    dateTo?: string;
+    filterAtendente: string;
+    searchTerm: string;
+  }) => {
+    setAttendances(snapshot.attendances);
+    setTotal(snapshot.total);
+    setHasMore(snapshot.hasMore);
+    setCurrentOffset(snapshot.currentOffset);
+    setFilterAtendente(snapshot.filterAtendente);
+    setSearchTerm(snapshot.searchTerm);
+    setDateFrom(snapshot.dateFrom ? new Date(snapshot.dateFrom) : undefined);
+    setDateTo(snapshot.dateTo ? new Date(snapshot.dateTo) : undefined);
+    setLastFetch(new Date());
+    if (snapshot.attendances.length > 0) {
+      setState("list");
+    }
+  }, []);
+
   return {
     // State
     state: effectiveState,
@@ -180,6 +205,7 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
     atendentes,
     hasMore,
     loadingMore,
+    currentOffset,
 
     // Filters
     searchTerm,
@@ -195,6 +221,7 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
     fetchList,
     fetchMore,
     handleSelect,
+    hydrateState,
     resetToIdle: () => setState("idle"),
     formatDate,
   };

@@ -82,6 +82,7 @@ import { useOpaImport } from "@/hooks/useOpaImport";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Radio, RefreshCw, AlertCircle, MessageSquareQuote } from "lucide-react";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { saveMentoriaSession, loadMentoriaSession, clearMentoriaSession, type MentoriaSessionState } from "@/hooks/useMentoriaSession";
 
 type FileStatus = "pendente" | "lido" | "analisado" | "erro" | "aguardando_revisao_ia" | "aguardando_revisao_manual" | "confirmado" | "reprovado";
 type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
@@ -488,7 +489,8 @@ const MentoriaLab = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [importingCount, setImportingCount] = useState(0);
   const [readingIds, setReadingIds] = useState<Set<string>>(new Set());
-  const [activeTab, setActiveTab] = useState("operacao");
+  const _savedSession = useRef(loadMentoriaSession());
+  const [activeTab, setActiveTab] = useState(_savedSession.current?.activeTab || "operacao");
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
   const [batchInfo, setBatchInfo] = useState<BatchInfo | null>(null);
   const [sideFile, setSideFile] = useState<LabFile | null>(null);
@@ -517,9 +519,9 @@ const MentoriaLab = () => {
   const [opaResult, setOpaResult] = useState<AnalysisData | null>(null);
   const [opaFullReport, setOpaFullReport] = useState<any>(null);
   const [opaFiles, setOpaFiles] = useState<LabFile[]>([]);
-  const [opaSearchTerm, setOpaSearchTerm] = useState("");
+  const [opaSearchTerm, setOpaSearchTerm] = useState(_savedSession.current?.opaLocalSearchTerm || "");
   const [_opaFilterAtendente_UNUSED, _setOpaFilterAtendente_UNUSED] = useState("todos"); // kept for compat; real filter is opa.filterAtendente
-  const [opaHumanSelected, setOpaHumanSelected] = useState<Set<string>>(new Set()); // multi-select human attendants
+  const [opaHumanSelected, setOpaHumanSelected] = useState<Set<string>>(() => new Set(_savedSession.current?.opaHumanSelected || []));
   const [opaFilterAuditoriaFrom, setOpaFilterAuditoriaFrom] = useState<Date | undefined>();
   const [opaFilterAuditoriaTo, setOpaFilterAuditoriaTo] = useState<Date | undefined>();
   const [opaWorkflowStatuses, setOpaWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
@@ -549,7 +551,7 @@ const MentoriaLab = () => {
 
   // Global month filter (competência)
   const now = new Date();
-  const [filterMonth, setFilterMonth] = useState(() => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+  const [filterMonth, setFilterMonth] = useState(() => _savedSession.current?.filterMonth || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
 
   const monthOptions = useMemo(() => {
     const options: { value: string; label: string }[] = [];
@@ -639,7 +641,63 @@ const MentoriaLab = () => {
   // ── Opa Suite hook ──
   const opa = useOpaImport({ onTextReady: handleOpaTextReady, isAnalyzing: opaAnalyzing });
 
-  // Convert OpaAttendances to LabFile format when list is fetched — with dedup
+  // ── Hydrate Opa state from sessionStorage on mount ──
+  const _hydratedRef = useRef(false);
+  useEffect(() => {
+    if (_hydratedRef.current) return;
+    _hydratedRef.current = true;
+    const s = _savedSession.current;
+    if (!s || !s.opaAttendances?.length) return;
+    opa.hydrateState({
+      attendances: s.opaAttendances,
+      total: s.opaTotal,
+      hasMore: s.opaHasMore,
+      currentOffset: s.opaCurrentOffset,
+      dateFrom: s.opaDateFrom,
+      dateTo: s.opaDateTo,
+      filterAtendente: s.opaFilterAtendente,
+      searchTerm: s.opaSearchTerm,
+    });
+    // Restore opaFiles
+    if (s.opaFiles?.length) {
+      setOpaFiles(s.opaFiles.map((f: any) => ({
+        ...f,
+        file: new File([], f.name || "opa-restored.txt"),
+        addedAt: f.addedAt ? new Date(f.addedAt) : new Date(),
+        analyzedAt: f.analyzedAt ? new Date(f.analyzedAt) : undefined,
+      })));
+    }
+    if (s.opaFilterAuditoriaFrom) setOpaFilterAuditoriaFrom(new Date(s.opaFilterAuditoriaFrom));
+    if (s.opaFilterAuditoriaTo) setOpaFilterAuditoriaTo(new Date(s.opaFilterAuditoriaTo));
+  }, []);
+
+  // ── Save state to sessionStorage on key changes ──
+  useEffect(() => {
+    const state: MentoriaSessionState = {
+      activeTab,
+      filterMonth,
+      opaDateFrom: opa.dateFrom?.toISOString(),
+      opaDateTo: opa.dateTo?.toISOString(),
+      opaFilterAtendente: opa.filterAtendente,
+      opaSearchTerm: opa.searchTerm,
+      opaAttendances: opa.attendances,
+      opaTotal: opa.total,
+      opaHasMore: opa.hasMore,
+      opaCurrentOffset: opa.currentOffset,
+      opaFiles: opaFiles.map((f) => ({
+        ...f,
+        file: undefined, // File objects are not serializable
+        audioBlobs: undefined,
+        imageBlobs: undefined,
+      })),
+      opaLocalSearchTerm: opaSearchTerm,
+      opaHumanSelected: Array.from(opaHumanSelected),
+      opaFilterAuditoriaFrom: opaFilterAuditoriaFrom?.toISOString(),
+      opaFilterAuditoriaTo: opaFilterAuditoriaTo?.toISOString(),
+    };
+    saveMentoriaSession(state);
+  }, [activeTab, filterMonth, opa.attendances, opa.total, opa.hasMore, opa.currentOffset, opa.dateFrom, opa.dateTo, opa.filterAtendente, opa.searchTerm, opaFiles, opaSearchTerm, opaHumanSelected, opaFilterAuditoriaFrom, opaFilterAuditoriaTo]);
+
   useEffect(() => {
     if (opa.attendances.length === 0) return;
 
@@ -3114,6 +3172,8 @@ const MentoriaLab = () => {
       setHighlightedFileId(null);
       setShowClearConfirm(false);
       setClearConfirmStep(null);
+      setOpaFiles([]);
+      clearMentoriaSession();
       toast.success("Dados limpos. Avaliações oficiais foram preservadas.");
     } catch (err) {
       console.error("Erro ao limpar dados:", err);
