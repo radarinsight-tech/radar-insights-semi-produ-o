@@ -4595,6 +4595,29 @@ const MentoriaLab = () => {
                   onAuditFile={(f) => openOpaMentoria(f as any, "review")}
                   monthlyConfirmCounts={new Map<string, number>()}
                 />
+
+                {/* Load more pagination */}
+                {opa.hasMore && (
+                  <div className="flex items-center justify-center gap-3 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 text-xs"
+                      onClick={opa.fetchMore}
+                      disabled={opa.loadingMore || opa.isLoading}
+                    >
+                      {opa.loadingMore ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      )}
+                      {opa.loadingMore ? "Carregando..." : "Carregar próximos 100"}
+                    </Button>
+                    <span className="text-[11px] text-muted-foreground">
+                      {opa.attendances.length} carregados de {opa.total}
+                    </span>
+                  </div>
+                )}
               </>
             )}
 
