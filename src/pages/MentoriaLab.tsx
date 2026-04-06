@@ -4566,7 +4566,7 @@ const MentoriaLab = () => {
             if (user && opaMentoriaFile.result) {
               const r = opaMentoriaFile.result;
               const companyId = await supabase.rpc("get_my_company_id").then((res) => res.data);
-              await supabase.from("evaluations").insert({
+              const insertPayload = {
                 user_id: user.id,
                 atendente: opaMentoriaFile.atendente || "Desconhecido",
                 protocolo: opaMentoriaFile.protocolo || opaMentoriaFile.id,
@@ -4582,12 +4582,15 @@ const MentoriaLab = () => {
                 prompt_version: r.versao || "opa-suite",
                 company_id: companyId || null,
                 audit_log: buildOfficialAuditLog("manual", undefined),
-              } as any);
+              };
+              if (import.meta.env.DEV) console.log("[OpaAudit][payload]", JSON.stringify(insertPayload, null, 2));
+              const { error: insertErr } = await supabase.from("evaluations").insert(insertPayload as any);
+              if (insertErr) throw insertErr;
               toast.success("Auditoria finalizada e enviada para Performance.");
             }
           } catch (err: any) {
             console.error("[OpaAudit] save error:", err);
-            toast.error("Erro ao salvar auditoria. Tente novamente.");
+            toast.error(err?.message ? `Erro: ${err.message}` : "Erro ao salvar auditoria. Tente novamente.");
           }
         }}
         onNextFile={() => {}}
