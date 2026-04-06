@@ -653,8 +653,8 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                 </Tooltip>
               </TooltipProvider>
             )}
-            {/* Finalize button - only on report step */}
-            {currentStep === "relatorio" && workflowStatus !== "finalizado" && onMarkFinished && (
+            {/* Finalize button - only on report step, hidden in readonly report mode */}
+            {!isReadonly && currentStep === "relatorio" && workflowStatus !== "finalizado" && onMarkFinished && (
               <Button variant="outline" size="sm" onClick={() => {
                 setCompletedSteps(prev => new Set(prev).add("relatorio"));
                 onMarkFinished();
