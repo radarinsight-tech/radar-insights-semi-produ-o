@@ -132,11 +132,13 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
 
   // Pre-analysis: run once when conversation is available
   const preAnalysis: PreAnalysisResult | null = useMemo(() => {
-    if (!structuredConversation || structuredConversation.messages.length < 2) return null;
+    const msgs = structuredConversation && Array.isArray(structuredConversation.messages) ? structuredConversation.messages : [];
+    if (msgs.length < 2) return null;
     try {
       let uraCtx: UraContext | undefined;
-      if (rawText) {
-        try { uraCtx = extractUraContext(rawText, atendente); } catch { /* non-blocking */ }
+      const safeRawText = typeof rawText === "string" ? rawText : "";
+      if (safeRawText) {
+        try { uraCtx = extractUraContext(safeRawText, atendente); } catch { /* non-blocking */ }
       }
       return runPreAnalysis(structuredConversation, uraCtx);
     } catch { return null; }
