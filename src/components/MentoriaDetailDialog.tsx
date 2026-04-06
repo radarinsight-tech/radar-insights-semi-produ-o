@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo, useCallback } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { calcularBonus, formatBRL, notaToScale10, formatDateBR } from "@/lib/utils";
 import type { StructuredConversation } from "@/lib/conversationParser";
@@ -102,6 +102,30 @@ const findRelevantExcerpt = (rawText: string | undefined, explicacao: string): s
   return null;
 };
 
+const createDefaultDecision = (
+  item: Pick<CriterionCardData, "numero" | "sugestao" | "confianca">,
+): CriterionDecision => ({
+  numero: item.numero,
+  sugestaoOriginal: item.sugestao,
+  decisaoFinal: item.sugestao,
+  status: item.confianca === "alta" ? "accepted" : "pending",
+  editadoManualmente: false,
+  confiancaOriginal: item.confianca,
+});
+
+function ensureDecisionState(
+  cardItems: CriterionCardData[],
+  decisions: Map<number, CriterionDecision>,
+): Map<number, CriterionDecision> {
+  const normalized = new Map<number, CriterionDecision>();
+
+  for (const item of cardItems) {
+    normalized.set(item.numero, decisions.get(item.numero) ?? createDefaultDecision(item));
+  }
+
+  return normalized;
+}
+
 type FilterMode = "all" | "pending" | "accepted" | "adjusted" | "rejected";
 
 /* ═══ MANUAL REVIEW FALLBACK ═══ */
@@ -157,10 +181,12 @@ const MentoriaDetailDialog = ({
   tipoAnalise, initialStep, audioBlobs, imageBlobs, mode = "review", fileId, onSemiAutoSaved,
 }: MentoriaDetailDialogProps) => {
   const isReadonly = mode === "report";
+  const isAudit = mode === "review";
   const [uraOpen, setUraOpen] = useState(false);
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
-  const [confirmed, setConfirmed] = useState(false);
+  const [localConfirmed, setLocalConfirmed] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
+  const decisionSourceRef = useRef<string | null>(null);
 
   // Pre-analysis
   const preAnalysis: PreAnalysisResult | null = useMemo(() => {
@@ -191,21 +217,7 @@ const MentoriaDetailDialog = ({
   }, [structuredConversation, rawText, atendente, result]);
 
   // Decisions state (audit mode)
-  const [decisions, setDecisions] = useState<Map<number, CriterionDecision>>(() => {
-    if (!preAnalysis) return new Map();
-    const map = new Map<number, CriterionDecision>();
-    const iaCriterios: any[] = result?.criterios || [];
-    for (const s of preAnalysis.suggestions) {
-      const iaCrit = iaCriterios.find((c: any) => c.numero === s.numero);
-      if (iaCrit) {
-        const iaResultado: SugestaoResultado = iaCrit.resultado === "SIM" ? "SIM" : iaCrit.resultado === "FORA DO ESCOPO" ? "FORA DO ESCOPO" : "NÃO";
-        map.set(s.numero, { numero: s.numero, sugestaoOriginal: iaResultado, decisaoFinal: iaResultado, status: "accepted", editadoManualmente: false, confiancaOriginal: "alta" });
-      } else {
-        map.set(s.numero, { numero: s.numero, sugestaoOriginal: s.sugestao, decisaoFinal: s.sugestao, status: s.confianca === "alta" ? "accepted" : "pending", editadoManualmente: false, confiancaOriginal: s.confianca });
-      }
-    }
-    return map;
-  });
+  const [decisions, setDecisions] = useState<Map<number, CriterionDecision>>(new Map());
 
   // Enriched card data
   const cardItems: CriterionCardData[] = useMemo(() => {
@@ -227,16 +239,53 @@ const MentoriaDetailDialog = ({
     });
   }, [preAnalysis, result]);
 
+  const persistedDecisions = useMemo(() => {
+    const saved = result?._semiAutoDecisions;
+    if (!Array.isArray(saved)) return new Map<number, CriterionDecision>();
+
+    return new Map<number, CriterionDecision>(
+      saved
+        .filter((decision): decision is CriterionDecision => !!decision && typeof decision.numero === "number")
+        .map((decision) => [decision.numero, decision]),
+    );
+  }, [result]);
+
+  const decisionSourceKey = fileId ?? fileName ?? result?.protocolo ?? "mentoria-detail";
+  const isConfirmed = isReadonly || Boolean(result?._semiAutoConfirmed) || localConfirmed;
+
+  const normalizedDecisions = useMemo(() => {
+    const sourceDecisions = decisions.size > 0 ? decisions : persistedDecisions;
+    return ensureDecisionState(cardItems, sourceDecisions);
+  }, [cardItems, decisions, persistedDecisions]);
+
+  useEffect(() => {
+    if (!open) {
+      decisionSourceRef.current = null;
+      setLocalConfirmed(false);
+      setDecisions(new Map());
+      return;
+    }
+
+    if (decisionSourceRef.current !== decisionSourceKey) {
+      decisionSourceRef.current = decisionSourceKey;
+      setLocalConfirmed(false);
+      setDecisions(ensureDecisionState(cardItems, persistedDecisions));
+      return;
+    }
+
+    setDecisions((prev) => ensureDecisionState(cardItems, prev.size > 0 ? prev : persistedDecisions));
+  }, [open, decisionSourceKey, cardItems, persistedDecisions]);
+
   // Score preview (audit)
   const currentScore = useMemo(() => {
-    if (decisions.size === 0) return null;
-    const respostas = [...decisions.values()].map(d => ({ numero: d.numero, resposta: d.decisaoFinal }));
+    if (normalizedDecisions.size === 0) return null;
+    const respostas = [...normalizedDecisions.values()].map(d => ({ numero: d.numero, resposta: d.decisaoFinal }));
     return calculateScore(respostas);
-  }, [decisions]);
+  }, [normalizedDecisions]);
 
   // Stats (audit)
   const stats = useMemo(() => {
-    const all = [...decisions.values()];
+    const all = [...normalizedDecisions.values()];
     return {
       total: all.length,
       accepted: all.filter(d => d.status === "accepted").length,
@@ -245,26 +294,26 @@ const MentoriaDetailDialog = ({
       pending: all.filter(d => d.status === "pending").length,
       readyToConfirm: all.every(d => d.status !== "pending"),
     };
-  }, [decisions]);
+  }, [normalizedDecisions]);
 
   // Decision actions
   const updateDecision = useCallback((numero: number, update: Partial<CriterionDecision>) => {
     setDecisions(prev => {
-      const next = new Map(prev);
+      const next = ensureDecisionState(cardItems, prev.size > 0 ? prev : persistedDecisions);
       const current = next.get(numero);
       if (current) next.set(numero, { ...current, ...update });
       return next;
     });
-  }, []);
+  }, [cardItems, persistedDecisions]);
 
   const acceptItem = (numero: number) => {
-    const d = decisions.get(numero);
+    const d = normalizedDecisions.get(numero);
     if (!d) return;
     updateDecision(numero, { status: "accepted", decisaoFinal: d.sugestaoOriginal, editadoManualmente: false });
   };
 
   const rejectItem = (numero: number) => {
-    const d = decisions.get(numero);
+    const d = normalizedDecisions.get(numero);
     if (!d) return;
     const opposite: SugestaoResultado = d.sugestaoOriginal === "SIM" ? "NÃO" : "SIM";
     updateDecision(numero, { status: "rejected", decisaoFinal: opposite, editadoManualmente: true });
@@ -276,7 +325,7 @@ const MentoriaDetailDialog = ({
 
   const acceptAllHigh = () => {
     setDecisions(prev => {
-      const next = new Map(prev);
+      const next = ensureDecisionState(cardItems, prev.size > 0 ? prev : persistedDecisions);
       for (const [num, d] of next) {
         if (d.confiancaOriginal === "alta") next.set(num, { ...d, status: "accepted", decisaoFinal: d.sugestaoOriginal, editadoManualmente: false });
       }
@@ -286,7 +335,7 @@ const MentoriaDetailDialog = ({
 
   const acceptAll = () => {
     setDecisions(prev => {
-      const next = new Map(prev);
+      const next = ensureDecisionState(cardItems, prev.size > 0 ? prev : persistedDecisions);
       for (const [num, d] of next) next.set(num, { ...d, status: "accepted", decisaoFinal: d.sugestaoOriginal, editadoManualmente: false });
       return next;
     });
@@ -294,18 +343,17 @@ const MentoriaDetailDialog = ({
 
   const clearAll = () => {
     setDecisions(prev => {
-      const next = new Map(prev);
+      const next = ensureDecisionState(cardItems, prev.size > 0 ? prev : persistedDecisions);
       for (const [num, d] of next) next.set(num, { ...d, status: "pending", decisaoFinal: d.sugestaoOriginal, editadoManualmente: false });
       return next;
     });
-    setConfirmed(false);
+    setLocalConfirmed(false);
   };
 
   const handleConfirm = async () => {
     const score = currentScore;
     if (!score) return;
-    setConfirmed(true);
-    const semiResult: SemiAutoResult = { decisions: [...decisions.values()], score, confirmed: true };
+    const semiResult: SemiAutoResult = { decisions: [...normalizedDecisions.values()], score, confirmed: true };
     if (!fileId) { toast.error("ID do arquivo não disponível."); return; }
     try {
       const existingResult = (typeof result === "object" && result) ? result : {};
@@ -321,6 +369,7 @@ const MentoriaDetailDialog = ({
       };
       const { error } = await supabase.from("mentoria_batch_files").update({ result: mergedResult } as never).eq("id", fileId);
       if (error) throw error;
+      setLocalConfirmed(true);
       toast.success("Avaliação confirmada com sucesso.");
       onSemiAutoSaved?.(mergedResult);
     } catch (err: any) {
@@ -345,14 +394,14 @@ const MentoriaDetailDialog = ({
   // Group items for display (must be before early returns)
   const grouped = useMemo(() => {
     let items = cardItems;
-    if (!isReadonly && filterMode !== "all") {
-      items = items.filter(i => decisions.get(i.numero)?.status === filterMode);
+    if (isAudit && filterMode !== "all") {
+      items = items.filter(i => normalizedDecisions.get(i.numero)?.status === filterMode);
     }
     return CATEGORY_ORDER.map(cat => ({
       categoria: cat,
       items: items.filter(i => i.categoria === cat),
     }));
-  }, [cardItems, isReadonly, filterMode, decisions]);
+  }, [cardItems, isAudit, filterMode, normalizedDecisions]);
 
   if (!result) return null;
 
@@ -368,12 +417,12 @@ const MentoriaDetailDialog = ({
   const totalObtidos = criterios.reduce((s: number, c: any) => s + (c.pontosObtidos || 0), 0);
   const totalPossiveis = criterios.reduce((s: number, c: any) => s + (c.pesoMaximo || 0), 0);
 
-  const displayNota = !isReadonly && currentScore ? currentScore.nota100 : nota;
-  const displayClassificacao = !isReadonly && currentScore ? currentScore.classificacao : classificacao;
-  const displayObtidos = !isReadonly && currentScore ? currentScore.pontosObtidos : (result.pontosObtidos ?? totalObtidos);
-  const displayPossiveis = !isReadonly && currentScore ? currentScore.pontosPossiveis : (result.pontosPossiveis ?? totalPossiveis);
+  const displayNota = isAudit && currentScore ? currentScore.nota100 : nota;
+  const displayClassificacao = isAudit && currentScore ? currentScore.classificacao : classificacao;
+  const displayObtidos = isAudit && currentScore ? currentScore.pontosObtidos : (result.pontosObtidos ?? totalObtidos);
+  const displayPossiveis = isAudit && currentScore ? currentScore.pontosPossiveis : (result.pontosPossiveis ?? totalPossiveis);
 
-  const criterionMode: CriterionMode = isReadonly ? "readonly" : "audit";
+  const criterionMode: CriterionMode = isAudit ? "audit" : "readonly";
 
   // Impeditivo case
   if (result.impeditivo) {
@@ -477,7 +526,7 @@ const MentoriaDetailDialog = ({
                     </div>
                   </div>
                   <div className="shrink-0 w-44 flex flex-col items-center justify-center text-center rounded-2xl bg-background border-2 border-border/80 p-4 shadow-md">
-                    <p className="text-[8px] text-muted-foreground uppercase tracking-[0.15em] font-bold mb-1">Nota {!isReadonly ? "(prévia)" : "Final"}</p>
+                    <p className="text-[8px] text-muted-foreground uppercase tracking-[0.15em] font-bold mb-1">Nota {isAudit ? "(prévia)" : "Final"}</p>
                     <p className={`text-4xl font-black tracking-tighter leading-none ${notaColor(displayNota)}`}>
                       {displayNota != null ? notaToScale10(displayNota).toFixed(1).replace(".", ",") : "—"}
                     </p>
@@ -516,7 +565,7 @@ const MentoriaDetailDialog = ({
               )}
 
               {/* ═══ AUDIT CONTROLS (only in audit mode) ═══ */}
-              {!isReadonly && preAnalysis && (
+              {isAudit && preAnalysis && (
                 <div className="rounded-2xl bg-gradient-to-br from-primary/5 via-primary/3 to-background border border-primary/20 p-5">
                   <div className="flex items-center gap-2.5 mb-4">
                     <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -572,35 +621,37 @@ const MentoriaDetailDialog = ({
                   )}
 
                   {/* Global actions */}
-                  <div className="flex flex-wrap items-center gap-2 mt-4">
-                    <Button variant="outline" size="sm" className="text-xs h-8 gap-1.5 font-semibold" onClick={acceptAllHigh}>
-                      <ShieldCheck className="h-3.5 w-3.5 text-accent" /> Aceitar confiança alta
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-xs h-8 gap-1.5 font-semibold" onClick={acceptAll}>
-                      <Check className="h-3.5 w-3.5" /> Aceitar todas
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-xs h-8 gap-1.5" onClick={clearAll}>
-                      <RotateCcw className="h-3.5 w-3.5" /> Limpar decisões
-                    </Button>
-                    <div className="ml-auto flex items-center gap-2">
-                      <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-                      <Select value={filterMode} onValueChange={(v) => setFilterMode(v as FilterMode)}>
-                        <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todas</SelectItem>
-                          <SelectItem value="pending">Pendentes</SelectItem>
-                          <SelectItem value="accepted">Aceitas</SelectItem>
-                          <SelectItem value="adjusted">Ajustadas</SelectItem>
-                          <SelectItem value="rejected">Rejeitadas</SelectItem>
-                        </SelectContent>
-                      </Select>
+                  {!isConfirmed && (
+                    <div className="flex flex-wrap items-center gap-2 mt-4">
+                      <Button variant="outline" size="sm" className="text-xs h-8 gap-1.5 font-semibold" onClick={acceptAllHigh}>
+                        <ShieldCheck className="h-3.5 w-3.5 text-accent" /> Aceitar confiança alta
+                      </Button>
+                      <Button variant="outline" size="sm" className="text-xs h-8 gap-1.5 font-semibold" onClick={acceptAll}>
+                        <Check className="h-3.5 w-3.5" /> Aceitar todas
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-xs h-8 gap-1.5" onClick={clearAll}>
+                        <RotateCcw className="h-3.5 w-3.5" /> Limpar decisões
+                      </Button>
+                      <div className="ml-auto flex items-center gap-2">
+                        <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+                        <Select value={filterMode} onValueChange={(v) => setFilterMode(v as FilterMode)}>
+                          <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todas</SelectItem>
+                            <SelectItem value="pending">Pendentes</SelectItem>
+                            <SelectItem value="accepted">Aceitas</SelectItem>
+                            <SelectItem value="adjusted">Ajustadas</SelectItem>
+                            <SelectItem value="rejected">Rejeitadas</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
 
               {/* Manual fallback when no preAnalysis in audit mode */}
-              {!isReadonly && !preAnalysis && (
+              {isAudit && !preAnalysis && (
                 <ManualReviewFallback
                   result={result}
                   onSave={(patch) => {
@@ -623,8 +674,11 @@ const MentoriaDetailDialog = ({
                   <div className="space-y-8">
                     {grouped.map(({ categoria, items }) => {
                       if (items.length === 0) return null;
-                      const catDecided = !isReadonly
-                        ? items.filter(i => decisions.get(i.numero)?.status !== "pending").length
+                      const catDecided = isAudit
+                        ? items.filter(i => {
+                            const decision = normalizedDecisions.get(i.numero);
+                            return decision ? decision.status !== "pending" : false;
+                          }).length
                         : items.filter(i => i.sugestao === "SIM").length;
 
                       return (
@@ -639,18 +693,26 @@ const MentoriaDetailDialog = ({
                             </span>
                           </div>
                           <div className="space-y-2">
-                            {items.map(item => (
-                              <CriterionCard
-                                key={item.numero}
-                                item={item}
-                                mode={criterionMode}
-                                decision={decisions.get(item.numero)}
-                                confirmed={confirmed}
-                                onAccept={acceptItem}
-                                onAdjust={adjustItem}
-                                onReject={rejectItem}
-                              />
-                            ))}
+                            {items.map(item => {
+                              const decision = normalizedDecisions.get(item.numero);
+
+                              if (import.meta.env.DEV && isAudit && !isConfirmed && !decision) {
+                                console.error("[MentoriaDetailDialog] Missing decision for visible criterion", { numero: item.numero });
+                              }
+
+                              return (
+                                <CriterionCard
+                                  key={item.numero}
+                                  item={item}
+                                  mode={criterionMode}
+                                  decision={decision}
+                                  confirmed={isConfirmed}
+                                  onAccept={acceptItem}
+                                  onAdjust={adjustItem}
+                                  onReject={rejectItem}
+                                />
+                              );
+                            })}
                           </div>
                         </div>
                       );
@@ -744,16 +806,16 @@ const MentoriaDetailDialog = ({
               </Badge>
             )}
             {/* Audit: pending counter */}
-            {!isReadonly && stats.pending > 0 && (
+            {isAudit && !isConfirmed && stats.pending > 0 && (
               <p className="text-xs text-warning font-medium">⚠ {stats.pending} pendente{stats.pending > 1 ? "s" : ""}</p>
             )}
-            {!isReadonly && confirmed && (
+            {isAudit && isConfirmed && (
               <p className="text-xs text-accent font-medium flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5" /> Confirmada</p>
             )}
           </div>
           <div className="flex items-center gap-2">
             {/* Confirm (audit mode) */}
-            {!isReadonly && preAnalysis && !confirmed && (
+            {isAudit && preAnalysis && !isConfirmed && (
               <TooltipProvider delayDuration={200}>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -766,7 +828,7 @@ const MentoriaDetailDialog = ({
               </TooltipProvider>
             )}
             {/* Finalize */}
-            {!isReadonly && workflowStatus !== "finalizado" && onMarkFinished && (
+            {isAudit && workflowStatus !== "finalizado" && onMarkFinished && (
               <Button variant="outline" size="sm" onClick={onMarkFinished} className="gap-1.5 text-xs h-8 font-semibold text-accent border-accent/30 hover:bg-accent/10">
                 <CheckSquare className="h-3.5 w-3.5" /> Finalizar
               </Button>
