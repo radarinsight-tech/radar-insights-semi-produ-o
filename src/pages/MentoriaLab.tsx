@@ -2257,7 +2257,7 @@ const MentoriaLab = () => {
           };
 
           const evalPayload = {
-            data: data.data || new Date().toLocaleDateString("pt-BR"),
+            data: normalizeDateForDB(data.data || new Date().toLocaleDateString("pt-BR")),
             data_avaliacao: new Date().toISOString(),
             protocolo: data.protocolo || "Não identificado",
             atendente: data.atendente || "Não identificado",
