@@ -2397,7 +2397,7 @@ const MentoriaLab = () => {
             atendente: data.atendente || "Não identificado",
             tipo: data.tipo || "Não identificado",
             atualizacao_cadastral: data.bonusOperacional?.atualizacaoCadastral || "NÃO",
-            nota: notaFinal,
+            nota: normalizeNotaForDB(notaFinal),
             classificacao: classificacaoFinal,
             bonus: !isIneligible && bonusQualidade >= 70,
             pontos_melhoria: Array.isArray(data.mentoria)
