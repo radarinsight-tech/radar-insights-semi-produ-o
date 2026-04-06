@@ -4378,7 +4378,7 @@ const MentoriaLab = () => {
                   onMarkViewed={async (id: string) => {
                     setOpaFiles((prev) => prev.map((f) => f.id === id ? { ...f, visualizado: true } : f));
                   }}
-                  onAuditFile={(f) => openOpaMentoria(f as any, "revisao")}
+                  onAuditFile={(f) => openOpaMentoria(f as any, "review")}
                   monthlyConfirmCounts={new Map<string, number>()}
                 />
               </>
