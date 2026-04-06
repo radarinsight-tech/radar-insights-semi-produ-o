@@ -189,6 +189,15 @@ import {
 } from "@/lib/officialEvaluations";
 import { logAudit } from "@/lib/officialEvaluations";
 
+/** Clamp nota to numeric(3,1) range: 0.0–99.9 */
+const normalizeNotaForDB = (nota: number | null | undefined): number => {
+  const n = Number(nota ?? 0);
+  const clamped = Math.max(0, Math.min(n, 99.9));
+  const result = parseFloat(clamped.toFixed(1));
+  if (import.meta.env.DEV) console.log("[normalizeNotaForDB]", { original: nota, sent: result });
+  return result;
+};
+
 /** Convert DD/MM/YYYY → YYYY-MM-DD for Postgres `text` column; pass through if already ISO-ish */
 const normalizeDateForDB = (raw: string | undefined | null): string => {
   if (!raw) return new Date().toISOString().slice(0, 10);
@@ -2390,7 +2399,7 @@ const MentoriaLab = () => {
             atendente: data.atendente || "Não identificado",
             tipo: data.tipo || "Não identificado",
             atualizacao_cadastral: data.bonusOperacional?.atualizacaoCadastral || "NÃO",
-            nota: notaFinal,
+            nota: normalizeNotaForDB(notaFinal),
             classificacao: classificacaoFinal,
             bonus: !isIneligible && bonusQualidade >= 70,
             pontos_melhoria: Array.isArray(data.mentoria)
@@ -4486,7 +4495,7 @@ const MentoriaLab = () => {
                           atendente: file.atendente || "Desconhecido",
                           protocolo: file.protocolo || file.id,
                           tipo: r.tipo || "opa_suite",
-                          nota: r.notaFinal ?? r.nota ?? 0,
+                          nota: normalizeNotaForDB(r.notaFinal ?? r.nota ?? 0),
                           classificacao: r.classificacao || "\u2014",
                           data: normalizeDateForDB(file.data || new Date().toLocaleDateString("pt-BR")),
                           bonus: (r.bonusQualidade ?? 0) >= 80,
@@ -4693,7 +4702,7 @@ const MentoriaLab = () => {
                 atendente: opaMentoriaFile.atendente || "Desconhecido",
                 protocolo: opaMentoriaFile.protocolo || opaMentoriaFile.id,
                 tipo: r.tipo || "opa_suite",
-                nota: r.notaFinal ?? r.nota ?? 0,
+                nota: normalizeNotaForDB(r.notaFinal ?? r.nota ?? 0),
                 classificacao: r.classificacao || "—",
                 data: normalizeDateForDB(opaMentoriaFile.data || new Date().toLocaleDateString("pt-BR")),
                 bonus: (r.bonusQualidade ?? 0) >= 80,
