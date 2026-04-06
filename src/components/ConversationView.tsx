@@ -119,8 +119,7 @@ const ConversationView = ({ rawText, atendente, structuredConversation }: Conver
   }, [safeText, atendente, structuredConversation]);
 
   if (!hasStructure) {
-    // If we have structured messages (even < 2), show them as chat
-    if (structured && structured.messages.length > 0) {
+    if (structured && Array.isArray(structured.messages) && structured.messages.length > 0) {
       return (
         <div className="max-h-[55vh] overflow-y-auto rounded-xl border border-border bg-background/50 p-3 space-y-1.5">
           {structured.messages.map((msg, i) => (
@@ -130,8 +129,15 @@ const ConversationView = ({ rawText, atendente, structuredConversation }: Conver
       );
     }
 
-    // True fallback: plain text
-    const paragraphs = rawText.split(/\n{2,}/).filter(Boolean);
+    if (!safeText.trim()) {
+      return (
+        <div className="max-h-[55vh] flex items-center justify-center rounded-xl border border-border bg-muted/20 p-8">
+          <p className="text-sm text-muted-foreground">Sem conversa estruturada disponível</p>
+        </div>
+      );
+    }
+
+    const paragraphs = safeText.split(/\n{2,}/).filter(Boolean);
     return (
       <div className="max-h-[55vh] overflow-y-auto rounded-xl border border-border bg-muted/20 p-5 space-y-3">
         {paragraphs.map((p, i) => (
