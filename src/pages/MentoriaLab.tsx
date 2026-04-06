@@ -2412,6 +2412,7 @@ const MentoriaLab = () => {
               protocolo: data.protocolo || labFile.protocolo,
               payload: safePayload,
             });
+            if (evalRecord?.approvedAsOfficial) setPerfRefreshKey((k) => k + 1);
           } catch (evalErr: any) {
             console.warn("[MentoriaLab][Análise][eval_persist_falhou]", {
               id: labFile.batchFileId || labFile.id,
