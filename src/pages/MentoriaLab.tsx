@@ -124,9 +124,12 @@ interface LabFile {
   addedAt: Date;
   status: FileStatus;
   text?: string;
+  rawText?: string;
   result?: any;
   error?: string;
   atendente?: string;
+  atendente_raw?: string;
+  atendente_is_technical_id?: boolean;
   protocolo?: string;
   data?: string;
   canal?: string;
