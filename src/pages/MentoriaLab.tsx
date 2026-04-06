@@ -4263,14 +4263,15 @@ const MentoriaLab = () => {
                       <TooltipContent side="bottom"><p>Filtrar por período</p></TooltipContent>
                     </Tooltip>
 
-                    {/* Counter */}
+                    {/* Counter with technical limit explanation */}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span className="ml-auto text-xs text-muted-foreground cursor-default">
                           {opaFilteredFiles.length} de {opaFiles.length}
+                          <span className="hidden sm:inline text-[10px] ml-1 opacity-70">(limite técnico: 100)</span>
                         </span>
                       </TooltipTrigger>
-                      <TooltipContent side="bottom"><p>Total de atendimentos exibidos / total importados</p></TooltipContent>
+                      <TooltipContent side="bottom"><p>{opaFilteredFiles.length} retornados após filtros (limite técnico da API: 100 por busca)</p></TooltipContent>
                     </Tooltip>
 
                     {/* Refresh */}

@@ -5,13 +5,17 @@ import type { ExtractedAudio, ExtractedImage } from "@/lib/pdfMediaExtractor";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   CheckCircle2, XCircle, MinusCircle, ShieldAlert,
   MessageSquareQuote, Printer, X, Award, TrendingUp, AlertTriangle, Lightbulb,
-  User, Calendar, FileText, Hash, Radio, ChevronRight, ChevronLeft, List, CheckSquare
+  User, Calendar, FileText, Hash, Radio, ChevronRight, ChevronLeft, List, CheckSquare, Save, Edit3
 } from "lucide-react";
+import { toast } from "sonner";
 import UraContextDialog from "@/components/UraContextDialog";
 import SemiAutoPanel, { type SemiAutoResult } from "@/components/SemiAutoPanel";
 import MentoriaStepBar, { type MentoriaStep, STEPS } from "@/components/MentoriaStepBar";
@@ -119,6 +123,96 @@ const findRelevantExcerpt = (rawText: string | undefined, explicacao: string): s
   const quoteMatch = explicacao.match(/[""\u201C\u201D]([^""\u201C\u201D]{10,150})[""\u201C\u201D]|"([^"]{10,150})"/);
   if (quoteMatch) return quoteMatch[1] || quoteMatch[2];
   return null;
+};
+
+/* ═══ MANUAL REVIEW FALLBACK (when preAnalysis is null) ═══ */
+interface ManualReviewFallbackProps {
+  result: any;
+  onSave: (patch: { notaFinal: number; classificacao: string; observacoes: string }) => void;
+  onGoToReport: () => void;
+}
+
+const CLASSIFICACOES = ["Excelente", "Muito bom", "Bom atendimento", "Necessita mentoria", "Abaixo do esperado"];
+
+const ManualReviewFallback = ({ result, onSave, onGoToReport }: ManualReviewFallbackProps) => {
+  const [notaFinal, setNotaFinal] = useState<number>(result?.notaFinal ?? result?.nota ?? 0);
+  const [classificacao, setClassificacao] = useState<string>(result?.classificacao ?? "Bom atendimento");
+  const [observacoes, setObservacoes] = useState<string>("");
+
+  return (
+    <ScrollArea className="h-full">
+      <div className="px-8 py-8 space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+          <Edit3 className="h-5 w-5 text-primary shrink-0" />
+          <div>
+            <p className="text-sm font-bold text-foreground">Revisão Manual</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              A pré-análise automática não está disponível para este atendimento. Preencha os campos abaixo para registrar sua avaliação manual.
+            </p>
+          </div>
+        </div>
+
+        {/* Nota */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-foreground uppercase tracking-wider">Nota Final (0–100)</label>
+          <Input
+            type="number"
+            min={0}
+            max={100}
+            value={notaFinal}
+            onChange={(e) => setNotaFinal(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
+            className="max-w-[160px]"
+          />
+        </div>
+
+        {/* Classificação */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-foreground uppercase tracking-wider">Classificação</label>
+          <Select value={classificacao} onValueChange={setClassificacao}>
+            <SelectTrigger className="max-w-[280px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CLASSIFICACOES.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Observações */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-foreground uppercase tracking-wider">Observações</label>
+          <Textarea
+            rows={4}
+            placeholder="Descreva pontos de melhoria, destaques ou observações sobre o atendimento..."
+            value={observacoes}
+            onChange={(e) => setObservacoes(e.target.value)}
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-3 pt-2">
+          <Button
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={() => onSave({ notaFinal, classificacao, observacoes })}
+          >
+            <Save className="h-3.5 w-3.5" /> Salvar Revisão
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={onGoToReport}
+          >
+            Ir para Relatório <ChevronRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+    </ScrollArea>
+  );
 };
 
 const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation, workflowStatus, onMarkFinished, onNextFile, hasNextFile, nonEvaluable, nonEvaluableReason, tipoAnalise, initialStep, audioBlobs, imageBlobs, mode = "review" }: MentoriaDetailDialogProps) => {
@@ -298,10 +392,13 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
 
         {/* ═══ STEP BAR ═══ */}
         <MentoriaStepBar
-          currentStep={preAnalysis ? currentStep : "relatorio"}
+          currentStep={currentStep}
           completedSteps={completedSteps}
-          onStepClick={(step) => setCurrentStep(step)}
-          hasPreAnalysis={!!preAnalysis}
+          onStepClick={(step) => {
+            if (isReadonly && step === "revisao") return;
+            setCurrentStep(step);
+          }}
+          hasPreAnalysis={!isReadonly}
         />
 
         {/* ═══ NON-EVALUABLE WARNING ═══ */}
@@ -334,23 +431,18 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
               </div>
             </ScrollArea>
           )}
-          {/* STEP: REVISÃO without pre-analysis — show placeholder for review mode */}
+          {/* STEP: REVISÃO without pre-analysis — manual editable fallback */}
           {currentStep === "revisao" && !preAnalysis && !isReadonly && (
-            <div className="flex flex-col items-center justify-center py-16 text-center px-8">
-              <AlertTriangle className="h-10 w-10 text-warning mb-3" />
-              <p className="text-sm font-bold text-foreground">Dados de pré-análise não disponíveis</p>
-              <p className="text-xs text-muted-foreground mt-2 max-w-md">
-                A conversa estruturada não contém mensagens suficientes para gerar a pré-análise editável.
-                Você pode avançar diretamente para o relatório.
-              </p>
-              <Button
-                size="sm"
-                className="mt-4 gap-1.5 text-xs"
-                onClick={() => setCurrentStep("relatorio")}
-              >
-                Ir para Relatório <ChevronRight className="h-3.5 w-3.5" />
-              </Button>
-            </div>
+            <ManualReviewFallback
+              result={result}
+              onSave={(patch) => {
+                console.log("Manual review saved:", patch);
+                setCompletedSteps((prev) => new Set([...prev, "revisao"]));
+                toast.success("Revisão manual salva com sucesso.");
+                setCurrentStep("relatorio");
+              }}
+              onGoToReport={() => setCurrentStep("relatorio")}
+            />
           )}
 
           {/* STEP: RELATÓRIO */}
