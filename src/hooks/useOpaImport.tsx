@@ -21,8 +21,6 @@ export interface UseOpaImportOptions {
   }) => void;
   isAnalyzing: boolean;
 }
-  isAnalyzing: boolean;
-}
 
 export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) {
   const [state, setState] = useState<OpaPanelState>("idle");
