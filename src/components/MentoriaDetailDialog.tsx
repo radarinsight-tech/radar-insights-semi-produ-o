@@ -601,8 +601,8 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
         </ScrollArea>
           )}
 
-          {/* Fallback: no pre-analysis, show report directly */}
-          {!preAnalysis && currentStep !== "relatorio" && (() => { setCurrentStep("relatorio"); return null; })()}
+          {/* Fallback: readonly mode forced to relatorio */}
+          {isReadonly && currentStep !== "relatorio" && (() => { setCurrentStep("relatorio"); return null; })()}
         </div>
         {/* ═══ WORKFLOW CONTROL BAR ═══ */}
         <div className="px-8 py-3 border-t border-border/60 bg-muted/20 flex items-center justify-between gap-3">
