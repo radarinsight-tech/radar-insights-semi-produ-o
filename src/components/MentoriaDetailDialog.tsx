@@ -352,7 +352,6 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
               </Button>
             </div>
           )}
-          )}
 
           {/* STEP: RELATÓRIO */}
           {currentStep === "relatorio" && (
