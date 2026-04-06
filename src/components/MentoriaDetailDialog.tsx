@@ -234,19 +234,48 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
     if (initialStep) setCurrentStep(initialStep);
   }
 
-  // Pre-analysis: run once when conversation is available
+  // Pre-analysis: run from conversation when available, otherwise synthesize from result.criterios
   const preAnalysis: PreAnalysisResult | null = useMemo(() => {
+    // 1) Try conversation-based pre-analysis
     const msgs = structuredConversation && Array.isArray(structuredConversation.messages) ? structuredConversation.messages : [];
-    if (msgs.length < 2) return null;
-    try {
-      let uraCtx: UraContext | undefined;
-      const safeRawText = typeof rawText === "string" ? rawText : "";
-      if (safeRawText) {
-        try { uraCtx = extractUraContext(safeRawText, atendente); } catch { /* non-blocking */ }
-      }
-      return runPreAnalysis(structuredConversation, uraCtx);
-    } catch { return null; }
-  }, [structuredConversation, rawText, atendente]);
+    if (msgs.length >= 2) {
+      try {
+        let uraCtx: UraContext | undefined;
+        const safeRawText = typeof rawText === "string" ? rawText : "";
+        if (safeRawText) {
+          try { uraCtx = extractUraContext(safeRawText, atendente); } catch { /* non-blocking */ }
+        }
+        const fromConversation = runPreAnalysis(structuredConversation, uraCtx);
+        if (fromConversation) return fromConversation;
+      } catch { /* fall through */ }
+    }
+
+    // 2) Fallback: synthesize from result.criterios (IA analysis)
+    const criteriosArr = result?.criterios;
+    if (Array.isArray(criteriosArr) && criteriosArr.length > 0) {
+      const suggestions: PreAnalysisSuggestion[] = criteriosArr.map((c: any) => ({
+        numero: c.numero,
+        nome: c.nome || `Critério ${c.numero}`,
+        categoria: c.categoria || "",
+        sugestao: (c.resultado === "SIM" ? "SIM" : c.resultado === "FORA DO ESCOPO" ? "FORA DO ESCOPO" : "NÃO") as SugestaoResultado,
+        justificativa: c.explicacao || "",
+        evidencia: undefined,
+        confianca: "alta" as Confianca,
+      }));
+      return {
+        suggestions,
+        metadata: {
+          totalMessages: 0,
+          humanMessages: 0,
+          clientMessages: 0,
+          attendantMessages: 0,
+          attendantName: result?.atendente || atendente,
+        },
+      } as PreAnalysisResult;
+    }
+
+    return null;
+  }, [structuredConversation, rawText, atendente, result]);
 
   if (!result) return null;
 
