@@ -321,7 +321,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
         {/* ═══ STEP CONTENT ═══ */}
         <div className="flex-1 min-h-0 overflow-y-auto">
           {/* STEP: REVISÃO (unified pre-analysis + semi-auto) */}
-          {currentStep === "revisao" && preAnalysis && (
+          {currentStep === "revisao" && preAnalysis && !isReadonly && (
             <ScrollArea className="h-full">
               <div className="px-8 py-8">
                 <SemiAutoPanel
@@ -333,6 +333,25 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                 />
               </div>
             </ScrollArea>
+          )}
+          {/* STEP: REVISÃO without pre-analysis — show placeholder for review mode */}
+          {currentStep === "revisao" && !preAnalysis && !isReadonly && (
+            <div className="flex flex-col items-center justify-center py-16 text-center px-8">
+              <AlertTriangle className="h-10 w-10 text-warning mb-3" />
+              <p className="text-sm font-bold text-foreground">Dados de pré-análise não disponíveis</p>
+              <p className="text-xs text-muted-foreground mt-2 max-w-md">
+                A conversa estruturada não contém mensagens suficientes para gerar a pré-análise editável.
+                Você pode avançar diretamente para o relatório.
+              </p>
+              <Button
+                size="sm"
+                className="mt-4 gap-1.5 text-xs"
+                onClick={() => setCurrentStep("relatorio")}
+              >
+                Ir para Relatório <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
           )}
 
           {/* STEP: RELATÓRIO */}
