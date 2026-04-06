@@ -4732,6 +4732,7 @@ const MentoriaLab = () => {
         nonEvaluableReason={mentoriaFile?.nonEvaluableReason}
         tipoAnalise={mentoriaFile?.tipo_analise}
         initialStep={mentoriaInitialStep}
+        mode={mentoriaInitialStep === "relatorio" ? "report" : "review"}
         audioBlobs={mentoriaFile?.audioBlobs}
         imageBlobs={mentoriaFile?.imageBlobs}
         fileId={mentoriaFile?.id}
