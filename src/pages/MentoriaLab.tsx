@@ -743,8 +743,15 @@ const MentoriaLab = () => {
             canal: att.canal || undefined,
           }));
 
-        // Merge: keep existing (possibly analyzed) files + add new ones
-        const updatedPrev = prev.filter((f) => opa.attendances.some((att) => att.id === f.id));
+        // Merge: keep ALL existing files (never drop processed ones) + add new ones
+        // Only remove files that are still "pendente" AND no longer in the attendances list
+        const updatedPrev = prev.filter((f) => {
+          // Always keep files that have been read, analyzed, confirmed, or have results
+          if (f.status !== "pendente") return true;
+          if (f.result) return true;
+          // For pendente files, keep if still present in attendances list
+          return opa.attendances.some((att) => att.id === f.id);
+        });
         const merged = [...updatedPrev, ...newFiles];
 
         // Notify user about deduplication results
