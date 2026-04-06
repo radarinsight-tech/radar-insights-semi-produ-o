@@ -404,33 +404,37 @@ const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore, onAuto
   const allVisibleSelected = visibleNames.length > 0 && visibleNames.every((n) => selectedNames.has(n));
 
   // Exclude selected
-  const handleExclude = useCallback(() => {
+  const handleExclude = useCallback(async () => {
     const now = new Date().toISOString();
     const excluded = [...selectedNames].filter((name) => !excludedNames.has(name));
     if (excluded.length > 0) {
-      onExclude(excluded);
-      setAuditLog((prev) => [...prev, ...excluded.map((nome) => ({ nome, excludedAt: now, excludedBy: "admin" }))]);
+      try {
+        await onExclude(excluded);
+        setAuditLog((prev) => [...prev, ...excluded.map((nome) => ({ nome, excludedAt: now, excludedBy: "admin" }))]);
+        toast.success(`${excluded.length} linha${excluded.length !== 1 ? "s" : ""} removida${excluded.length !== 1 ? "s" : ""} do painel: ${excluded.join(", ")}`);
+      } catch (err) {
+        console.error("[BonusPanel] Exclude error:", err);
+        toast.error("Erro ao excluir atendente(s) do painel.");
+      }
     }
     setSelectedNames(new Set());
     setConfirmDialogOpen(false);
-    toast({
-      title: `${excluded.length} linha${excluded.length !== 1 ? "s" : ""} removida${excluded.length !== 1 ? "s" : ""} do painel`,
-      description: `Nomes: ${excluded.join(", ")}`,
-    });
   }, [excludedNames, selectedNames, onExclude]);
 
   // Restore selected
-  const handleRestore = useCallback(() => {
+  const handleRestore = useCallback(async () => {
     const restored = [...selectedNames].filter((name) => excludedNames.has(name));
     if (restored.length > 0) {
-      onRestore(restored);
+      try {
+        await onRestore(restored);
+        toast.success(`${restored.length} linha${restored.length !== 1 ? "s" : ""} restaurada${restored.length !== 1 ? "s" : ""} ao painel: ${restored.join(", ")}`);
+      } catch (err) {
+        console.error("[BonusPanel] Restore error:", err);
+        toast.error("Erro ao restaurar atendente(s).");
+      }
     }
     setSelectedNames(new Set());
     setRestoreDialogOpen(false);
-    toast({
-      title: `${restored.length} linha${restored.length !== 1 ? "s" : ""} restaurada${restored.length !== 1 ? "s" : ""} ao painel`,
-      description: `Nomes: ${restored.join(", ")}`,
-    });
   }, [excludedNames, selectedNames, onRestore]);
 
   // Count how many selected are excludable vs restorable
@@ -442,11 +446,9 @@ const MentoriaBonusPanel = ({ files, excludedNames, onExclude, onRestore, onAuto
     setAutoApproving(true);
     try {
       await onAutoApprove(autoApprovableFileIds);
-      toast({
-        title: `${autoApprovableFileIds.length} avaliação${autoApprovableFileIds.length !== 1 ? "ões" : ""} aprovada${autoApprovableFileIds.length !== 1 ? "s" : ""} como Oficial (Automático)`,
-      });
+      toast.success(`${autoApprovableFileIds.length} avaliação${autoApprovableFileIds.length !== 1 ? "ões" : ""} aprovada${autoApprovableFileIds.length !== 1 ? "s" : ""} como Oficial (Automático)`);
     } catch {
-      toast({ title: "Erro ao aprovar avaliações automaticamente", variant: "destructive" });
+      toast.error("Erro ao aprovar avaliações automaticamente");
     } finally {
       setAutoApproving(false);
       setAutoApproveDialogOpen(false);
