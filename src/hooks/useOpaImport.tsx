@@ -29,6 +29,9 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [lastFetch, setLastFetch] = useState<Date | null>(null);
+  const [currentOffset, setCurrentOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
