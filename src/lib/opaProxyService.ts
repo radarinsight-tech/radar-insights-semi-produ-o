@@ -18,6 +18,8 @@ export interface OpaAttendance {
 export interface OpaListResponse {
   attendances: OpaAttendance[];
   total: number;
+  offset?: number;
+  hasMore?: boolean;
   attendantsLookup?: Record<string, string>;
 }
 
@@ -51,6 +53,7 @@ async function opaFetch<T>(body: Record<string, unknown>): Promise<T> {
 
 export interface OpaListParams {
   limite?: number;
+  offset?: number;
   status?: string;
   dataInicio?: string;
   dataFim?: string;
@@ -58,6 +61,7 @@ export interface OpaListParams {
 
 export async function listOpaAttendances(params: OpaListParams = {}): Promise<OpaListResponse> {
   const body: Record<string, unknown> = { action: "list", limite: params.limite ?? 100 };
+  if (typeof params.offset === "number" && params.offset > 0) body.offset = params.offset;
   if (params.status) body.status = params.status;
   if (params.dataInicio) body.dataInicio = params.dataInicio;
   if (params.dataFim) body.dataFim = params.dataFim;
@@ -83,6 +87,8 @@ export async function listOpaAttendances(params: OpaListParams = {}): Promise<Op
   return {
     attendances,
     total: raw.total ?? attendances.length,
+    offset: raw.offset ?? 0,
+    hasMore: raw.hasMore ?? false,
     attendantsLookup: raw.attendantsLookup ?? undefined,
   };
 }

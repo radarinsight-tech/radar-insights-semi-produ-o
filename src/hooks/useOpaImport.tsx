@@ -29,6 +29,9 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [lastFetch, setLastFetch] = useState<Date | null>(null);
+  const [currentOffset, setCurrentOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -46,8 +49,8 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
     return Array.from(names).sort();
   }, [attendances]);
 
-  const buildParams = useCallback((): OpaListParams => {
-    const params: OpaListParams = { limite: 100 };
+  const buildParams = useCallback((offset = 0): OpaListParams => {
+    const params: OpaListParams = { limite: 100, offset };
     params.status = "F";
     if (dateFrom) params.dataInicio = format(dateFrom, "yyyy-MM-dd");
     if (dateTo) params.dataFim = format(dateTo, "yyyy-MM-dd");
@@ -57,10 +60,12 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
   const fetchList = useCallback(async () => {
     setState("loading-list");
     setErrorMsg("");
+    setCurrentOffset(0);
     try {
-      const res = await listOpaAttendances(buildParams());
+      const res = await listOpaAttendances(buildParams(0));
       setAttendances(res.attendances || []);
       setTotal(res.total ?? res.attendances?.length ?? 0);
+      setHasMore(res.hasMore ?? false);
       setLastFetch(new Date());
       setState("list");
     } catch (err: any) {
@@ -70,6 +75,29 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
       toast.error("Erro ao buscar atendimentos da Opa Suite");
     }
   }, [buildParams]);
+
+  const fetchMore = useCallback(async () => {
+    const nextOffset = currentOffset + 100;
+    setLoadingMore(true);
+    try {
+      const res = await listOpaAttendances(buildParams(nextOffset));
+      const newItems = (res.attendances || []);
+      setAttendances(prev => {
+        const existingIds = new Set(prev.map(a => a.id));
+        const unique = newItems.filter(a => !existingIds.has(a.id));
+        return [...prev, ...unique];
+      });
+      setCurrentOffset(nextOffset);
+      setHasMore(res.hasMore ?? false);
+      setLastFetch(new Date());
+      toast.success(`+${newItems.length} atendimentos carregados`);
+    } catch (err: any) {
+      console.error("[OpaImport] load more error:", err);
+      toast.error(err?.message || "Erro ao carregar mais atendimentos");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [buildParams, currentOffset]);
 
   const handleSelect = useCallback(async (att: OpaAttendance) => {
     setSelectedId(att.id);
@@ -150,6 +178,8 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
     hasData,
     activeFilters,
     atendentes,
+    hasMore,
+    loadingMore,
 
     // Filters
     searchTerm,
@@ -163,6 +193,7 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
 
     // Actions
     fetchList,
+    fetchMore,
     handleSelect,
     resetToIdle: () => setState("idle"),
     formatDate,
