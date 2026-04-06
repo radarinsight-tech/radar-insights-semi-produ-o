@@ -641,7 +641,63 @@ const MentoriaLab = () => {
   // ── Opa Suite hook ──
   const opa = useOpaImport({ onTextReady: handleOpaTextReady, isAnalyzing: opaAnalyzing });
 
-  // Convert OpaAttendances to LabFile format when list is fetched — with dedup
+  // ── Hydrate Opa state from sessionStorage on mount ──
+  const _hydratedRef = useRef(false);
+  useEffect(() => {
+    if (_hydratedRef.current) return;
+    _hydratedRef.current = true;
+    const s = _savedSession.current;
+    if (!s || !s.opaAttendances?.length) return;
+    opa.hydrateState({
+      attendances: s.opaAttendances,
+      total: s.opaTotal,
+      hasMore: s.opaHasMore,
+      currentOffset: s.opaCurrentOffset,
+      dateFrom: s.opaDateFrom,
+      dateTo: s.opaDateTo,
+      filterAtendente: s.opaFilterAtendente,
+      searchTerm: s.opaSearchTerm,
+    });
+    // Restore opaFiles
+    if (s.opaFiles?.length) {
+      setOpaFiles(s.opaFiles.map((f: any) => ({
+        ...f,
+        file: new File([], f.name || "opa-restored.txt"),
+        addedAt: f.addedAt ? new Date(f.addedAt) : new Date(),
+        analyzedAt: f.analyzedAt ? new Date(f.analyzedAt) : undefined,
+      })));
+    }
+    if (s.opaFilterAuditoriaFrom) setOpaFilterAuditoriaFrom(new Date(s.opaFilterAuditoriaFrom));
+    if (s.opaFilterAuditoriaTo) setOpaFilterAuditoriaTo(new Date(s.opaFilterAuditoriaTo));
+  }, []);
+
+  // ── Save state to sessionStorage on key changes ──
+  useEffect(() => {
+    const state: MentoriaSessionState = {
+      activeTab,
+      filterMonth,
+      opaDateFrom: opa.dateFrom?.toISOString(),
+      opaDateTo: opa.dateTo?.toISOString(),
+      opaFilterAtendente: opa.filterAtendente,
+      opaSearchTerm: opa.searchTerm,
+      opaAttendances: opa.attendances,
+      opaTotal: opa.total,
+      opaHasMore: opa.hasMore,
+      opaCurrentOffset: opa.currentOffset,
+      opaFiles: opaFiles.map((f) => ({
+        ...f,
+        file: undefined, // File objects are not serializable
+        audioBlobs: undefined,
+        imageBlobs: undefined,
+      })),
+      opaLocalSearchTerm: opaSearchTerm,
+      opaHumanSelected: Array.from(opaHumanSelected),
+      opaFilterAuditoriaFrom: opaFilterAuditoriaFrom?.toISOString(),
+      opaFilterAuditoriaTo: opaFilterAuditoriaTo?.toISOString(),
+    };
+    saveMentoriaSession(state);
+  }, [activeTab, filterMonth, opa.attendances, opa.total, opa.hasMore, opa.currentOffset, opa.dateFrom, opa.dateTo, opa.filterAtendente, opa.searchTerm, opaFiles, opaSearchTerm, opaHumanSelected, opaFilterAuditoriaFrom, opaFilterAuditoriaTo]);
+
   useEffect(() => {
     if (opa.attendances.length === 0) return;
 
