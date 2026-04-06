@@ -1,4 +1,5 @@
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { calcularBonus, formatBRL, notaToScale10, formatDateBR } from "@/lib/utils";
 import type { StructuredConversation } from "@/lib/conversationParser";
 import type { ExtractedAudio, ExtractedImage } from "@/lib/pdfMediaExtractor";
