@@ -11,7 +11,16 @@ import {
 export type OpaPanelState = "idle" | "loading-list" | "list" | "loading-messages" | "analyzing" | "error";
 
 export interface UseOpaImportOptions {
-  onTextReady: (text: string, meta: { protocolo: string; atendente: string; canal: string; attendanceId: string }) => void;
+  onTextReady: (text: string, meta: {
+    protocolo: string;
+    atendente: string;
+    canal: string;
+    attendanceId: string;
+    rawText?: string;
+    structuredConversation?: Array<{ timestamp?: string; author: string; text: string }>;
+  }) => void;
+  isAnalyzing: boolean;
+}
   isAnalyzing: boolean;
 }
 
