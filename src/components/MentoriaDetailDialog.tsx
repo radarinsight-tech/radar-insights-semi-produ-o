@@ -337,23 +337,18 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
               </div>
             </ScrollArea>
           )}
-          {/* STEP: REVISÃO without pre-analysis — show placeholder for review mode */}
+          {/* STEP: REVISÃO without pre-analysis — manual editable fallback */}
           {currentStep === "revisao" && !preAnalysis && !isReadonly && (
-            <div className="flex flex-col items-center justify-center py-16 text-center px-8">
-              <AlertTriangle className="h-10 w-10 text-warning mb-3" />
-              <p className="text-sm font-bold text-foreground">Dados de pré-análise não disponíveis</p>
-              <p className="text-xs text-muted-foreground mt-2 max-w-md">
-                A conversa estruturada não contém mensagens suficientes para gerar a pré-análise editável.
-                Você pode avançar diretamente para o relatório.
-              </p>
-              <Button
-                size="sm"
-                className="mt-4 gap-1.5 text-xs"
-                onClick={() => setCurrentStep("relatorio")}
-              >
-                Ir para Relatório <ChevronRight className="h-3.5 w-3.5" />
-              </Button>
-            </div>
+            <ManualReviewFallback
+              result={result}
+              onSave={(patch) => {
+                console.log("Manual review saved:", patch);
+                setCompletedSteps((prev) => new Set([...prev, "revisao"]));
+                toast.success("Revisão manual salva com sucesso.");
+                setCurrentStep("relatorio");
+              }}
+              onGoToReport={() => setCurrentStep("relatorio")}
+            />
           )}
 
           {/* STEP: RELATÓRIO */}

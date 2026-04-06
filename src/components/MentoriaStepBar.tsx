@@ -16,7 +16,8 @@ interface MentoriaStepBarProps {
 }
 
 const MentoriaStepBar = ({ currentStep, completedSteps, onStepClick, hasPreAnalysis }: MentoriaStepBarProps) => {
-  const steps = !hasPreAnalysis ? [STEPS[1]] : STEPS;
+  // Always show both steps — review mode works with or without preAnalysis
+  const steps = STEPS;
   const currentIdx = steps.findIndex(s => s.key === currentStep);
 
   return (
