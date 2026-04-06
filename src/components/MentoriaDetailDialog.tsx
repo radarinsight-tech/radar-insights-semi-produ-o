@@ -178,8 +178,8 @@ const MentoriaDetailDialog = ({
     if (Array.isArray(criteriosArr) && criteriosArr.length > 0) {
       const suggestions: PreAnalysisSuggestion[] = criteriosArr.map((c: any) => ({
         numero: c.numero,
-        nome: c.nome || `Critério ${c.numero}`,
-        categoria: c.categoria || "",
+        nome: c.nome || CRITERIA_WEIGHTS.find(cw => cw.numero === c.numero)?.nome || `Critério ${c.numero}`,
+        categoria: c.categoria || CRITERIA_WEIGHTS.find(cw => cw.numero === c.numero)?.categoria || "",
         sugestao: (c.resultado === "SIM" ? "SIM" : c.resultado === "FORA DO ESCOPO" ? "FORA DO ESCOPO" : "NÃO") as SugestaoResultado,
         justificativa: c.explicacao || "",
         evidencia: undefined,
