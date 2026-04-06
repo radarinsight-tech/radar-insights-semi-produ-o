@@ -93,10 +93,12 @@ const UraContextBlock = ({ context }: { context: UraContext }) => (
 const ConversationView = ({ rawText, atendente, structuredConversation }: ConversationViewProps) => {
   const [templatesOpen, setTemplatesOpen] = useState(false);
 
+  const safeText = typeof rawText === "string" ? rawText : "";
+
   const { classified, uraContext, humanMessages, templateMessages, hasStructure, structured } = useMemo(() => {
     // Use pre-parsed or parse fresh
-    const sc = structuredConversation || parseStructuredConversation(rawText, atendente);
-    const msgs = sc.messages;
+    const sc = structuredConversation ?? parseStructuredConversation(safeText, atendente);
+    const msgs = Array.isArray(sc?.messages) ? sc.messages : [];
 
     if (msgs.length < 2) {
       return { classified: [], uraContext: null, humanMessages: [], templateMessages: [], hasStructure: false, structured: sc };
