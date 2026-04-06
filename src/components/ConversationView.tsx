@@ -101,7 +101,7 @@ const ConversationView = ({ rawText, atendente, structuredConversation }: Conver
     const msgs = Array.isArray(sc?.messages) ? sc.messages : [];
 
     if (msgs.length < 2) {
-      return { classified: [], uraContext: null, humanMessages: [], templateMessages: [], hasStructure: false, structured: sc };
+      return { classified: [], uraContext: null, humanMessages: [], templateMessages: [], hasStructure: false, structured: sc ?? { messages: [] } };
     }
 
     const cls = classifyMessages(msgs);
