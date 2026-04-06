@@ -4307,7 +4307,7 @@ const MentoriaLab = () => {
                     const opaFile = opaFiles.find((of) => of.id === f.id);
                     if (opaFile) setSideFile(opaFile);
                   }}
-                  onOpenMentoria={(f) => openOpaMentoria(f as any, "relatorio")}
+                  onOpenMentoria={(f) => openOpaMentoria(f as any, "report")}
                   onStartMentoria={(f) => handleOpaStartMentoria(f as any)}
                   onApproveOfficial={() => {}}
                   onRemoveFile={(id) => setOpaFiles((prev) => prev.filter((f) => f.id !== id))}
