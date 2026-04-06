@@ -428,11 +428,24 @@ const MentoriaLab = () => {
   // ── Opa Suite handler ──
   const handleOpaTextReady = useCallback(async (
     text: string,
-    meta: { protocolo: string; atendente: string; canal: string; attendanceId: string },
+    meta: {
+      protocolo: string;
+      atendente: string;
+      canal: string;
+      attendanceId: string;
+      rawText?: string;
+      structuredConversation?: Array<{ timestamp?: string; author: string; text: string }>;
+    },
   ) => {
     setOpaAnalyzing(true);
-    // Update the file status to show it's being analyzed
-    setOpaFiles((prev) => prev.map((f) => f.id === meta.attendanceId ? { ...f, status: "lido" as FileStatus } : f));
+    // Persist rawText and structuredConversation into the LabFile immediately
+    setOpaFiles((prev) => prev.map((f) => f.id === meta.attendanceId ? {
+      ...f,
+      status: "lido" as FileStatus,
+      text: text,
+      rawText: meta.rawText || text,
+      structuredConversation: meta.structuredConversation as any,
+    } : f));
     try {
       const response = await supabase.functions.invoke("analyze-attendance", { body: { text } });
       if (response.error || response.data?.error) {
