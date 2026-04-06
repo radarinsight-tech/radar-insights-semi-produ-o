@@ -189,6 +189,14 @@ import {
 } from "@/lib/officialEvaluations";
 import { logAudit } from "@/lib/officialEvaluations";
 
+/** Convert DD/MM/YYYY → YYYY-MM-DD for Postgres `text` column; pass through if already ISO-ish */
+const normalizeDateForDB = (raw: string | undefined | null): string => {
+  if (!raw) return new Date().toISOString().slice(0, 10);
+  const brMatch = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (brMatch) return `${brMatch[3]}-${brMatch[2]}-${brMatch[1]}`;
+  return raw; // already YYYY-MM-DD or other format — keep as-is
+};
+
 const IMPORT_LIMIT = 1000;
 const IMPORT_RECOMMENDED = 500;
 const ANALYZE_LIMIT = 50;
