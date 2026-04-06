@@ -178,6 +178,8 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
     hasData,
     activeFilters,
     atendentes,
+    hasMore,
+    loadingMore,
 
     // Filters
     searchTerm,
@@ -191,6 +193,7 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
 
     // Actions
     fetchList,
+    fetchMore,
     handleSelect,
     resetToIdle: () => setState("idle"),
     formatDate,
