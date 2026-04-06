@@ -38,6 +38,8 @@ interface Subtotais {
 
 export type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
 
+export type DetailDialogMode = "report" | "review";
+
 interface MentoriaDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -56,6 +58,8 @@ interface MentoriaDetailDialogProps {
   initialStep?: MentoriaStep;
   audioBlobs?: ExtractedAudio[];
   imageBlobs?: ExtractedImage[];
+  /** "report" = readonly view, "review" = editable audit */
+  mode?: DetailDialogMode;
 }
 
 const CATEGORY_ORDER = [
@@ -117,9 +121,10 @@ const findRelevantExcerpt = (rawText: string | undefined, explicacao: string): s
   return null;
 };
 
-const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation, workflowStatus, onMarkFinished, onNextFile, hasNextFile, nonEvaluable, nonEvaluableReason, tipoAnalise, initialStep, audioBlobs, imageBlobs }: MentoriaDetailDialogProps) => {
+const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, atendente, structuredConversation, workflowStatus, onMarkFinished, onNextFile, hasNextFile, nonEvaluable, nonEvaluableReason, tipoAnalise, initialStep, audioBlobs, imageBlobs, mode = "review" }: MentoriaDetailDialogProps) => {
+  const isReadonly = mode === "report";
   const [uraOpen, setUraOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState<MentoriaStep>(initialStep || "revisao");
+  const [currentStep, setCurrentStep] = useState<MentoriaStep>(initialStep || (isReadonly ? "relatorio" : "revisao"));
   const [completedSteps, setCompletedSteps] = useState<Set<MentoriaStep>>(new Set());
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -239,7 +244,10 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
     subtotal: subtotais ? subtotais[subtotalKey(cat)] : null,
   }));
 
-  const availableSteps: MentoriaStep[] = preAnalysis ? ["revisao", "relatorio"] : ["relatorio"];
+  // In report mode, only show relatorio. In review mode, always include revisao.
+  const availableSteps: MentoriaStep[] = isReadonly
+    ? ["relatorio"]
+    : (preAnalysis ? ["revisao", "relatorio"] : ["revisao", "relatorio"]);
   const currentIdx = availableSteps.indexOf(currentStep);
 
   return (
@@ -313,7 +321,7 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
         {/* ═══ STEP CONTENT ═══ */}
         <div className="flex-1 min-h-0 overflow-y-auto">
           {/* STEP: REVISÃO (unified pre-analysis + semi-auto) */}
-          {currentStep === "revisao" && preAnalysis && (
+          {currentStep === "revisao" && preAnalysis && !isReadonly && (
             <ScrollArea className="h-full">
               <div className="px-8 py-8">
                 <SemiAutoPanel
@@ -325,6 +333,24 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                 />
               </div>
             </ScrollArea>
+          )}
+          {/* STEP: REVISÃO without pre-analysis — show placeholder for review mode */}
+          {currentStep === "revisao" && !preAnalysis && !isReadonly && (
+            <div className="flex flex-col items-center justify-center py-16 text-center px-8">
+              <AlertTriangle className="h-10 w-10 text-warning mb-3" />
+              <p className="text-sm font-bold text-foreground">Dados de pré-análise não disponíveis</p>
+              <p className="text-xs text-muted-foreground mt-2 max-w-md">
+                A conversa estruturada não contém mensagens suficientes para gerar a pré-análise editável.
+                Você pode avançar diretamente para o relatório.
+              </p>
+              <Button
+                size="sm"
+                className="mt-4 gap-1.5 text-xs"
+                onClick={() => setCurrentStep("relatorio")}
+              >
+                Ir para Relatório <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           )}
 
           {/* STEP: RELATÓRIO */}
@@ -574,8 +600,8 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
         </ScrollArea>
           )}
 
-          {/* Fallback: no pre-analysis, show report directly */}
-          {!preAnalysis && currentStep !== "relatorio" && (() => { setCurrentStep("relatorio"); return null; })()}
+          {/* Fallback: readonly mode forced to relatorio */}
+          {isReadonly && currentStep !== "relatorio" && (() => { setCurrentStep("relatorio"); return null; })()}
         </div>
         {/* ═══ WORKFLOW CONTROL BAR ═══ */}
         <div className="px-8 py-3 border-t border-border/60 bg-muted/20 flex items-center justify-between gap-3">
@@ -589,8 +615,8 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                 {workflowStatus === "finalizado" ? "Finalizado" : workflowStatus === "em_analise" ? "Em análise" : "Não iniciado"}
               </Badge>
             )}
-            {/* Back step button */}
-            {preAnalysis && (() => {
+            {/* Back step button — hidden in report mode */}
+            {!isReadonly && (() => {
               if (currentIdx <= 0) return null;
               return (
                 <Button
@@ -605,8 +631,8 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
             })()}
           </div>
           <div className="flex items-center gap-2">
-            {/* Advance step button */}
-            {preAnalysis && currentStep === "revisao" && (
+            {/* Advance step button — hidden in report mode */}
+            {!isReadonly && currentStep === "revisao" && (
               <TooltipProvider delayDuration={200}>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -627,8 +653,8 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                 </Tooltip>
               </TooltipProvider>
             )}
-            {/* Finalize button - only on report step */}
-            {currentStep === "relatorio" && workflowStatus !== "finalizado" && onMarkFinished && (
+            {/* Finalize button - only on report step, hidden in readonly report mode */}
+            {!isReadonly && currentStep === "relatorio" && workflowStatus !== "finalizado" && onMarkFinished && (
               <Button variant="outline" size="sm" onClick={() => {
                 setCompletedSteps(prev => new Set(prev).add("relatorio"));
                 onMarkFinished();

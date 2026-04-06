@@ -385,6 +385,7 @@ const MentoriaLab = () => {
   const [opaWorkflowStatuses, setOpaWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
   const [opaMentoriaFile, setOpaMentoriaFile] = useState<LabFile | null>(null);
   const [opaMentoriaInitialStep, setOpaMentoriaInitialStep] = useState<"revisao" | "relatorio" | undefined>(undefined);
+  const [opaMentoriaMode, setOpaMentoriaMode] = useState<"report" | "review">("review");
   const [opaHighlightedFileId, setOpaHighlightedFileId] = useState<string | null>(null);
   const { isAdmin } = useUserPermissions();
   const {
@@ -689,9 +690,13 @@ const MentoriaLab = () => {
 
   const getOpaWorkflowStatus = useCallback((fileId: string): WorkflowStatus => opaWorkflowStatuses[fileId] || "nao_iniciado", [opaWorkflowStatuses]);
 
-  const openOpaMentoria = useCallback((f: LabFile, initialStep?: "revisao" | "relatorio") => {
+  const openOpaMentoria = useCallback((f: LabFile, mode: "report" | "review" = "review") => {
     // If file lacks result data, don't open empty modal — trigger auto-fetch instead
     if (!f.result) {
+      if (mode === "report") {
+        toast.warning("Este atendimento ainda não foi analisado.");
+        return;
+      }
       const att = opa.attendances.find((a) => a.id === f.id);
       if (att) {
         toast.info("Carregando dados do atendimento...");
@@ -702,9 +707,12 @@ const MentoriaLab = () => {
       return;
     }
     setOpaMentoriaFile(f);
-    setOpaMentoriaInitialStep(initialStep);
+    setOpaMentoriaMode(mode);
+    setOpaMentoriaInitialStep(mode === "report" ? "relatorio" : "revisao");
     setOpaHighlightedFileId(f.id);
-    setOpaWorkflowStatuses((prev) => ({ ...prev, [f.id]: prev[f.id] === "finalizado" ? "finalizado" : "em_analise" }));
+    if (mode !== "report") {
+      setOpaWorkflowStatuses((prev) => ({ ...prev, [f.id]: prev[f.id] === "finalizado" ? "finalizado" : "em_analise" }));
+    }
   }, [opa]);
 
   const handleOpaStartMentoria = useCallback(async (labFile: LabFile) => {
@@ -4299,7 +4307,7 @@ const MentoriaLab = () => {
                     const opaFile = opaFiles.find((of) => of.id === f.id);
                     if (opaFile) setSideFile(opaFile);
                   }}
-                  onOpenMentoria={(f) => openOpaMentoria(f as any, "relatorio")}
+                  onOpenMentoria={(f) => openOpaMentoria(f as any, "report")}
                   onStartMentoria={(f) => handleOpaStartMentoria(f as any)}
                   onApproveOfficial={() => {}}
                   onRemoveFile={(id) => setOpaFiles((prev) => prev.filter((f) => f.id !== id))}
@@ -4370,7 +4378,7 @@ const MentoriaLab = () => {
                   onMarkViewed={async (id: string) => {
                     setOpaFiles((prev) => prev.map((f) => f.id === id ? { ...f, visualizado: true } : f));
                   }}
-                  onAuditFile={(f) => openOpaMentoria(f as any, "revisao")}
+                  onAuditFile={(f) => openOpaMentoria(f as any, "review")}
                   monthlyConfirmCounts={new Map<string, number>()}
                 />
               </>
@@ -4566,6 +4574,7 @@ const MentoriaLab = () => {
         nonEvaluableReason={opaMentoriaFile?.nonEvaluableReason}
         tipoAnalise={opaMentoriaFile?.tipo_analise}
         initialStep={opaMentoriaInitialStep}
+        mode={opaMentoriaMode}
       />
       </ErrorBoundary>
       <ParserDiagnosticDialog
