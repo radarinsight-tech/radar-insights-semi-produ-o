@@ -18,6 +18,8 @@ export interface OpaAttendance {
 export interface OpaListResponse {
   attendances: OpaAttendance[];
   total: number;
+  offset?: number;
+  hasMore?: boolean;
   attendantsLookup?: Record<string, string>;
 }
 

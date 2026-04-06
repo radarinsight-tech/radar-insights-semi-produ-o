@@ -201,23 +201,30 @@ Deno.serve(async (req) => {
     const { action, ...params } = await req.json();
 
     if (action === "list") {
-      const { status, dataInicio, dataFim, limite } = params as {
+      const { status, dataInicio, dataFim, limite, offset } = params as {
         status?: string;
         dataInicio?: string;
         dataFim?: string;
         limite?: number;
+        offset?: number;
       };
 
       const filter: Record<string, unknown> = { status: status || "F" };
       if (dataInicio) filter.dataInicialAbertura = dataInicio;
       if (dataFim) filter.dataFinalAbertura = dataFim;
 
+      const options: Record<string, unknown> = { limit: limite || 100 };
+      if (typeof offset === "number" && offset > 0) {
+        options.offset = offset;
+      }
+
       const data = await opaFetch("/api/v1/atendimento", {
         filter,
-        options: { limit: limite || 100 },
+        options,
       });
 
       const attendances: Record<string, unknown>[] = Array.isArray(data?.data) ? data.data : [];
+      const effectiveLimit = limite || 100;
 
       const list = attendances.map((a) => ({
         id: a._id,
@@ -231,7 +238,12 @@ Deno.serve(async (req) => {
         setor: a.setor || null,
       }));
 
-      return new Response(JSON.stringify({ attendances: list, total: list.length }), {
+      return new Response(JSON.stringify({
+        attendances: list,
+        total: list.length,
+        offset: (offset || 0),
+        hasMore: list.length >= effectiveLimit,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
