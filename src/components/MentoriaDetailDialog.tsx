@@ -429,8 +429,35 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
                 <SemiAutoPanel
                   analysis={preAnalysis}
                   iaResult={result}
-                  onConfirm={(semiResult: SemiAutoResult) => {
-                    console.log("Review confirmed:", semiResult);
+                  onConfirm={async (semiResult: SemiAutoResult) => {
+                    if (!fileId) {
+                      toast.error("ID do arquivo não disponível para salvar.");
+                      return;
+                    }
+                    try {
+                      const existingResult = (typeof result === "object" && result) ? result : {};
+                      const mergedResult = {
+                        ...existingResult,
+                        _semiAutoDecisions: semiResult.decisions,
+                        notaFinal: semiResult.score.nota100,
+                        pontosObtidos: semiResult.score.pontosObtidos,
+                        pontosPossiveis: semiResult.score.pontosPossiveis,
+                        classificacao: semiResult.score.classificacao,
+                        _semiAutoConfirmed: true,
+                        _semiAutoConfirmedAt: new Date().toISOString(),
+                      };
+                      const { error } = await supabase
+                        .from("mentoria_batch_files")
+                        .update({ result: mergedResult } as never)
+                        .eq("id", fileId);
+                      if (error) throw error;
+                      toast.success("Avaliação semi-automática salva com sucesso.");
+                      setCompletedSteps((prev) => new Set([...prev, "revisao"]));
+                      onSemiAutoSaved?.(mergedResult);
+                    } catch (err: any) {
+                      console.error("Erro ao salvar semi-auto:", err);
+                      toast.error("Falha ao salvar avaliação: " + (err?.message || "erro desconhecido"));
+                    }
                   }}
                 />
               </div>
