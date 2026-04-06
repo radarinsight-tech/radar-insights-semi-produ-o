@@ -193,7 +193,9 @@ import { logAudit } from "@/lib/officialEvaluations";
 const normalizeNotaForDB = (nota: number | null | undefined): number => {
   const n = Number(nota ?? 0);
   const clamped = Math.max(0, Math.min(n, 99.9));
-  return parseFloat(clamped.toFixed(1));
+  const result = parseFloat(clamped.toFixed(1));
+  if (import.meta.env.DEV) console.log("[normalizeNotaForDB]", { original: nota, sent: result });
+  return result;
 };
 
 /** Convert DD/MM/YYYY → YYYY-MM-DD for Postgres `text` column; pass through if already ISO-ish */
