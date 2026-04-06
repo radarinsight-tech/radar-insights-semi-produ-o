@@ -65,6 +65,10 @@ interface MentoriaDetailDialogProps {
   imageBlobs?: ExtractedImage[];
   /** "report" = readonly view, "review" = editable audit */
   mode?: DetailDialogMode;
+  /** ID of the mentoria_batch_files row — needed to persist semi-auto result */
+  fileId?: string;
+  /** Callback after semi-auto result is persisted */
+  onSemiAutoSaved?: (mergedResult: Record<string, unknown>) => void;
 }
 
 const CATEGORY_ORDER = [
