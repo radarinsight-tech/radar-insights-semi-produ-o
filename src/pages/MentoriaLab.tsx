@@ -519,9 +519,9 @@ const MentoriaLab = () => {
   const [opaResult, setOpaResult] = useState<AnalysisData | null>(null);
   const [opaFullReport, setOpaFullReport] = useState<any>(null);
   const [opaFiles, setOpaFiles] = useState<LabFile[]>([]);
-  const [opaSearchTerm, setOpaSearchTerm] = useState("");
+  const [opaSearchTerm, setOpaSearchTerm] = useState(_savedSession.current?.opaLocalSearchTerm || "");
   const [_opaFilterAtendente_UNUSED, _setOpaFilterAtendente_UNUSED] = useState("todos"); // kept for compat; real filter is opa.filterAtendente
-  const [opaHumanSelected, setOpaHumanSelected] = useState<Set<string>>(new Set()); // multi-select human attendants
+  const [opaHumanSelected, setOpaHumanSelected] = useState<Set<string>>(() => new Set(_savedSession.current?.opaHumanSelected || []));
   const [opaFilterAuditoriaFrom, setOpaFilterAuditoriaFrom] = useState<Date | undefined>();
   const [opaFilterAuditoriaTo, setOpaFilterAuditoriaTo] = useState<Date | undefined>();
   const [opaWorkflowStatuses, setOpaWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
