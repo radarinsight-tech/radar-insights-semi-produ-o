@@ -38,6 +38,8 @@ interface Subtotais {
 
 export type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
 
+export type DetailDialogMode = "report" | "review";
+
 interface MentoriaDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -56,6 +58,8 @@ interface MentoriaDetailDialogProps {
   initialStep?: MentoriaStep;
   audioBlobs?: ExtractedAudio[];
   imageBlobs?: ExtractedImage[];
+  /** "report" = readonly view, "review" = editable audit */
+  mode?: DetailDialogMode;
 }
 
 const CATEGORY_ORDER = [
