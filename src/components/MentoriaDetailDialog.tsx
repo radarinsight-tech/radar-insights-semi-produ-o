@@ -631,8 +631,8 @@ const MentoriaDetailDialog = ({ open, onOpenChange, result, fileName, rawText, a
             })()}
           </div>
           <div className="flex items-center gap-2">
-            {/* Advance step button */}
-            {preAnalysis && currentStep === "revisao" && (
+            {/* Advance step button — hidden in report mode */}
+            {!isReadonly && currentStep === "revisao" && (
               <TooltipProvider delayDuration={200}>
                 <Tooltip>
                   <TooltipTrigger asChild>
