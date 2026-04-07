@@ -4595,7 +4595,7 @@ const MentoriaLab = () => {
                         const file = opaFiles.find((f) => f.id === id);
                         if (!file?.result) continue;
                         const r = file.result;
-                        const insertPayload = {
+                        const insertPayload = buildEvalPayload({
                           user_id: user.id,
                           atendente: file.atendente || "Desconhecido",
                           protocolo: file.protocolo || file.id,
@@ -4611,7 +4611,7 @@ const MentoriaLab = () => {
                           prompt_version: r.versao || "opa-suite",
                           company_id: companyId || null,
                           audit_log: buildOfficialAuditLog("manual", undefined),
-                        };
+                        });
                         if (import.meta.env.DEV) console.log("[OpaConfirmBatch][payload]", JSON.stringify(insertPayload, null, 2));
                         const { error: insertErr } = await supabase.from("evaluations").insert(insertPayload as any);
                         if (insertErr) throw insertErr;
