@@ -29,8 +29,12 @@ interface Props {
 
 
 const extractStoragePath = (url: string): string | null => {
-  const match = url.match(/\/object\/public\/pdfs\/(.+)$/);
-  return match ? match[1] : null;
+  // Handle both legacy full-URL format and new path-only format
+  const match = url.match(/\/object\/(?:public|sign)\/pdfs\/(.+)$/);
+  if (match) return match[1];
+  // If it doesn't look like a URL, treat it as a raw storage path
+  if (!url.startsWith("http")) return url;
+  return null;
 };
 
 const handleDownload = async (pdfUrl: string, protocolo: string) => {
