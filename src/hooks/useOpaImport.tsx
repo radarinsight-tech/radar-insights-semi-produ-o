@@ -243,7 +243,21 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
     fetchMore,
     handleSelect,
     hydrateState,
-    resetToIdle: () => setState("idle"),
+    resetToIdle: () => {
+      setState("idle");
+      setAttendances([]);
+      setTotal(0);
+      setHasMore(false);
+      setCurrentOffset(0);
+      setDuplicatesSkipped(0);
+      setSearchTerm("");
+      setFilterAtendente("todos");
+      setDateFrom(undefined);
+      setDateTo(undefined);
+      setLastFetch(null);
+      setErrorMsg("");
+      setSelectedId(null);
+    },
     formatDate,
   };
 }
