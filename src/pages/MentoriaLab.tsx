@@ -207,6 +207,38 @@ const normalizeDateForDB = (raw: string | undefined | null): string => {
   return raw; // already YYYY-MM-DD or other format — keep as-is
 };
 
+/** Validate UUID format to prevent SQL errors on insert */
+const isValidUUID = (val: unknown): val is string =>
+  typeof val === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
+/** Guard: build sanitized evaluation payload; throws if critical fields are invalid */
+const buildEvalPayload = (fields: {
+  user_id: string;
+  atendente: string;
+  protocolo: string;
+  tipo: string;
+  nota: number;
+  classificacao: string;
+  data: string;
+  bonus: boolean;
+  atualizacao_cadastral: string;
+  pontos_melhoria: string[];
+  full_report: any;
+  resultado_validado: boolean;
+  prompt_version: string;
+  company_id: string | null;
+  audit_log: any;
+}) => {
+  if (!isValidUUID(fields.user_id)) {
+    throw new Error(`user_id inválido: "${fields.user_id}". Faça login novamente.`);
+  }
+  if (fields.company_id && !isValidUUID(fields.company_id)) {
+    console.warn("[buildEvalPayload] company_id inválido, removendo:", fields.company_id);
+    fields.company_id = null;
+  }
+  return { ...fields };
+};
+
 const IMPORT_LIMIT = 1000;
 const IMPORT_RECOMMENDED = 500;
 const ANALYZE_LIMIT = 50;
@@ -4563,7 +4595,7 @@ const MentoriaLab = () => {
                         const file = opaFiles.find((f) => f.id === id);
                         if (!file?.result) continue;
                         const r = file.result;
-                        const insertPayload = {
+                        const insertPayload = buildEvalPayload({
                           user_id: user.id,
                           atendente: file.atendente || "Desconhecido",
                           protocolo: file.protocolo || file.id,
@@ -4579,7 +4611,7 @@ const MentoriaLab = () => {
                           prompt_version: r.versao || "opa-suite",
                           company_id: companyId || null,
                           audit_log: buildOfficialAuditLog("manual", undefined),
-                        };
+                        });
                         if (import.meta.env.DEV) console.log("[OpaConfirmBatch][payload]", JSON.stringify(insertPayload, null, 2));
                         const { error: insertErr } = await supabase.from("evaluations").insert(insertPayload as any);
                         if (insertErr) throw insertErr;
@@ -4621,6 +4653,7 @@ const MentoriaLab = () => {
                     </Button>
                     <span className="text-[11px] text-muted-foreground">
                       {opa.attendances.length} carregados de {opa.total}
+                      {opa.duplicatesSkipped > 0 && ` · ${opa.duplicatesSkipped} ignorados`}
                     </span>
                   </div>
                 )}
@@ -4794,7 +4827,7 @@ const MentoriaLab = () => {
             if (user && opaMentoriaFile.result) {
               const r = opaMentoriaFile.result;
               const companyId = await supabase.rpc("get_my_company_id").then((res) => res.data);
-              const insertPayload = {
+              const insertPayload = buildEvalPayload({
                 user_id: user.id,
                 atendente: opaMentoriaFile.atendente || "Desconhecido",
                 protocolo: opaMentoriaFile.protocolo || opaMentoriaFile.id,
@@ -4810,7 +4843,7 @@ const MentoriaLab = () => {
                 prompt_version: r.versao || "opa-suite",
                 company_id: companyId || null,
                 audit_log: buildOfficialAuditLog("manual", undefined),
-              };
+              });
               if (import.meta.env.DEV) console.log("[OpaAudit][payload]", JSON.stringify(insertPayload, null, 2));
               const { error: insertErr } = await supabase.from("evaluations").insert(insertPayload as any);
               if (insertErr) throw insertErr;

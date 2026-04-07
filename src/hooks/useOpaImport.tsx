@@ -32,6 +32,7 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
   const [currentOffset, setCurrentOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [duplicatesSkipped, setDuplicatesSkipped] = useState(0);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -61,6 +62,7 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
     setState("loading-list");
     setErrorMsg("");
     setCurrentOffset(0);
+    setDuplicatesSkipped(0);
     try {
       const res = await listOpaAttendances(buildParams(0));
       setAttendances(res.attendances || []);
@@ -84,17 +86,23 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
       const res = await listOpaAttendances(buildParams(nextOffset));
       const newItems = (res.attendances || []);
       if (import.meta.env.DEV) console.log("[OpaImport] fetchMore received:", newItems.length, "items, hasMore:", res.hasMore);
+      let skipped = 0;
       setAttendances(prev => {
         const existingIds = new Set(prev.map(a => a.id));
         const unique = newItems.filter(a => !existingIds.has(a.id));
-        if (import.meta.env.DEV) console.log("[OpaImport] fetchMore merge: prev=", prev.length, "unique=", unique.length, "total=", prev.length + unique.length);
+        skipped = newItems.length - unique.length;
+        if (import.meta.env.DEV) console.log("[OpaImport] fetchMore merge: prev=", prev.length, "unique=", unique.length, "skipped=", skipped, "total=", prev.length + unique.length);
         return [...prev, ...unique];
       });
+      setDuplicatesSkipped(prev => prev + skipped);
       setCurrentOffset(nextOffset);
       setHasMore(res.hasMore ?? (newItems.length >= 100));
       setLastFetch(new Date());
       if (newItems.length > 0) {
-        toast.success(`+${newItems.length} atendimentos carregados`);
+        const msg = skipped > 0
+          ? `+${newItems.length - skipped} novos (${skipped} duplicados ignorados)`
+          : `+${newItems.length} atendimentos carregados`;
+        toast.success(msg);
       } else {
         toast.info("Nenhum novo atendimento nesta página.");
         setHasMore(false);
@@ -214,6 +222,7 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
     hasMore,
     loadingMore,
     currentOffset,
+    duplicatesSkipped,
 
     // Filters
     searchTerm,
