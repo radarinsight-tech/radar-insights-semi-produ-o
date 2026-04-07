@@ -207,6 +207,38 @@ const normalizeDateForDB = (raw: string | undefined | null): string => {
   return raw; // already YYYY-MM-DD or other format — keep as-is
 };
 
+/** Validate UUID format to prevent SQL errors on insert */
+const isValidUUID = (val: unknown): val is string =>
+  typeof val === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
+/** Guard: build sanitized evaluation payload; throws if critical fields are invalid */
+const buildEvalPayload = (fields: {
+  user_id: string;
+  atendente: string;
+  protocolo: string;
+  tipo: string;
+  nota: number;
+  classificacao: string;
+  data: string;
+  bonus: boolean;
+  atualizacao_cadastral: string;
+  pontos_melhoria: string[];
+  full_report: any;
+  resultado_validado: boolean;
+  prompt_version: string;
+  company_id: string | null;
+  audit_log: any;
+}) => {
+  if (!isValidUUID(fields.user_id)) {
+    throw new Error(`user_id inválido: "${fields.user_id}". Faça login novamente.`);
+  }
+  if (fields.company_id && !isValidUUID(fields.company_id)) {
+    console.warn("[buildEvalPayload] company_id inválido, removendo:", fields.company_id);
+    fields.company_id = null;
+  }
+  return { ...fields };
+};
+
 const IMPORT_LIMIT = 1000;
 const IMPORT_RECOMMENDED = 500;
 const ANALYZE_LIMIT = 50;
