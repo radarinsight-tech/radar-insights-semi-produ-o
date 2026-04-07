@@ -4826,7 +4826,7 @@ const MentoriaLab = () => {
             if (user && opaMentoriaFile.result) {
               const r = opaMentoriaFile.result;
               const companyId = await supabase.rpc("get_my_company_id").then((res) => res.data);
-              const insertPayload = {
+              const insertPayload = buildEvalPayload({
                 user_id: user.id,
                 atendente: opaMentoriaFile.atendente || "Desconhecido",
                 protocolo: opaMentoriaFile.protocolo || opaMentoriaFile.id,
@@ -4842,7 +4842,7 @@ const MentoriaLab = () => {
                 prompt_version: r.versao || "opa-suite",
                 company_id: companyId || null,
                 audit_log: buildOfficialAuditLog("manual", undefined),
-              };
+              });
               if (import.meta.env.DEV) console.log("[OpaAudit][payload]", JSON.stringify(insertPayload, null, 2));
               const { error: insertErr } = await supabase.from("evaluations").insert(insertPayload as any);
               if (insertErr) throw insertErr;
