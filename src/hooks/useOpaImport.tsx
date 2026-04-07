@@ -62,6 +62,7 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
     setState("loading-list");
     setErrorMsg("");
     setCurrentOffset(0);
+    setDuplicatesSkipped(0);
     try {
       const res = await listOpaAttendances(buildParams(0));
       setAttendances(res.attendances || []);
