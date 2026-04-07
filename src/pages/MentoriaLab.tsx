@@ -4653,6 +4653,7 @@ const MentoriaLab = () => {
                     </Button>
                     <span className="text-[11px] text-muted-foreground">
                       {opa.attendances.length} carregados de {opa.total}
+                      {opa.duplicatesSkipped > 0 && ` · ${opa.duplicatesSkipped} ignorados`}
                     </span>
                   </div>
                 )}
