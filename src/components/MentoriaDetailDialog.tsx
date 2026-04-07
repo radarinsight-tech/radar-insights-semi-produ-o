@@ -354,6 +354,10 @@ const MentoriaDetailDialog = ({
     setLocalConfirmed(false);
   };
 
+  /** Validate UUID format */
+  const isValidUUID = (val: unknown): val is string =>
+    typeof val === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
   const handleConfirm = async () => {
     const score = currentScore;
     if (!score) return;
@@ -371,8 +375,23 @@ const MentoriaDetailDialog = ({
         _semiAutoConfirmed: true,
         _semiAutoConfirmedAt: new Date().toISOString(),
       };
-      const { error } = await supabase.from("mentoria_batch_files").update({ result: mergedResult } as never).eq("id", fileId);
-      if (error) throw error;
+      // Only persist to mentoria_batch_files if fileId is a valid UUID
+      // Opa Suite files have non-UUID IDs and are not stored in mentoria_batch_files
+      if (isValidUUID(fileId)) {
+        const { error } = await supabase.from("mentoria_batch_files").update({ result: mergedResult } as never).eq("id", fileId);
+        if (error) {
+          console.error("[MentoriaDetailDialog][handleConfirm] DB error:", {
+            code: error.code,
+            message: error.message,
+            details: (error as any).details,
+            hint: (error as any).hint,
+            fileId,
+          });
+          throw error;
+        }
+      } else {
+        console.info("[MentoriaDetailDialog][handleConfirm] fileId não é UUID — salvando apenas localmente:", fileId);
+      }
       setLocalConfirmed(true);
       toast.success("Avaliação confirmada com sucesso.");
       onSemiAutoSaved?.(mergedResult);

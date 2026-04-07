@@ -63,13 +63,17 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
     setErrorMsg("");
     setCurrentOffset(0);
     setDuplicatesSkipped(0);
+    // Reset attendances before fetching to force a clean re-render cycle
+    setAttendances([]);
     try {
       const res = await listOpaAttendances(buildParams(0));
-      setAttendances(res.attendances || []);
-      setTotal(res.total ?? res.attendances?.length ?? 0);
-      setHasMore(res.hasMore ?? false);
+      const items = res.attendances || [];
+      setAttendances(items);
+      setTotal(res.total ?? items.length ?? 0);
+      setHasMore(res.hasMore ?? (items.length >= 100));
       setLastFetch(new Date());
       setState("list");
+      if (import.meta.env.DEV) console.log("[OpaImport] fetchList OK:", items.length, "items, total:", res.total, "hasMore:", res.hasMore);
     } catch (err: any) {
       console.error("[OpaImport] list error:", err);
       setErrorMsg(err?.message || "Erro ao buscar atendimentos");

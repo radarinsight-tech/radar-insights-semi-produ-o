@@ -3217,7 +3217,16 @@ const MentoriaLab = () => {
       setHighlightedFileId(null);
       setShowClearConfirm(false);
       setClearConfirmStep(null);
+      // Reset Opa Suite state completely
       setOpaFiles([]);
+      setOpaWorkflowStatuses({});
+      setOpaMentoriaFile(null);
+      setOpaSearchTerm("");
+      setOpaHumanSelected(new Set());
+      setOpaFilterAuditoriaFrom(undefined);
+      setOpaFilterAuditoriaTo(undefined);
+      setOpaHighlightedFileId(null);
+      opa.resetToIdle();
       clearMentoriaSession();
       toast.success("Dados limpos. Avaliações oficiais foram preservadas.");
     } catch (err) {
