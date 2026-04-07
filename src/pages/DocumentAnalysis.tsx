@@ -539,12 +539,11 @@ const DocumentAnalysis = () => {
     const { error: uploadErr } = await supabase.storage.from("credit-documents").upload(path, file);
     if (uploadErr) { toast.error("Erro no upload."); return; }
 
-    const { data: { publicUrl } } = supabase.storage.from("credit-documents").getPublicUrl(path);
-
+    // Store the storage path (not a public URL) — signed URLs are generated on read
     await supabase
       .from("document_items")
       .update({
-        file_url: publicUrl,
+        file_url: path,
         file_name: file.name,
         documento_recebido: true,
         hash_arquivo: hash,
