@@ -585,8 +585,16 @@ const DocumentAnalysis = () => {
     await supabase.from("document_items").update({ status_ocr: "processando" } as any).eq("id", item.id);
 
     try {
-      // Fetch the file and convert to base64
-      const response = await fetch(item.file_url);
+      // Generate a short-lived signed URL to fetch the file securely
+      const { data: signedData, error: signedErr } = await supabase.storage
+        .from("credit-documents")
+        .createSignedUrl(item.file_url, 3600);
+      if (signedErr || !signedData?.signedUrl) {
+        toast.error("Erro ao acessar o documento.");
+        setOcrProcessing(p => ({ ...p, [item.id]: false }));
+        return;
+      }
+      const response = await fetch(signedData.signedUrl);
       const blob = await response.blob();
       const file = new File([blob], item.file_name || "doc", { type: blob.type });
 
