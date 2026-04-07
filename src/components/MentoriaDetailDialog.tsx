@@ -392,10 +392,10 @@ const MentoriaDetailDialog = ({
           });
           throw error;
         }
-        else {
-  console.info("[handleConfirm] fileId OPA (não UUID), pulando update mentoria_batch_files:", fileId);
-}
-            setLocalConfirmed(true);
+      } else {
+        console.info("[handleConfirm] fileId OPA (não UUID), pulando update mentoria_batch_files:", fileId);
+      }
+      setLocalConfirmed(true);
       toast.success("Avaliação confirmada com sucesso.");
       onSemiAutoSaved?.(mergedResult);
     } catch (err: any) {
