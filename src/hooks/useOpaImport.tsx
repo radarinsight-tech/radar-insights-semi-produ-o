@@ -222,6 +222,7 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
     hasMore,
     loadingMore,
     currentOffset,
+    duplicatesSkipped,
 
     // Filters
     searchTerm,
