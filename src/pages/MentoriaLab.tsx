@@ -4859,9 +4859,23 @@ const MentoriaLab = () => {
                 company_id: companyId || null,
                 audit_log: buildOfficialAuditLog("manual", undefined),
               });
-              if (import.meta.env.DEV) console.log("[OpaAudit][payload]", JSON.stringify(insertPayload, null, 2));
+              console.log("[OpaAudit][payload]", JSON.stringify(insertPayload, null, 2));
+              for (const [k, v] of Object.entries(insertPayload)) {
+                if (typeof v === "string" && v.length > 0 && v.length < 80 && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v) && /^[0-9a-f]+$/i.test(v)) {
+                  console.warn(`[OpaAudit][SUSPEITO] campo "${k}" contém hex não-UUID: "${v}"`);
+                }
+              }
               const { error: insertErr } = await supabase.from("evaluations").insert(insertPayload as any);
-              if (insertErr) throw insertErr;
+              if (insertErr) {
+                console.error("[OpaAudit][INSERT ERROR]", {
+                  code: insertErr.code,
+                  message: insertErr.message,
+                  details: (insertErr as any).details,
+                  hint: (insertErr as any).hint,
+                  payload: insertPayload,
+                });
+                throw insertErr;
+              }
               toast.success("Auditoria finalizada e enviada para Performance.");
               setPerfRefreshKey((k) => k + 1);
             }
