@@ -32,6 +32,7 @@ export function useOpaImport({ onTextReady, isAnalyzing }: UseOpaImportOptions) 
   const [currentOffset, setCurrentOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [duplicatesSkipped, setDuplicatesSkipped] = useState(0);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
