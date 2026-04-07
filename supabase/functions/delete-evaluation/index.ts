@@ -93,9 +93,10 @@ serve(async (req) => {
 
     // Delete PDF from storage if exists
     if (evaluation.pdf_url) {
-      const match = evaluation.pdf_url.match(/\/object\/public\/pdfs\/(.+)$/);
-      if (match) {
-        await adminClient.storage.from("pdfs").remove([match[1]]);
+      const match = evaluation.pdf_url.match(/\/object\/(?:public|sign)\/pdfs\/(.+)$/);
+      const storagePath = match ? match[1] : (!evaluation.pdf_url.startsWith("http") ? evaluation.pdf_url : null);
+      if (storagePath) {
+        await adminClient.storage.from("pdfs").remove([storagePath]);
       }
     }
 
