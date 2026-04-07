@@ -356,13 +356,16 @@ const MentoriaDetailDialog = ({
 
   /** Validate UUID format */
   const isValidUUID = (val: unknown): val is string =>
-    typeof val === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+     typeof val === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val); 
 
   const handleConfirm = async () => {
     const score = currentScore;
     if (!score) return;
     const semiResult: SemiAutoResult = { decisions: [...normalizedDecisions.values()], score, confirmed: true };
-    if (!fileId) { toast.error("ID do arquivo não disponível."); return; }
+    if (!fileId) {
+  toast.error("ID do arquivo não disponível.");
+  return;
+}
     try {
       const existingResult = (typeof result === "object" && result) ? result : {};
       const mergedResult = {
@@ -389,10 +392,10 @@ const MentoriaDetailDialog = ({
           });
           throw error;
         }
-      } else {
-        console.info("[MentoriaDetailDialog][handleConfirm] fileId não é UUID — salvando apenas localmente:", fileId);
-      }
-      setLocalConfirmed(true);
+        else {
+  console.info("[handleConfirm] fileId OPA (não UUID), pulando update mentoria_batch_files:", fileId);
+}
+            setLocalConfirmed(true);
       toast.success("Avaliação confirmada com sucesso.");
       onSemiAutoSaved?.(mergedResult);
     } catch (err: any) {
