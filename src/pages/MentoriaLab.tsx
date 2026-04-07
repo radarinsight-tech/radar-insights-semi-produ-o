@@ -58,7 +58,12 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn, formatDateBR, notaToScale10, formatNota } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromPdf } from "@/lib/pdfExtractor";
-import { extractAudioAttachments, extractPageImages, type ExtractedAudio, type ExtractedImage } from "@/lib/pdfMediaExtractor";
+import {
+  extractAudioAttachments,
+  extractPageImages,
+  type ExtractedAudio,
+  type ExtractedImage,
+} from "@/lib/pdfMediaExtractor";
 import { parseStructuredConversation, type StructuredConversation } from "@/lib/conversationParser";
 import logoSymbol from "@/assets/logo-symbol.png";
 import { toast } from "sonner";
@@ -82,9 +87,22 @@ import { useOpaImport } from "@/hooks/useOpaImport";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Radio, RefreshCw, AlertCircle, MessageSquareQuote } from "lucide-react";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { saveMentoriaSession, loadMentoriaSession, clearMentoriaSession, type MentoriaSessionState } from "@/hooks/useMentoriaSession";
+import {
+  saveMentoriaSession,
+  loadMentoriaSession,
+  clearMentoriaSession,
+  type MentoriaSessionState,
+} from "@/hooks/useMentoriaSession";
 
-type FileStatus = "pendente" | "lido" | "analisado" | "erro" | "aguardando_revisao_ia" | "aguardando_revisao_manual" | "confirmado" | "reprovado";
+type FileStatus =
+  | "pendente"
+  | "lido"
+  | "analisado"
+  | "erro"
+  | "aguardando_revisao_ia"
+  | "aguardando_revisao_manual"
+  | "confirmado"
+  | "reprovado";
 type WorkflowStatus = "nao_iniciado" | "em_analise" | "finalizado";
 
 type BatchStatus =
@@ -266,17 +284,50 @@ const isFatalPdfReadError = (error: unknown) => {
 };
 
 // ─── Performance Sub-Sections ───────────────────────────────────────
-type PerformanceSection = "bonus_panel" | "resumo" | "bonus" | "detalhada" | "recomendados" | "padroes" | "roteiro" | "graficos";
+type PerformanceSection =
+  | "bonus_panel"
+  | "resumo"
+  | "bonus"
+  | "detalhada"
+  | "recomendados"
+  | "padroes"
+  | "roteiro"
+  | "graficos";
 
 const PERF_NAV: { key: PerformanceSection; label: string; icon: string; tooltip: string }[] = [
-  { key: "bonus_panel", label: "Painel de Bônus", icon: "🏆", tooltip: "Ranking de bônus por atendente com régua progressiva" },
+  {
+    key: "bonus_panel",
+    label: "Painel de Bônus",
+    icon: "🏆",
+    tooltip: "Ranking de bônus por atendente com régua progressiva",
+  },
   { key: "resumo", label: "Resumo Geral", icon: "📊", tooltip: "Visão consolidada: pontos críticos e fortes do lote" },
-  { key: "bonus", label: "Performance & Bônus", icon: "💰", tooltip: "Performance e valor de bônus detalhado por atendente" },
-  { key: "detalhada", label: "Perf. Detalhada", icon: "👤", tooltip: "Notas por critério de avaliação de cada atendente" },
+  {
+    key: "bonus",
+    label: "Performance & Bônus",
+    icon: "💰",
+    tooltip: "Performance e valor de bônus detalhado por atendente",
+  },
+  {
+    key: "detalhada",
+    label: "Perf. Detalhada",
+    icon: "👤",
+    tooltip: "Notas por critério de avaliação de cada atendente",
+  },
   { key: "recomendados", label: "Recomendados", icon: "⭐", tooltip: "Atendimentos indicados para sessão de mentoria" },
-  { key: "padroes", label: "Padrões", icon: "💬", tooltip: "Padrões de comportamento recorrentes identificados pela IA" },
+  {
+    key: "padroes",
+    label: "Padrões",
+    icon: "💬",
+    tooltip: "Padrões de comportamento recorrentes identificados pela IA",
+  },
   { key: "roteiro", label: "Roteiro", icon: "📋", tooltip: "Roteiro de mentoria gerado automaticamente pela IA" },
-  { key: "graficos", label: "Gráficos de Evolução", icon: "📈", tooltip: "Evolução da nota média e volume de auditorias ao longo do tempo" },
+  {
+    key: "graficos",
+    label: "Gráficos de Evolução",
+    icon: "📈",
+    tooltip: "Evolução da nota média e volume de auditorias ao longo do tempo",
+  },
 ];
 
 const PerformanceSections = ({
@@ -401,7 +452,9 @@ const PerformanceSections = ({
       }
     };
     fetchEvals();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [filterMonth, refreshKey]);
 
   const renderContent = () => {
@@ -457,9 +510,7 @@ const PerformanceSections = ({
       <div className="space-y-3">
         <Select value={activeSection} onValueChange={(v) => setActiveSection(v as PerformanceSection)}>
           <SelectTrigger className="w-full">
-            <SelectValue>
-              {activeNav && `${activeNav.icon} ${activeNav.label}`}
-            </SelectValue>
+            <SelectValue>{activeNav && `${activeNav.icon} ${activeNav.label}`}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {PERF_NAV.map((nav) => (
@@ -490,7 +541,7 @@ const PerformanceSections = ({
                     "w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-colors text-left",
                     activeSection === nav.key
                       ? "bg-primary/10 text-primary border-l-[3px] border-l-primary font-semibold"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/60",
                   )}
                 >
                   <span className="text-sm">{nav.icon}</span>
@@ -506,9 +557,7 @@ const PerformanceSections = ({
       </nav>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
-        {renderContent()}
-      </div>
+      <div className="flex-1 min-w-0">{renderContent()}</div>
     </div>
   );
 };
@@ -536,15 +585,19 @@ const MentoriaLab = () => {
   const [approvingIds, setApprovingIds] = useState<Set<string>>(new Set());
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearing, setClearing] = useState(false);
-  const [clearConfirmStep, setClearConfirmStep] = useState<{ action: () => Promise<void>; count: number; label: string } | null>(null);
-   const [diagnosticFile, setDiagnosticFile] = useState<LabFile | null>(null);
-   const [workflowStatuses, setWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
-   const [duplicateCount, setDuplicateCount] = useState(0);
-   const [batchStats, setBatchStats] = useState<{ analyzing: number; completed: number; failed: number }>({
-     analyzing: 0,
-     completed: 0,
-     failed: 0,
-   });
+  const [clearConfirmStep, setClearConfirmStep] = useState<{
+    action: () => Promise<void>;
+    count: number;
+    label: string;
+  } | null>(null);
+  const [diagnosticFile, setDiagnosticFile] = useState<LabFile | null>(null);
+  const [workflowStatuses, setWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
+  const [duplicateCount, setDuplicateCount] = useState(0);
+  const [batchStats, setBatchStats] = useState<{ analyzing: number; completed: number; failed: number }>({
+    analyzing: 0,
+    completed: 0,
+    failed: 0,
+  });
   const [batchProcessing, setBatchProcessing] = useState(false);
   const [perfRefreshKey, setPerfRefreshKey] = useState(0);
   const [opaAnalyzing, setOpaAnalyzing] = useState(false);
@@ -553,7 +606,9 @@ const MentoriaLab = () => {
   const [opaFiles, setOpaFiles] = useState<LabFile[]>([]);
   const [opaSearchTerm, setOpaSearchTerm] = useState(_savedSession.current?.opaLocalSearchTerm || "");
   const [_opaFilterAtendente_UNUSED, _setOpaFilterAtendente_UNUSED] = useState("todos"); // kept for compat; real filter is opa.filterAtendente
-  const [opaHumanSelected, setOpaHumanSelected] = useState<Set<string>>(() => new Set(_savedSession.current?.opaHumanSelected || []));
+  const [opaHumanSelected, setOpaHumanSelected] = useState<Set<string>>(
+    () => new Set(_savedSession.current?.opaHumanSelected || []),
+  );
   const [opaFilterAuditoriaFrom, setOpaFilterAuditoriaFrom] = useState<Date | undefined>();
   const [opaFilterAuditoriaTo, setOpaFilterAuditoriaTo] = useState<Date | undefined>();
   const [opaWorkflowStatuses, setOpaWorkflowStatuses] = useState<Record<string, WorkflowStatus>>({});
@@ -583,11 +638,26 @@ const MentoriaLab = () => {
 
   // Global month filter (competência)
   const now = new Date();
-  const [filterMonth, setFilterMonth] = useState(() => _savedSession.current?.filterMonth || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+  const [filterMonth, setFilterMonth] = useState(
+    () => _savedSession.current?.filterMonth || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
+  );
 
   const monthOptions = useMemo(() => {
     const options: { value: string; label: string }[] = [];
-    const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    const months = [
+      "Janeiro",
+      "Fevereiro",
+      "Março",
+      "Abril",
+      "Maio",
+      "Junho",
+      "Julho",
+      "Agosto",
+      "Setembro",
+      "Outubro",
+      "Novembro",
+      "Dezembro",
+    ];
     // Generate last 12 months + current
     const today = new Date();
     for (let i = 0; i < 13; i++) {
@@ -602,73 +672,94 @@ const MentoriaLab = () => {
   const [loadingFromDb, setLoadingFromDb] = useState(true);
 
   // ── Opa Suite handler ──
-  const handleOpaTextReady = useCallback(async (
-    text: string,
-    meta: {
-      protocolo: string;
-      atendente: string;
-      canal: string;
-      attendanceId: string;
-      rawText?: string;
-      structuredConversation?: Array<{ timestamp?: string; author: string; text: string }>;
-    },
-  ) => {
-    setOpaAnalyzing(true);
-    // Persist rawText and structuredConversation into the LabFile immediately
-    setOpaFiles((prev) => prev.map((f) => f.id === meta.attendanceId ? {
-      ...f,
-      status: "lido" as FileStatus,
-      text: text,
-      rawText: meta.rawText || text,
-      structuredConversation: meta.structuredConversation as any,
-    } : f));
-    try {
-      const response = await supabase.functions.invoke("analyze-attendance", { body: { text } });
-      if (response.error || response.data?.error) {
-        const detail = response.data?.error || response.error?.message || "Erro desconhecido";
-        toast.error(`Erro na análise: ${detail}`);
-        setOpaFiles((prev) => prev.map((f) => f.id === meta.attendanceId ? { ...f, status: "erro" as FileStatus, error: detail } : f));
+  const handleOpaTextReady = useCallback(
+    async (
+      text: string,
+      meta: {
+        protocolo: string;
+        atendente: string;
+        canal: string;
+        attendanceId: string;
+        rawText?: string;
+        structuredConversation?: Array<{ timestamp?: string; author: string; text: string }>;
+      },
+    ) => {
+      setOpaAnalyzing(true);
+      // Persist rawText and structuredConversation into the LabFile immediately
+      setOpaFiles((prev) =>
+        prev.map((f) =>
+          f.id === meta.attendanceId
+            ? {
+                ...f,
+                status: "lido" as FileStatus,
+                text: text,
+                rawText: meta.rawText || text,
+                structuredConversation: meta.structuredConversation as any,
+              }
+            : f,
+        ),
+      );
+      try {
+        const response = await supabase.functions.invoke("analyze-attendance", { body: { text } });
+        if (response.error || response.data?.error) {
+          const detail = response.data?.error || response.error?.message || "Erro desconhecido";
+          toast.error(`Erro na análise: ${detail}`);
+          setOpaFiles((prev) =>
+            prev.map((f) => (f.id === meta.attendanceId ? { ...f, status: "erro" as FileStatus, error: detail } : f)),
+          );
+          setOpaAnalyzing(false);
+          return;
+        }
+        const d = response.data;
+        setOpaFullReport(d);
+        const analysisResult: AnalysisData = {
+          protocolo: d.protocolo || meta.protocolo || "—",
+          atendente: d.atendente || meta.atendente || "—",
+          tipo: d.tipo || "—",
+          atualizacaoCadastral: d.bonusOperacional?.atualizacaoCadastral || "NÃO",
+          notaFinal: d.notaFinal ?? d.nota ?? 0,
+          classificacao: d.classificacao || "—",
+          bonus: (d.bonusQualidade ?? 0) >= 80,
+          bonusQualidade: d.bonusQualidade ?? 0,
+          pontosMelhoria: d.mentoria || d.pontosMelhoria || [],
+          pontosObtidos: d.pontosObtidos,
+          pontosPossiveis: d.pontosPossiveis,
+          noInteraction: d.statusAtendimento === "fora_de_avaliacao" || d.motivo === "sem_interacao_do_cliente",
+          impeditivo: d.statusAuditoria === "impedimento_detectado",
+          motivoImpeditivo: d.motivoImpeditivo,
+        };
+        setOpaResult(analysisResult);
+        // Update the opaFile with result data
+        setOpaFiles((prev) =>
+          prev.map((f) =>
+            f.id === meta.attendanceId
+              ? {
+                  ...f,
+                  status: "analisado" as FileStatus,
+                  result: d,
+                  atendente: d.atendente || meta.atendente || f.atendente,
+                  protocolo: d.protocolo || meta.protocolo || f.protocolo,
+                  analyzedAt: new Date(),
+                }
+              : f,
+          ),
+        );
+        setOpaWorkflowStatuses((prev) => ({ ...prev, [meta.attendanceId]: "finalizado" }));
+        toast.success("Análise concluída com sucesso!");
+      } catch (err: any) {
+        console.error("[OpaImport] analyze error:", err);
+        toast.error("Erro ao analisar atendimento da Opa Suite");
+        setOpaFiles((prev) =>
+          prev.map((f) =>
+            f.id === meta.attendanceId ? { ...f, status: "erro" as FileStatus, error: "Erro ao analisar" } : f,
+          ),
+        );
+      } finally {
         setOpaAnalyzing(false);
-        return;
       }
-      const d = response.data;
-      setOpaFullReport(d);
-      const analysisResult: AnalysisData = {
-        protocolo: d.protocolo || meta.protocolo || "—",
-        atendente: d.atendente || meta.atendente || "—",
-        tipo: d.tipo || "—",
-        atualizacaoCadastral: d.bonusOperacional?.atualizacaoCadastral || "NÃO",
-        notaFinal: d.notaFinal ?? d.nota ?? 0,
-        classificacao: d.classificacao || "—",
-        bonus: (d.bonusQualidade ?? 0) >= 80,
-        bonusQualidade: d.bonusQualidade ?? 0,
-        pontosMelhoria: d.mentoria || d.pontosMelhoria || [],
-        pontosObtidos: d.pontosObtidos,
-        pontosPossiveis: d.pontosPossiveis,
-        noInteraction: d.statusAtendimento === "fora_de_avaliacao" || d.motivo === "sem_interacao_do_cliente",
-        impeditivo: d.statusAuditoria === "impedimento_detectado",
-        motivoImpeditivo: d.motivoImpeditivo,
-      };
-      setOpaResult(analysisResult);
-      // Update the opaFile with result data
-      setOpaFiles((prev) => prev.map((f) => f.id === meta.attendanceId ? {
-        ...f,
-        status: "analisado" as FileStatus,
-        result: d,
-        atendente: d.atendente || meta.atendente || f.atendente,
-        protocolo: d.protocolo || meta.protocolo || f.protocolo,
-        analyzedAt: new Date(),
-      } : f));
-      setOpaWorkflowStatuses((prev) => ({ ...prev, [meta.attendanceId]: "finalizado" }));
-      toast.success("Análise concluída com sucesso!");
-    } catch (err: any) {
-      console.error("[OpaImport] analyze error:", err);
-      toast.error("Erro ao analisar atendimento da Opa Suite");
-      setOpaFiles((prev) => prev.map((f) => f.id === meta.attendanceId ? { ...f, status: "erro" as FileStatus, error: "Erro ao analisar" } : f));
-    } finally {
-      setOpaAnalyzing(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   // ── Opa Suite hook ──
   const opa = useOpaImport({ onTextReady: handleOpaTextReady, isAnalyzing: opaAnalyzing });
@@ -692,12 +783,14 @@ const MentoriaLab = () => {
     });
     // Restore opaFiles
     if (s.opaFiles?.length) {
-      setOpaFiles(s.opaFiles.map((f: any) => ({
-        ...f,
-        file: new File([], f.name || "opa-restored.txt"),
-        addedAt: f.addedAt ? new Date(f.addedAt) : new Date(),
-        analyzedAt: f.analyzedAt ? new Date(f.analyzedAt) : undefined,
-      })));
+      setOpaFiles(
+        s.opaFiles.map((f: any) => ({
+          ...f,
+          file: new File([], f.name || "opa-restored.txt"),
+          addedAt: f.addedAt ? new Date(f.addedAt) : new Date(),
+          analyzedAt: f.analyzedAt ? new Date(f.analyzedAt) : undefined,
+        })),
+      );
     }
     if (s.opaFilterAuditoriaFrom) setOpaFilterAuditoriaFrom(new Date(s.opaFilterAuditoriaFrom));
     if (s.opaFilterAuditoriaTo) setOpaFilterAuditoriaTo(new Date(s.opaFilterAuditoriaTo));
@@ -728,7 +821,23 @@ const MentoriaLab = () => {
       opaFilterAuditoriaTo: opaFilterAuditoriaTo?.toISOString(),
     };
     saveMentoriaSession(state);
-  }, [activeTab, filterMonth, opa.attendances, opa.total, opa.hasMore, opa.currentOffset, opa.dateFrom, opa.dateTo, opa.filterAtendente, opa.searchTerm, opaFiles, opaSearchTerm, opaHumanSelected, opaFilterAuditoriaFrom, opaFilterAuditoriaTo]);
+  }, [
+    activeTab,
+    filterMonth,
+    opa.attendances,
+    opa.total,
+    opa.hasMore,
+    opa.currentOffset,
+    opa.dateFrom,
+    opa.dateTo,
+    opa.filterAtendente,
+    opa.searchTerm,
+    opaFiles,
+    opaSearchTerm,
+    opaHumanSelected,
+    opaFilterAuditoriaFrom,
+    opaFilterAuditoriaTo,
+  ]);
 
   useEffect(() => {
     if (opa.attendances.length === 0) return;
@@ -737,17 +846,12 @@ const MentoriaLab = () => {
       if (import.meta.env.DEV) console.log("[OpaDedup] Running dedup, opa.attendances:", opa.attendances.length);
 
       // Collect all protocolos from fetched attendances
-      const protocolos = opa.attendances
-        .map((a) => a.protocolo)
-        .filter(Boolean) as string[];
+      const protocolos = opa.attendances.map((a) => a.protocolo).filter(Boolean) as string[];
 
       // Query evaluations table for already-imported protocolos
       let alreadyImportedProtocolos = new Set<string>();
       if (protocolos.length > 0) {
-        const { data: existing } = await supabase
-          .from("evaluations")
-          .select("protocolo")
-          .in("protocolo", protocolos);
+        const { data: existing } = await supabase.from("evaluations").select("protocolo").in("protocolo", protocolos);
         if (existing) {
           alreadyImportedProtocolos = new Set(existing.map((e) => e.protocolo));
         }
@@ -777,7 +881,15 @@ const MentoriaLab = () => {
             canal: att.canal || undefined,
           }));
 
-        if (import.meta.env.DEV) console.log("[OpaDedup] prev:", prev.length, "newFiles:", newFiles.length, "alreadyImported:", alreadyImportedProtocolos.size);
+        if (import.meta.env.DEV)
+          console.log(
+            "[OpaDedup] prev:",
+            prev.length,
+            "newFiles:",
+            newFiles.length,
+            "alreadyImported:",
+            alreadyImportedProtocolos.size,
+          );
 
         // Merge: keep ALL existing files (never drop processed ones) + add new ones
         // Only remove files that are still "pendente" AND no longer in the attendances list
@@ -794,7 +906,9 @@ const MentoriaLab = () => {
         if (import.meta.env.DEV) console.log("[OpaDedup] updatedPrev:", updatedPrev.length, "merged:", merged.length);
 
         // Notify user about deduplication results
-        const newlySkipped = opa.attendances.filter((att) => !existingIds.has(att.id) && att.protocolo && alreadyImportedProtocolos.has(att.protocolo)).length;
+        const newlySkipped = opa.attendances.filter(
+          (att) => !existingIds.has(att.id) && att.protocolo && alreadyImportedProtocolos.has(att.protocolo),
+        ).length;
         if (newlySkipped > 0) {
           toast.info(`${newlySkipped} atendimento(s) já importado(s) foram ignorados.`);
         }
@@ -810,9 +924,13 @@ const MentoriaLab = () => {
   }, [opa.attendances]);
 
   // ── Registered attendants from DB for friendly name resolution ──
-  const [registeredAttendants, setRegisteredAttendants] = useState<import("@/lib/attendantMatcher").RegisteredAttendant[]>([]);
+  const [registeredAttendants, setRegisteredAttendants] = useState<
+    import("@/lib/attendantMatcher").RegisteredAttendant[]
+  >([]);
   useEffect(() => {
-    getRegisteredAttendants().then(setRegisteredAttendants).catch(() => {});
+    getRegisteredAttendants()
+      .then(setRegisteredAttendants)
+      .catch(() => {});
   }, []);
 
   // Opa atendentes list — classify as human vs bot/system
@@ -831,21 +949,40 @@ const MentoriaLab = () => {
   const isRawId = (name: string) => /^[a-f0-9]{24}$/i.test(name) || /^[0-9a-f-]{36}$/i.test(name);
 
   // Resolve friendly name: first try registered attendants DB, then fallback
-  const friendlyName = useCallback((name: string): string => {
-    if (!name) return "Sem atendente";
-    // Check registered attendants for a match
-    const normalizedInput = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    const match = registeredAttendants.find((a) => {
-      const n = a.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-      const nick = a.nickname?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-      return n === normalizedInput || n.includes(normalizedInput) || normalizedInput.includes(n) ||
-        (nick && (nick === normalizedInput || nick.includes(normalizedInput) || normalizedInput.includes(nick)));
-    });
-    if (match) return match.name;
-    // Fallback: mask raw IDs
-    if (isRawId(name)) return `Atendente (${name.slice(0, 6)}…)`;
-    return name;
-  }, [registeredAttendants]);
+  const friendlyName = useCallback(
+    (name: string): string => {
+      if (!name) return "Sem atendente";
+      // Check registered attendants for a match
+      const normalizedInput = name
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+      const match = registeredAttendants.find((a) => {
+        const n = a.name
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .trim();
+        const nick = a.nickname
+          ?.toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .trim();
+        return (
+          n === normalizedInput ||
+          n.includes(normalizedInput) ||
+          normalizedInput.includes(n) ||
+          (nick && (nick === normalizedInput || nick.includes(normalizedInput) || normalizedInput.includes(nick)))
+        );
+      });
+      if (match) return match.name;
+      // Fallback: mask raw IDs
+      if (isRawId(name)) return `Atendente (${name.slice(0, 6)}…)`;
+      return name;
+    },
+    [registeredAttendants],
+  );
 
   // Opa filtered files — uses opa.filterAtendente as single source
   const opaFilteredFiles = useMemo(() => {
@@ -858,11 +995,12 @@ const MentoriaLab = () => {
           !f.name.toLowerCase().includes(q) &&
           !f.protocolo?.toLowerCase().includes(q) &&
           !displayName.toLowerCase().includes(q)
-        ) return false;
+        )
+          return false;
       }
       if (currentFilter === "sem_atendente") {
         if (f.atendente) return false;
-    } else if (currentFilter === "somente_humanos") {
+      } else if (currentFilter === "somente_humanos") {
         if (!f.atendente || isLikelyBot(f.atendente, f)) return false;
         // If specific humans are selected, filter further
         if (opaHumanSelected.size > 0) {
@@ -887,7 +1025,15 @@ const MentoriaLab = () => {
       }
       return true;
     });
-  }, [opaFiles, opaSearchTerm, opa.filterAtendente, opaHumanSelected, opaFilterAuditoriaFrom, opaFilterAuditoriaTo, friendlyName]);
+  }, [
+    opaFiles,
+    opaSearchTerm,
+    opa.filterAtendente,
+    opaHumanSelected,
+    opaFilterAuditoriaFrom,
+    opaFilterAuditoriaTo,
+    friendlyName,
+  ]);
 
   const opaAtendentes = useMemo(() => {
     const map = new Map<string, string>(); // friendly -> friendly (dedup)
@@ -931,46 +1077,58 @@ const MentoriaLab = () => {
     };
   }, [opaFilteredFiles]);
 
-  const getOpaWorkflowStatus = useCallback((fileId: string): WorkflowStatus => opaWorkflowStatuses[fileId] || "nao_iniciado", [opaWorkflowStatuses]);
+  const getOpaWorkflowStatus = useCallback(
+    (fileId: string): WorkflowStatus => opaWorkflowStatuses[fileId] || "nao_iniciado",
+    [opaWorkflowStatuses],
+  );
 
-  const openOpaMentoria = useCallback((f: LabFile, mode: "report" | "review" = "review") => {
-    // If file lacks result data, don't open empty modal — trigger auto-fetch instead
-    if (!f.result) {
-      if (mode === "report") {
-        toast.warning("Este atendimento ainda não foi analisado.");
+  const openOpaMentoria = useCallback(
+    (f: LabFile, mode: "report" | "review" = "review") => {
+      // If file lacks result data, don't open empty modal — trigger auto-fetch instead
+      if (!f.result) {
+        if (mode === "report") {
+          toast.warning("Este atendimento ainda não foi analisado.");
+          return;
+        }
+        const att = opa.attendances.find((a) => a.id === f.id);
+        if (att) {
+          toast.info("Carregando dados do atendimento...");
+          opa.handleSelect(att);
+        } else {
+          toast.warning("Dados do atendimento não disponíveis. Tente buscar novamente.");
+        }
         return;
       }
-      const att = opa.attendances.find((a) => a.id === f.id);
-      if (att) {
-        toast.info("Carregando dados do atendimento...");
-        opa.handleSelect(att);
-      } else {
-        toast.warning("Dados do atendimento não disponíveis. Tente buscar novamente.");
+      setOpaMentoriaFile(f);
+      setOpaMentoriaMode(mode);
+      setOpaMentoriaInitialStep(mode === "report" ? "relatorio" : "revisao");
+      setOpaHighlightedFileId(f.id);
+      if (mode !== "report") {
+        setOpaWorkflowStatuses((prev) => ({
+          ...prev,
+          [f.id]: prev[f.id] === "finalizado" ? "finalizado" : "em_analise",
+        }));
       }
-      return;
-    }
-    setOpaMentoriaFile(f);
-    setOpaMentoriaMode(mode);
-    setOpaMentoriaInitialStep(mode === "report" ? "relatorio" : "revisao");
-    setOpaHighlightedFileId(f.id);
-    if (mode !== "report") {
-      setOpaWorkflowStatuses((prev) => ({ ...prev, [f.id]: prev[f.id] === "finalizado" ? "finalizado" : "em_analise" }));
-    }
-  }, [opa]);
+    },
+    [opa],
+  );
 
-  const handleOpaStartMentoria = useCallback(async (labFile: LabFile) => {
-    // For Opa files, we need to fetch messages first if not already analyzed
-    if (labFile.status === "pendente") {
-      const att = opa.attendances.find((a) => a.id === labFile.id);
-      if (att) {
-        opa.handleSelect(att);
+  const handleOpaStartMentoria = useCallback(
+    async (labFile: LabFile) => {
+      // For Opa files, we need to fetch messages first if not already analyzed
+      if (labFile.status === "pendente") {
+        const att = opa.attendances.find((a) => a.id === labFile.id);
+        if (att) {
+          opa.handleSelect(att);
+        }
+        return;
       }
-      return;
-    }
-    if (labFile.status === "analisado" && labFile.result) {
-      openOpaMentoria(labFile);
-    }
-  }, [opa, openOpaMentoria]);
+      if (labFile.status === "analisado" && labFile.result) {
+        openOpaMentoria(labFile);
+      }
+    },
+    [opa, openOpaMentoria],
+  );
 
   // Load persisted batches and files from database on mount
   useEffect(() => {
@@ -1482,9 +1640,7 @@ const MentoriaLab = () => {
         // Sanitize text: remove \u0000 null bytes that PostgreSQL JSONB rejects
         const sanitize = (s: string) => s.replace(/\u0000/g, "").replace(/\\u0000/g, "");
         const safeText = hasText ? sanitize(text) : null;
-        const parsedMessagesPayload = structured
-          ? JSON.parse(sanitize(JSON.stringify(structured)))
-          : null;
+        const parsedMessagesPayload = structured ? JSON.parse(sanitize(JSON.stringify(structured))) : null;
 
         // ── Pure ingestion: persist read data, NO classification ──
         const { error: persistError } = await supabase
@@ -1744,7 +1900,8 @@ const MentoriaLab = () => {
       } = await supabase.auth.getUser();
       if (!user) {
         toast.error("Você precisa estar autenticado para importar arquivos.");
-        setIsImporting(false); setImportingCount(0);
+        setIsImporting(false);
+        setImportingCount(0);
         return;
       }
 
@@ -1789,7 +1946,8 @@ const MentoriaLab = () => {
           prev ? { ...prev, status: "erro", totalFilesInSource: totalZipEntries, ignoredFiles: totalZipEntries } : prev,
         );
         toast.error("O ZIP não contém PDFs válidos para análise.");
-        setIsImporting(false); setImportingCount(0);
+        setIsImporting(false);
+        setImportingCount(0);
         return;
       }
 
@@ -1797,12 +1955,9 @@ const MentoriaLab = () => {
       let duplicatesDetected = 0;
       const allPdfsRaw = [...pdfFiles, ...extractedPdfs];
       const existingNames = new Set(files.map((f) => f.name.toLowerCase()));
-      
+
       // Also check DB for previously imported file names
-      const { data: existingBatchFiles } = await supabase
-        .from("mentoria_batch_files")
-        .select("file_name")
-        .limit(5000);
+      const { data: existingBatchFiles } = await supabase.from("mentoria_batch_files").select("file_name").limit(5000);
       if (existingBatchFiles) {
         for (const bf of existingBatchFiles) {
           existingNames.add(bf.file_name.toLowerCase());
@@ -1828,7 +1983,8 @@ const MentoriaLab = () => {
       if (allPdfs.length === 0) {
         setBatchInfo((prev) => (prev ? { ...prev, status: "erro" } : prev));
         toast.error("Nenhum PDF válido encontrado. Verifique os arquivos enviados.");
-        setIsImporting(false); setImportingCount(0);
+        setIsImporting(false);
+        setImportingCount(0);
         return;
       }
 
@@ -1837,7 +1993,8 @@ const MentoriaLab = () => {
         toast.error(
           `O limite máximo é de ${IMPORT_LIMIT} atendimentos por lote. Você tentou importar ${allPdfs.length}.`,
         );
-        setIsImporting(false); setImportingCount(0);
+        setIsImporting(false);
+        setImportingCount(0);
         return;
       }
 
@@ -1914,7 +2071,8 @@ const MentoriaLab = () => {
         console.error("Failed to create batch:", batchErr);
         toast.error("Erro ao registrar lote. Arquivos foram salvos.");
         setBatchInfo((prev) => (prev ? { ...prev, status: "erro" } : prev));
-        setIsImporting(false); setImportingCount(0);
+        setIsImporting(false);
+        setImportingCount(0);
         return;
       }
 
@@ -1984,9 +2142,7 @@ const MentoriaLab = () => {
         const parts = [`${extractedPdfs.length} PDF(s) extraído(s) do ZIP`];
         if (pdfFiles.length > 0) parts.push(`${pdfFiles.length} PDF(s) avulso(s)`);
         if (totalIgnored > 0) parts.push(`${totalIgnored} arquivo(s) ignorado(s)`);
-        toast.success(
-          `${allPdfs.length} atendimento(s) adicionado(s) com sucesso. ${parts.join(" · ")}`,
-        );
+        toast.success(`${allPdfs.length} atendimento(s) adicionado(s) com sucesso. ${parts.join(" · ")}`);
       } else {
         toast.success(`${allPdfs.length} atendimento(s) adicionado(s) com sucesso.`);
       }
@@ -2253,7 +2409,10 @@ const MentoriaLab = () => {
   );
 
   const analyzeFiles = useCallback(
-    async (toAnalyze: LabFile[], options?: { openOnSuccessId?: string; clearSelection?: boolean; autoFinalize?: boolean }) => {
+    async (
+      toAnalyze: LabFile[],
+      options?: { openOnSuccessId?: string; clearSelection?: boolean; autoFinalize?: boolean },
+    ) => {
       if (toAnalyze.length === 0) {
         toast.warning("Não há atendimentos prontos para análise.");
         return { success: 0, errors: 0 };
@@ -2516,7 +2675,8 @@ const MentoriaLab = () => {
           };
           const safePayload = sanitizeForDb(evalPayload) as typeof evalPayload;
 
-          let evalRecord: { id: string; approvedAsOfficial: boolean; approvalOrigin?: OfficialApprovalOrigin } | null = null;
+          let evalRecord: { id: string; approvedAsOfficial: boolean; approvalOrigin?: OfficialApprovalOrigin } | null =
+            null;
           try {
             evalRecord = await persistEvaluationRecord({
               userId: user.id,
@@ -2619,15 +2779,11 @@ const MentoriaLab = () => {
       setFiles((prev) =>
         prev.map((f) => {
           const wasTargeted = toAnalyze.some((t) => t.id === f.id);
-          if (
-            wasTargeted &&
-            (f.status === "aguardando_revisao_ia" || (f.status as any) === "analisado") &&
-            !f.result
-          ) {
+          if (wasTargeted && (f.status === "aguardando_revisao_ia" || (f.status as any) === "analisado") && !f.result) {
             return { ...f, status: "lido", error: "Análise não concluída. Tente novamente." };
           }
           return f;
-        })
+        }),
       );
 
       setProcessing(false);
@@ -2726,9 +2882,12 @@ const MentoriaLab = () => {
               .maybeSingle();
 
             if (dbRow) {
-              const dbText = typeof (dbRow as any).raw_text === "string" && (dbRow as any).raw_text.length > 0
-                ? (dbRow as any).raw_text
-                : typeof dbRow.extracted_text === "string" ? dbRow.extracted_text : "";
+              const dbText =
+                typeof (dbRow as any).raw_text === "string" && (dbRow as any).raw_text.length > 0
+                  ? (dbRow as any).raw_text
+                  : typeof dbRow.extracted_text === "string"
+                    ? dbRow.extracted_text
+                    : "";
               preparedFile = {
                 ...labFile,
                 status: "lido" as FileStatus,
@@ -3003,9 +3162,7 @@ const MentoriaLab = () => {
   const executeClearPending = async () => {
     setClearing(true);
     try {
-      const pendingFiles = files.filter(
-        (f) => (f.status === "pendente" || f.status === "lido") && !f.result,
-      );
+      const pendingFiles = files.filter((f) => (f.status === "pendente" || f.status === "lido") && !f.result);
       if (pendingFiles.length === 0) {
         toast.info("Não há atendimentos pendentes para remover.");
         setShowClearConfirm(false);
@@ -3049,9 +3206,7 @@ const MentoriaLab = () => {
   };
 
   const handleClearPending = () => {
-    const count = files.filter(
-      (f) => (f.status === "pendente" || f.status === "lido") && !f.result,
-    ).length;
+    const count = files.filter((f) => (f.status === "pendente" || f.status === "lido") && !f.result).length;
     if (count === 0) {
       toast.info("Não há atendimentos pendentes para remover.");
       return;
@@ -3082,9 +3237,7 @@ const MentoriaLab = () => {
         .eq("batch_id", currentBatchId);
 
       if (batchFiles && batchFiles.length > 0) {
-        const pendingBatchFiles = batchFiles.filter(
-          (f) => f.status === "pending" || f.status === "read",
-        );
+        const pendingBatchFiles = batchFiles.filter((f) => f.status === "pending" || f.status === "read");
         const analyzedCount = batchFiles.length - pendingBatchFiles.length;
 
         if (pendingBatchFiles.length > 0) {
@@ -3155,7 +3308,11 @@ const MentoriaLab = () => {
       toast.info("Não há pendentes no lote atual.");
       return;
     }
-    setClearConfirmStep({ action: executeClearCurrentBatch, count: batchPendingCount, label: "pendentes do lote atual" });
+    setClearConfirmStep({
+      action: executeClearCurrentBatch,
+      count: batchPendingCount,
+      label: "pendentes do lote atual",
+    });
   };
 
   // === Clear: everything EXCEPT official evaluations ===
@@ -3167,10 +3324,7 @@ const MentoriaLab = () => {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: batches } = await supabase
-        .from("mentoria_batches")
-        .select("id, batch_code")
-        .eq("user_id", user.id);
+      const { data: batches } = await supabase.from("mentoria_batches").select("id, batch_code").eq("user_id", user.id);
 
       let totalRemoved = 0;
 
@@ -3200,7 +3354,21 @@ const MentoriaLab = () => {
           await supabase.from("mentoria_batches").delete().eq("id", bId);
         }
       }
+      // reset visual/local do fluxo OPA
+      setOpaFiles([]);
+      setOpaWorkflowStatuses({});
+      setOpaSelectedRows(new Set());
+      setOpaSearchTerm("");
+      setOpaHumanSelected(new Set());
+      setOpaDateRange(undefined);
 
+      // reset interno do hook OPA
+      opa.resetToIdle();
+
+      // limpar cache local
+      sessionStorage.removeItem("mentoria:opa:state");
+      sessionStorage.removeItem("mentoria:opa:filters");
+      sessionStorage.removeItem("mentoria:opa:selected");
       console.log("[Auditoria][Limpeza]", {
         tipo: "Limpar Tudo (Preservar Oficiais)",
         registros_removidos: totalRemoved,
@@ -3243,14 +3411,16 @@ const MentoriaLab = () => {
       toast.info("Não há dados para limpar.");
       return;
     }
-    setClearConfirmStep({ action: executeClearAllPreserveOfficial, count, label: "registros do Lab (preservando oficiais)" });
+    setClearConfirmStep({
+      action: executeClearAllPreserveOfficial,
+      count,
+      label: "registros do Lab (preservando oficiais)",
+    });
   };
 
   // === Discard pending (local + DB, used from pipeline area) ===
   const handleDiscardPending = async () => {
-    const pendingFiles = files.filter(
-      (f) => (f.status === "pendente" || f.status === "lido") && !f.result,
-    );
+    const pendingFiles = files.filter((f) => (f.status === "pendente" || f.status === "lido") && !f.result);
     if (pendingFiles.length === 0) {
       toast.info("Não há atendimentos pendentes para descartar.");
       return;
@@ -3512,30 +3682,36 @@ const MentoriaLab = () => {
                     <ShieldCheck className="h-4 w-4" /> Avaliações Oficiais
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom"><p>Ir para o módulo de Avaliação Oficial — exibe apenas avaliações aprovadas</p></TooltipContent>
+                <TooltipContent side="bottom">
+                  <p>Ir para o módulo de Avaliação Oficial — exibe apenas avaliações aprovadas</p>
+                </TooltipContent>
               </Tooltip>
-            {isAdmin && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                    onClick={() => setShowClearConfirm(true)}
-                  >
-                    <Trash2 className="h-4 w-4" /> Limpar dados
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom"><p>Remover todos os atendimentos do lote atual (ação irreversível)</p></TooltipContent>
-              </Tooltip>
-            )}
+              {isAdmin && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={() => setShowClearConfirm(true)}
+                    >
+                      <Trash2 className="h-4 w-4" /> Limpar dados
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Remover todos os atendimentos do lote atual (ação irreversível)</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button variant="outline" size="sm" onClick={() => navigate("/hub")}>
                     <ArrowLeft className="h-4 w-4" /> Voltar
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom"><p>Voltar para a tela anterior</p></TooltipContent>
+                <TooltipContent side="bottom">
+                  <p>Voltar para a tela anterior</p>
+                </TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -3543,14 +3719,22 @@ const MentoriaLab = () => {
                     <LogOut className="h-4 w-4" /> Sair
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom"><p>Encerrar sessão e sair do sistema</p></TooltipContent>
+                <TooltipContent side="bottom">
+                  <p>Encerrar sessão e sair do sistema</p>
+                </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
         </div>
       </header>
 
-      <AlertDialog open={showClearConfirm} onOpenChange={(open) => { setShowClearConfirm(open); if (!open) setClearConfirmStep(null); }}>
+      <AlertDialog
+        open={showClearConfirm}
+        onOpenChange={(open) => {
+          setShowClearConfirm(open);
+          if (!open) setClearConfirmStep(null);
+        }}
+      >
         <AlertDialogContent className="max-w-md">
           {!clearConfirmStep ? (
             <>
@@ -3560,7 +3744,8 @@ const MentoriaLab = () => {
                   Área restrita — Limpeza de Dados
                 </AlertDialogTitle>
                 <AlertDialogDescription>
-                  Escolha o tipo de limpeza. Avaliações oficiais (<span className="font-semibold">resultado validado</span>) são sempre preservadas.
+                  Escolha o tipo de limpeza. Avaliações oficiais (
+                  <span className="font-semibold">resultado validado</span>) são sempre preservadas.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <div className="flex flex-col gap-3 py-3">
@@ -3573,7 +3758,9 @@ const MentoriaLab = () => {
                   <Filter className="h-4 w-4 shrink-0 text-primary" />
                   <div className="min-w-0">
                     <p className="font-semibold text-sm">Limpar Apenas Pendentes</p>
-                    <p className="text-xs text-muted-foreground font-normal mt-0.5 break-words">Remove atendimentos com status "pendente" ou "lido" sem resultado de análise.</p>
+                    <p className="text-xs text-muted-foreground font-normal mt-0.5 break-words">
+                      Remove atendimentos com status "pendente" ou "lido" sem resultado de análise.
+                    </p>
                   </div>
                 </Button>
                 <Button
@@ -3585,7 +3772,10 @@ const MentoriaLab = () => {
                   <Archive className="h-4 w-4 shrink-0 text-warning" />
                   <div className="min-w-0">
                     <p className="font-semibold text-sm">Limpar Lote Atual</p>
-                    <p className="text-xs text-muted-foreground font-normal mt-0.5 break-words">Remove apenas pendentes do lote ativo{batchInfo ? ` (${batchInfo.batchCode})` : ""}. Mantém análises concluídas.</p>
+                    <p className="text-xs text-muted-foreground font-normal mt-0.5 break-words">
+                      Remove apenas pendentes do lote ativo{batchInfo ? ` (${batchInfo.batchCode})` : ""}. Mantém
+                      análises concluídas.
+                    </p>
                   </div>
                 </Button>
                 <Button
@@ -3597,7 +3787,9 @@ const MentoriaLab = () => {
                   <Trash2 className="h-4 w-4 shrink-0 text-destructive" />
                   <div className="min-w-0">
                     <p className="font-semibold text-sm text-destructive">Limpar Tudo (Preservar Oficiais)</p>
-                    <p className="text-xs text-muted-foreground font-normal mt-0.5 break-words">Remove todos os dados do Lab, exceto avaliações com resultado validado.</p>
+                    <p className="text-xs text-muted-foreground font-normal mt-0.5 break-words">
+                      Remove todos os dados do Lab, exceto avaliações com resultado validado.
+                    </p>
                   </div>
                 </Button>
               </div>
@@ -3614,13 +3806,17 @@ const MentoriaLab = () => {
                 </AlertDialogTitle>
                 <AlertDialogDescription className="space-y-2">
                   <p>
-                    Você tem certeza? Esta ação excluirá <span className="font-bold text-foreground">{clearConfirmStep.count}</span> {clearConfirmStep.label} permanentemente e será registrada no log do sistema.
+                    Você tem certeza? Esta ação excluirá{" "}
+                    <span className="font-bold text-foreground">{clearConfirmStep.count}</span> {clearConfirmStep.label}{" "}
+                    permanentemente e será registrada no log do sistema.
                   </p>
                   <p className="text-xs font-medium text-destructive">Esta ação não pode ser desfeita.</p>
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={clearing} onClick={() => setClearConfirmStep(null)}>Voltar</AlertDialogCancel>
+                <AlertDialogCancel disabled={clearing} onClick={() => setClearConfirmStep(null)}>
+                  Voltar
+                </AlertDialogCancel>
                 <AlertDialogAction
                   onClick={clearConfirmStep.action}
                   disabled={clearing}
@@ -3674,7 +3870,12 @@ const MentoriaLab = () => {
             <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="operacao" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground hover:bg-accent/60 transition-colors rounded-md font-medium">Operação</TabsTrigger>
+                  <TabsTrigger
+                    value="operacao"
+                    className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground hover:bg-accent/60 transition-colors rounded-md font-medium"
+                  >
+                    Operação
+                  </TabsTrigger>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-[300px] text-center">
                   <p>Esteira de trabalho: importe, analise e gerencie os atendimentos do lote atual</p>
@@ -3682,7 +3883,12 @@ const MentoriaLab = () => {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="performance" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground hover:bg-accent/60 transition-colors rounded-md font-medium">Performance</TabsTrigger>
+                  <TabsTrigger
+                    value="performance"
+                    className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground hover:bg-accent/60 transition-colors rounded-md font-medium"
+                  >
+                    Performance
+                  </TabsTrigger>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-[300px] text-center">
                   <p>Visualize métricas, bônus e evolução dos atendentes da competência selecionada</p>
@@ -3690,7 +3896,12 @@ const MentoriaLab = () => {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="opa" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground hover:bg-accent/60 transition-colors rounded-md font-medium">Opa Suite</TabsTrigger>
+                  <TabsTrigger
+                    value="opa"
+                    className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground hover:bg-accent/60 transition-colors rounded-md font-medium"
+                  >
+                    Opa Suite
+                  </TabsTrigger>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-[300px] text-center">
                   <p>Importe atendimentos diretamente da Opa Suite para análise</p>
@@ -3700,7 +3911,6 @@ const MentoriaLab = () => {
           </TabsList>
 
           <TabsContent value="operacao" className="space-y-4 mt-4">
-
             {/* Loading state */}
             {loadingFromDb && files.length === 0 && (
               <Card className="p-12 text-center">
@@ -3714,7 +3924,9 @@ const MentoriaLab = () => {
               <Card
                 className={cn(
                   "p-8 transition-all group text-center",
-                  isImporting ? "border-primary/30 bg-primary/5" : "cursor-pointer hover:shadow-md hover:border-primary/40"
+                  isImporting
+                    ? "border-primary/30 bg-primary/5"
+                    : "cursor-pointer hover:shadow-md hover:border-primary/40",
                 )}
                 onClick={() => !isImporting && inputRef.current?.click()}
                 onDragOver={(e) => e.preventDefault()}
@@ -3753,7 +3965,7 @@ const MentoriaLab = () => {
                       "border-2 border-dashed rounded-lg h-[110px] flex flex-col items-center justify-center transition-colors",
                       isImporting
                         ? "border-primary/40 bg-primary/5 cursor-default"
-                        : "border-primary/30 cursor-pointer hover:border-primary/50 hover:bg-primary/5"
+                        : "border-primary/30 cursor-pointer hover:border-primary/50 hover:bg-primary/5",
                     )}
                   >
                     {isImporting ? (
@@ -3777,7 +3989,9 @@ const MentoriaLab = () => {
                 {/* Último Lote + Resumo — combined */}
                 <Card className="lg:col-span-2 p-4 flex flex-col justify-between">
                   <div>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Último lote</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                      Último lote
+                    </p>
                     {batchInfo ? (
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2">
@@ -3785,14 +3999,20 @@ const MentoriaLab = () => {
                           {(() => {
                             const cfg = batchStatusConfig[batchInfo.status];
                             return (
-                              <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 h-auto shrink-0", cfg.color)}>
+                              <Badge
+                                variant="outline"
+                                className={cn("text-[9px] px-1.5 py-0 h-auto shrink-0", cfg.color)}
+                              >
                                 {cfg.label}
                               </Badge>
                             );
                           })()}
                         </div>
                         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                          <span>{batchInfo.createdAt.toLocaleDateString("pt-BR")} {batchInfo.createdAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                          <span>
+                            {batchInfo.createdAt.toLocaleDateString("pt-BR")}{" "}
+                            {batchInfo.createdAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                          </span>
                           <span>·</span>
                           <span className="font-semibold text-foreground">{batchInfo.totalPdfs}</span> PDFs válidos
                         </div>
@@ -3808,18 +4028,14 @@ const MentoriaLab = () => {
                       <div className="border-t border-border/50 my-2.5" />
                       <div className="flex items-center gap-3 flex-wrap text-[11px]">
                         <span className="font-semibold text-foreground">{counts.total} Total</span>
-                        {counts.lido > 0 && (
-                          <span className="text-primary font-medium">⚡ {counts.lido} Aptos IA</span>
-                        )}
+                        {counts.lido > 0 && <span className="text-primary font-medium">⚡ {counts.lido} Aptos IA</span>}
                         {counts.analisado > 0 && (
                           <span className="text-accent font-medium">✓ {counts.analisado} Analisados</span>
                         )}
                         {counts.naoAvaliavel > 0 && (
                           <span className="text-warning font-medium">{counts.naoAvaliavel} N/A</span>
                         )}
-                        {counts.erro > 0 && (
-                          <span className="text-destructive font-medium">{counts.erro} Erros</span>
-                        )}
+                        {counts.erro > 0 && <span className="text-destructive font-medium">{counts.erro} Erros</span>}
                       </div>
                     </>
                   )}
@@ -3835,7 +4051,10 @@ const MentoriaLab = () => {
                       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                         <span className="text-sm font-semibold text-foreground">Histórico de Lotes</span>
                       </div>
-                      <div className="overflow-y-auto max-h-[340px] px-3 py-2 space-y-2" style={{ scrollbarWidth: "thin" }}>
+                      <div
+                        className="overflow-y-auto max-h-[340px] px-3 py-2 space-y-2"
+                        style={{ scrollbarWidth: "thin" }}
+                      >
                         <MentoriaBatchHistory />
                       </div>
                     </PopoverContent>
@@ -3863,132 +4082,145 @@ const MentoriaLab = () => {
                 {/* Filters — directly visible, no wrapper */}
                 <div className="flex flex-wrap items-center gap-3">
                   <TooltipProvider delayDuration={300}>
-                  {/* Search */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="relative flex-1 min-w-[180px]">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Buscar atendente ou protocolo..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-9"
-                        />
-                        {searchTerm && (
-                          <button onClick={() => setSearchTerm("")} className="absolute right-3 top-1/2 -translate-y-1/2">
-                            <X className="h-4 w-4 text-muted-foreground" />
-                          </button>
-                        )}
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom"><p>Digite o nome do atendente ou número do protocolo para filtrar</p></TooltipContent>
-                  </Tooltip>
-
-                  {/* Atendente */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div>
-                        <Select value={filterAtendente} onValueChange={setFilterAtendente}>
-                          <SelectTrigger className="w-[160px]">
-                            <SelectValue placeholder="Atendente" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="todos">Todos atendentes</SelectItem>
-                            <SelectItem value="sem_atendente">Sem atendente</SelectItem>
-                            {atendentes.map((a) => (
-                              <SelectItem key={a} value={a}>
-                                {a}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom"><p>Filtrar tabela por atendente específico</p></TooltipContent>
-                  </Tooltip>
-
-                  {/* Data auditoria */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-[180px] justify-start text-left text-xs font-normal h-10",
-                                !filterAuditoriaFrom && "text-muted-foreground",
-                              )}
+                    {/* Search */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="relative flex-1 min-w-[180px]">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Buscar atendente ou protocolo..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-9"
+                          />
+                          {searchTerm && (
+                            <button
+                              onClick={() => setSearchTerm("")}
+                              className="absolute right-3 top-1/2 -translate-y-1/2"
                             >
-                              <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
-                              {filterAuditoriaFrom
-                                ? filterAuditoriaTo
-                                  ? `${format(filterAuditoriaFrom, "dd/MM")} – ${format(filterAuditoriaTo, "dd/MM/yy")}`
-                                  : `A partir de ${format(filterAuditoriaFrom, "dd/MM/yy")}`
-                                : "Período"}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="range"
-                              selected={
-                                filterAuditoriaFrom && filterAuditoriaTo
-                                  ? { from: filterAuditoriaFrom, to: filterAuditoriaTo }
-                                  : filterAuditoriaFrom
-                                    ? { from: filterAuditoriaFrom, to: undefined }
-                                    : undefined
-                              }
-                              onSelect={(range) => {
-                                setFilterAuditoriaFrom(range?.from);
-                                setFilterAuditoriaTo(range?.to);
-                              }}
-                              numberOfMonths={2}
-                              className={cn("p-3 pointer-events-auto")}
-                            />
-                            {(filterAuditoriaFrom || filterAuditoriaTo) && (
-                              <div className="px-3 pb-3">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="w-full text-xs"
-                                  onClick={() => {
-                                    setFilterAuditoriaFrom(undefined);
-                                    setFilterAuditoriaTo(undefined);
-                                  }}
-                                >
-                                  Limpar período
-                                </Button>
-                              </div>
-                            )}
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom"><p>Filtrar atendimentos por período de data</p></TooltipContent>
-                  </Tooltip>
+                              <X className="h-4 w-4 text-muted-foreground" />
+                            </button>
+                          )}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>Digite o nome do atendente ou número do protocolo para filtrar</p>
+                      </TooltipContent>
+                    </Tooltip>
 
-                  {/* Counter + visibility toggle */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="ml-auto text-xs text-muted-foreground cursor-default">
-                        {filteredFiles.length} de {files.length}
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom"><p>Total de atendimentos exibidos / total importados no lote</p></TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn("h-9 w-9", !showCharts && "text-primary")}
-                        onClick={() => setShowCharts(!showCharts)}
-                      >
-                        {showCharts ? <Eye className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom"><p>Ocultar ou exibir a tabela de atendimentos</p></TooltipContent>
-                  </Tooltip>
+                    {/* Atendente */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <Select value={filterAtendente} onValueChange={setFilterAtendente}>
+                            <SelectTrigger className="w-[160px]">
+                              <SelectValue placeholder="Atendente" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todos">Todos atendentes</SelectItem>
+                              <SelectItem value="sem_atendente">Sem atendente</SelectItem>
+                              {atendentes.map((a) => (
+                                <SelectItem key={a} value={a}>
+                                  {a}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>Filtrar tabela por atendente específico</p>
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {/* Data auditoria */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-[180px] justify-start text-left text-xs font-normal h-10",
+                                  !filterAuditoriaFrom && "text-muted-foreground",
+                                )}
+                              >
+                                <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+                                {filterAuditoriaFrom
+                                  ? filterAuditoriaTo
+                                    ? `${format(filterAuditoriaFrom, "dd/MM")} – ${format(filterAuditoriaTo, "dd/MM/yy")}`
+                                    : `A partir de ${format(filterAuditoriaFrom, "dd/MM/yy")}`
+                                  : "Período"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="range"
+                                selected={
+                                  filterAuditoriaFrom && filterAuditoriaTo
+                                    ? { from: filterAuditoriaFrom, to: filterAuditoriaTo }
+                                    : filterAuditoriaFrom
+                                      ? { from: filterAuditoriaFrom, to: undefined }
+                                      : undefined
+                                }
+                                onSelect={(range) => {
+                                  setFilterAuditoriaFrom(range?.from);
+                                  setFilterAuditoriaTo(range?.to);
+                                }}
+                                numberOfMonths={2}
+                                className={cn("p-3 pointer-events-auto")}
+                              />
+                              {(filterAuditoriaFrom || filterAuditoriaTo) && (
+                                <div className="px-3 pb-3">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full text-xs"
+                                    onClick={() => {
+                                      setFilterAuditoriaFrom(undefined);
+                                      setFilterAuditoriaTo(undefined);
+                                    }}
+                                  >
+                                    Limpar período
+                                  </Button>
+                                </div>
+                              )}
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>Filtrar atendimentos por período de data</p>
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {/* Counter + visibility toggle */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="ml-auto text-xs text-muted-foreground cursor-default">
+                          {filteredFiles.length} de {files.length}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>Total de atendimentos exibidos / total importados no lote</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={cn("h-9 w-9", !showCharts && "text-primary")}
+                          onClick={() => setShowCharts(!showCharts)}
+                        >
+                          {showCharts ? <Eye className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>Ocultar ou exibir a tabela de atendimentos</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </TooltipProvider>
                 </div>
 
@@ -4018,14 +4250,19 @@ const MentoriaLab = () => {
                     onBatchAnalyze={handleBatchAnalyze}
                     monthlyConfirmCounts={monthlyConfirmCounts}
                     onAuditFile={(f) => openMentoria(f as any, "revisao")}
-                    onAnalyzeSelected={async (ids: string[], tipoAnalise: 'ia' | 'manual') => {
-                      const newStatus = 'aguardando_revisao_ia';
+                    onAnalyzeSelected={async (ids: string[], tipoAnalise: "ia" | "manual") => {
+                      const newStatus = "aguardando_revisao_ia";
                       for (const id of ids) {
                         const file = files.find((f) => f.id === id);
                         if (file?.batchFileId) {
-                          await supabase.from("mentoria_batch_files").update({ tipo_analise: 'ia', status: newStatus } as any).eq("id", file.batchFileId);
+                          await supabase
+                            .from("mentoria_batch_files")
+                            .update({ tipo_analise: "ia", status: newStatus } as any)
+                            .eq("id", file.batchFileId);
                         }
-                        setFiles((prev) => prev.map((f) => f.id === id ? { ...f, tipo_analise: 'ia', status: newStatus } as any : f));
+                        setFiles((prev) =>
+                          prev.map((f) => (f.id === id ? ({ ...f, tipo_analise: "ia", status: newStatus } as any) : f)),
+                        );
                       }
                       handleBatchAnalyze(ids.length);
                     }}
@@ -4056,9 +4293,14 @@ const MentoriaLab = () => {
                           }
                         }
                         if (file.batchFileId) {
-                          await supabase.from("mentoria_batch_files").update({ status: 'confirmado' } as any).eq("id", file.batchFileId);
+                          await supabase
+                            .from("mentoria_batch_files")
+                            .update({ status: "confirmado" } as any)
+                            .eq("id", file.batchFileId);
                         }
-                        setFiles((prev) => prev.map((f) => f.id === id ? { ...f, status: 'confirmado' } as any : f));
+                        setFiles((prev) =>
+                          prev.map((f) => (f.id === id ? ({ ...f, status: "confirmado" } as any) : f)),
+                        );
                         confirmed++;
                       }
                       if (confirmed > 0) {
@@ -4069,17 +4311,27 @@ const MentoriaLab = () => {
                       for (const id of ids) {
                         const file = files.find((f) => f.id === id);
                         if (file?.batchFileId) {
-                          await supabase.from("mentoria_batch_files").update({ status: 'pending', tipo_analise: null } as any).eq("id", file.batchFileId);
+                          await supabase
+                            .from("mentoria_batch_files")
+                            .update({ status: "pending", tipo_analise: null } as any)
+                            .eq("id", file.batchFileId);
                         }
-                        setFiles((prev) => prev.map((f) => f.id === id ? { ...f, status: 'pendente', tipo_analise: null } as any : f));
+                        setFiles((prev) =>
+                          prev.map((f) =>
+                            f.id === id ? ({ ...f, status: "pendente", tipo_analise: null } as any) : f,
+                          ),
+                        );
                       }
                       toast.success(`${ids.length} atendimento(s) reprovado(s) e retornado(s) para Pendentes.`);
                     }}
                     onMarkViewed={async (id: string) => {
                       const file = files.find((f) => f.id === id);
                       if (file?.batchFileId && !file.visualizado) {
-                        await supabase.from("mentoria_batch_files").update({ visualizado: true } as any).eq("id", file.batchFileId);
-                        setFiles((prev) => prev.map((f) => f.id === id ? { ...f, visualizado: true } : f));
+                        await supabase
+                          .from("mentoria_batch_files")
+                          .update({ visualizado: true } as any)
+                          .eq("id", file.batchFileId);
+                        setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, visualizado: true } : f)));
                       }
                     }}
                   />
@@ -4090,7 +4342,11 @@ const MentoriaLab = () => {
             {/* Version Registry — collapsible, secondary position */}
             <Collapsible>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground hover:text-foreground w-full justify-start mt-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 text-xs text-muted-foreground hover:text-foreground w-full justify-start mt-2"
+                >
                   <Bookmark className="h-3.5 w-3.5" />
                   Registro de Versão
                 </Button>
@@ -4102,19 +4358,18 @@ const MentoriaLab = () => {
           </TabsContent>
 
           <TabsContent value="performance" className="space-y-4 mt-4">
-              <PerformanceSections
-                filterMonth={filterMonth}
-                refreshKey={perfRefreshKey}
-                globalExcludedNames={globalExcludedNames}
-                globalExcludedSet={globalExcludedSet}
-                excludeAttendants={excludeAttendants}
-                restoreAttendants={restoreAttendants}
-                batchAutoApprove={batchAutoApprove}
-              />
+            <PerformanceSections
+              filterMonth={filterMonth}
+              refreshKey={perfRefreshKey}
+              globalExcludedNames={globalExcludedNames}
+              globalExcludedSet={globalExcludedSet}
+              excludeAttendants={excludeAttendants}
+              restoreAttendants={restoreAttendants}
+              batchAutoApprove={batchAutoApprove}
+            />
           </TabsContent>
 
           <TabsContent value="opa" className="space-y-4 mt-4">
-
             {/* ═══ TOP GRID: Import card (left) + Summary (right) ═══ */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
               {/* Import card — main action */}
@@ -4127,7 +4382,9 @@ const MentoriaLab = () => {
                     <div className="min-w-0">
                       <h3 className="text-sm font-bold text-foreground tracking-tight">Importar da Opa Suite</h3>
                       <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                        Configure os filtros e clique em <strong className="text-foreground/80">Buscar atendimentos</strong> para carregar atendimentos finalizados.
+                        Configure os filtros e clique em{" "}
+                        <strong className="text-foreground/80">Buscar atendimentos</strong> para carregar atendimentos
+                        finalizados.
                       </p>
                     </div>
                   </div>
@@ -4137,7 +4394,9 @@ const MentoriaLab = () => {
                   <div className="flex flex-wrap items-end gap-3">
                     {/* Period picker */}
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Período</label>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Período
+                      </label>
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
@@ -4193,11 +4452,16 @@ const MentoriaLab = () => {
 
                     {/* Attendant category filter — in top card before fetch */}
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Categoria</label>
-                      <Select value={opa.filterAtendente} onValueChange={(v) => {
-                        opa.setFilterAtendente(v);
-                        if (v !== "somente_humanos") setOpaHumanSelected(new Set());
-                      }}>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Categoria
+                      </label>
+                      <Select
+                        value={opa.filterAtendente}
+                        onValueChange={(v) => {
+                          opa.setFilterAtendente(v);
+                          if (v !== "somente_humanos") setOpaHumanSelected(new Set());
+                        }}
+                      >
                         <SelectTrigger className="w-[180px] h-9 text-xs">
                           <SelectValue placeholder="Todos atendentes" />
                         </SelectTrigger>
@@ -4210,56 +4474,71 @@ const MentoriaLab = () => {
                       </Select>
                     </div>
 
-                     {/* Secondary: multi-select human attendants */}
-                     {opa.filterAtendente === "somente_humanos" && (
-                       <div className="space-y-1.5">
-                         <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Atendentes</label>
-                         <Popover>
-                           <PopoverTrigger asChild>
-                             <Button variant="outline" className="w-[220px] h-9 text-xs justify-start gap-1.5 font-normal">
-                               <Filter className="h-3.5 w-3.5 shrink-0" />
-                               {opaHumanSelected.size === 0
-                                 ? "Todos humanos"
-                                 : `${opaHumanSelected.size} selecionado(s)`}
-                             </Button>
-                           </PopoverTrigger>
-                           <PopoverContent className="w-[260px] p-0" align="start">
-                             <div className="p-2 border-b border-border">
-                               <p className="text-xs font-semibold text-muted-foreground">Selecionar atendentes</p>
-                             </div>
-                             <div className="max-h-[220px] overflow-y-auto p-2 space-y-1">
-                               {opaHumanAttendants.length === 0 ? (
-                                 <p className="text-xs text-muted-foreground py-2 text-center">Nenhum atendente humano encontrado</p>
-                               ) : (
-                                 opaHumanAttendants.map((name) => (
-                                   <label key={name} className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent/50 cursor-pointer text-xs">
-                                     <Checkbox
-                                       checked={opaHumanSelected.has(name)}
-                                       onCheckedChange={(checked) => {
-                                         setOpaHumanSelected((prev) => {
-                                           const next = new Set(prev);
-                                           if (checked) next.add(name);
-                                           else next.delete(name);
-                                           return next;
-                                         });
-                                       }}
-                                     />
-                                     <span className="truncate">{name}</span>
-                                   </label>
-                                 ))
-                               )}
-                             </div>
-                             {opaHumanSelected.size > 0 && (
-                               <div className="p-2 border-t border-border">
-                                 <Button variant="ghost" size="sm" className="w-full text-xs h-7" onClick={() => setOpaHumanSelected(new Set())}>
-                                   Limpar seleção
-                                 </Button>
-                               </div>
-                             )}
-                           </PopoverContent>
-                         </Popover>
-                       </div>
-                     )}
+                    {/* Secondary: multi-select human attendants */}
+                    {opa.filterAtendente === "somente_humanos" && (
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Atendentes
+                        </label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-[220px] h-9 text-xs justify-start gap-1.5 font-normal"
+                            >
+                              <Filter className="h-3.5 w-3.5 shrink-0" />
+                              {opaHumanSelected.size === 0
+                                ? "Todos humanos"
+                                : `${opaHumanSelected.size} selecionado(s)`}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[260px] p-0" align="start">
+                            <div className="p-2 border-b border-border">
+                              <p className="text-xs font-semibold text-muted-foreground">Selecionar atendentes</p>
+                            </div>
+                            <div className="max-h-[220px] overflow-y-auto p-2 space-y-1">
+                              {opaHumanAttendants.length === 0 ? (
+                                <p className="text-xs text-muted-foreground py-2 text-center">
+                                  Nenhum atendente humano encontrado
+                                </p>
+                              ) : (
+                                opaHumanAttendants.map((name) => (
+                                  <label
+                                    key={name}
+                                    className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent/50 cursor-pointer text-xs"
+                                  >
+                                    <Checkbox
+                                      checked={opaHumanSelected.has(name)}
+                                      onCheckedChange={(checked) => {
+                                        setOpaHumanSelected((prev) => {
+                                          const next = new Set(prev);
+                                          if (checked) next.add(name);
+                                          else next.delete(name);
+                                          return next;
+                                        });
+                                      }}
+                                    />
+                                    <span className="truncate">{name}</span>
+                                  </label>
+                                ))
+                              )}
+                            </div>
+                            {opaHumanSelected.size > 0 && (
+                              <div className="p-2 border-t border-border">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="w-full text-xs h-7"
+                                  onClick={() => setOpaHumanSelected(new Set())}
+                                >
+                                  Limpar seleção
+                                </Button>
+                              </div>
+                            )}
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    )}
                   </div>
 
                   {/* Action button */}
@@ -4281,7 +4560,9 @@ const MentoriaLab = () => {
                     <div className="flex items-center gap-2 text-xs text-primary">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       <span className="font-medium">
-                        {opa.state === "loading-messages" ? "Carregando mensagens do atendimento..." : "Analisando atendimento via Radar Insight..."}
+                        {opa.state === "loading-messages"
+                          ? "Carregando mensagens do atendimento..."
+                          : "Analisando atendimento via Radar Insight..."}
                       </span>
                     </div>
                   )}
@@ -4291,7 +4572,9 @@ const MentoriaLab = () => {
               {/* Summary card (right) */}
               <Card className="lg:col-span-2 p-4 flex flex-col justify-between">
                 <div>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Resumo da Busca</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                    Resumo da Busca
+                  </p>
                   {opaFiles.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-6 text-center">
                       <div className="p-3 rounded-full bg-muted/60 mb-3">
@@ -4318,7 +4601,9 @@ const MentoriaLab = () => {
                       {opa.activeFilters > 0 && (
                         <div className="flex items-center gap-1.5 mt-2">
                           <Filter className="h-3 w-3 text-primary" />
-                          <span className="text-[11px] font-medium text-primary">{opa.activeFilters} filtro(s) ativo(s)</span>
+                          <span className="text-[11px] font-medium text-primary">
+                            {opa.activeFilters} filtro(s) ativo(s)
+                          </span>
                         </div>
                       )}
                     </>
@@ -4328,7 +4613,10 @@ const MentoriaLab = () => {
                   {opa.lastFetch ? (
                     <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      <span>Atualizado às {opa.lastFetch.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                      <span>
+                        Atualizado às{" "}
+                        {opa.lastFetch.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
                     </div>
                   ) : (
                     <p className="text-[10px] text-muted-foreground">Nenhuma busca realizada</p>
@@ -4379,85 +4667,106 @@ const MentoriaLab = () => {
                             className="pl-9"
                           />
                           {opaSearchTerm && (
-                            <button onClick={() => setOpaSearchTerm("")} className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <button
+                              onClick={() => setOpaSearchTerm("")}
+                              className="absolute right-3 top-1/2 -translate-y-1/2"
+                            >
                               <X className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
                             </button>
                           )}
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent side="bottom"><p>Filtrar por atendente ou protocolo</p></TooltipContent>
+                      <TooltipContent side="bottom">
+                        <p>Filtrar por atendente ou protocolo</p>
+                      </TooltipContent>
                     </Tooltip>
 
                     {/* Atendente category */}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div>
-                          <Select value={opa.filterAtendente} onValueChange={(v) => {
-                            opa.setFilterAtendente(v);
-                            if (v !== "somente_humanos") setOpaHumanSelected(new Set());
-                          }}>
-                             <SelectTrigger className="w-[160px]">
-                               <SelectValue placeholder="Categoria" />
-                             </SelectTrigger>
-                             <SelectContent>
-                               <SelectItem value="todos">Todos atendentes</SelectItem>
-                               <SelectItem value="sem_atendente">Sem atendente</SelectItem>
-                               <SelectItem value="somente_humanos">Somente humanos</SelectItem>
-                               <SelectItem value="somente_bot">Somente BOT/sistema</SelectItem>
-                             </SelectContent>
-                           </Select>
+                          <Select
+                            value={opa.filterAtendente}
+                            onValueChange={(v) => {
+                              opa.setFilterAtendente(v);
+                              if (v !== "somente_humanos") setOpaHumanSelected(new Set());
+                            }}
+                          >
+                            <SelectTrigger className="w-[160px]">
+                              <SelectValue placeholder="Categoria" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todos">Todos atendentes</SelectItem>
+                              <SelectItem value="sem_atendente">Sem atendente</SelectItem>
+                              <SelectItem value="somente_humanos">Somente humanos</SelectItem>
+                              <SelectItem value="somente_bot">Somente BOT/sistema</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent side="bottom"><p>Filtrar tabela por categoria</p></TooltipContent>
+                      <TooltipContent side="bottom">
+                        <p>Filtrar tabela por categoria</p>
+                      </TooltipContent>
                     </Tooltip>
 
-                     {/* Multi-select human attendants (table bar) */}
-                     {opa.filterAtendente === "somente_humanos" && (
-                       <Popover>
-                         <PopoverTrigger asChild>
-                           <Button variant="outline" className="h-10 text-xs justify-start gap-1.5 font-normal min-w-[180px]">
-                             <Filter className="h-3.5 w-3.5 shrink-0" />
-                             {opaHumanSelected.size === 0
-                               ? "Todos humanos"
-                               : `${opaHumanSelected.size} selecionado(s)`}
-                           </Button>
-                         </PopoverTrigger>
-                         <PopoverContent className="w-[260px] p-0" align="start">
-                           <div className="p-2 border-b border-border">
-                             <p className="text-xs font-semibold text-muted-foreground">Selecionar atendentes</p>
-                           </div>
-                           <div className="max-h-[220px] overflow-y-auto p-2 space-y-1">
-                             {opaHumanAttendants.length === 0 ? (
-                               <p className="text-xs text-muted-foreground py-2 text-center">Nenhum atendente humano encontrado</p>
-                             ) : (
-                               opaHumanAttendants.map((name) => (
-                                 <label key={name} className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent/50 cursor-pointer text-xs">
-                                   <Checkbox
-                                     checked={opaHumanSelected.has(name)}
-                                     onCheckedChange={(checked) => {
-                                       setOpaHumanSelected((prev) => {
-                                         const next = new Set(prev);
-                                         if (checked) next.add(name);
-                                         else next.delete(name);
-                                         return next;
-                                       });
-                                     }}
-                                   />
-                                   <span className="truncate">{name}</span>
-                                 </label>
-                               ))
-                             )}
-                           </div>
-                           {opaHumanSelected.size > 0 && (
-                             <div className="p-2 border-t border-border">
-                               <Button variant="ghost" size="sm" className="w-full text-xs h-7" onClick={() => setOpaHumanSelected(new Set())}>
-                                 Limpar seleção
-                               </Button>
-                             </div>
-                           )}
-                         </PopoverContent>
-                       </Popover>
-                     )}
+                    {/* Multi-select human attendants (table bar) */}
+                    {opa.filterAtendente === "somente_humanos" && (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="h-10 text-xs justify-start gap-1.5 font-normal min-w-[180px]"
+                          >
+                            <Filter className="h-3.5 w-3.5 shrink-0" />
+                            {opaHumanSelected.size === 0 ? "Todos humanos" : `${opaHumanSelected.size} selecionado(s)`}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[260px] p-0" align="start">
+                          <div className="p-2 border-b border-border">
+                            <p className="text-xs font-semibold text-muted-foreground">Selecionar atendentes</p>
+                          </div>
+                          <div className="max-h-[220px] overflow-y-auto p-2 space-y-1">
+                            {opaHumanAttendants.length === 0 ? (
+                              <p className="text-xs text-muted-foreground py-2 text-center">
+                                Nenhum atendente humano encontrado
+                              </p>
+                            ) : (
+                              opaHumanAttendants.map((name) => (
+                                <label
+                                  key={name}
+                                  className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent/50 cursor-pointer text-xs"
+                                >
+                                  <Checkbox
+                                    checked={opaHumanSelected.has(name)}
+                                    onCheckedChange={(checked) => {
+                                      setOpaHumanSelected((prev) => {
+                                        const next = new Set(prev);
+                                        if (checked) next.add(name);
+                                        else next.delete(name);
+                                        return next;
+                                      });
+                                    }}
+                                  />
+                                  <span className="truncate">{name}</span>
+                                </label>
+                              ))
+                            )}
+                          </div>
+                          {opaHumanSelected.size > 0 && (
+                            <div className="p-2 border-t border-border">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full text-xs h-7"
+                                onClick={() => setOpaHumanSelected(new Set())}
+                              >
+                                Limpar seleção
+                              </Button>
+                            </div>
+                          )}
+                        </PopoverContent>
+                      </Popover>
+                    )}
 
                     {/* Period filter */}
                     <Tooltip>
@@ -4516,7 +4825,9 @@ const MentoriaLab = () => {
                           </Popover>
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent side="bottom"><p>Filtrar por período</p></TooltipContent>
+                      <TooltipContent side="bottom">
+                        <p>Filtrar por período</p>
+                      </TooltipContent>
                     </Tooltip>
 
                     {/* Counter with technical limit explanation */}
@@ -4527,7 +4838,9 @@ const MentoriaLab = () => {
                           <span className="hidden sm:inline text-[10px] ml-1 opacity-70">(limite técnico: 100)</span>
                         </span>
                       </TooltipTrigger>
-                      <TooltipContent side="bottom"><p>{opaFilteredFiles.length} retornados após filtros (limite técnico da API: 100 por busca)</p></TooltipContent>
+                      <TooltipContent side="bottom">
+                        <p>{opaFilteredFiles.length} retornados após filtros (limite técnico da API: 100 por busca)</p>
+                      </TooltipContent>
                     </Tooltip>
 
                     {/* Refresh */}
@@ -4543,14 +4856,19 @@ const MentoriaLab = () => {
                           <RefreshCw className={cn("h-4 w-4", opa.isLoading && "animate-spin")} />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent side="bottom"><p>Atualizar lista</p></TooltipContent>
+                      <TooltipContent side="bottom">
+                        <p>Atualizar lista</p>
+                      </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
 
                 {/* ═══ UNIFIED TABLE ═══ */}
                 <MentoriaUnifiedTable
-                  files={opaFilteredFiles.map((f) => ({ ...f, atendente: f.atendente ? friendlyName(f.atendente) : f.atendente }))}
+                  files={opaFilteredFiles.map((f) => ({
+                    ...f,
+                    atendente: f.atendente ? friendlyName(f.atendente) : f.atendente,
+                  }))}
                   getWorkflowStatus={getOpaWorkflowStatus}
                   highlightedFileId={opaHighlightedFileId}
                   readingIds={new Set<string>()}
@@ -4595,9 +4913,13 @@ const MentoriaLab = () => {
                     toast.success(`${ids.length} atendimento(s) removido(s).`);
                   }}
                   onConfirmSelected={async (ids: string[]) => {
-                    setOpaFiles((prev) => prev.map((f) => ids.includes(f.id) ? { ...f, status: "confirmado" as FileStatus } : f));
+                    setOpaFiles((prev) =>
+                      prev.map((f) => (ids.includes(f.id) ? { ...f, status: "confirmado" as FileStatus } : f)),
+                    );
                     try {
-                      const { data: { user } } = await supabase.auth.getUser();
+                      const {
+                        data: { user },
+                      } = await supabase.auth.getUser();
                       if (!user) return;
                       const companyId = await supabase.rpc("get_my_company_id").then((res) => res.data);
                       for (const id of ids) {
@@ -4624,7 +4946,13 @@ const MentoriaLab = () => {
                         console.log("[OpaConfirmBatch][payload]", JSON.stringify(insertPayload, null, 2));
                         // Diagnóstico: identificar campos com valor suspeito
                         for (const [k, v] of Object.entries(insertPayload)) {
-                          if (typeof v === "string" && v.length > 0 && v.length < 80 && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v) && /^[0-9a-f]+$/i.test(v)) {
+                          if (
+                            typeof v === "string" &&
+                            v.length > 0 &&
+                            v.length < 80 &&
+                            !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v) &&
+                            /^[0-9a-f]+$/i.test(v)
+                          ) {
                             console.warn(`[OpaConfirmBatch][SUSPEITO] campo "${k}" contém hex não-UUID: "${v}"`);
                           }
                         }
@@ -4639,7 +4967,7 @@ const MentoriaLab = () => {
                           });
                           throw insertErr;
                         }
-                       }
+                      }
                       toast.success(`${ids.length} atendimento(s) confirmado(s) e enviado(s) para Performance.`);
                       setPerfRefreshKey((k) => k + 1);
                     } catch (err: any) {
@@ -4648,11 +4976,15 @@ const MentoriaLab = () => {
                     }
                   }}
                   onRejectSelected={async (ids: string[]) => {
-                    setOpaFiles((prev) => prev.map((f) => ids.includes(f.id) ? { ...f, status: "pendente" as FileStatus, result: undefined } : f));
+                    setOpaFiles((prev) =>
+                      prev.map((f) =>
+                        ids.includes(f.id) ? { ...f, status: "pendente" as FileStatus, result: undefined } : f,
+                      ),
+                    );
                     toast.success(`${ids.length} atendimento(s) retornado(s) para Pendentes.`);
                   }}
                   onMarkViewed={async (id: string) => {
-                    setOpaFiles((prev) => prev.map((f) => f.id === id ? { ...f, visualizado: true } : f));
+                    setOpaFiles((prev) => prev.map((f) => (f.id === id ? { ...f, visualizado: true } : f)));
                   }}
                   onAuditFile={(f) => openOpaMentoria(f as any, "review")}
                   monthlyConfirmCounts={new Map<string, number>()}
@@ -4689,7 +5021,11 @@ const MentoriaLab = () => {
             {/* Version Registry — collapsible, secondary position */}
             <Collapsible>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground hover:text-foreground w-full justify-start mt-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 text-xs text-muted-foreground hover:text-foreground w-full justify-start mt-2"
+                >
                   <Bookmark className="h-3.5 w-3.5" />
                   Registro de Versão
                 </Button>
@@ -4715,7 +5051,12 @@ const MentoriaLab = () => {
           {sideFile && (
             <div className="mt-4 space-y-4">
               {sideFile.status === "pendente" && !readingIds.has(sideFile.id) && (
-                <Button variant="outline" className="w-full gap-2" disabled={readingIds.size > 0} onClick={() => readFile(sideFile)}>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  disabled={readingIds.size > 0}
+                  onClick={() => readFile(sideFile)}
+                >
                   <BookOpen className="h-4 w-4" /> {readingIds.size > 0 ? "Aguarde..." : "Iniciar leitura automática"}
                 </Button>
               )}
@@ -4824,89 +5165,99 @@ const MentoriaLab = () => {
         fileId={mentoriaFile?.id}
         onSemiAutoSaved={(merged) => {
           if (mentoriaFile) {
-            setFiles((prev) => prev.map((f) => f.id === mentoriaFile.id ? { ...f, result: merged } : f));
+            setFiles((prev) => prev.map((f) => (f.id === mentoriaFile.id ? { ...f, result: merged } : f)));
           }
         }}
       />
       {/* Opa Suite MentoriaDetailDialog */}
       <ErrorBoundary fallbackTitle="Erro ao exibir auditoria Opa Suite">
-      <MentoriaDetailDialog
-        open={!!opaMentoriaFile}
-        onOpenChange={(open) => {
-          if (!open) setOpaMentoriaFile(null);
-        }}
-        result={opaMentoriaFile?.result}
-        fileName={opaMentoriaFile?.name || ""}
-        rawText={opaMentoriaFile?.text}
-        atendente={opaMentoriaFile?.atendente}
-        structuredConversation={opaMentoriaFile?.structuredConversation}
-        workflowStatus={opaMentoriaFile ? getOpaWorkflowStatus(opaMentoriaFile.id) : undefined}
-        onMarkFinished={async () => {
-          if (!opaMentoriaFile) return;
-          setOpaWorkflowStatuses((prev) => ({ ...prev, [opaMentoriaFile.id]: "finalizado" }));
-          setOpaFiles((prev) => prev.map((f) => f.id === opaMentoriaFile.id ? { ...f, status: "confirmado" as FileStatus } : f));
-          // Persist to evaluations table for Performance tracking
-          try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user && opaMentoriaFile.result) {
-              const r = opaMentoriaFile.result;
-              const companyId = await supabase.rpc("get_my_company_id").then((res) => res.data);
-              const insertPayload = buildEvalPayload({
-                user_id: user.id,
-                atendente: opaMentoriaFile.atendente || "Desconhecido",
-                protocolo: opaMentoriaFile.protocolo || opaMentoriaFile.id,
-                tipo: r.tipo || "opa_suite",
-                nota: normalizeNotaForDB(r.notaFinal ?? r.nota ?? 0),
-                classificacao: r.classificacao || "—",
-                data: normalizeDateForDB(opaMentoriaFile.data || new Date().toLocaleDateString("pt-BR")),
-                bonus: (r.bonusQualidade ?? 0) >= 80,
-                atualizacao_cadastral: r.bonusOperacional?.atualizacaoCadastral || "NÃO",
-                pontos_melhoria: r.mentoria || r.pontosMelhoria || [],
-                full_report: r,
-                resultado_validado: true,
-                prompt_version: r.versao || "opa-suite",
-                company_id: companyId || null,
-                audit_log: buildOfficialAuditLog("manual", undefined),
-              });
-              console.log("[OpaAudit][payload]", JSON.stringify(insertPayload, null, 2));
-              for (const [k, v] of Object.entries(insertPayload)) {
-                if (typeof v === "string" && v.length > 0 && v.length < 80 && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v) && /^[0-9a-f]+$/i.test(v)) {
-                  console.warn(`[OpaAudit][SUSPEITO] campo "${k}" contém hex não-UUID: "${v}"`);
-                }
-              }
-              const { error: insertErr } = await supabase.from("evaluations").insert(insertPayload as any);
-              if (insertErr) {
-                console.error("[OpaAudit][INSERT ERROR]", {
-                  code: insertErr.code,
-                  message: insertErr.message,
-                  details: (insertErr as any).details,
-                  hint: (insertErr as any).hint,
-                  payload: insertPayload,
+        <MentoriaDetailDialog
+          open={!!opaMentoriaFile}
+          onOpenChange={(open) => {
+            if (!open) setOpaMentoriaFile(null);
+          }}
+          result={opaMentoriaFile?.result}
+          fileName={opaMentoriaFile?.name || ""}
+          rawText={opaMentoriaFile?.text}
+          atendente={opaMentoriaFile?.atendente}
+          structuredConversation={opaMentoriaFile?.structuredConversation}
+          workflowStatus={opaMentoriaFile ? getOpaWorkflowStatus(opaMentoriaFile.id) : undefined}
+          onMarkFinished={async () => {
+            if (!opaMentoriaFile) return;
+            setOpaWorkflowStatuses((prev) => ({ ...prev, [opaMentoriaFile.id]: "finalizado" }));
+            setOpaFiles((prev) =>
+              prev.map((f) => (f.id === opaMentoriaFile.id ? { ...f, status: "confirmado" as FileStatus } : f)),
+            );
+            // Persist to evaluations table for Performance tracking
+            try {
+              const {
+                data: { user },
+              } = await supabase.auth.getUser();
+              if (user && opaMentoriaFile.result) {
+                const r = opaMentoriaFile.result;
+                const companyId = await supabase.rpc("get_my_company_id").then((res) => res.data);
+                const insertPayload = buildEvalPayload({
+                  user_id: user.id,
+                  atendente: opaMentoriaFile.atendente || "Desconhecido",
+                  protocolo: opaMentoriaFile.protocolo || opaMentoriaFile.id,
+                  tipo: r.tipo || "opa_suite",
+                  nota: normalizeNotaForDB(r.notaFinal ?? r.nota ?? 0),
+                  classificacao: r.classificacao || "—",
+                  data: normalizeDateForDB(opaMentoriaFile.data || new Date().toLocaleDateString("pt-BR")),
+                  bonus: (r.bonusQualidade ?? 0) >= 80,
+                  atualizacao_cadastral: r.bonusOperacional?.atualizacaoCadastral || "NÃO",
+                  pontos_melhoria: r.mentoria || r.pontosMelhoria || [],
+                  full_report: r,
+                  resultado_validado: true,
+                  prompt_version: r.versao || "opa-suite",
+                  company_id: companyId || null,
+                  audit_log: buildOfficialAuditLog("manual", undefined),
                 });
-                throw insertErr;
+                console.log("[OpaAudit][payload]", JSON.stringify(insertPayload, null, 2));
+                for (const [k, v] of Object.entries(insertPayload)) {
+                  if (
+                    typeof v === "string" &&
+                    v.length > 0 &&
+                    v.length < 80 &&
+                    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v) &&
+                    /^[0-9a-f]+$/i.test(v)
+                  ) {
+                    console.warn(`[OpaAudit][SUSPEITO] campo "${k}" contém hex não-UUID: "${v}"`);
+                  }
+                }
+                const { error: insertErr } = await supabase.from("evaluations").insert(insertPayload as any);
+                if (insertErr) {
+                  console.error("[OpaAudit][INSERT ERROR]", {
+                    code: insertErr.code,
+                    message: insertErr.message,
+                    details: (insertErr as any).details,
+                    hint: (insertErr as any).hint,
+                    payload: insertPayload,
+                  });
+                  throw insertErr;
+                }
+                toast.success("Auditoria finalizada e enviada para Performance.");
+                setPerfRefreshKey((k) => k + 1);
               }
-              toast.success("Auditoria finalizada e enviada para Performance.");
-              setPerfRefreshKey((k) => k + 1);
+            } catch (err: any) {
+              console.error("[OpaAudit] save error:", err);
+              toast.error(err?.message ? `Erro: ${err.message}` : "Erro ao salvar auditoria. Tente novamente.");
             }
-          } catch (err: any) {
-            console.error("[OpaAudit] save error:", err);
-            toast.error(err?.message ? `Erro: ${err.message}` : "Erro ao salvar auditoria. Tente novamente.");
-          }
-        }}
-        onNextFile={() => {}}
-        hasNextFile={false}
-        nonEvaluable={opaMentoriaFile?.nonEvaluable}
-        nonEvaluableReason={opaMentoriaFile?.nonEvaluableReason}
-        tipoAnalise={opaMentoriaFile?.tipo_analise}
-        initialStep={opaMentoriaInitialStep}
-        mode={opaMentoriaMode}
-        fileId={opaMentoriaFile?.id}
-        onSemiAutoSaved={(merged) => {
-          if (opaMentoriaFile) {
-            setOpaFiles((prev) => prev.map((f) => f.id === opaMentoriaFile.id ? { ...f, result: merged } : f));
-          }
-        }}
-      />
+          }}
+          onNextFile={() => {}}
+          hasNextFile={false}
+          nonEvaluable={opaMentoriaFile?.nonEvaluable}
+          nonEvaluableReason={opaMentoriaFile?.nonEvaluableReason}
+          tipoAnalise={opaMentoriaFile?.tipo_analise}
+          initialStep={opaMentoriaInitialStep}
+          mode={opaMentoriaMode}
+          fileId={opaMentoriaFile?.id}
+          onSemiAutoSaved={(merged) => {
+            if (opaMentoriaFile) {
+              setOpaFiles((prev) => prev.map((f) => (f.id === opaMentoriaFile.id ? { ...f, result: merged } : f)));
+            }
+          }}
+        />
       </ErrorBoundary>
       <ParserDiagnosticDialog
         open={!!diagnosticFile}
