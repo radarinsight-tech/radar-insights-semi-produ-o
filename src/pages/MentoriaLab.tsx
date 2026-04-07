@@ -3357,10 +3357,8 @@ const MentoriaLab = () => {
       // reset visual/local do fluxo OPA
       setOpaFiles([]);
       setOpaWorkflowStatuses({});
-      setOpaSelectedRows(new Set());
       setOpaSearchTerm("");
       setOpaHumanSelected(new Set());
-      setOpaDateRange(undefined);
 
       // reset interno do hook OPA
       opa.resetToIdle();
