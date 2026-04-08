@@ -1,5 +1,74 @@
 # Ajuste Edge Function fetch-opa-attendance e OpaSearchPanel
 
+## Problema Resolvido: Divergência OPA vs Radar Insight
+
+### ❌ **Problema Identificado**
+- **OPA:** 37 atendimentos para Dilcele/Daniele (01/04 a 08/04)
+- **Radar Insight:** Apenas 3 atendimentos
+- **Suspeitas:** Filtros rígidos, paginação incorreta, atendimentos sem texto ignorados
+
+### ✅ **Soluções Implementadas**
+
+#### 1. **Limite Aumentado**
+```typescript
+// ANTES: limit = 50
+// DEPOIS: limit = 1000 (padrão aumentado)
+const { limit = 1000, offset = 0 } = body;
+```
+
+#### 2. **Logs de Debug Detalhados**
+- **Total no banco ANTES de filtros:** `totalBeforeFilters`
+- **Distribuição de status:** Contagem por `status_atendimento` e `status_auditoria`
+- **Range de datas:** Registros mais recentes e antigos
+- **Contagem APÓS filtros:** `count` da query
+- **Confirmação:** "No rigid filters applied"
+
+#### 3. **Painel de Debug no Frontend**
+```tsx
+// Mostra informações em tempo real:
+- Total no DB: X registros
+- Após filtros: Y registros  
+- Retornados: Z registros
+- Filtros aplicados: [lista]
+```
+
+#### 4. **Verificação de Filtros Rígidos**
+- ✅ **NÃO há** filtro por `status = 'F'`
+- ✅ **NÃO há** filtro por texto vazio
+- ✅ **NÃO há** filtro por data específica
+- ✅ **APENAS** filtros opcionais passados pelo usuário
+
+### 🔍 **Como Identificar a Causa Real**
+
+Com os novos logs, será possível ver:
+
+1. **Quantos registros existem no total** no Supabase
+2. **Se há paginação cortando resultados** (offset/limit)
+3. **Se o Radar Insight está aplicando filtros adicionais** após receber dados do OPA
+4. **Distribuição de status** para identificar possíveis exclusões
+
+### 📊 **Fluxo de Debug**
+
+```
+[Edge Function Logs]
+├── Total records in database: X
+├── Status distribution: {auditado: Y, em_analise: Z, ...}
+├── Most recent dates: [...]
+├── Oldest dates: [...]
+└── Applied filters: [protocolo, cliente, atendente]
+
+[Frontend Debug Panel]
+├── Total no DB: X
+├── Após filtros: Y  
+├── Retornados: Z
+└── Filtros aplicados: [...]
+
+[Radar Insight]
+└── Pode estar aplicando filtros internos adicionais
+```
+
+---
+
 ## Resumo das Alterações
 
 ### 1. **Edge Function: `fetch-opa-attendance`**
@@ -173,7 +242,8 @@ function MyPage() {
 
 ## Arquivos Criados/Modificados
 
-- ✅ `supabase/functions/fetch-opa-attendance/index.ts` — novo
-- ✅ `src/components/OpaSearchPanel.tsx` — novo
-- ✅ Commit: `0bdc80a` — mensagem explicando as mudanças
+- ✅ `supabase/functions/fetch-opa-attendance/index.ts` — logs de debug + limite aumentado
+- ✅ `src/components/OpaSearchPanel.tsx` — painel de debug + limite aumentado
+- ✅ `GUIA-FETCH-OPA-ATTENDANCE.md` — documentação atualizada
+- ✅ Commit: `b37a6cc` — resolver divergência OPA vs Radar Insight
 - ✅ Push: branch `main` atualizada no GitHub
