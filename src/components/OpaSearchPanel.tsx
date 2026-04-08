@@ -44,8 +44,9 @@ const OpaSearchPanel = ({
   const [total, setTotal] = useState(0);
 
   const [filters, setFilters] = useState<SearchFilters>(initialFilters);
-  const [limit, setLimit] = useState(50);
+  const [limit, setLimit] = useState(1000); // Aumentado de 50 para 1000
   const [offset, setOffset] = useState(0);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   // Fetch attendance records via edge function
   const fetchAttendances = async () => {
@@ -105,6 +106,14 @@ const OpaSearchPanel = ({
       const data = await response.json();
       setRecords(data.data || []);
       setTotal(data.total || 0);
+      setDebugInfo(data.debug_info);
+
+      console.log("OpaSearchPanel: Response received", {
+        records_received: data.data?.length || 0,
+        total_after_filters: data.total,
+        total_before_filters: data.total_before_filters,
+        debug_info: data.debug_info
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error occurred";
       setError(message);
@@ -247,16 +256,36 @@ const OpaSearchPanel = ({
         </div>
       </div>
 
-      {/* Error State */}
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <h4 className="font-semibold text-red-900">Erro de Permissão</h4>
-            <p className="text-sm text-red-700">{error}</p>
-            <p className="text-xs text-red-600 mt-1">
-              Verifique se as políticas de RLS foram aplicadas corretamente no Supabase e que você tem permissão para acessar esses dados.
-            </p>
+      {/* Debug Information */}
+      {debugInfo && (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h4 className="font-semibold text-blue-900 mb-2">🔍 Debug Info (OPA API)</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+            <div>
+              <span className="font-medium">Total no DB:</span>
+              <span className="ml-1 text-blue-700">{debugInfo.total_before_filters}</span>
+            </div>
+            <div>
+              <span className="font-medium">Após filtros:</span>
+              <span className="ml-1 text-blue-700">{debugInfo.total_after_filters}</span>
+            </div>
+            <div>
+              <span className="font-medium">Retornados:</span>
+              <span className="ml-1 text-blue-700">{debugInfo.records_returned}</span>
+            </div>
+            <div>
+              <span className="font-medium">Filtros aplicados:</span>
+              <span className="ml-1 text-blue-700">{debugInfo.applied_filters?.length || 0}</span>
+            </div>
+          </div>
+          {debugInfo.applied_filters?.length > 0 && (
+            <div className="mt-2">
+              <span className="font-medium">Filtros ativos:</span>
+              <span className="ml-1 text-blue-700">{debugInfo.applied_filters.join(", ")}</span>
+            </div>
+          )}
+          <div className="mt-2 text-xs text-blue-600">
+            ℹ️ Estes números mostram quantos registros o OPA retornou ANTES do Radar Insight aplicar seus próprios filtros internos.
           </div>
         </div>
       )}
