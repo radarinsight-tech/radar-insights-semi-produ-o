@@ -78,6 +78,8 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
 
   // Validate if operator is in the attendants list
   const isOperatorValid = (operatorName: string): boolean => {
+    console.log(`Tentando validar: ${operatorName} contra Lista de CS`);
+    
     if (!operatorName || operatorName.trim() === "") {
       console.warn("MKSolutionsModule: Empty operator name");
       return false;
@@ -99,29 +101,45 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
       return false;
     }
 
-    // New rule: Check if first name matches any attendant's first name, ignoring suffixes like -aegis or -turbo
+    // New rule: Check if the input contains any attendant's name (ignoring suffixes and case)
     const cleanedInput = normalizedInput.replace(/-\w+$/, ''); // Remove suffixes like -aegis, -turbo
-    const firstNameInput = cleanedInput.split(' ')[0];
 
-    const firstNameMatch = attendants.some(att => {
-      const attFirstName = att.name.toLowerCase().trim().split(' ')[0];
-      const nickFirstName = att.nickname ? att.nickname.toLowerCase().trim().split(' ')[0] : null;
+    const substringMatch = attendants.some(att => {
+      // Normalize attendant name
+      const normalizedName = att.name
+        .toLowerCase()
+        .trim()
+        .split(/\s+/)
+        .join(' ');
       
-      const match = attFirstName === firstNameInput || (nickFirstName && nickFirstName === firstNameInput);
-      if (match) {
-        console.log("MKSolutionsModule: First name match found", {
+      // Normalize nickname if present
+      const normalizedNickname = att.nickname
+        ? att.nickname
+            .toLowerCase()
+            .trim()
+            .split(/\s+/)
+            .join(' ')
+        : null;
+      
+      const nameMatch = cleanedInput.includes(normalizedName);
+      const nicknameMatch = normalizedNickname && cleanedInput.includes(normalizedNickname);
+      
+      if (nameMatch || nicknameMatch) {
+        console.log("MKSolutionsModule: Substring match found", {
           input: operatorName,
           normalized: normalizedInput,
           cleaned: cleanedInput,
-          firstName: firstNameInput,
-          matchedAttendant: att.name,
+          matchedName: att.name,
           matchedNickname: att.nickname,
+          matchType: nameMatch ? "name" : "nickname",
         });
+        return true;
       }
-      return match;
+      
+      return false;
     });
 
-    if (firstNameMatch) {
+    if (substringMatch) {
       return true;
     }
     
@@ -146,7 +164,7 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
       const matchByNickname = normalizedNickname === normalizedInput;
       
       if (matchByName || matchByNickname) {
-        console.log("MKSolutionsModule: Match found", {
+        console.log("MKSolutionsModule: Exact match found", {
           input: operatorName,
           normalized: normalizedInput,
           matchedName: att.name,
