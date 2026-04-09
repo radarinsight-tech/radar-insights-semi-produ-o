@@ -98,6 +98,32 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
       });
       return false;
     }
+
+    // New rule: Check if first name matches any attendant's first name, ignoring suffixes like -aegis or -turbo
+    const cleanedInput = normalizedInput.replace(/-\w+$/, ''); // Remove suffixes like -aegis, -turbo
+    const firstNameInput = cleanedInput.split(' ')[0];
+
+    const firstNameMatch = attendants.some(att => {
+      const attFirstName = att.name.toLowerCase().trim().split(' ')[0];
+      const nickFirstName = att.nickname ? att.nickname.toLowerCase().trim().split(' ')[0] : null;
+      
+      const match = attFirstName === firstNameInput || (nickFirstName && nickFirstName === firstNameInput);
+      if (match) {
+        console.log("MKSolutionsModule: First name match found", {
+          input: operatorName,
+          normalized: normalizedInput,
+          cleaned: cleanedInput,
+          firstName: firstNameInput,
+          matchedAttendant: att.name,
+          matchedNickname: att.nickname,
+        });
+      }
+      return match;
+    });
+
+    if (firstNameMatch) {
+      return true;
+    }
     
     const isValid = attendants.some(att => {
       // Normalize attendant name
