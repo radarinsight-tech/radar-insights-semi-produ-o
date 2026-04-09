@@ -3889,6 +3889,9 @@ const MentoriaLab = () => {
                     className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground hover:bg-accent/60 transition-colors rounded-md font-medium"
                   >
                     Opa Suite — Banda Turbo
+                    <Badge variant="outline" className="ml-1.5 text-[10px] px-1.5 py-0 border-emerald-400/60 text-emerald-300 data-[state=inactive]:text-emerald-600 data-[state=inactive]:border-emerald-500/40 font-normal">
+                      Banda Turbo — Segurança Ativa
+                    </Badge>
                   </TabsTrigger>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-[300px] text-center">
