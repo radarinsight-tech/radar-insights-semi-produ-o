@@ -2419,7 +2419,20 @@ const MentoriaLab = () => {
 
   const formatSize = (b: number) => (b < 1024 ? `${b} B` : `${(b / 1024).toFixed(1)} KB`);
 
-  const getWorkflowStatus = (fileId: string): WorkflowStatus => workflowStatuses[fileId] || "nao_iniciado";
+  const getWorkflowStatus = useCallback((fileId: string): WorkflowStatus => {
+    // Se há status explícito salvo em memória, usa ele (transições manuais têm prioridade)
+    if (workflowStatuses[fileId]) return workflowStatuses[fileId];
+
+    // Deriva o status real a partir do estado persistido do arquivo
+    const file = files.find((f) => f.id === fileId);
+    if (!file) return "nao_iniciado";
+
+    // Arquivo com resultado de análise → finalizado
+    if (file.status === "analisado" && file.result) return "finalizado";
+
+    // Padrão: não iniciado
+    return "nao_iniciado";
+  }, [workflowStatuses, files]);
 
   const handleMarkFinished = useCallback(() => {
     if (!mentoriaFile) return;
