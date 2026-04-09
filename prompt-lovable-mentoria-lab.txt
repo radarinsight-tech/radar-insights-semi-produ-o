@@ -1,0 +1,122 @@
+Preciso de um redesenho completo do layout do MentoriaLab. NÃO remova nenhuma lógica, hooks, funções, handlers ou integrações existentes. Apenas reorganize o layout visual conforme descrito abaixo.
+
+---
+
+## ESTRUTURA DE ABAS
+
+Remova a aba "Pipeline". O sistema passa a ter apenas 2 abas:
+1. Operação
+2. Performance
+
+---
+
+## ABA OPERAÇÃO
+
+### Topo — Grid 2 colunas
+
+**Coluna esquerda — Card Upload:**
+- Área de drag & drop compacta (altura ~110px)
+- Texto: "Arraste PDFs ou ZIP aqui" + subtexto "ou clique para selecionar"
+- REMOVER os avisos "Importar: até 500/mês" e "Analisar: até 50/vez"
+
+**Coluna direita — Card "Último Lote + Resumo":**
+- Label "ÚLTIMO LOTE" em cima
+- Código do lote + badge de status (ex: Concluído)
+- Data e quantidade de PDFs válidos
+- Divisor horizontal
+- Contadores inline: Total · ⚡ Aptos IA · Analisados · Não avaliáveis · Erros (ocultar os que forem zero, exceto Total)
+- Botão/link discreto "📦 Ver histórico de lotes (N) →" que abre um POPUP pequeno (largura ~380px, altura máxima ~400px) com:
+  - Header "Histórico de Lotes" + botão X para fechar
+  - Lista dos lotes com: código, badge de status, data, quantidade de atendimentos
+  - Scroll lateral visível (scrollbar sempre visível, fina, estilo moderno)
+  - Somente leitura, sem ações
+
+---
+
+### Meio — Filtros expostos
+
+Barra de filtros diretamente visível (sem estar dentro de card wrapper):
+- Campo de busca (texto livre: atendente ou protocolo)
+- Seletor "Todos atendentes" (lista de atendentes)
+- Seletor "Período" (Esta semana / Este mês / Mês anterior)
+- Contador "X de Y atendimentos" alinhado à direita
+- Botão olhinho (👁) no canto direito da barra que oculta/mostra a tabela abaixo (quando oculto, ícone fica destacado em azul)
+
+---
+
+### Chips de status
+
+Linha de chips abaixo dos filtros:
+- Todos (N)
+- Pendentes (N)
+- ⚡ Aptos IA (N) — cor índigo/roxo
+- Em análise (N)
+- Não avaliáveis (N)
+
+---
+
+### Tabela de atendimentos
+
+Tabela com scroll interno lateral (altura fixa ~380px, barra de scroll fina e visível na lateral direita):
+
+Colunas: ☐ | Atendente | Data | Status | Nota | Ação
+
+- Checkbox: somente habilitado para itens elegíveis (Aptos IA)
+- Atendente: nome em negrito + protocolo abaixo em cinza
+- Status: bolinha colorida + label texto
+  - Cinza = Pendente (+ badge laranja se >= 7 dias sem análise, ex: "8d")
+  - Azul pulsando = Em análise / Processando
+  - Verde = Analisado
+  - Amarelo = Não avaliável
+- Nota: colorida por faixa (verde >= 9, azul >= 7, amarelo >= 5, vermelho < 5), "—" se sem nota
+- Ação: botão principal + botão "⋯" com menu dropdown (Preview, Aprovar Oficial, Diagnóstico, Remover)
+  - Se não analisado: botão "▶ Analisar" (azul)
+  - Se analisado: botão "👁 Ver" (verde)
+  - Se processando: botão "⏳ Processando" (índigo, desabilitado)
+
+**Por padrão mostra os 10 mais recentes.**
+Footer da tabela com botão "▼ Ver todos os X atendimentos" que expande e mostra todos, e muda para "▲ Recolher" quando expandido.
+
+---
+
+### Barra flutuante (aparece ao selecionar itens)
+
+Fixa no rodapé central da tela, fundo escuro (#1a1a2e):
+- Texto "N selecionados"
+- Botão "⚡ Analisar selecionados (N)" — azul
+- Botão "Cancelar" — outline cinza
+
+---
+
+## ABA PERFORMANCE
+
+Layout de 2 colunas:
+
+**Sidebar esquerda (200px, fundo #f9fafb, borda direita):**
+- Label "SEÇÕES" no topo
+- 7 itens clicáveis com ícone + label:
+  1. 🏆 Painel de Bônus (padrão ativo)
+  2. 📊 Resumo Geral
+  3. 💰 Performance & Bônus
+  4. 👤 Perf. Detalhada
+  5. ⭐ Recomendados
+  6. 💬 Padrões
+  7. 📋 Roteiro
+- Item ativo: fundo azul claro, texto azul escuro, borda esquerda azul 3px
+- Apenas UMA seção aparece por vez no conteúdo (não empilhadas)
+
+**Área de conteúdo direita:**
+- Filtros no topo: seletor Atendente + seletor Período (mês/competência) + seletor Categoria
+- Conteúdo da seção selecionada renderizado abaixo dos filtros
+- NUNCA renderizar todas as seções juntas — usar condicional para mostrar só a ativa
+
+---
+
+## REGRAS IMPORTANTES
+
+- Não remover nenhuma lógica existente (handlers, hooks, queries, estados)
+- Não remover componentes: MentoriaBonusPanel, MentoriaCharts, MentoriaInsights, MentoriaImportSummary, MentoriaBatchHistory
+- Apenas reorganizar onde e como esses componentes são exibidos
+- Manter responsividade: em mobile a sidebar da Performance vira um dropdown seletor
+- Manter o seletor de Competência no topo (já existente)
+- Manter todos os botões do header: Exportar relatório, Avaliações Oficiais, Limpar dados, Voltar, Sair

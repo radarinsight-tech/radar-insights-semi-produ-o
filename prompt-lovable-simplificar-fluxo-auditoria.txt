@@ -1,0 +1,130 @@
+SOLICITACAO — RADAR INSIGHT
+Pagina: Mentoria Lab — Simplificacao do Fluxo de Auditoria
+==========================================================
+REGRA GERAL: Nao remover logica de banco de dados. Apenas simplificar o fluxo de UI.
+
+======================================================================
+CONTEXTO
+======================================================================
+
+O fluxo atual tem complexidade desnecessaria:
+- Dois botoes de analise (IA + Manual) causam confusao
+- Fila Manual cria etapa extra desnecessaria
+- O gestor precisa de 5 passos para confirmar um atendimento
+
+Novo fluxo desejado:
+1. Upload do lote → IA analisa tudo automaticamente
+2. Gestor ve a lista com notas provisorias (Nao Oficial)
+3. Nota correta → Confirmar (1 clique) → Nota Oficial → Performance
+4. Nota duvidosa → Auditar → revisa os 19 criterios → Confirmar → Oficial
+5. Limite: 6 confirmacoes oficiais por atendente por mes
+
+======================================================================
+MUDANCA 1 — Botao de acao no rodape flutuante
+======================================================================
+
+REMOVER o botao "Analisar manualmente" do rodape flutuante.
+MANTER apenas:
+  - "Analisar com IA" (analise automatica)
+  - "Excluir"
+  - "Cancelar"
+
+O botao "Analisar com IA" passa a ser o UNICO caminho de analise.
+
+======================================================================
+MUDANCA 2 — Apos analise da IA: status e botoes por linha
+======================================================================
+
+Apos a IA analisar um atendimento, a linha deve mostrar:
+
+  Status: "Aguardando confirmacao" (em vez de "Analisado")
+  Nota: exibir a nota provisoria com badge "(Nao Oficial)"
+  Botoes de acao:
+    [Confirmar]  → confirma como nota oficial (1 clique)
+    [Auditar]    → abre o Semi-Automatico para revisar criterios
+    [...]        → menu com Preview, Ver resultado, Remover
+
+======================================================================
+MUDANCA 3 — Botao "Confirmar" por linha
+======================================================================
+
+Ao clicar em "Confirmar" em uma linha:
+
+1. Verificar se o atendente ja tem 6 confirmacoes oficiais no mes atual
+   - Se sim: exibir toast de aviso "Limite de 6 auditorias oficiais atingido para [nome] neste mes"
+   - Se nao: prosseguir
+
+2. Salvar no banco:
+   - status = "confirmado"
+   - nota_oficial = nota calculada pela IA
+   - confirmado_em = timestamp atual
+
+3. Atualizar a linha na tabela:
+   - Status: "Confirmado"
+   - Badge: nota oficial sem "(Nao Oficial)"
+
+4. Toast de sucesso: "Auditoria confirmada! [protocolo] adicionado a Performance."
+
+======================================================================
+MUDANCA 4 — Botao "Auditar" por linha
+======================================================================
+
+Ao clicar em "Auditar":
+1. Abrir o modal de detalhes DIRETAMENTE na aba "Semi-Automatico"
+   (pular a aba "Pre-Analise" — ir direto para revisao dos criterios)
+2. Os 19 criterios ja estao pre-preenchidos com o resultado da IA
+3. O auditor revisa/ajusta criterio por criterio
+4. A nota recalcula em tempo real conforme ajustes
+5. Botao "Confirmar Avaliacao" no final:
+   - Mesma logica de limite (6 por mes)
+   - Salva como nota oficial com os valores ajustados pelo auditor
+
+======================================================================
+MUDANCA 5 — Contador de auditorias por atendente
+======================================================================
+
+Na coluna "Atendente" de cada linha, abaixo do badge de lote, adicionar:
+
+  Se o atendente tiver confirmacoes no mes atual:
+    Badge azul pequeno: "X/6 este mes"
+    Exemplo: "3/6 este mes"
+
+  Se ja atingiu o limite:
+    Badge vermelho: "6/6 limite atingido"
+
+Para calcular: contar registros com status = "confirmado" na tabela
+preventive_mentorings (ou mentoria_batch_files) onde:
+  - atendente = nome do atendente da linha
+  - confirmado_em >= primeiro dia do mes atual
+
+======================================================================
+MUDANCA 6 — Abas de filtro
+======================================================================
+
+Renomear/reorganizar as abas:
+
+MANTER:
+  - Todos
+  - Pendentes
+  - Aptos IA
+  - Em analise
+  - Aguardando confirmacao (era "Fila IA")
+  - Confirmados
+  - Nao avaliaveis
+  - Audio
+
+REMOVER:
+  - Fila Manual (nao existe mais fluxo manual separado)
+
+======================================================================
+MUDANCA 7 — Aba "Pre-Analise" no modal
+======================================================================
+
+No modal de detalhes do atendimento:
+- Ocultar a aba "Pre-Analise" do stepper de navegacao
+- O modal abre direto na aba "Semi-Automatico" quando clicado via "Auditar"
+- O modal abre na aba "Relatorio" quando clicado via "Ver"
+
+======================================================================
+FIM DA SOLICITACAO
+======================================================================

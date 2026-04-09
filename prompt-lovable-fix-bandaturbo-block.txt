@@ -1,0 +1,34 @@
+CORRECAO — Bloquear "Bandaturbo" em qualquer nome extraído como atendente
+=========================================================================
+
+ARQUIVO: src/utils/mentoriaMetadata.ts
+
+PROBLEMA:
+"Seu Especialista Virtual Da Bandaturbo" ou "Especialista Virtual Da Bandaturbo"
+continuam passando porque o BOT_NAMES exige match exato e as strategies capturam
+variações do nome (com ou sem "Seu").
+
+CORRECAO — Adicionar bloqueio por regex antes do return em extractAtendente:
+
+Localizar a função extractAtendente:
+export function extractAtendente(text: string): string | undefined {
+  const result = _extractAtendenteRaw(text);
+  const BLOCKED = ["seu", "sua", "seu atendente", "sua atendente"];
+  if (result && BLOCKED.includes(result.toLowerCase().trim())) return undefined;
+  return result;
+}
+
+Substituir por:
+export function extractAtendente(text: string): string | undefined {
+  const result = _extractAtendenteRaw(text);
+  if (!result) return undefined;
+  const lower = result.toLowerCase().trim();
+  // Block exact pronouns/labels
+  const BLOCKED = ["seu", "sua", "seu atendente", "sua atendente"];
+  if (BLOCKED.includes(lower)) return undefined;
+  // Block any name containing company/bot keywords
+  if (/bandaturbo|especialista\s+virtual|atendimento\s+autom|bot\s+|marte\b/i.test(lower)) return undefined;
+  return result;
+}
+
+NAO alterar mais nada.

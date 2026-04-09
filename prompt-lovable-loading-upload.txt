@@ -1,0 +1,76 @@
+SOLICITACAO — RADAR INSIGHT
+Indicador visual de processamento ao arrastar PDFs no Mentoria Lab
+===================================================================
+REGRA GERAL: Não remover lógica existente. Apenas adicionar o feedback visual.
+
+======================================================================
+OBJETIVO
+======================================================================
+
+Quando o usuário arrasta um ou mais PDFs (ou ZIP) na área de upload do
+Mentoria Lab, mostrar um indicador animado de processamento enquanto os
+arquivos estão sendo lidos/analisados.
+
+======================================================================
+COMPORTAMENTO ESPERADO
+======================================================================
+
+ESTADO 1 — Normal (sem arquivo sendo processado):
+  Área de upload padrão:
+  ┌─────────────────────────────────┐
+  │  ↑  Arraste PDFs ou ZIP aqui   │
+  │     ou clique para selecionar  │
+  └─────────────────────────────────┘
+
+ESTADO 2 — Processando (arquivo foi solto / selecionado):
+  A área de upload muda para:
+  ┌─────────────────────────────────┐
+  │  ⟳  Analisando arquivos...     │
+  │     Aguarde, processando N PDF │
+  └─────────────────────────────────┘
+
+  - Ícone animado girando (spinner ou pulse)
+  - Texto: "Analisando arquivos..." em destaque
+  - Subtexto: "Aguarde, processando N arquivo(s) recebido(s)"
+  - Fundo levemente diferente (ex: bg-primary/5) para indicar estado ativo
+  - A área de upload fica desabilitada (não aceita novos arquivos durante processamento)
+
+ESTADO 3 — Concluído:
+  - Volta ao estado normal
+  - Os arquivos aparecem na lista abaixo normalmente
+  - Toast de sucesso: "N atendimento(s) adicionado(s) com sucesso"
+
+======================================================================
+IMPLEMENTACAO
+======================================================================
+
+No componente da área de upload (provavelmente em MentoriaLab.tsx ou
+no componente de dropzone):
+
+1. Adicionar estado: const [isProcessing, setIsProcessing] = useState(false)
+   e const [processingCount, setProcessingCount] = useState(0)
+
+2. Ao iniciar o processamento do arquivo:
+   - setIsProcessing(true)
+   - setProcessingCount(qtd de arquivos)
+
+3. Ao finalizar (após todos os arquivos serem processados):
+   - setIsProcessing(false)
+   - setProcessingCount(0)
+
+4. No JSX da dropzone, renderizar condicionalmente:
+
+Se isProcessing:
+  <div className="flex flex-col items-center gap-3 py-8">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    <p className="text-sm font-semibold text-primary">Analisando arquivos...</p>
+    <p className="text-xs text-muted-foreground">
+      Aguarde, processando {processingCount} arquivo(s) recebido(s)
+    </p>
+  </div>
+
+Senão: mostrar dropzone normal.
+
+======================================================================
+FIM DA SOLICITACAO
+======================================================================

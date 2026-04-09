@@ -1,0 +1,104 @@
+CORRECAO DEFINITIVA — 3 fixes em sequência, sem alterar nada além do especificado
+==================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIX 1 — src/lib/mentoriaMetadata.ts
+Atendente "Dani Porto" não identificado em PDFs BandaTurbo
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+O PDF tem linhas como "Dani Porto Internet" e "Dani Porto Sim" — cada uma aparece
+só 1 vez, então nunca atingem o mínimo de 2 para Strategy 0.5.
+
+Localizar EXATAMENTE este bloco na função _extractAtendenteRaw:
+
+  for (const m of [...text.matchAll(standalonePattern)]) {
+    const name = m[1].trim();
+    if (!name || isBot(name) || isInstitutional(name) || isInvalidAttendantName(name)) continue;
+    if (BOT_COMPANY_KEYWORDS.test(name.toLowerCase())) continue;
+    standaloneCounts.set(name, (standaloneCounts.get(name) || 0) + 1);
+  }
+
+Substituir por:
+
+  for (const m of [...text.matchAll(standalonePattern)]) {
+    const name = m[1].trim();
+    if (!name || isBot(name) || isInstitutional(name) || isInvalidAttendantName(name)) continue;
+    if (BOT_COMPANY_KEYWORDS.test(name.toLowerCase())) continue;
+    standaloneCounts.set(name, (standaloneCounts.get(name) || 0) + 1);
+    // Also count the first-2-word prefix (e.g. "Dani Porto" from "Dani Porto Internet")
+    const words = name.split(/\s+/);
+    if (words.length > 2) {
+      const prefix2 = words.slice(0, 2).join(" ");
+      if (prefix2 && !isBot(prefix2) && !isInstitutional(prefix2) && !isInvalidAttendantName(prefix2)) {
+        standaloneCounts.set(prefix2, (standaloneCounts.get(prefix2) || 0) + 1);
+      }
+    }
+  }
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIX 2 — src/pages/MentoriaLab.tsx
+Status trava em "Em análise" quando Edge Function falha
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Na função analyzeFiles, localizar o bloco catch externo do loop (o que
+incrementa errors++). Ele deve ter esta forma aproximada:
+
+  } catch (err: any) {
+    const errorMsg = err?.message || "Erro inesperado na análise";
+    errors++;
+  }
+
+Substituir por:
+
+  } catch (err: any) {
+    const errorMsg = err?.message || "Erro inesperado na análise";
+    errors++;
+    // Rollback: never leave file stuck in "em_analise" / "aguardando_revisao_ia"
+    setFiles((prev) =>
+      prev.map((f) =>
+        f.id === labFile.id
+          ? { ...f, status: "lido", error: "Falha na análise. Clique em Analisar para tentar novamente." }
+          : f
+      )
+    );
+    if (labFile.batchFileId) {
+      await supabase
+        .from("mentoria_batch_files")
+        .update({ status: "read", error_message: errorMsg } as any)
+        .eq("id", labFile.batchFileId);
+    }
+  }
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIX 3 — src/pages/MentoriaLab.tsx
+Sweep de arquivos travados antes de setProcessing(false)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Na função analyzeFiles, localizar a linha:
+
+  setProcessing(false);
+
+Inserir ANTES dela:
+
+  // Sweep: revert any file still stuck without a result
+  setFiles((prev) =>
+    prev.map((f) => {
+      const wasTargeted = toAnalyze.some((t) => t.id === f.id);
+      if (
+        wasTargeted &&
+        (f.status === "aguardando_revisao_ia" || f.status === "analisado" as any) &&
+        !f.result
+      ) {
+        return { ...f, status: "lido", error: "Análise não concluída. Tente novamente." };
+      }
+      return f;
+    })
+  );
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REGRAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Aplicar os 3 fixes exatamente como especificado, sem alterar mais nada.
+- NÃO alterar scoring, critérios, lógica de aprovação ou qualquer outro fluxo.
+- NÃO criar novos arquivos.
+- NÃO refatorar código existente além das linhas indicadas.

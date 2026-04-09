@@ -1,0 +1,92 @@
+SOLICITACAO — RADAR INSIGHT
+Mentoria Preventiva — Formatação do texto original do atendimento
+=================================================================
+REGRA GERAL: Alterar apenas a exibição do texto bruto na Mentoria Preventiva.
+Não alterar lógica de análise, pontuação, edge functions ou outros módulos.
+
+======================================================================
+PROBLEMA — Texto original sem formatação (bloco corrido)
+======================================================================
+
+Na Mentoria Preventiva, onde o texto original do atendimento é exibido
+(seja numa seção colapsável, aba ou modal), o conteúdo aparece como
+um bloco de texto contínuo sem separação por participante.
+
+CORRECAO: Aplicar o mesmo parser de blocos por participante que foi
+implementado no Contexto URA do Mentoria Lab.
+
+======================================================================
+FORMATO REAL DO PDF BANDATURBO
+======================================================================
+
+O PDF tem o histórico no seguinte formato:
+
+  [Nome do participante]
+  [Mensagem]
+  [DD de mês de YYYY HH:MM]
+  ou
+  [Lida - DD de mês de YYYY HH:MM]
+
+Exemplos reais:
+  Rosandra Domingues
+  Bom dia
+  28 de março de 2026 10:39
+
+  Marte
+  Olá, ROSANDRA DOMINGUES GOMES, Tudo bem? Sou seu Especialista virtual...
+  Lida - 28 de março de 2026 10:39
+
+  Daniele Mendes
+  Olá, Sou o Daniele Mendes, especialista Bandaturbo. No que eu posso ajudar?
+  Lida - 28 de março de 2026 10:42
+
+======================================================================
+ALGORITMO DE PARSING (reutilizar/adaptar o da URA)
+======================================================================
+
+1. Dividir o texto por quebras de linha reais (\n)
+2. Identificar linhas que são NOMES DE PARTICIPANTES:
+   - Linha curta (menos de 60 chars)
+   - Seguida por mensagem e depois por linha com data no formato
+     "DD de mês de YYYY HH:MM" ou "Lida - DD de mês de YYYY HH:MM"
+3. Agrupar: nome + mensagem(ns) + timestamp como um bloco
+4. Determinar o papel (role) do participante:
+   - "Marte" ou "MARTE" → role = "marte" (URA/sistema)
+   - Nome do cliente (extraído do cabeçalho "Cliente: [nome]") → role = "cliente"
+   - Qualquer outro nome → role = "atendente"
+
+FALLBACK: Se o texto não tiver quebras de linha (\n), fazer split por
+padrões de data brasileira:
+  /(Lida - \d{1,2} de \w+ de \d{4} \d{2}:\d{2})/g
+  ou
+  /(\d{1,2} de \w+ de \d{4} \d{2}:\d{2})/g
+
+======================================================================
+CORES POR PARTICIPANTE
+======================================================================
+
+CLIENTE  → nome em azul (text-blue-600 dark:text-blue-400), negrito
+MARTE    → nome em cinza (text-gray-400), negrito, badge [URA] ao lado
+ATENDENTE → nome em verde (text-emerald-600 dark:text-emerald-400), negrito
+
+Mensagem do MARTE: texto em itálico cinza claro
+Mensagem de CLIENTE e ATENDENTE: texto normal
+
+Mensagens pós-atendimento do MARTE (pesquisa de satisfação, follow-up):
+  - Badge adicional "Pós-atendimento" ao lado do nome
+  - Opacidade reduzida (opacity-60)
+  Detectar por conter: "pesquisa", "experiência", "Excelente / Bom", "Notamos que você"
+
+Cada bloco separado por linha divisória fina (border-b ou <hr> leve).
+Timestamp em cinza pequeno (text-xs text-muted-foreground) na mesma linha do nome.
+
+======================================================================
+NOME DO BOTAO / LINK (se aplicável)
+======================================================================
+
+Se houver botão para expandir o texto, renomear para:
+  "Acesso ao texto original do chat"
+
+======================================================================
+FIM DA SOLICITACAO
+======================================================================

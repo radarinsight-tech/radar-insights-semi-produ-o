@@ -1,0 +1,159 @@
+SOLICITACAO — RADAR INSIGHT
+Extração de áudio e imagens embutidos no PDF + transcrição e exibição no atendimento
+=====================================================================================
+REGRA GERAL: Não remover lógica existente. Adicionar suporte a mídia embutida no PDF.
+
+======================================================================
+CONTEXTO
+======================================================================
+
+Os PDFs de atendimento da BandaTurbo podem conter:
+1. Arquivos de áudio embutidos (.mp3/.wav) — áudios enviados pelo cliente no chat
+2. Imagens embutidas (.png/.jpg) — comprovantes, boletos, folders, prints enviados
+
+Ao importar o PDF no Mentoria Lab, o sistema deve detectar, extrair e processar
+automaticamente esses conteúdos, exibindo-os no texto do atendimento.
+
+======================================================================
+PARTE 1 — EXTRAÇÃO NO FRONTEND (ao importar o PDF)
+======================================================================
+
+Na função que faz o parse/leitura do PDF (provavelmente onde usa pdf.js ou
+pdfjs-dist para extrair o texto), adicionar extração de anexos embutidos:
+
+ÁUDIO:
+- Detectar attachments com extensão .mp3, .wav, .m4a, .ogg no PDF
+- Extrair o binário do arquivo embutido
+- Converter para Blob e criar uma URL temporária (URL.createObjectURL)
+- Armazenar no LabFile: audioBlobs: Array<{ name: string, url: string, blob: Blob }>
+
+IMAGENS:
+- Detectar imagens embutidas nas páginas do PDF (não as que são a página inteira)
+- Extrair usando pdf.js: page.getOperatorList() + objs para identificar imagens
+- Converter para PNG base64 ou Blob URL
+- Armazenar no LabFile: imageBlobs: Array<{ pageNum: number, url: string, width: number, height: number }>
+
+Filtrar imagens muito pequenas (< 50x50px) — provavelmente são ícones ou decoração.
+
+======================================================================
+PARTE 2 — EDGE FUNCTION: transcrever-audio
+======================================================================
+
+Criar nova Edge Function chamada "transcrever-audio" que:
+
+1. Recebe: arquivo de áudio em multipart/form-data
+2. Chama a API do Groq Whisper:
+   - URL: https://api.groq.com/openai/v1/audio/transcriptions
+   - Modelo: whisper-large-v3
+   - Language: pt
+   - API Key: Deno.env.get("GROQ_API_KEY")
+3. Retorna: { text: string, duration_seconds?: number }
+
+Código base da Edge Function:
+
+```typescript
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const groqKey = Deno.env.get("GROQ_API_KEY");
+    if (!groqKey) {
+      return new Response(JSON.stringify({ error: "GROQ_API_KEY não configurada" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // Forward the multipart form data to Groq
+    const formData = await req.formData();
+    const audioFile = formData.get("file") as File;
+
+    if (!audioFile) {
+      return new Response(JSON.stringify({ error: "Arquivo de áudio não encontrado" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    const groqForm = new FormData();
+    groqForm.append("file", audioFile, audioFile.name || "audio.mp3");
+    groqForm.append("model", "whisper-large-v3");
+    groqForm.append("language", "pt");
+
+    const groqResponse = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${groqKey}` },
+      body: groqForm,
+    });
+
+    if (!groqResponse.ok) {
+      const err = await groqResponse.text();
+      return new Response(JSON.stringify({ error: "Erro Groq: " + err }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    const result = await groqResponse.json();
+    return new Response(JSON.stringify({ text: result.text }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+
+  } catch (err) {
+    return new Response(JSON.stringify({ error: String(err) }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+});
+```
+
+======================================================================
+PARTE 3 — EXIBIÇÃO NO TEXTO DO CHAT (FormattedChatText / RawTextSection)
+======================================================================
+
+No componente que exibe o texto original do atendimento, adicionar suporte
+para exibir áudios e imagens extraídos do PDF.
+
+Adicionar props ao componente:
+  audioBlobs?: Array<{ name: string, url: string }>
+  imageBlobs?: Array<{ pageNum: number, url: string, width: number, height: number }>
+
+EXIBIÇÃO DE ÁUDIO:
+- Abaixo do texto do chat, adicionar seção "🎤 Áudios do atendimento"
+- Para cada áudio:
+  - Player HTML5: <audio controls src={url} />
+  - Se transcription disponível: mostrar texto transcrito em balão cinza itálico
+  - Botão "Transcrever" que chama a edge function "transcrever-audio"
+  - Após transcrição: salvar no estado e exibir
+
+EXIBIÇÃO DE IMAGENS:
+- Dentro do texto do chat, após identificar a posição aproximada (por página),
+  inserir miniaturas clicáveis das imagens
+- Miniatura: 80x80px com borda arredondada
+- Ao clicar: abre modal/lightbox com a imagem em tamanho real
+- Caption automático abaixo da miniatura: "📎 Imagem enviada no atendimento"
+- Se a imagem for grande (> 400px largura): provavelmente boleto ou folder
+  → Caption: "📄 Documento enviado"
+
+======================================================================
+PARTE 4 — INTEGRAÇÃO NO MentoriaLab.tsx
+======================================================================
+
+Ao processar o PDF importado:
+1. Extrair audioBlobs e imageBlobs junto com o texto
+2. Salvar as URLs (ou base64 para imagens pequenas) no LabFile
+3. Passar para o FormattedChatText via props
+
+Ao chamar a edge function "transcrever-audio":
+- Usar o Blob do áudio diretamente (não precisa salvar no Supabase Storage)
+- Salvar a transcrição no estado do LabFile: audioTranscriptions: Map<string, string>
+
+======================================================================
+FIM DA SOLICITACAO
+======================================================================

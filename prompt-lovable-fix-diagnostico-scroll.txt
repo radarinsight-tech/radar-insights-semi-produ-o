@@ -1,0 +1,50 @@
+CORRECAO — Modal "Diagnóstico do Parser" sem scroll e campos cortados
+======================================================================
+
+ARQUIVO: componente do modal Diagnóstico do Parser
+(provavelmente DiagnosticoParserModal.tsx ou similar em src/components/)
+
+PROBLEMA:
+O modal exibe as informações em uma imagem única sem scroll.
+Campos como "Mensagens Parseadas" ficam cortados e não são acessíveis.
+
+CORRECAO 1 — Adicionar scroll ao conteúdo do modal:
+
+Localizar o container interno do modal (div com as informações do diagnóstico).
+Garantir que tenha as classes:
+  overflow-y-auto max-h-[70vh]
+
+Se já tiver height fixo ou overflow-hidden, remover e substituir por overflow-y-auto.
+
+---
+
+CORRECAO 2 — Seção "Mensagens Parseadas" expansível:
+
+A seção "Mensagens Parseadas (N)" deve ser um acordeão expansível (collapsible).
+Por padrão fechada. Ao clicar no título, expande e mostra a lista de mensagens.
+
+Usar o componente Collapsible já existente no projeto (shadcn/ui).
+
+Estrutura esperada:
+  <Collapsible>
+    <CollapsibleTrigger>
+      Mensagens Parseadas ({count}) — clique para expandir
+    </CollapsibleTrigger>
+    <CollapsibleContent>
+      {mensagens.map(...)}
+    </CollapsibleContent>
+  </Collapsible>
+
+---
+
+CORRECAO 3 — Demais seções informativas (campos de texto longo):
+
+Qualquer campo de texto que possa exceder 2 linhas deve ter:
+  className="break-words whitespace-pre-wrap"
+
+Para evitar transbordamento horizontal.
+
+---
+
+NAO alterar lógica de parsing, extração ou scoring.
+NAO editar src/utils/.

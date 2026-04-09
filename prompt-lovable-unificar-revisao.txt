@@ -1,0 +1,69 @@
+SOLICITACAO — RADAR INSIGHT
+Unificar Pré-Análise + Semi-Automático em uma única aba "Revisão"
+==================================================================
+REGRA GERAL: Não remover lógica existente. Apenas reorganizar a exibição.
+
+======================================================================
+OBJETIVO
+======================================================================
+
+Eliminar a aba "Pré-Análise" e criar uma única aba chamada "REVISÃO"
+que combina o melhor das duas telas atuais.
+
+O stepper passa a ter apenas 2 etapas:
+  [Revisão] → [Relatório]
+
+Ao abrir o modal (por qualquer botão: Ver, Auditar, etc.), ir diretamente
+para "Revisão". Não exibir "Pré-Análise" em nenhum cenário.
+
+======================================================================
+LAYOUT DA NOVA ABA "REVISÃO"
+======================================================================
+
+BLOCO 1 — Header com estatísticas do atendimento (vem da Pré-Análise)
+----------------------------------------------------------------------
+Linha compacta horizontal com as métricas do atendimento:
+
+  💬 Mensagens: 11   👤 Atendente: 1   🙋 Cliente: 9   ⏱ Tempo médio: 1.0 min
+
+Fonte pequena (text-sm), estilo muted, sem card separado — só uma linha
+de contexto no topo da aba.
+
+BLOCO 2 — Painel de nota e contadores (vem do Semi-Automático)
+--------------------------------------------------------------
+Manter exatamente como está no Semi-Automático atual:
+- PREVISÃO DA NOTA: 86 /100 com badge "Excelente"
+- Barra de progresso de pontos
+- Contadores: TOTAL 19 | ACEITAS | AJUSTADAS | REJEITADAS | PENDENTES | CONFIANÇA
+
+BLOCO 3 — Botões de ação em massa (combinar os dois)
+----------------------------------------------------
+  [✓ Aceitar confiança alta]  [✓ Aceitar todas]  [↺ Limpar decisões]
+  Filtro: [Todas ▼]
+
+BLOCO 4 — Lista dos 19 critérios (vem do Semi-Automático)
+---------------------------------------------------------
+Manter exatamente como está no Semi-Automático atual:
+- Agrupados por categoria
+- Cada critério com resultado (SIM/NÃO/PARCIAL), confiança, peso em pontos
+- Botões por linha: [✓ Aceitar] [✏ Ajustar ▼] [✗ Rejeitar]
+- Justificativa expansível
+
+RODAPÉ
+------
+  [< Voltar lista]   [Confirmar Revisão →]   (avança para Relatório)
+
+======================================================================
+REMOVER
+======================================================================
+
+- Aba "Pré-Análise" do stepper
+- Botão "Avançar para Semi-Automático" (substituído por "Confirmar Revisão")
+- Qualquer referência a "Semi-Automático" visível ao usuário final
+  (pode manter internamente como chave/estado se necessário)
+- O botão "Aceitar todas" duplicado que aparecia na Pré-Análise
+  (já existe no novo Bloco 3)
+
+======================================================================
+FIM DA SOLICITACAO
+======================================================================

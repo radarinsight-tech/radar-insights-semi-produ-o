@@ -1,0 +1,85 @@
+SOLICITACAO — RADAR INSIGHT
+Dois ajustes: (1) "Desconhecido" no texto do chat e (2) Unificar Pré-Análise + Semi-Automático
+================================================================================================
+REGRA GERAL: Não remover nenhuma lógica existente. Corrigir apenas os pontos indicados.
+
+======================================================================
+AJUSTE 1 — "Desconhecido" aparecendo no texto original do chat
+======================================================================
+
+PROBLEMA:
+No componente FormattedChatText (e na RawTextSection do UraContextDialog),
+quando o parser cai no fallback (split por data PT-BR), os blocos ficam com
+speaker = "Desconhecido" porque o conteúdo chega numa linha só sem \n.
+
+CAUSA RAIZ:
+O texto extraído do PDF às vezes tem o formato:
+  "Daniele Mendes Algo mais em que eu possa te ajudar? Lida - 28 de março de 2026 10:47"
+
+Ou seja: [Nome] [Mensagem] numa única linha sem \n, seguido da data.
+
+CORRECAO no parseRawTextBlocks (em FormattedChatText.tsx e/ou onde a função estiver):
+
+No fallback (quando blocks.length === 0 após os parsers A e B):
+
+1. Após fazer o split pela data PT-BR, ao processar cada chunk de conteúdo:
+   a. Tentar identificar o nome do participante no INÍCIO do texto, mesmo sem \n
+   b. Usar uma lista de nomes conhecidos (extraída do cabeçalho: "Atendente: [nome]" e "Cliente: [nome]")
+      para fazer matching no início do texto
+   c. Se o início do chunk bater com um nome conhecido (case-insensitive, primeiras 2 palavras),
+      separar o nome da mensagem
+
+2. Se não conseguir identificar o nome pelos participantes conhecidos, tentar heurística:
+   - Pegar as primeiras 1-3 palavras capitalizadas do chunk
+   - Se formam um nome válido (isRawNameLine), usar como speaker
+   - O restante é a mensagem
+
+3. Somente usar "Desconhecido" se absolutamente não for possível identificar o speaker.
+
+EXEMPLO de como deve funcionar:
+  Input: "Daniele Mendes Algo mais em que eu possa te ajudar?"
+  Output: speaker = "Daniele Mendes", text = "Algo mais em que eu possa te ajudar?"
+
+  Input: "Rosandra Domingues Não"
+  Output: speaker = "Rosandra Domingues", text = "Não"
+
+======================================================================
+AJUSTE 2 — Unificar Pré-Análise + Semi-Automático em um único passo
+======================================================================
+
+CONTEXTO:
+Atualmente o fluxo tem 3 abas: [Pré-Análise] → [Semi-Automático] → [Relatório]
+O usuário quer simplificar: a Pré-Análise é redundante pois o Semi-Automático
+já carrega os resultados da IA. O stepper deve ter apenas 2 etapas visíveis.
+
+NOVO FLUXO:
+  [Revisão] → [Relatório]
+
+MUDANCAS:
+
+1. Renomear a aba "Semi-Automático" para "Revisão" no stepper e em todos os labels
+   onde aparecer "Semi-Automático" no contexto desta aba de revisão dos critérios.
+
+2. A aba "Pré-Análise" deve ser completamente OCULTADA do stepper para TODOS os casos
+   (não apenas no modo Auditar).
+   - O stepper sempre mostra: [Revisão] → [Relatório]
+   - A lógica interna da pré-análise pode continuar rodando para popular os dados,
+     mas a aba não é exibida ao usuário.
+
+3. Ao abrir o modal (seja via "Ver", "Auditar" ou qualquer outro botão):
+   - Ir diretamente para a aba "Revisão" (antiga Semi-Automático)
+   - Os 19 critérios já vêm pré-carregados com o resultado da IA (comportamento atual do Auditar)
+   - O usuário revisa e clica "Avançar para Relatório"
+
+4. O botão "Avançar para Semi-Automático" (se existir em algum lugar) passa a ser
+   "Avançar para Revisão"
+
+5. O botão "Voltar etapa" no Relatório volta para "Revisão" (não para Pré-Análise)
+
+NOTA: O componente MentoriaStepBar e o estado currentStep/initialStep devem ser
+atualizados para refletir essa simplificação. A prop initialStep pode ser removida
+ou definida sempre como "semi-auto" (que será chamada internamente, mas exibida como "Revisão").
+
+======================================================================
+FIM DA SOLICITACAO
+======================================================================

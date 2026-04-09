@@ -1,0 +1,10 @@
+No arquivo src/lib/mentoriaMetadata.ts, na linha onde a função `isOnlyPrefix` é chamada mas não existe, adicione a definição desta função logo antes da primeira chamada:
+
+```typescript
+function isOnlyPrefix(name: string): boolean {
+  const prefixes = ["seu", "sua", "seu atendente", "sua atendente", "atendente", "agente", "operador", "analista", "consultor", "responsável", "nome"];
+  return prefixes.includes(name.toLowerCase().trim());
+}
+```
+
+Isso é tudo. Não mude mais nada no arquivo.

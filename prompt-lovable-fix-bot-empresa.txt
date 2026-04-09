@@ -1,0 +1,69 @@
+CORRECAO — Atendente capturando bot e nomes de setor/empresa
+=============================================================
+
+ARQUIVO: src/utils/mentoriaMetadata.ts
+
+PROBLEMA:
+1. "Seu Especialista Virtual Da Bandaturbo" sendo capturado como atendente
+2. "Da Bandaturbo Internet Do Setor De Atendimento Geral" sendo capturado
+3. Threshold de Strategy 4 reduzido para 1 foi excessivo — captura qualquer nome
+
+CORRECAO 1 — Adicionar "bandaturbo" ao BOT_NAMES:
+
+Localizar:
+const BOT_NAMES = new Set([
+  "marte", "bot", "sistema", "robô", "robo", "automático", "automatico",
+  "assistente virtual", "atendimento automático", "chatbot",
+]);
+
+Substituir por:
+const BOT_NAMES = new Set([
+  "marte", "bot", "sistema", "robô", "robo", "automático", "automatico",
+  "assistente virtual", "atendimento automático", "chatbot",
+  "bandaturbo", "especialista virtual", "seu especialista virtual",
+  "especialista virtual da bandaturbo",
+]);
+
+---
+
+CORRECAO 2 — Adicionar "bandaturbo" ao COMPANY_PATTERN:
+
+Localizar:
+const COMPANY_PATTERN = /\b(internet|telecom|telecomunica|ltda|s\.?a\.?|eireli|me\b|fibra|provedor|banda\s*larga|serviços|servicos|tecnologia|soluções|solucoes|group|corp|inc)\b/i;
+
+Substituir por:
+const COMPANY_PATTERN = /\b(internet|telecom|telecomunica|ltda|s\.?a\.?|eireli|me\b|fibra|provedor|banda\s*larga|serviços|servicos|tecnologia|soluções|solucoes|group|corp|inc|bandaturbo|banda\s*turbo)\b/i;
+
+---
+
+CORRECAO 3 — isLikelyPersonName: rejeitar nomes que começam com preposição:
+
+Localizar dentro de isLikelyPersonName, antes do return true final:
+  // Reject institutional/company names
+  if (isInstitutional(trimmed)) return false;
+  return true;
+
+Substituir por:
+  // Reject institutional/company names
+  if (isInstitutional(trimmed)) return false;
+  // Reject names starting with prepositions (e.g. "Da Bandaturbo", "Do Setor")
+  if (/^(da|do|de|das|dos|e|em|com|para|por|ao|aos|à|às)\s/i.test(trimmed)) return false;
+  return true;
+
+---
+
+CORRECAO 4 — Reverter threshold da Strategy 4 de 1 para 2:
+
+Localizar:
+    if (sorted[0][1] >= 1) {
+      return sorted[0][0];
+    }
+
+Substituir por:
+    if (sorted[0][1] >= 2) {
+      return sorted[0][0];
+    }
+
+---
+
+NAO alterar mais nada.

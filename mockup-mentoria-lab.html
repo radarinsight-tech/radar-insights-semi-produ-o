@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mockup — Mentoria Lab</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f4f5f7; color: #1a1a2e; font-size: 13px; padding-top: 42px; }
+
+  .topbar { background:#fff; border-bottom:1px solid #e5e7eb; padding:0 24px; height:52px; display:flex; align-items:center; justify-content:space-between; }
+  .topbar-left { display:flex; align-items:center; gap:12px; }
+  .logo { font-size:15px; font-weight:700; color:#1a1a2e; }
+  .logo span { color:#3b82f6; }
+  .badge { background:#e0e7ff; color:#4338ca; font-size:10px; font-weight:600; padding:2px 7px; border-radius:99px; }
+  .topbar-right { display:flex; gap:8px; }
+  .btn { padding:5px 12px; border-radius:6px; border:1px solid #d1d5db; background:#fff; cursor:pointer; font-size:12px; color:#374151; display:flex; align-items:center; gap:5px; }
+  .btn.danger { border-color:#fca5a5; color:#dc2626; }
+
+  .subbar { background:#fff; border-bottom:1px solid #e5e7eb; padding:0 24px; height:40px; display:flex; align-items:center; }
+  .competencia { display:flex; align-items:center; gap:8px; font-size:12px; color:#6b7280; }
+  .competencia select { border:1px solid #d1d5db; border-radius:6px; padding:3px 8px; font-size:12px; color:#374151; }
+
+  .tabs { background:#fff; padding:0 24px; display:flex; gap:4px; border-bottom:1px solid #e5e7eb; }
+  .tab { padding:10px 28px; font-size:13px; font-weight:500; color:#6b7280; cursor:pointer; border-bottom:2px solid transparent; transition:.15s; }
+  .tab.active { color:#3b82f6; border-bottom:2px solid #3b82f6; font-weight:600; }
+  .tab:hover:not(.active) { color:#374151; }
+
+  .content { padding:20px 24px; }
+  .hidden { display:none !important; }
+
+  .top-grid { display:grid; grid-template-columns:1fr 1.5fr; gap:16px; margin-bottom:16px; }
+  .card { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:16px; }
+
+  .upload-zone { border:2px dashed #bfdbfe; border-radius:8px; padding:32px 16px; display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; background:#f0f7ff; transition:.15s; }
+  .upload-zone:hover { background:#dbeafe; border-color:#93c5fd; }
+  .upload-icon { font-size:24px; color:#3b82f6; }
+  .upload-text { font-size:13px; color:#3b82f6; font-weight:600; }
+  .upload-sub { font-size:11px; color:#9ca3af; }
+
+  .lote-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .lote-title { font-size:10px; font-weight:700; color:#9ca3af; letter-spacing:.07em; text-transform:uppercase; }
+  .badge-green { background:#d1fae5; color:#065f46; font-size:10px; font-weight:600; padding:2px 8px; border-radius:99px; }
+  .lote-code { font-size:14px; font-weight:700; color:#1a1a2e; }
+  .lote-meta { font-size:11px; color:#6b7280; margin-top:2px; }
+  .divider { border:none; border-top:1px solid #f3f4f6; margin:12px 0; }
+
+  .resumo-row { display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
+  .resumo-item .num { font-size:17px; font-weight:700; }
+  .resumo-item .lbl { color:#6b7280; font-size:10px; display:block; margin-top:1px; }
+  .c-def { color:#1a1a2e; } .c-blue { color:#3b82f6; } .c-green { color:#10b981; } .c-yellow { color:#f59e0b; } .c-red { color:#ef4444; }
+
+  .historico-trigger { margin-top:12px; display:inline-flex; align-items:center; gap:6px; font-size:11px; color:#3b82f6; cursor:pointer; font-weight:600; padding:4px 0; }
+  .historico-trigger:hover { text-decoration:underline; }
+
+  /* POPUP */
+  .popup-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:8000; display:flex; align-items:center; justify-content:center; }
+  .popup-box { background:#fff; border-radius:12px; width:380px; max-height:400px; display:flex; flex-direction:column; box-shadow:0 16px 48px rgba(0,0,0,0.18); overflow:hidden; }
+  .popup-header { padding:14px 16px; border-bottom:1px solid #e5e7eb; display:flex; align-items:center; justify-content:space-between; }
+  .popup-title { font-size:13px; font-weight:700; color:#1a1a2e; }
+  .popup-close { background:none; border:none; font-size:18px; color:#9ca3af; cursor:pointer; line-height:1; }
+  .popup-close:hover { color:#374151; }
+  .popup-body { overflow-y:scroll; padding:12px 16px; flex:1; scrollbar-width:thin; scrollbar-color:#d1d5db #f9fafb; }
+  .popup-body::-webkit-scrollbar { width:6px; }
+  .popup-body::-webkit-scrollbar-track { background:#f9fafb; }
+  .popup-body::-webkit-scrollbar-thumb { background:#d1d5db; border-radius:99px; }
+  .hist-item { padding:10px 12px; border:1px solid #f3f4f6; border-radius:8px; margin-bottom:8px; background:#fafafa; }
+  .hist-item:last-child { margin-bottom:0; }
+  .hist-code { font-size:12px; font-weight:700; color:#1a1a2e; }
+  .hist-meta { font-size:10px; color:#9ca3af; margin-top:3px; }
+  .hist-row { display:flex; align-items:center; justify-content:space-between; }
+
+  /* FILTERS */
+  .filters-row { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:10px 16px; display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+  .search-box { flex:1; min-width:160px; border:1px solid #d1d5db; border-radius:6px; padding:6px 10px; font-size:12px; color:#9ca3af; }
+  .filter-select { border:1px solid #d1d5db; border-radius:6px; padding:5px 10px; font-size:12px; color:#374151; background:#fff; cursor:pointer; }
+  .count-badge { margin-left:auto; font-size:11px; color:#6b7280; white-space:nowrap; }
+
+  .chips-row { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+  .chip { padding:4px 12px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer; border:1px solid transparent; transition:.15s; }
+  .chip.active { background:#3b82f6; color:#fff; }
+  .chip.default { background:#f3f4f6; color:#6b7280; }
+  .chip.default:hover { background:#e5e7eb; }
+  .chip.indigo { background:#eef2ff; color:#4338ca; border-color:#c7d2fe; }
+
+  .table-wrap { background:#fff; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; }
+  .table-scroll { max-height:380px; overflow-y:scroll; scrollbar-width:thin; scrollbar-color:#d1d5db #f9fafb; }
+  .table-scroll::-webkit-scrollbar { width:6px; }
+  .table-scroll::-webkit-scrollbar-track { background:#f9fafb; }
+  .table-scroll::-webkit-scrollbar-thumb { background:#d1d5db; border-radius:99px; }
+  table { width:100%; border-collapse:collapse; }
+  thead { background:#f9fafb; }
+  th { padding:9px 14px; text-align:left; font-size:11px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid #e5e7eb; }
+  td { padding:10px 14px; border-bottom:1px solid #f3f4f6; font-size:12px; color:#374151; vertical-align:middle; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:#f9fafb; }
+
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:5px; }
+  .dot-gray { background:#d1d5db; } .dot-blue { background:#3b82f6; } .dot-green { background:#10b981; }
+
+  .att-name { font-weight:600; color:#1a1a2e; }
+  .att-proto { font-size:10px; color:#9ca3af; }
+
+  .btn-ver { background:#10b981; color:#fff; border:none; border-radius:6px; padding:5px 10px; font-size:11px; font-weight:600; cursor:pointer; white-space:nowrap; }
+  .btn-anal { background:#3b82f6; color:#fff; border:none; border-radius:6px; padding:5px 10px; font-size:11px; font-weight:600; cursor:pointer; white-space:nowrap; }
+  .btn-menu { background:none; border:1px solid #e5e7eb; border-radius:6px; padding:4px 8px; cursor:pointer; color:#6b7280; font-size:13px; flex-shrink:0; }
+  .btn-menu:hover { background:#f3f4f6; }
+  .action-cell { display:flex; gap:4px; align-items:center; flex-wrap:nowrap; }
+
+  .nota-green { color:#10b981; font-weight:700; }
+  .nota-blue { color:#3b82f6; font-weight:700; }
+  .dash { color:#d1d5db; }
+  .overdue { font-size:10px; background:#fef3c7; color:#92400e; padding:1px 6px; border-radius:99px; margin-left:4px; }
+
+  .table-footer { padding:10px 14px; border-top:1px solid #f3f4f6; display:flex; align-items:center; justify-content:center; gap:12px; }
+  .btn-expand { background:none; border:1px solid #d1d5db; border-radius:6px; padding:5px 16px; font-size:11px; color:#6b7280; cursor:pointer; font-weight:600; }
+  .btn-expand:hover { background:#f3f4f6; }
+
+  /* FLOATING */
+  .floating-bar { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1a1a2e; color:#fff; border-radius:10px; padding:10px 20px; display:flex; align-items:center; gap:16px; box-shadow:0 8px 32px rgba(0,0,0,0.2); font-size:13px; z-index:7000; }
+  .btn-floating { background:#3b82f6; color:#fff; border:none; border-radius:7px; padding:7px 16px; font-size:12px; font-weight:600; cursor:pointer; }
+  .btn-cancel-f { background:none; border:1px solid #4b5563; color:#9ca3af; border-radius:7px; padding:6px 12px; font-size:12px; cursor:pointer; }
+
+  /* PERFORMANCE */
+  .perf-layout { display:grid; grid-template-columns:200px 1fr; gap:0; background:#fff; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; min-height:500px; }
+  .perf-sidebar { border-right:1px solid #e5e7eb; padding:16px 0; background:#f9fafb; }
+  .perf-sidebar-title { font-size:10px; font-weight:700; color:#9ca3af; letter-spacing:.07em; text-transform:uppercase; padding:0 16px 10px; }
+  .perf-item { padding:9px 16px; display:flex; align-items:center; gap:9px; cursor:pointer; font-size:12px; font-weight:500; color:#6b7280; transition:.15s; border-left:3px solid transparent; }
+  .perf-item:hover { background:#f0f4ff; color:#374151; }
+  .perf-item.active { background:#eff6ff; color:#1d4ed8; border-left:3px solid #3b82f6; font-weight:700; }
+  .perf-item .icon { font-size:15px; }
+
+  .perf-content { padding:24px; overflow-y:auto; }
+  .perf-section { display:none; }
+  .perf-section.active { display:block; }
+
+  .perf-filters { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+  .perf-filters select { border:1px solid #d1d5db; border-radius:6px; padding:5px 10px; font-size:12px; color:#374151; background:#fff; cursor:pointer; }
+
+  .section-title { font-size:16px; font-weight:700; color:#1a1a2e; margin-bottom:4px; }
+  .section-sub { font-size:12px; color:#6b7280; margin-bottom:20px; }
+
+  .bonus-table { width:100%; border-collapse:collapse; }
+  .bonus-table th { padding:8px 12px; text-align:left; font-size:11px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid #e5e7eb; background:#f9fafb; }
+  .bonus-table td { padding:10px 12px; font-size:12px; border-bottom:1px solid #f3f4f6; }
+  .faixa-badge { background:#dbeafe; color:#1d4ed8; font-size:10px; font-weight:600; padding:2px 8px; border-radius:99px; }
+  .bonus-val { color:#059669; font-weight:700; font-size:13px; }
+
+  .regua { display:flex; gap:6px; margin-top:16px; flex-wrap:wrap; }
+  .regua-item { padding:4px 12px; border-radius:99px; font-size:10px; font-weight:600; }
+  .r-gold { background:#fef9c3; color:#854d0e; }
+  .r-blue { background:#dbeafe; color:#1e40af; }
+  .r-green { background:#d1fae5; color:#065f46; }
+  .r-red { background:#fee2e2; color:#991b1b; }
+
+  .resumo-cards { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:20px; }
+  .resumo-card { background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:14px 16px; }
+  .resumo-card .rc-label { font-size:10px; color:#9ca3af; text-transform:uppercase; letter-spacing:.05em; font-weight:700; margin-bottom:4px; }
+  .resumo-card .rc-val { font-size:22px; font-weight:800; color:#1a1a2e; }
+  .resumo-card .rc-sub { font-size:11px; color:#6b7280; margin-top:2px; }
+
+  .insight-item { padding:10px 14px; border-radius:8px; margin-bottom:8px; font-size:12px; line-height:1.5; }
+  .insight-critico { background:#fff7ed; border-left:3px solid #f97316; color:#7c2d12; }
+  .insight-positivo { background:#f0fdf4; border-left:3px solid #22c55e; color:#14532d; }
+
+  /* ANNOTATION */
+  .ann-toolbar { position:fixed; top:12px; right:12px; z-index:9999; display:flex; gap:6px; align-items:center; background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:6px 10px; box-shadow:0 4px 16px rgba(0,0,0,0.10); }
+  .ann-hint { display:none; position:fixed; top:56px; right:12px; z-index:9998; background:#fef3c7; border:1px solid #fcd34d; border-radius:8px; padding:8px 14px; font-size:11px; color:#92400e; font-weight:600; }
+  .ann-pin { position:absolute; z-index:9000; cursor:pointer; }
+  .pin-icon { width:26px; height:26px; background:#f59e0b; border:2px solid #fff; border-radius:50% 50% 50% 0; transform:rotate(-45deg); box-shadow:0 2px 8px rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center; color:#fff; font-size:10px; font-weight:700; }
+  .pin-bubble { position:absolute; top:-4px; left:32px; background:#1a1a2e; color:#fff; border-radius:8px; padding:6px 10px; font-size:11px; max-width:220px; white-space:pre-wrap; word-break:break-word; box-shadow:0 4px 12px rgba(0,0,0,0.15); line-height:1.4; min-width:80px; }
+  .pin-bubble::before { content:''; position:absolute; left:-6px; top:10px; border:6px solid transparent; border-right-color:#1a1a2e; border-left:none; }
+  .pin-delete { position:absolute; top:-8px; left:18px; width:16px; height:16px; background:#ef4444; color:#fff; border-radius:50%; font-size:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-weight:700; }
+  body.annotation-mode, body.annotation-mode * { cursor:crosshair !important; }
+  #ann-toggle.active { background:#dc2626 !important; }
+</style>
+</head>
+<body>
+<style>
+  .topnav { position:fixed; top:0; left:0; right:0; z-index:8000; background:#0f172a; display:flex; align-items:center; gap:4px; padding:0 16px; height:42px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .topnav-logo { color:#fff; font-size:12px; font-weight:800; text-decoration:none; padding:5px 12px; border-radius:6px; background:rgba(255,255,255,.12); margin-right:6px; }
+  .topnav-link { color:#94a3b8; font-size:12px; font-weight:500; text-decoration:none; padding:5px 12px; border-radius:6px; transition:all .15s; white-space:nowrap; }
+  .topnav-link:hover, .topnav-link.active { color:#fff; background:rgba(255,255,255,.1); }
+  .topnav-action-btn { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2); color:#e2e8f0; border-radius:6px; padding:4px 12px; font-size:11px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px; transition:background .15s; white-space:nowrap; }
+  .topnav-action-btn:hover { background:rgba(255,255,255,.22); color:#fff; }
+  .fab-approval { position:fixed; bottom:60px; right:24px; background:#1a1a2e; color:#fff; border:none; border-radius:50px; padding:9px 16px; font-size:11px; font-weight:700; cursor:pointer; box-shadow:0 4px 16px rgba(0,0,0,.3); z-index:8900; transition:opacity .15s; }
+  .fab-approval:hover { opacity:.85; }
+  .fab-prompt-mockup { position:fixed; bottom:110px; right:24px; background:linear-gradient(135deg,#7c3aed,#3b82f6); color:#fff; border:none; border-radius:50px; padding:9px 18px; font-size:12px; font-weight:700; cursor:pointer; box-shadow:0 4px 16px rgba(124,58,237,.4); z-index:8900; transition:opacity .15s; white-space:nowrap; }
+  .fab-prompt-mockup:hover { opacity:.85; }
+
+  /* PAINEL GERADOR DE PROMPT */
+  .prompt-panel { position:fixed; top:42px; right:0; bottom:0; width:520px; max-width:97vw; background:#fff; box-shadow:-4px 0 24px rgba(0,0,0,.12); z-index:9200; display:none; flex-direction:column; overflow:hidden; }
+  .prompt-panel.open { display:flex; }
+  .prompt-panel-header { background:#1a1a2e; color:#fff; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+  .prompt-panel-title { font-size:13px; font-weight:800; }
+  .prompt-panel-close { background:rgba(255,255,255,.15); border:none; color:#fff; border-radius:6px; padding:4px 10px; cursor:pointer; font-size:13px; }
+  .prompt-panel-body { flex:1; overflow-y:auto; padding:20px; }
+  .pp-label { font-size:11px; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:.04em; margin-bottom:5px; display:block; }
+  .pp-select, .pp-textarea { width:100%; border:1px solid #d1d5db; border-radius:8px; padding:8px 10px; font-size:12px; font-family:inherit; outline:none; margin-bottom:12px; }
+  .pp-select:focus, .pp-textarea:focus { border-color:#3b82f6; }
+  .pp-textarea { min-height:70px; resize:vertical; }
+  .pp-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .pp-mode-toggle { display:flex; gap:6px; margin-bottom:16px; }
+  .pp-mode-btn { padding:7px 14px; border-radius:8px; border:1px solid #e5e7eb; font-size:12px; font-weight:600; cursor:pointer; background:#f9fafb; color:#6b7280; transition:all .15s; }
+  .pp-mode-btn.active.problema { background:#1a1a2e; color:#fff; border-color:#1a1a2e; }
+  .pp-mode-btn.active.sugestao { background:linear-gradient(135deg,#059669,#10b981); color:#fff; border-color:#059669; }
+  .pp-generate-btn { width:100%; background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; border-radius:8px; padding:11px; font-size:13px; font-weight:700; cursor:pointer; margin-bottom:12px; }
+  .pp-output { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px; font-size:11.5px; font-family:monospace; white-space:pre-wrap; line-height:1.6; display:none; margin-bottom:10px; max-height:240px; overflow-y:auto; }
+  .pp-copy-btn { background:#f3f4f6; border:1px solid #e5e7eb; border-radius:8px; padding:8px 16px; font-size:12px; font-weight:600; cursor:pointer; display:none; }
+  .pp-copy-btn:hover { background:#e5e7eb; }
+  .pp-multiselect { position:relative; margin-bottom:12px; }
+  .pp-multiselect-btn { width:100%; display:flex; align-items:center; justify-content:space-between; border:1px solid #d1d5db; border-radius:8px; padding:8px 10px; font-size:12px; font-family:inherit; background:#fff; cursor:pointer; color:#374151; text-align:left; }
+  .pp-multiselect-btn:focus { border-color:#3b82f6; outline:none; }
+  .pp-multiselect-btn .pp-badge { background:#3b82f6; color:#fff; border-radius:10px; padding:1px 7px; font-size:10px; font-weight:700; margin-left:6px; }
+  .pp-chevron { font-size:10px; color:#9ca3af; transition:transform .15s; }
+  .pp-chevron.open { transform:rotate(180deg); }
+  .pp-multiselect-list { border:1px solid #d1d5db; border-top:none; border-radius:0 0 8px 8px; background:#fff; max-height:180px; overflow-y:auto; scrollbar-width:thin; }
+  .pp-check-item { display:flex; align-items:center; gap:8px; padding:6px 10px; border-bottom:1px solid #f3f4f6; font-size:12px; color:#374151; cursor:pointer; }
+  .pp-check-item:last-child { border-bottom:none; }
+  .pp-check-item:hover { background:#f8fafc; }
+  .pp-check-item input { cursor:pointer; accent-color:#3b82f6; flex-shrink:0; }
+  .pp-check-item label { cursor:pointer; flex:1; }
+</style>
+<nav class="topnav">
+  <a href="index.html" class="topnav-logo">📡 Hub</a>
+  <a href="guia-ux-radar-insight.html" class="topnav-link">📘 Guia UX/UI</a>
+  <a href="mockup-mentoria-lab.html" class="topnav-link active">🧪 Mockup Mentoria Lab</a>
+  <div style="flex:1"></div>
+  <button class="topnav-action-btn" onclick="location.reload(true)" title="Recarregar página">🔄 Atualizar</button>
+  <button class="topnav-action-btn" onclick="toggleNotes()" id="header-notes-btn">
+    📝 Anotações
+    <span id="notif-dot" style="width:7px;height:7px;background:#f59e0b;border-radius:50%;display:none;margin-left:2px;"></span>
+  </button>
+  <button class="topnav-action-btn" onclick="openApprovalApiModal()">
+    <span id="appr-status-dot2" style="width:7px;height:7px;border-radius:50%;background:#9ca3af;display:inline-block;"></span>
+    <span id="appr-status-label2">Configurar IA</span>
+  </button>
+</nav>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">Radar Insight — <span>Mentoria Lab</span></div>
+    <span class="badge">Beta</span>
+    <button class="btn">🔍 Diagnóstico</button>
+  </div>
+  <div class="topbar-right">
+    <button class="btn">📄 Exportar relatório</button>
+    <button class="btn">🛡 Avaliações Oficiais</button>
+    <button class="btn danger">🗑 Limpar dados</button>
+    <button class="btn">← Voltar</button>
+    <button class="btn">→ Sair</button>
+  </div>
+</div>
+
+<!-- SUBBAR -->
+<div class="subbar">
+  <div class="competencia">
+    📅 <strong>Competência:</strong>
+    <select><option>Março/2026</option><option>Fevereiro/2026</option><option>Janeiro/2026</option></select>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('operacao')">Operação</div>
+  <div class="tab" onclick="switchTab('performance')">Performance</div>
+</div>
+
+<!-- ==================== ABA OPERAÇÃO ==================== -->
+<div id="tab-operacao" class="content">
+
+  <!-- TOP GRID -->
+  <div class="top-grid">
+    <!-- UPLOAD -->
+    <div class="card">
+      <div class="upload-zone">
+        <div class="upload-icon">↑</div>
+        <div class="upload-text">Arraste PDFs ou ZIP aqui</div>
+        <div class="upload-sub">ou clique para selecionar arquivos</div>
+      </div>
+    </div>
+
+    <!-- ÚLTIMO LOTE + RESUMO -->
+    <div class="card">
+      <div class="lote-header">
+        <span class="lote-title">Último Lote</span>
+        <span class="badge-green">Concluído</span>
+      </div>
+      <div class="lote-code">lote-2026-03-898</div>
+      <div class="lote-meta">29/03/2026 00:34 · 12 PDFs válidos</div>
+      <hr class="divider"/>
+      <div class="resumo-row">
+        <div class="resumo-item"><div class="num c-def">12</div><span class="lbl">Total</span></div>
+        <div class="resumo-item"><div class="num c-blue">8</div><span class="lbl">⚡ Aptos IA</span></div>
+        <div class="resumo-item"><div class="num c-green">4</div><span class="lbl">Analisados</span></div>
+        <div class="resumo-item"><div class="num c-yellow">0</div><span class="lbl">Não avaliáveis</span></div>
+        <div class="resumo-item"><div class="num c-red">0</div><span class="lbl">Erros</span></div>
+      </div>
+      <div class="historico-trigger" onclick="document.getElementById('popup-historico').classList.remove('hidden')">
+        📦 Ver histórico de lotes (3) →
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTERS + olhinho -->
+  <div class="filters-row">
+    <input class="search-box" placeholder="🔍  Buscar atendente ou protocolo..."/>
+    <select class="filter-select"><option>Todos atendentes</option><option>Emanuelle Rodrigues</option><option>Aline Maciejescki</option><option>Diego de Souza</option></select>
+    <select class="filter-select"><option>Período ▾</option><option>Esta semana</option><option>Este mês</option><option>Mês anterior</option></select>
+    <span class="count-badge">12 de 12 atendimentos</span>
+    <button id="btn-eye" onclick="toggleTable()" title="Ocultar/mostrar fila" style="background:none;border:1px solid #d1d5db;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:14px;color:#6b7280;" >👁</button>
+  </div>
+
+  <!-- CHIPS -->
+  <div class="chips-row">
+    <span class="chip active">Todos (12)</span>
+    <span class="chip default">Pendentes (8)</span>
+    <span class="chip indigo">⚡ Aptos IA (8)</span>
+    <span class="chip default">Em análise (0)</span>
+    <span class="chip default">Não avaliáveis (0)</span>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-wrap">
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:36px"><input type="checkbox"/></th>
+          <th style="width:28%">Atendente</th>
+          <th style="width:14%">Data</th>
+          <th style="width:16%">Status</th>
+          <th style="width:10%;text-align:center">Nota</th>
+          <th style="width:18%">Ação</th>
+        </tr>
+      </thead>
+      <tbody id="table-body">
+        <tr><td><input type="checkbox" checked/></td><td><div class="att-name">Emanuelle Rodrigues</div><div class="att-proto">#PRO-2241</div></td><td>15/03/2026</td><td><span class="dot dot-green"></span>Analisado</td><td><span class="nota-green">7,9</span></td><td><div class="action-cell"><button class="btn-ver">👁 Ver</button><button class="btn-menu">⋯</button></div></td></tr>
+        <tr><td><input type="checkbox"/></td><td><div class="att-name">Aline Maciejescki</div><div class="att-proto">#PRO-2198</div></td><td>18/03/2026</td><td><span class="dot dot-gray"></span>Pendente<span class="overdue">8d</span></td><td><span class="dash">—</span></td><td><div class="action-cell"><button class="btn-anal">▶ Analisar</button><button class="btn-menu">⋯</button></div></td></tr>
+        <tr><td><input type="checkbox"/></td><td><div class="att-name">Diego de Souza</div><div class="att-proto">#PRO-2205</div></td><td>20/03/2026</td><td><span class="dot dot-gray"></span>Pendente</td><td><span class="dash">—</span></td><td><div class="action-cell"><button class="btn-anal">▶ Analisar</button><button class="btn-menu">⋯</button></div></td></tr>
+        <tr><td><input type="checkbox"/></td><td><div class="att-name">Guilherme Jeronimo</div><div class="att-proto">#PRO-2217</div></td><td>22/03/2026</td><td><span class="dot dot-blue"></span>Em análise</td><td><span class="dash">—</span></td><td><div class="action-cell"><button class="btn-anal" style="background:#6366f1">⏳ Processando</button><button class="btn-menu">⋯</button></div></td></tr>
+        <tr><td><input type="checkbox"/></td><td><div class="att-name">Kyara Gabriel</div><div class="att-proto">#PRO-2233</div></td><td>25/03/2026</td><td><span class="dot dot-gray"></span>Pendente</td><td><span class="dash">—</span></td><td><div class="action-cell"><button class="btn-anal">▶ Analisar</button><button class="btn-menu">⋯</button></div></td></tr>
+        <tr><td><input type="checkbox"/></td><td><div class="att-name">Joelma Cardozo</div><div class="att-proto">#PRO-2244</div></td><td>26/03/2026</td><td><span class="dot dot-green"></span>Analisado</td><td><span class="nota-blue">8,4</span></td><td><div class="action-cell"><button class="btn-ver">👁 Ver</button><button class="btn-menu">⋯</button></div></td></tr>
+        <tr><td><input type="checkbox"/></td><td><div class="att-name">Gabriel de Moura</div><div class="att-proto">#PRO-2251</div></td><td>26/03/2026</td><td><span class="dot dot-gray"></span>Pendente</td><td><span class="dash">—</span></td><td><div class="action-cell"><button class="btn-anal">▶ Analisar</button><button class="btn-menu">⋯</button></div></td></tr>
+        <tr><td><input type="checkbox"/></td><td><div class="att-name">Daniele Mendes</div><div class="att-proto">#PRO-2258</div></td><td>27/03/2026</td><td><span class="dot dot-gray"></span>Pendente</td><td><span class="dash">—</span></td><td><div class="action-cell"><button class="btn-anal">▶ Analisar</button><button class="btn-menu">⋯</button></div></td></tr>
+        <tr><td><input type="checkbox"/></td><td><div class="att-name">Laura Torres</div><div class="att-proto">#PRO-2261</div></td><td>27/03/2026</td><td><span class="dot dot-gray"></span>Pendente</td><td><span class="dash">—</span></td><td><div class="action-cell"><button class="btn-anal">▶ Analisar</button><button class="btn-menu">⋯</button></div></td></tr>
+        <tr><td><input type="checkbox"/></td><td><div class="att-name">Maylla Ferreira</div><div class="att-proto">#PRO-2265</div></td><td>28/03/2026</td><td><span class="dot dot-gray"></span>Pendente</td><td><span class="dash">—</span></td><td><div class="action-cell"><button class="btn-anal">▶ Analisar</button><button class="btn-menu">⋯</button></div></td></tr>
+      </tbody>
+      <!-- linhas extras (ocultas inicialmente) -->
+      <tbody id="table-extra" class="hidden">
+        <tr><td><input type="checkbox"/></td><td><div class="att-name">Luana Daros</div><div class="att-proto">#PRO-2270</div></td><td>28/03/2026</td><td><span class="dot dot-gray"></span>Pendente</td><td><span class="dash">—</span></td><td><div class="action-cell"><button class="btn-anal">▶ Analisar</button><button class="btn-menu">⋯</button></div></td></tr>
+        <tr><td><input type="checkbox"/></td><td><div class="att-name">Luan Beilfuss</div><div class="att-proto">#PRO-2275</div></td><td>28/03/2026</td><td><span class="dot dot-gray"></span>Pendente</td><td><span class="dash">—</span></td><td><div class="action-cell"><button class="btn-anal">▶ Analisar</button><button class="btn-menu">⋯</button></div></td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="table-footer">
+      <button class="btn-expand" id="btn-expand" onclick="toggleExpand()">▼ Ver todos os 12 atendimentos</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== ABA PERFORMANCE ==================== -->
+<div id="tab-performance" class="content hidden">
+  <div class="perf-layout">
+
+    <!-- SIDEBAR -->
+    <div class="perf-sidebar">
+      <div class="perf-sidebar-title">Seções</div>
+      <div class="perf-item active" onclick="switchPerf('bonus', this)"><span class="icon">🏆</span> Painel de Bônus</div>
+      <div class="perf-item" onclick="switchPerf('resumo', this)"><span class="icon">📊</span> Resumo Geral</div>
+      <div class="perf-item" onclick="switchPerf('perfbonus', this)"><span class="icon">💰</span> Performance & Bônus</div>
+      <div class="perf-item" onclick="switchPerf('detalhada', this)"><span class="icon">👤</span> Perf. Detalhada</div>
+      <div class="perf-item" onclick="switchPerf('recomendados', this)"><span class="icon">⭐</span> Recomendados</div>
+      <div class="perf-item" onclick="switchPerf('padroes', this)"><span class="icon">💬</span> Padrões</div>
+      <div class="perf-item" onclick="switchPerf('roteiro', this)"><span class="icon">📋</span> Roteiro</div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="perf-content">
+
+      <!-- Filtros globais -->
+      <div class="perf-filters">
+        <select><option>Todos atendentes</option><option>Emanuelle Rodrigues</option><option>Joelma Cardozo</option></select>
+        <select><option>Março/2026</option><option>Fevereiro/2026</option><option>Janeiro/2026</option></select>
+        <select><option>Todas categorias</option><option>Sucesso Cliente</option><option>Suporte Técnico</option></select>
+      </div>
+
+      <!-- PAINEL DE BÔNUS -->
+      <div class="perf-section active" id="perf-bonus">
+        <div class="section-title">🏆 Painel de Bônus</div>
+        <div class="section-sub">1 atendente avaliado · Total: R$ 840,00</div>
+        <table class="bonus-table">
+          <thead><tr><th>#</th><th>Atendente</th><th>Avaliações</th><th>Média</th><th>Faixa</th><th>Bônus</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td><strong>Emanuelle Rodrigues</strong></td><td>3</td><td><strong style="color:#3b82f6">7,9</strong></td><td><span class="faixa-badge">Bom atendimento (70%)</span></td><td><span class="bonus-val">R$ 840,00</span></td></tr>
+          </tbody>
+        </table>
+        <div class="regua">
+          <span class="regua-item r-gold">90-100: Excelente (R$ 1.200)</span>
+          <span class="regua-item r-blue">80-89: Ótimo (R$ 700)</span>
+          <span class="regua-item r-green">60-79: Bom (R$ 300)</span>
+          <span class="regua-item r-red">0-59: Fraco (R$ 0)</span>
+        </div>
+      </div>
+
+      <!-- RESUMO GERAL -->
+      <div class="perf-section" id="perf-resumo">
+        <div class="section-title">📊 Resumo Geral</div>
+        <div class="section-sub">3 atendimentos analisados · 1 atendente · 1 fora de avaliação</div>
+        <div class="resumo-cards">
+          <div class="resumo-card"><div class="rc-label">Nota Média</div><div class="rc-val" style="color:#3b82f6">7,8</div><div class="rc-sub">Bom atendimento</div></div>
+          <div class="resumo-card"><div class="rc-label">Atendentes</div><div class="rc-val">1</div><div class="rc-sub">avaliados este mês</div></div>
+          <div class="resumo-card"><div class="rc-label">Analisados</div><div class="rc-val">3</div><div class="rc-sub">de 12 importados</div></div>
+        </div>
+        <div style="font-size:12px;font-weight:700;color:#f97316;margin-bottom:8px;">↘ Pontos críticos mais recorrentes</div>
+        <div class="insight-item insight-critico">Tempo de resposta entre mensagens ultrapassou 3 horas no período da tarde.</div>
+        <div class="insight-item insight-critico">Dados cadastrais não foram validados durante a jornada de atendimento.</div>
+        <div style="font-size:12px;font-weight:700;color:#22c55e;margin:12px 0 8px;">↗ Pontos fortes mais recorrentes</div>
+        <div class="insight-item insight-positivo">Atendimento conduzido com clareza e cordialidade, resultando em upgrade do plano.</div>
+      </div>
+
+      <!-- PERFORMANCE & BÔNUS -->
+      <div class="perf-section" id="perf-perfbonus">
+        <div class="section-title">💰 Performance & Bônus por Atendente</div>
+        <div class="section-sub">Detalhamento individual com status de bônus</div>
+        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <strong>Emanuelle Rodrigues</strong>
+            <span style="background:#fef3c7;color:#92400e;font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;">Amostragem insuficiente</span>
+          </div>
+          <div style="display:flex;gap:24px;">
+            <div><div style="font-size:20px;font-weight:800;color:#3b82f6;">7,8</div><div style="font-size:10px;color:#9ca3af;">Nota Média</div></div>
+            <div><div style="font-size:20px;font-weight:800;color:#d1d5db;">—</div><div style="font-size:10px;color:#9ca3af;">Bônus</div></div>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:#9ca3af;">Pendente · 3 mentorias realizadas</div>
+        </div>
+      </div>
+
+      <!-- DETALHADA -->
+      <div class="perf-section" id="perf-detalhada">
+        <div class="section-title">👤 Performance Detalhada</div>
+        <div class="section-sub">Análise por atendimento com pontos fortes e críticos</div>
+        <div class="insight-item insight-critico" style="margin-bottom:8px;">Tempo de espera elevado (10 min) para procedimento de baixa de comprovante.</div>
+        <div class="insight-item insight-positivo" style="margin-bottom:8px;">Atendimento rápido, resolveu a dor imediata do cliente.</div>
+        <div class="insight-item insight-critico">Conexão não foi confirmada após restabelecimento — dados cadastrais não atualizados.</div>
+      </div>
+
+      <!-- RECOMENDADOS -->
+      <div class="perf-section" id="perf-recomendados">
+        <div class="section-title">⭐ Atendimentos Recomendados</div>
+        <div class="section-sub">Atendimentos indicados para mentoria prioritária</div>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;margin-bottom:8px;">
+          <div style="font-weight:700;font-size:12px;color:#14532d;">Emanuelle Rodrigues — #PRO-2241</div>
+          <div style="font-size:11px;color:#166534;margin-top:4px;">Nota 7,9 · Upgrade do plano · Boa condução geral</div>
+        </div>
+      </div>
+
+      <!-- PADRÕES -->
+      <div class="perf-section" id="perf-padroes">
+        <div class="section-title">💬 Padrões de Comportamento</div>
+        <div class="section-sub">Padrões recorrentes identificados nos atendimentos</div>
+        <div class="insight-item insight-critico" style="margin-bottom:8px;">Tempo de resposta acima de 3h recorrente em período vespertino.</div>
+        <div class="insight-item insight-positivo" style="margin-bottom:8px;">Cordialidade e clareza consistentes em todos os atendimentos analisados.</div>
+        <div class="insight-item insight-critico">Validação de dados cadastrais negligenciada em 2 de 3 atendimentos.</div>
+      </div>
+
+      <!-- ROTEIRO -->
+      <div class="perf-section" id="perf-roteiro">
+        <div class="section-title">📋 Roteiro de Mentoria</div>
+        <div class="section-sub">Guia sugerido para a sessão de mentoria do mês</div>
+        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;line-height:1.8;font-size:12px;color:#374151;">
+          <strong>1. Abertura</strong> — Reconhecer pontos positivos do mês (cordialidade, resolução).<br/>
+          <strong>2. Foco principal</strong> — Tempo de resposta no período da tarde: causa, impacto, plano de ação.<br/>
+          <strong>3. Processo</strong> — Revisão do protocolo de validação de dados cadastrais.<br/>
+          <strong>4. Meta</strong> — Reduzir tempo de resposta para menos de 1h e atingir nota ≥ 8,5 no próximo mês.<br/>
+          <strong>5. Encerramento</strong> — Compromisso e data de acompanhamento.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- POPUP HISTÓRICO DE LOTES -->
+<div id="popup-historico" class="popup-overlay hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="popup-box">
+    <div class="popup-header">
+      <span class="popup-title">📦 Histórico de Lotes</span>
+      <button class="popup-close" onclick="document.getElementById('popup-historico').classList.add('hidden')">×</button>
+    </div>
+    <div class="popup-body">
+      <div class="hist-item">
+        <div class="hist-row"><span class="hist-code">lote-2026-03-898</span><span class="badge-green">Concluído</span></div>
+        <div class="hist-meta">29/03/2026 00:34 · 12 atendimentos</div>
+      </div>
+      <div class="hist-item">
+        <div class="hist-row"><span class="hist-code">lote-2026-02-741</span><span class="badge-green">Concluído</span></div>
+        <div class="hist-meta">15/02/2026 14:20 · 30 atendimentos</div>
+      </div>
+      <div class="hist-item">
+        <div class="hist-row"><span class="hist-code">lote-2026-01-512</span><span class="badge-green">Concluído</span></div>
+        <div class="hist-meta">10/01/2026 09:05 · 25 atendimentos</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FLOATING BAR -->
+<div class="floating-bar">
+  <span>2 selecionados</span>
+  <button class="btn-floating">⚡ Analisar selecionados (2)</button>
+  <button class="btn-cancel-f">Cancelar</button>
+</div>
+
+<!-- ANNOTATION TOOLBAR (oculta — anotações via painel) -->
+<div id="ann-hint" class="ann-hint">Clique em qualquer lugar da tela para adicionar uma anotação</div>
+
+<!-- FAB: Gerador de Prompt -->
+<button class="fab-prompt-mockup" onclick="document.getElementById('pp-panel').classList.toggle('open')">⚡ Gerador de Prompt</button>
+
+<!-- PAINEL GERADOR DE PROMPT -->
+<div class="prompt-panel" id="pp-panel">
+  <div class="prompt-panel-header">
+    <span class="prompt-panel-title">⚡ Gerador de Prompt Técnico</span>
+    <button class="prompt-panel-close" onclick="document.getElementById('pp-panel').classList.remove('open')">✕ Fechar</button>
+  </div>
+  <div class="prompt-panel-body">
+    <!-- Decisão de aprovação -->
+    <div style="display:flex;gap:8px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #e5e7eb;">
+      <button class="appr-btn appr-btn-approve" style="flex:1;justify-content:center;" onclick="document.getElementById('pp-panel').classList.remove('open');triggerDecision('approve')">✅ Aprovar</button>
+      <button class="appr-btn appr-btn-reject" style="flex:1;justify-content:center;" onclick="triggerDecision('reject')">❌ Reprovar</button>
+      <button class="appr-btn appr-btn-reeval" style="flex:1;justify-content:center;" onclick="triggerDecision('reeval')">🔄 Reavaliar</button>
+    </div>
+
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #e5e7eb;flex-wrap:wrap;">
+      <button class="pp-mode-btn active problema" id="pp-btn-problema" onclick="ppSetMode('problema')">🔧 Corrigir Problema</button>
+      <button class="pp-mode-btn sugestao" id="pp-btn-sugestao" onclick="ppSetMode('sugestao')">💡 Sugerir Melhoria</button>
+      <button class="pp-mode-btn" id="pp-btn-chat" onclick="ppToggleChat()" style="background:#f0f4ff;border-color:#c7d2fe;color:#4338ca;">💬 Perguntar IA</button>
+    </div>
+
+    <!-- Mini chat rápido -->
+    <div id="pp-chat-box" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:700;color:#4338ca;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em;">💬 Chat Rápido — IA</div>
+      <div id="pp-chat-messages" style="max-height:220px;overflow-y:auto;scrollbar-width:thin;margin-bottom:10px;display:flex;flex-direction:column;gap:8px;"></div>
+      <div style="display:flex;gap:6px;">
+        <input id="pp-chat-input" type="text" placeholder="Pergunte algo sobre UX/UI, Radar Insight..." style="flex:1;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;font-size:12px;font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter')ppChatSend()"/>
+        <button onclick="ppChatSend()" style="background:#4338ca;color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;white-space:nowrap;">Enviar</button>
+      </div>
+    </div>
+
+    <div class="pp-row">
+      <div>
+        <label class="pp-label">Aba</label>
+        <select class="pp-select" id="pp-aba" onchange="ppUpdateComps()">
+          <option value="">Selecione a aba...</option>
+          <option value="operacao">Aba Operação</option>
+          <option value="performance">Aba Performance</option>
+          <option value="geral">Geral / Header</option>
+        </select>
+      </div>
+      <div>
+        <label class="pp-label">Componente(s)</label>
+        <div class="pp-multiselect" id="pp-comp-wrap">
+          <button type="button" class="pp-multiselect-btn" id="pp-comp-btn" onclick="ppToggleList('comp')">
+            <span id="pp-comp-summary">Selecione a aba primeiro...</span>
+            <span class="pp-chevron" id="pp-comp-chev">▼</span>
+          </button>
+          <div class="pp-multiselect-list" id="pp-comp-list" style="display:none;">
+            <div style="padding:8px 10px;font-size:11px;color:#9ca3af;">Selecione a aba primeiro...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label class="pp-label" id="pp-label-tipo">Tipo de problema</label>
+      <div class="pp-multiselect" id="pp-tipo-wrap">
+        <button type="button" class="pp-multiselect-btn" id="pp-tipo-btn" onclick="ppToggleList('tipo')">
+          <span id="pp-tipo-summary">Selecione...</span>
+          <span class="pp-chevron" id="pp-tipo-chev">▼</span>
+        </button>
+        <div class="pp-multiselect-list" id="pp-tipo-list" style="display:none;">
+          <div class="pp-check-item"><input type="checkbox" id="pt0" value="Elemento com largura errada"><label for="pt0">Elemento com largura errada</label></div>
+          <div class="pp-check-item"><input type="checkbox" id="pt1" value="Texto quebrando linha indesejada"><label for="pt1">Texto quebrando linha indesejada</label></div>
+          <div class="pp-check-item"><input type="checkbox" id="pt2" value="Espaçamento incorreto"><label for="pt2">Espaçamento incorreto</label></div>
+          <div class="pp-check-item"><input type="checkbox" id="pt3" value="Scroll não funciona como esperado"><label for="pt3">Scroll não funciona como esperado</label></div>
+          <div class="pp-check-item"><input type="checkbox" id="pt4" value="Elemento sobreposto / z-index errado"><label for="pt4">Elemento sobreposto / z-index errado</label></div>
+          <div class="pp-check-item"><input type="checkbox" id="pt5" value="Botão/ícone mal posicionado"><label for="pt5">Botão/ícone mal posicionado</label></div>
+          <div class="pp-check-item"><input type="checkbox" id="pt6" value="Cor ou estilo visual incorreto"><label for="pt6">Cor ou estilo visual incorreto</label></div>
+          <div class="pp-check-item"><input type="checkbox" id="pt7" value="Dado não aparece / aparece errado"><label for="pt7">Dado não aparece / aparece errado</label></div>
+          <div class="pp-check-item"><input type="checkbox" id="pt8" value="Outro"><label for="pt8">Outro</label></div>
+        </div>
+      </div>
+      <!-- tipo sugestão (mantido oculto para leitura via ppMode) -->
+      <div class="pp-multiselect" id="pp-tipo-sug-wrap" style="display:none;">
+        <button type="button" class="pp-multiselect-btn" onclick="ppToggleList('tipo-sug')">
+          <span id="pp-tipo-sug-summary">Selecione...</span>
+          <span class="pp-chevron" id="pp-tipo-sug-chev">▼</span>
+        </button>
+        <div class="pp-multiselect-list" id="pp-tipo-sug-list" style="display:none;">
+          <div class="pp-check-item"><input type="checkbox" id="ps0" value="Nova funcionalidade"><label for="ps0">Nova funcionalidade</label></div>
+          <div class="pp-check-item"><input type="checkbox" id="ps1" value="Reorganizar layout"><label for="ps1">Reorganizar layout</label></div>
+          <div class="pp-check-item"><input type="checkbox" id="ps2" value="Melhorar UX (usabilidade)"><label for="ps2">Melhorar UX (usabilidade)</label></div>
+          <div class="pp-check-item"><input type="checkbox" id="ps3" value="Adicionar feedback visual"><label for="ps3">Adicionar feedback visual</label></div>
+          <div class="pp-check-item"><input type="checkbox" id="ps4" value="Simplificar interface"><label for="ps4">Simplificar interface</label></div>
+          <div class="pp-check-item"><input type="checkbox" id="ps5" value="Outro"><label for="ps5">Outro</label></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label class="pp-label">Descreva <span style="color:#9ca3af;text-transform:none;font-weight:400">(opcional)</span></label>
+      <textarea class="pp-textarea" id="pp-desc" placeholder="Ex: o botão some quando o nome é longo..."></textarea>
+    </div>
+    <div>
+      <label class="pp-label">Como deveria ficar</label>
+      <textarea class="pp-textarea" id="pp-esperado" placeholder="Ex: largura mínima fixa com texto truncado..."></textarea>
+    </div>
+
+    <div class="pp-row">
+      <div id="pp-row-quando">
+        <label class="pp-label">Ocorre quando?</label>
+        <select class="pp-select" id="pp-quando">
+          <option>Sempre</option>
+          <option>Quando o texto é longo</option>
+          <option>Quando há muitos itens</option>
+          <option>Somente no celular</option>
+          <option>Após importar arquivos</option>
+          <option>Após clicar em algum botão</option>
+        </select>
+      </div>
+      <div>
+        <label class="pp-label">Prioridade</label>
+        <select class="pp-select" id="pp-prio">
+          <option>Alta — impede o uso</option>
+          <option>Média — atrapalha a leitura</option>
+          <option>Baixa — ajuste estético</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="pp-generate-btn" onclick="ppGenerate()">⚡ Gerar Prompt Técnico</button>
+    <pre class="pp-output" id="pp-output"></pre>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+      <button class="pp-copy-btn" id="pp-copy-btn" onclick="ppCopy()">📋 Copiar prompt</button>
+      <button class="pp-copy-btn" id="pp-ai-btn" style="background:linear-gradient(135deg,#7c3aed,#3b82f6);color:#fff;border-color:transparent;display:none;" onclick="ppAnalyzeWithAI()">🤖 Analisar com IA</button>
+    </div>
+    <div id="pp-ai-response" style="display:none;background:#f0f4ff;border:1px solid #c7d2fe;border-radius:8px;padding:14px;font-size:12px;line-height:1.7;color:#1e1b4b;margin-bottom:10px;">
+      <div style="font-weight:700;margin-bottom:8px;color:#4338ca;">🤖 Análise da IA — Claude</div>
+      <div id="pp-ai-content"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ─── GERADOR DE PROMPT (painel) ───────────────────────────────
+  let ppMode = 'problema';
+  const ppComps = {
+    operacao: [
+      'Upload / Drag & Drop',
+      'Card Último Lote',
+      'Contadores de Resumo (Total, Aptos IA, Analisados...)',
+      'Botão / Link Histórico de Lotes',
+      'Popup Histórico de Lotes',
+      'Filtro de Busca',
+      'Seletor de Atendente',
+      'Seletor de Período',
+      'Chips de Status (Todos, Pendentes, Aptos IA...)',
+      'Tabela de Atendimentos',
+      'Coluna: Atendente',
+      'Coluna: Data',
+      'Coluna: Status',
+      'Coluna: Nota',
+      'Coluna: Ação (Analisar / Ver / ⋯)',
+      'Checkbox de seleção (linha)',
+      'Barra Flutuante de Seleção',
+      'Botão Analisar selecionados',
+      'Toggle Olhinho (ocultar tabela)',
+    ],
+    performance: ['Sidebar de Seções','Painel de Bônus','Gráficos de Performance','Tabela de Ranking','Resumo Geral','Recomendados'],
+    geral: ['Topbar / Header','Abas (Operação / Performance)','Botão Exportar Relatório','Botão Limpar Dados','Badge Beta']
+  };
+  function ppSetMode(m) {
+    ppMode = m;
+    document.getElementById('pp-btn-problema').className = 'pp-mode-btn' + (m==='problema' ? ' active problema' : '');
+    document.getElementById('pp-btn-sugestao').className = 'pp-mode-btn sugestao' + (m==='sugestao' ? ' active' : '');
+    document.getElementById('pp-tipo-wrap').style.display = m==='problema' ? '' : 'none';
+    document.getElementById('pp-tipo-sug-wrap').style.display = m==='sugestao' ? '' : 'none';
+    document.getElementById('pp-label-tipo').textContent = m==='problema' ? 'Tipo de problema' : 'Tipo de melhoria';
+    document.getElementById('pp-row-quando').style.display = m==='problema' ? '' : 'none';
+  }
+  function ppToggleList(key) {
+    const list = document.getElementById('pp-' + key + '-list');
+    const chev = document.getElementById('pp-' + key + '-chev');
+    const open = list.style.display === 'none';
+    list.style.display = open ? '' : 'none';
+    if (chev) chev.classList.toggle('open', open);
+  }
+  function ppUpdateSummary(key, listId) {
+    const checked = [...document.querySelectorAll('#' + listId + ' input[type=checkbox]:checked')];
+    const summary = document.getElementById('pp-' + key + '-summary');
+    if (!summary) return;
+    if (checked.length === 0) {
+      summary.innerHTML = 'Selecione...';
+    } else {
+      summary.innerHTML = checked[0].value + (checked.length > 1 ? ` <span class="pp-badge">+${checked.length - 1}</span>` : '');
+    }
+  }
+  // Atualizar summary ao mudar checkbox
+  document.addEventListener('change', function(e) {
+    if (e.target.closest('#pp-tipo-list')) ppUpdateSummary('tipo', 'pp-tipo-list');
+    if (e.target.closest('#pp-tipo-sug-list')) ppUpdateSummary('tipo-sug', 'pp-tipo-sug-list');
+    if (e.target.closest('#pp-comp-list')) {
+      const checked = [...document.querySelectorAll('#pp-comp-list input[type=checkbox]:checked')];
+      const summary = document.getElementById('pp-comp-summary');
+      if (summary) {
+        if (checked.length === 0) summary.innerHTML = 'Selecione os componentes...';
+        else summary.innerHTML = checked[0].value + (checked.length > 1 ? ` <span class="pp-badge">+${checked.length - 1}</span>` : '');
+      }
+    }
+  });
+
+  function ppUpdateComps() {
+    const aba = document.getElementById('pp-aba').value;
+    const list = document.getElementById('pp-comp-list');
+    list.innerHTML = '';
+    if (!aba) { list.innerHTML = '<div style="padding:8px 10px;font-size:11px;color:#9ca3af;">Selecione a aba primeiro...</div>'; return; }
+    (ppComps[aba]||[]).forEach((c, i) => {
+      const id = 'ppc-' + i;
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid #f3f4f6;font-size:12px;color:#374151;cursor:pointer;';
+      div.innerHTML = `<input type="checkbox" id="${id}" value="${c}" style="cursor:pointer;accent-color:#3b82f6;"/><label for="${id}" style="cursor:pointer;flex:1;">${c}</label>`;
+      list.appendChild(div);
+    });
+  }
+  function ppGenerate() {
+    const aba = document.getElementById('pp-aba').options[document.getElementById('pp-aba').selectedIndex]?.text || '—';
+    const checkedComps = [...document.querySelectorAll('#pp-comp-list input[type=checkbox]:checked')].map(c => c.value);
+    const comp = checkedComps.length > 0 ? checkedComps.join(', ') : '—';
+    const tipoListId = ppMode === 'problema' ? 'pp-tipo-list' : 'pp-tipo-sug-list';
+    const checkedTipos = [...document.querySelectorAll('#' + tipoListId + ' input[type=checkbox]:checked')].map(c => c.value);
+    const tipo = checkedTipos.length > 0 ? checkedTipos.join(', ') : '[Tipo não informado]';
+    const desc = document.getElementById('pp-desc').value.trim();
+    const esperado = document.getElementById('pp-esperado').value.trim();
+    const quando = document.getElementById('pp-quando').value;
+    const prio = document.getElementById('pp-prio').value;
+    let prompt = '';
+    if (ppMode === 'problema') {
+      prompt = `SOLICITAÇÃO DE AJUSTE — RADAR INSIGHT
+Página: Mockup Mentoria Lab
+======================================
+Local: ${aba} → ${comp}
+Tipo de problema: ${tipo || '[Tipo não informado]'}
+Ocorre quando: ${quando}
+Prioridade: ${prio}
+${desc ? `\nPROBLEMA DETALHADO:\n${desc}\n` : ''}
+COMPORTAMENTO ESPERADO:
+${esperado || '[Não informado]'}
+
+⚠️ ANTES DE IMPLEMENTAR:
+Analise os prós e contras desta mudança considerando:
+- Impacto no layout geral
+- Possíveis efeitos colaterais em outros componentes
+- Alternativas mais simples se houver
+
+REGRA IMPORTANTE:
+Não remover nenhuma lógica, hook, integração ou funcionalidade existente. Apenas ajuste visual/layout conforme descrito acima.`;
+    } else {
+      prompt = `SUGESTÃO DE MELHORIA — RADAR INSIGHT
+Página: Mockup Mentoria Lab
+======================================
+Local: ${aba} → ${comp}
+Tipo de melhoria: ${tipo || '[Tipo não informado]'}
+Prioridade: ${prio}
+${desc ? `\n💡 IDEIA PROPOSTA:\n${desc}\n` : ''}
+RESULTADO ESPERADO:
+${esperado || '[Não informado]'}
+
+REGRA IMPORTANTE:
+Não remover nenhuma lógica, hook, integração ou funcionalidade existente. Implemente a melhoria de forma aditiva, preservando tudo que já existe.`;
+    }
+    const out = document.getElementById('pp-output');
+    const btn = document.getElementById('pp-copy-btn');
+    const aibtn = document.getElementById('pp-ai-btn');
+    out.textContent = prompt;
+    out.style.display = 'block';
+    btn.style.display = 'inline-block';
+    aibtn.style.display = 'inline-block';
+    document.getElementById('pp-ai-response').style.display = 'none';
+    // Salvar no histórico do guia (mesma chave)
+    try {
+      const hist = JSON.parse(localStorage.getItem('radar_prompt_history')||'[]');
+      hist.unshift({ text: prompt, date: new Date().toLocaleString('pt-BR'), mode: ppMode });
+      if (hist.length > 50) hist.pop();
+      localStorage.setItem('radar_prompt_history', JSON.stringify(hist));
+    } catch(e) {}
+  }
+  function ppToggleChat() {
+    const box = document.getElementById('pp-chat-box');
+    const btn = document.getElementById('pp-btn-chat');
+    const open = box.style.display === 'none';
+    box.style.display = open ? '' : 'none';
+    btn.style.background = open ? '#4338ca' : '#f0f4ff';
+    btn.style.color = open ? '#fff' : '#4338ca';
+    if (open) document.getElementById('pp-chat-input').focus();
+  }
+  let ppChatHistory = [];
+  async function ppChatSend() {
+    const input = document.getElementById('pp-chat-input');
+    const msg = input.value.trim();
+    if (!msg) return;
+    const apiKey = localStorage.getItem('radar_insight_claude_key');
+    if (!apiKey) { alert('Configure a API Key primeiro.'); return; }
+    input.value = '';
+    const msgs = document.getElementById('pp-chat-messages');
+    // Mostra mensagem do usuário
+    msgs.innerHTML += `<div style="background:#4338ca;color:#fff;border-radius:10px 10px 2px 10px;padding:8px 12px;font-size:12px;align-self:flex-end;max-width:85%;">${msg}</div>`;
+    msgs.innerHTML += `<div id="pp-chat-typing" style="background:#e0e7ff;color:#4338ca;border-radius:10px 10px 10px 2px;padding:8px 12px;font-size:12px;align-self:flex-start;max-width:85%;">⏳ Pensando...</div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+    ppChatHistory.push({ role: 'user', content: msg });
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 800,
+          system: 'Você é um assistente especialista em UX/UI e front-end para o sistema Radar Insight. Seja direto, use bullet points quando útil. Responda em português.',
+          messages: ppChatHistory
+        })
+      });
+      const data = await res.json();
+      const reply = data.content?.[0]?.text || 'Erro: ' + JSON.stringify(data.error);
+      ppChatHistory.push({ role: 'assistant', content: reply });
+      document.getElementById('pp-chat-typing').outerHTML = `<div style="background:#e0e7ff;color:#1e1b4b;border-radius:10px 10px 10px 2px;padding:8px 12px;font-size:12px;align-self:flex-start;max-width:85%;line-height:1.6;">${ppMarkdown(reply)}</div>`;
+    } catch(e) {
+      document.getElementById('pp-chat-typing').textContent = 'Erro: ' + e.message;
+    }
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function ppMarkdown(text) {
+    return text
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/^#{3}\s+(.+)$/gm,'<h4 style="margin:12px 0 4px;color:#1e1b4b;font-size:12px;">$1</h4>')
+      .replace(/^#{2}\s+(.+)$/gm,'<h3 style="margin:14px 0 6px;color:#1e1b4b;font-size:13px;border-bottom:1px solid #c7d2fe;padding-bottom:4px;">$1</h3>')
+      .replace(/^#{1}\s+(.+)$/gm,'<h2 style="margin:14px 0 6px;color:#312e81;font-size:14px;font-weight:800;">$1</h2>')
+      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g,'<em>$1</em>')
+      .replace(/^[-•]\s+(.+)$/gm,'<li style="margin:3px 0 3px 14px;list-style:disc;">$1</li>')
+      .replace(/^(\d+)\.\s+(.+)$/gm,'<li style="margin:3px 0 3px 14px;list-style:decimal;">$2</li>')
+      .replace(/(<li.*<\/li>\n?)+/g, s => `<ul style="margin:6px 0;padding:0;">${s}</ul>`)
+      .replace(/---/g,'<hr style="border:none;border-top:1px solid #c7d2fe;margin:10px 0;">')
+      .replace(/\n\n/g,'</p><p style="margin:6px 0;">')
+      .replace(/\n/g,'<br>');
+  }
+
+  async function ppAnalyzeWithAI() {
+    const apiKey = localStorage.getItem('radar_insight_claude_key');
+    if (!apiKey) { alert('Configure a API Key primeiro (botão Configurar IA na barra inferior).'); return; }
+    const prompt = document.getElementById('pp-output').textContent;
+    if (!prompt) return;
+    const btn = document.getElementById('pp-ai-btn');
+    const responseBox = document.getElementById('pp-ai-response');
+    const content = document.getElementById('pp-ai-content');
+    btn.textContent = '⏳ Analisando...';
+    btn.disabled = true;
+    responseBox.style.display = 'block';
+    content.textContent = 'Aguardando resposta da IA...';
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 1024,
+          messages: [{ role: 'user', content: `Você é consultor UX/UI sênior do sistema Radar Insight.\n\nAnalise este prompt de ajuste e responda:\n1. ✅ PRÓS da mudança solicitada\n2. ⚠️ CONTRAS ou riscos\n3. 💡 RECOMENDAÇÃO final (implementar, ajustar ou descartar)\n\nSeja direto e use bullet points.\n\n---\n${prompt}` }]
+        })
+      });
+      const data = await res.json();
+      if (data.content?.[0]?.text) {
+        content.innerHTML = ppMarkdown(data.content[0].text);
+      } else {
+        content.textContent = 'Erro: ' + (data.error?.message || JSON.stringify(data));
+      }
+    } catch(e) {
+      content.textContent = 'Erro de conexão: ' + e.message;
+    }
+    btn.textContent = '🤖 Analisar com IA';
+    btn.disabled = false;
+  }
+
+  function ppCopy() {
+    const text = document.getElementById('pp-output').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('pp-copy-btn');
+      btn.textContent = '✓ Copiado!';
+      setTimeout(() => btn.textContent = '📋 Copiar prompt', 2000);
+    });
+  }
+
+  // AUTO-ABRIR PAINEL se URL tiver #gerador
+  if (window.location.hash === '#gerador') {
+    document.getElementById('pp-panel').classList.add('open');
+  }
+
+  // TOGGLE APPROVAL BAR
+  let approvalBarVisible = true;
+  function toggleApprovalBar() {
+    approvalBarVisible = !approvalBarVisible;
+    const bar = document.querySelector('.approval-bar');
+    const btn = document.getElementById('fab-approval-btn');
+    bar.style.display = approvalBarVisible ? '' : 'none';
+    btn.textContent = approvalBarVisible ? '📋 Aprovação ↓' : '📋 Aprovação ↑';
+  }
+
+  // TOGGLE TABLE VISIBILITY (olhinho)
+  let tableVisible = true;
+  function toggleTable() {
+    tableVisible = !tableVisible;
+    const chips = document.querySelector('.chips-row');
+    const table = document.querySelector('.table-wrap');
+    chips.style.display = tableVisible ? '' : 'none';
+    table.style.display = tableVisible ? '' : 'none';
+    document.getElementById('btn-eye').style.color = tableVisible ? '#6b7280' : '#3b82f6';
+    document.getElementById('btn-eye').textContent = tableVisible ? '👁' : '👁‍🗨';
+  }
+
+  // TABS
+  function switchTab(tab) {
+    document.getElementById('tab-operacao').classList.toggle('hidden', tab !== 'operacao');
+    document.getElementById('tab-performance').classList.toggle('hidden', tab !== 'performance');
+    document.querySelectorAll('.tab').forEach((t, i) => {
+      t.classList.toggle('active', (tab === 'operacao' && i === 0) || (tab === 'performance' && i === 1));
+    });
+  }
+
+  // PERFORMANCE SECTIONS
+  function switchPerf(key, el) {
+    document.querySelectorAll('.perf-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.perf-item').forEach(i => i.classList.remove('active'));
+    document.getElementById('perf-' + key).classList.add('active');
+    el.classList.add('active');
+  }
+
+  // TABLE EXPAND
+  let expanded = false;
+  function toggleExpand() {
+    expanded = !expanded;
+    document.getElementById('table-extra').classList.toggle('hidden', !expanded);
+    document.getElementById('btn-expand').textContent = expanded ? '▲ Recolher (mostrar 10)' : '▼ Ver todos os 12 atendimentos';
+  }
+
+  // ANNOTATIONS
+  let annotationMode = false, annotations = [], annCounter = 1;
+  function toggleAnnotationMode() {
+    annotationMode = !annotationMode;
+    document.body.classList.toggle('annotation-mode', annotationMode);
+    document.getElementById('ann-toggle').classList.toggle('active', annotationMode);
+    document.getElementById('ann-toggle').textContent = annotationMode ? '✕ Cancelar' : '📌 Anotar';
+    document.getElementById('ann-hint').style.display = annotationMode ? 'block' : 'none';
+  }
+  document.addEventListener('click', function(e) {
+    if (!annotationMode) return;
+    if (e.target.closest('.ann-toolbar') || e.target.closest('#ann-hint') || e.target.closest('.ann-pin') || e.target.closest('.popup-overlay')) return;
+    const text = prompt('Digite sua anotação:');
+    if (!text || !text.trim()) return;
+    const id = 'ann-' + Date.now();
+    const x = e.clientX + window.scrollX, y = e.clientY + window.scrollY;
+    annotations.push({ id, x, y, text: text.trim(), num: annCounter });
+    const pin = document.createElement('div');
+    pin.className = 'ann-pin'; pin.id = id;
+    pin.style.left = x + 'px'; pin.style.top = y + 'px';
+    pin.innerHTML = `<div class="pin-icon">${annCounter}</div><div class="pin-bubble"><strong>#${annCounter}</strong> ${text.trim()}</div><div class="pin-delete" onclick="delAnn('${id}')">×</div>`;
+    document.body.appendChild(pin);
+    annCounter++;
+  });
+  function delAnn(id) { const el = document.getElementById(id); if(el) el.remove(); annotations = annotations.filter(a => a.id !== id); }
+  function clearAnnotations() { if(!confirm('Remover todas?')) return; annotations.forEach(a => { const el = document.getElementById(a.id); if(el) el.remove(); }); annotations = []; annCounter = 1; }
+  function exportAnnotations() {
+    if(!annotations.length) { alert('Nenhuma anotação ainda.'); return; }
+    const text = annotations.map(a => `#${a.num}: ${a.text}`).join('\n');
+    navigator.clipboard.writeText(text).then(() => alert('Copiado!\n\n' + text));
+  }
+
+  // ── APPROVAL WORKFLOW ────────────────────────────────
+  const API_KEY_STORAGE = 'radar_insight_claude_key';
+  const DECISIONS_KEY = 'mockup_decisions';
+  let pendingDecision = null;
+
+  function getApiKey() { return localStorage.getItem(API_KEY_STORAGE) || ''; }
+
+  function getDecisions() {
+    try { return JSON.parse(localStorage.getItem(DECISIONS_KEY) || '[]'); } catch { return []; }
+  }
+
+  function openApprovalApiModal() {
+    const key = getApiKey();
+    document.getElementById('appr-key-input').value = key ? '••••••••••••••••••' : '';
+    document.getElementById('appr-api-modal').style.display = 'flex';
+  }
+  function closeApprovalApiModal() { document.getElementById('appr-api-modal').style.display = 'none'; }
+  function saveApprovalKey() {
+    const val = document.getElementById('appr-key-input').value.trim();
+    if (!val || val.startsWith('••')) { closeApprovalApiModal(); return; }
+    if (!val.startsWith('sk-ant-')) { alert('Chave inválida — deve começar com sk-ant-'); return; }
+    localStorage.setItem(API_KEY_STORAGE, val);
+    updateApprovalStatus();
+    closeApprovalApiModal();
+  }
+
+  function updateApprovalStatus() {
+    const dot = document.getElementById('appr-status-dot');
+    const label = document.getElementById('appr-status-label');
+    if (getApiKey()) { dot.style.background = '#34d399'; label.textContent = 'IA conectada'; }
+    else { dot.style.background = '#9ca3af'; label.textContent = 'Configurar IA'; }
+  }
+
+  function restoreLastDecision() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('mockup_last_decision'));
+      if (!saved) return;
+      document.getElementById('decision-modal-title').textContent =
+        saved.type === 'approve' ? '✅ Aprovando esta versão' :
+        saved.type === 'reject' ? '❌ Reprovando esta versão' : '🔄 Solicitar Reavaliação';
+      document.getElementById('decision-textarea').value = saved.comment || '';
+      document.getElementById('decision-result-content').innerHTML = saved.html;
+      document.getElementById('decision-result').style.display = 'block';
+    } catch(e) {}
+  }
+
+  function triggerDecision(type) {
+    pendingDecision = type;
+    const modal = document.getElementById('decision-modal');
+    const title = document.getElementById('decision-modal-title');
+    const placeholder = document.getElementById('decision-textarea');
+    if (type === 'approve') {
+      title.textContent = '✅ Aprovando esta versão';
+      placeholder.placeholder = 'Observações adicionais (opcional)...';
+    } else if (type === 'reject') {
+      title.textContent = '❌ Reprovando esta versão';
+      placeholder.placeholder = 'Descreva o que está errado ou precisa mudar...';
+    } else {
+      title.textContent = '🔄 Solicitar Reavaliação';
+      placeholder.placeholder = 'Descreva sua sugestão de ajuste...';
+    }
+    placeholder.value = '';
+    document.getElementById('decision-result').style.display = 'none';
+    // Mostrar botão restaurar se houver resposta salva
+    const hasLast = !!localStorage.getItem('mockup_last_decision');
+    document.getElementById('btn-restore-decision').style.display = hasLast ? 'inline-block' : 'none';
+    modal.style.display = 'flex';
+  }
+  function closeDecisionModal() { document.getElementById('decision-modal').style.display = 'none'; pendingDecision = null; }
+
+  async function sendDecisionToAI() {
+    const key = getApiKey();
+    if (!key) { alert('Configure a chave de API primeiro (botão ⚙️ na barra).'); openApprovalApiModal(); return; }
+    const comment = document.getElementById('decision-textarea').value.trim();
+    const btn = document.getElementById('decision-send-btn');
+    const result = document.getElementById('decision-result');
+    const resultContent = document.getElementById('decision-result-content');
+
+    const decisionLabel = pendingDecision === 'approve' ? 'APROVADO' : pendingDecision === 'reject' ? 'REPROVADO' : 'REAVALIAR';
+    const moduleContext = 'Mentoria Lab — Aba Operação + Aba Performance (mockup de redesenho de layout)';
+
+    const aiPrompt = `Sistema: Radar Insight — ${moduleContext}
+Decisão do usuário: ${decisionLabel}
+${comment ? `Comentário: ${comment}` : ''}
+
+Com base nesta decisão, gere um prompt técnico completo e direto para implementar no Lovable (sistema React/Tailwind).
+
+${pendingDecision === 'approve' ? 'O layout foi APROVADO. Gere um prompt confirmando a implementação e listando os pontos validados.' : ''}
+${pendingDecision === 'reject' ? 'O layout foi REPROVADO. Gere um prompt técnico descrevendo as correções necessárias.' : ''}
+${pendingDecision === 'reeval' ? 'O usuário quer reavaliar. Gere um prompt técnico incorporando a sugestão de ajuste.' : ''}
+
+Regras obrigatórias no prompt:
+- Não remover nenhuma lógica, hook ou integração existente
+- Apenas ajuste visual/layout
+- Especifique os componentes exatos a modificar`;
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Gerando prompt...';
+    result.style.display = 'none';
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 1024,
+          messages: [{ role: 'user', content: aiPrompt }]
+        })
+      });
+      const data = await res.json();
+      const text = res.ok ? (data.content?.[0]?.text || 'Sem resposta.') : (data?.error?.message || `Erro ${res.status}`);
+      resultContent.innerHTML = ppMarkdown(text);
+      result.style.display = 'block';
+
+      // Salva última resposta para restaurar depois
+      localStorage.setItem('mockup_last_decision', JSON.stringify({
+        type: pendingDecision, label: decisionLabel, comment,
+        html: resultContent.innerHTML, date: new Date().toLocaleString('pt-BR')
+      }));
+      document.getElementById('btn-restore-decision').style.display = 'inline-block';
+
+      // Salva no histórico
+      const decisions = getDecisions();
+      decisions.unshift({ id: Date.now(), type: pendingDecision, label: decisionLabel, comment, prompt: text, date: new Date().toLocaleString('pt-BR') });
+      if (decisions.length > 30) decisions.pop();
+      localStorage.setItem(DECISIONS_KEY, JSON.stringify(decisions));
+      renderDecisions();
+    } catch(e) {
+      resultContent.textContent = '❌ Erro: ' + e.message;
+      result.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🤖 Gerar prompt com IA';
+    }
+  }
+
+  function copyDecisionPrompt() {
+    const text = document.getElementById('decision-result-content').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('decision-copy-btn');
+      btn.textContent = '✓ Copiado!';
+      setTimeout(() => btn.textContent = '📋 Copiar para Lovable', 2000);
+    });
+  }
+
+  function renderDecisions() {
+    const list = document.getElementById('decisions-list');
+    const decisions = getDecisions();
+    if (!decisions.length) { list.innerHTML = '<div style="font-size:12px;color:#9ca3af;padding:8px 0;">Nenhuma decisão registrada ainda.</div>'; return; }
+    const colors = { APROVADO: '#d1fae5|#059669', REPROVADO: '#fee2e2|#dc2626', REAVALIAR: '#fef3c7|#d97706' };
+    list.innerHTML = decisions.map(d => {
+      const [bg, color] = (colors[d.label] || '#f3f4f6|#374151').split('|');
+      return `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:10px;color:#9ca3af;">${d.date}</span>
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:${bg};color:${color};">${d.label}</span>
+          ${d.comment ? `<span style="font-size:11px;color:#374151;flex:1;">${d.comment.substring(0,60)}${d.comment.length>60?'...':''}</span>` : ''}
+          <button onclick="toggleDecisionItem(${d.id})" style="font-size:10px;padding:2px 8px;border:1px solid #e5e7eb;border-radius:6px;background:#f9fafb;cursor:pointer;">Ver prompt</button>
+          <button onclick="removeDecision(${d.id})" style="font-size:10px;padding:2px 6px;border:1px solid #fecaca;border-radius:6px;background:#fff;color:#dc2626;cursor:pointer;">✕</button>
+        </div>
+        <div id="dprompt-${d.id}" style="display:none;margin-top:8px;font-size:11px;background:#f9fafb;border-radius:6px;padding:10px;white-space:pre-wrap;max-height:180px;overflow-y:auto;">${d.prompt}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function toggleDecisionItem(id) {
+    const el = document.getElementById('dprompt-' + id);
+    if (el) el.style.display = el.style.display === 'block' ? 'none' : 'block';
+  }
+
+  function removeDecision(id) {
+    const decisions = getDecisions().filter(d => d.id !== id);
+    localStorage.setItem(DECISIONS_KEY, JSON.stringify(decisions));
+    renderDecisions();
+  }
+
+  function toggleDecisionsHistory() {
+    const body = document.getElementById('decisions-body');
+    const icon = document.getElementById('decisions-icon');
+    const open = body.style.display === 'block';
+    body.style.display = open ? 'none' : 'block';
+    icon.textContent = open ? '▼' : '▲';
+  }
+
+  updateApprovalStatus();
+  renderDecisions();
+</script>
+
+<!-- BARRA DE APROVAÇÃO FIXA -->
+<style>
+  .approval-bar { position:fixed; bottom:0; left:0; right:0; background:#1a1a2e; color:#fff; padding:10px 20px; display:flex; align-items:center; gap:10px; z-index:9000; box-shadow:0 -4px 20px rgba(0,0,0,.3); flex-wrap:wrap; }
+  .approval-bar-title { font-size:12px; font-weight:600; color:#94a3b8; flex:1; min-width:120px; }
+  .appr-btn { padding:7px 16px; border-radius:8px; border:none; font-size:12px; font-weight:700; cursor:pointer; transition:opacity .15s; }
+  .appr-btn:hover { opacity:.85; }
+  .appr-btn-approve { background:#10b981; color:#fff; }
+  .appr-btn-reject { background:#ef4444; color:#fff; }
+  .appr-btn-reeval { background:#f59e0b; color:#1a1a2e; }
+  .appr-btn-config { background:rgba(255,255,255,.1); color:#fff; border:1px solid rgba(255,255,255,.2) !important; border-radius:8px; }
+  .appr-status { display:flex; align-items:center; gap:5px; font-size:11px; color:#94a3b8; cursor:pointer; }
+  .appr-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+  /* MODAL DE DECISÃO */
+  .decision-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9500; align-items:center; justify-content:center; }
+  .decision-box { background:#fff; border-radius:14px; padding:24px; width:520px; max-width:95vw; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.25); }
+  .decision-box h3 { font-size:15px; font-weight:800; margin-bottom:14px; }
+  .decision-box textarea { width:100%; border:1px solid #d1d5db; border-radius:8px; padding:10px 12px; font-size:12px; min-height:80px; resize:vertical; outline:none; font-family:inherit; margin-bottom:12px; }
+  .decision-box textarea:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.12); }
+  .decision-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .decision-actions button { padding:8px 16px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; border:none; }
+  .btn-send-decision { background:linear-gradient(135deg,#7c3aed,#3b82f6); color:#fff; }
+  .btn-send-decision:disabled { opacity:.5; cursor:not-allowed; }
+  .btn-cancel-decision { background:#f3f4f6; color:#374151; }
+  .decision-result { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:16px; margin-top:14px; }
+  .decision-result-header { font-size:11px; font-weight:700; color:#059669; text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; }
+  .decision-result-content { font-size:11px; color:#1e293b; white-space:pre-wrap; line-height:1.7; max-height:240px; overflow-y:auto; }
+  .decision-copy-btn { margin-top:10px; padding:7px 14px; background:#059669; color:#fff; border:none; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; }
+
+  /* MODAL API KEY */
+  .appr-api-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9600; align-items:center; justify-content:center; }
+  .appr-api-box { background:#fff; border-radius:14px; padding:24px; width:420px; max-width:95vw; }
+  .appr-api-box h3 { font-size:14px; font-weight:800; margin-bottom:4px; }
+  .appr-api-box p { font-size:11px; color:#6b7280; margin-bottom:14px; }
+  .appr-api-box input { width:100%; border:1px solid #d1d5db; border-radius:8px; padding:10px 12px; font-size:12px; font-family:monospace; outline:none; margin-bottom:12px; }
+  .appr-api-actions { display:flex; gap:8px; justify-content:flex-end; }
+  .appr-api-actions button { padding:7px 14px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; border:none; }
+
+  /* HISTÓRICO DE DECISÕES */
+  .decisions-history { background:#fff; border-top:1px solid #e5e7eb; padding:16px 20px; margin-bottom:56px; }
+  .decisions-history-header { display:flex; align-items:center; justify-content:space-between; cursor:pointer; margin-bottom:4px; }
+  .decisions-history-title { font-size:13px; font-weight:700; color:#1a1a2e; }
+</style>
+
+<!-- Modal de decisão -->
+<div class="decision-overlay" id="decision-modal" onclick="if(event.target===this)closeDecisionModal()">
+  <div class="decision-box">
+    <h3 id="decision-modal-title">Decisão</h3>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+      <button id="btn-restore-decision" onclick="restoreLastDecision()" style="display:none;font-size:11px;background:#f0f4ff;border:1px solid #c7d2fe;color:#4338ca;border-radius:6px;padding:4px 10px;cursor:pointer;">🕓 Restaurar última resposta</button>
+    </div>
+    <textarea id="decision-textarea" placeholder="Seu comentário..."></textarea>
+    <div class="decision-actions">
+      <button class="btn-send-decision" id="decision-send-btn" onclick="sendDecisionToAI()">🤖 Gerar prompt com IA</button>
+      <button class="btn-cancel-decision" onclick="closeDecisionModal()">Cancelar</button>
+    </div>
+    <div class="decision-result" id="decision-result" style="display:none;">
+      <div class="decision-result-header">📋 Prompt gerado para o Lovable</div>
+      <div class="decision-result-content" id="decision-result-content"></div>
+      <button class="decision-copy-btn" id="decision-copy-btn" onclick="copyDecisionPrompt()">📋 Copiar para Lovable</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal API Key -->
+<div class="appr-api-overlay" id="appr-api-modal" onclick="if(event.target===this)closeApprovalApiModal()">
+  <div class="appr-api-box">
+    <h3>🔑 Chave de API — Claude</h3>
+    <p>Usada para gerar prompts automaticamente. Salva no seu navegador.</p>
+    <input type="password" id="appr-key-input" placeholder="sk-ant-api03-..." autocomplete="off" />
+    <div class="appr-api-actions">
+      <button style="background:#f3f4f6;color:#374151;" onclick="closeApprovalApiModal()">Cancelar</button>
+      <button style="background:#3b82f6;color:#fff;" onclick="saveApprovalKey()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Histórico de decisões -->
+<div class="decisions-history">
+  <div class="decisions-history-header" onclick="toggleDecisionsHistory()">
+    <span class="decisions-history-title">🕓 Histórico de Decisões</span>
+    <span id="decisions-icon" style="font-size:11px;color:#9ca3af;">▼</span>
+  </div>
+  <div id="decisions-body" style="display:none;margin-top:12px;">
+    <div id="decisions-list"></div>
+  </div>
+</div>
+
+<!-- Barra de aprovação fixa -->
+<div class="approval-bar">
+  <span class="approval-bar-title">🖼️ Mentoria Lab — Versão em análise &nbsp;·&nbsp; Use o painel <strong>⚡ Gerador</strong> para aprovar, reprovar ou reavaliar</span>
+  <div class="appr-status" onclick="openApprovalApiModal()">
+    <div class="appr-dot" id="appr-status-dot" style="background:#9ca3af;"></div>
+    <span id="appr-status-label">Configurar IA</span>
+    <span style="font-size:10px;">⚙️</span>
+  </div>
+</div>
+
+</body>
+</html>

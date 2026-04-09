@@ -1,0 +1,145 @@
+CORRECAO — Nota inconsistente e tipo "FORA DO ESCOPO" não tratado
+================================================================
+ARQUIVOS: src/lib/mentoriaPreAnalysis.ts  e  src/lib/mentoriaScoring.ts
+
+═══════════════════════════════════════════════════════
+ARQUIVO 1: src/lib/mentoriaPreAnalysis.ts
+═══════════════════════════════════════════════════════
+
+Localizar:
+export type SugestaoResultado = "SIM" | "NÃO" | "PARCIAL";
+
+Substituir por:
+export type SugestaoResultado = "SIM" | "NÃO" | "PARCIAL" | "FORA DO ESCOPO";
+
+═══════════════════════════════════════════════════════
+ARQUIVO 2: src/lib/mentoriaScoring.ts
+═══════════════════════════════════════════════════════
+
+CORRECAO A — resultToPoints: tratar FORA DO ESCOPO
+
+Localizar:
+function resultToPoints(resposta: SugestaoResultado, peso: number): number {
+  switch (resposta) {
+    case "SIM": return peso;
+    case "PARCIAL": return Math.round(peso * 0.5 * 10) / 10;
+    case "NÃO": return 0;
+    default: return 0;
+  }
+}
+
+Substituir por:
+function resultToPoints(resposta: SugestaoResultado, peso: number): number {
+  switch (resposta) {
+    case "SIM": return peso;
+    case "PARCIAL": return Math.round(peso * 0.5 * 10) / 10;
+    case "NÃO": return 0;
+    case "FORA DO ESCOPO": return 0;
+    default: return 0;
+  }
+}
+
+function isForaDoEscopo(resposta: SugestaoResultado): boolean {
+  return resposta === "FORA DO ESCOPO";
+}
+
+---
+
+CORRECAO B — calculateScore: denominador dinâmico excluindo FORA DO ESCOPO
+
+Localizar:
+  for (const cw of CRITERIA_WEIGHTS) {
+    const found = respostas.find(r => r.numero === cw.numero);
+    const resposta = found?.resposta || "NÃO";
+    const pts = resultToPoints(resposta, cw.peso);
+
+    detalhesPorCriterio.push({
+      numero: cw.numero,
+      nome: cw.nome,
+      categoria: cw.categoria,
+      peso: cw.peso,
+      resposta,
+      pontosObtidos: pts,
+    });
+
+    if (!catMap[cw.categoria]) catMap[cw.categoria] = { obtidos: 0, possiveis: 0 };
+    catMap[cw.categoria].obtidos += pts;
+    catMap[cw.categoria].possiveis += cw.peso;
+  }
+
+  const pontosObtidos = detalhesPorCriterio.reduce((s, d) => s + d.pontosObtidos, 0);
+  const nota100 = Math.round((pontosObtidos / TOTAL_POSSIBLE) * 100 * 10) / 10;
+  const nota10 = Math.round(nota100 / 10 * 10) / 10;
+
+Substituir por:
+  for (const cw of CRITERIA_WEIGHTS) {
+    const found = respostas.find(r => r.numero === cw.numero);
+    const resposta = found?.resposta || "NÃO";
+    const fora = isForaDoEscopo(resposta);
+    const pts = fora ? 0 : resultToPoints(resposta, cw.peso);
+
+    detalhesPorCriterio.push({
+      numero: cw.numero,
+      nome: cw.nome,
+      categoria: cw.categoria,
+      peso: cw.peso,
+      resposta,
+      pontosObtidos: pts,
+    });
+
+    if (!catMap[cw.categoria]) catMap[cw.categoria] = { obtidos: 0, possiveis: 0 };
+    if (!fora) {
+      catMap[cw.categoria].obtidos += pts;
+      catMap[cw.categoria].possiveis += cw.peso;
+    }
+  }
+
+  const pontosObtidos = detalhesPorCriterio
+    .filter(d => !isForaDoEscopo(d.resposta))
+    .reduce((s, d) => s + d.pontosObtidos, 0);
+  const pontosPossiveis = detalhesPorCriterio
+    .filter(d => !isForaDoEscopo(d.resposta))
+    .reduce((s, d) => s + d.peso, 0);
+  const nota100 = pontosPossiveis > 0
+    ? Math.round((pontosObtidos / pontosPossiveis) * 100 * 10) / 10
+    : 0;
+  const nota10 = Math.round(nota100 / 10 * 10) / 10;
+
+---
+
+CORRECAO C — calculateScore: retornar pontosPossiveis dinâmico
+
+Localizar:
+  return {
+    pontosObtidos,
+    pontosPossiveis: TOTAL_POSSIBLE,
+    nota100,
+
+Substituir por:
+  return {
+    pontosObtidos,
+    pontosPossiveis,
+    nota100,
+
+---
+
+CORRECAO D — scoreFromFullReport: mapear FORA DO ESCOPO
+
+Localizar:
+  const respostas: Array<{ numero: number; resposta: SugestaoResultado }> = criterios.map((c: any) => ({
+    numero: c.numero,
+    resposta: c.resultado === "SIM" ? "SIM" : c.resultado === "NÃO" ? "NÃO" : "PARCIAL",
+  }));
+
+Substituir por:
+  const respostas: Array<{ numero: number; resposta: SugestaoResultado }> = criterios.map((c: any) => ({
+    numero: c.numero,
+    resposta: c.resultado === "SIM" ? "SIM"
+      : c.resultado === "NÃO" ? "NÃO"
+      : c.resultado === "FORA DO ESCOPO" ? "FORA DO ESCOPO"
+      : "PARCIAL",
+  }));
+
+═══════════════════════════════════════════════════════
+NAO alterar mais nada. NAO editar src/utils/.
+═══════════════════════════════════════════════════════

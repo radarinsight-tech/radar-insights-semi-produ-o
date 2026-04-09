@@ -1,0 +1,58 @@
+CORRECAO — "Não identificado" quando atendente tem poucas mensagens
+===================================================================
+
+ARQUIVO: src/utils/mentoriaMetadata.ts
+
+PROBLEMA:
+Strategy 4 exige mínimo 2 ocorrências do nome para retornar.
+Quando o atendente enviou apenas 1 mensagem (ex: BT202692508 — "Dinea Vitoreti",
+1 msg de 16 total), nenhuma estratégia retorna o nome.
+
+O parseador URA já detecta o "1º Atendente Humano" corretamente via padrão de
+apresentação ("Sou [Nome], especialista..."). O Strategy 3 de presentationPatterns
+captura apenas o primeiro nome — deve retornar "Dinea" mas depois não capitaliza
+ou não está matchando.
+
+CORRECAO 1 — Strategy 3: ampliar o padrão para capturar nome completo (primeiro + sobrenome):
+
+Localizar em Strategy 3:
+  const presentationPatterns = [
+    /\bsou\s+([A-ZÀ-Ÿ][a-zà-ÿ]+)[\s,]/i,
+    /\baqui\s+[eé]\s+(?:o|a)?\s*([A-ZÀ-Ÿ][a-zà-ÿ]+)/i,
+    /\bmeu\s+nome\s+[eé]\s+([A-ZÀ-Ÿ][a-zà-ÿ]+)/i,
+  ];
+
+Substituir por:
+  const presentationPatterns = [
+    /\bsou\s+([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)*)[\s,]/i,
+    /\baqui\s+[eé]\s+(?:o|a)?\s*([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)*)/i,
+    /\bmeu\s+nome\s+[eé]\s+([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)*)/i,
+  ];
+
+CORRECAO 2 — Strategy 3: retornar o nome sem forçar lowercase no sobrenome:
+
+Localizar após `const name = match[1].trim();` dentro do loop de presentationPatterns:
+      if (!isBot(name) && name.length >= 3) {
+        // Capitalize properly
+        return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+      }
+
+Substituir por:
+      if (!isBot(name) && !isInvalidAttendantName(name) && name.length >= 3) {
+        // Capitalize first letter of each word, preserve rest
+        return name.replace(/\b([A-Za-zÀ-ÿ])/g, (c) => c.toUpperCase());
+      }
+
+CORRECAO 3 — Strategy 4: reduzir threshold de 2 para 1 ocorrência:
+
+Localizar:
+    if (sorted[0][1] >= 2) {
+      return sorted[0][0];
+    }
+
+Substituir por:
+    if (sorted[0][1] >= 1) {
+      return sorted[0][0];
+    }
+
+NAO alterar mais nada.

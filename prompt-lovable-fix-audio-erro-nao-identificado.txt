@@ -1,0 +1,94 @@
+SOLICITACAO — RADAR INSIGHT
+Correção de 3 problemas identificados nos atendimentos com áudio e sem atendente humano
+========================================================================================
+REGRA GERAL: Não remover lógica existente. Corrigir apenas os pontos abaixo.
+
+======================================================================
+PROBLEMA 1 — Atendimentos com áudio dão "Erro" ou nota 0,0
+======================================================================
+
+CASOS IDENTIFICADOS:
+- BT202687787 (áudio: Sim) → Status: Erro
+- BT202681924 (áudio: Sim) → Nota: 0,0 / "Auditoria não realizada"
+
+CAUSA: Quando o PDF contém áudio embutido (.mp3), o sistema bloqueia
+a análise em vez de processar normalmente.
+
+CORRECAO:
+Na edge function "analyze-attendance" (e "analyze-preventive"):
+
+1. Quando detectar que o atendimento contém áudio embutido (campo audio: true
+   ou presença de gravacao_de_voz.mp3 no texto):
+   - NÃO bloquear a análise
+   - NÃO retornar nota 0,0
+   - NÃO lançar erro
+
+2. Chamar a edge function "transcrever-audio" para transcrever o MP3
+   usando Groq Whisper (GROQ_API_KEY já configurado nos secrets)
+
+3. Incluir a transcrição no texto do atendimento como mensagem do participante:
+   "[Áudio transcrito]: [texto da transcrição]"
+
+4. Avaliar normalmente com o texto completo (incluindo transcrição)
+
+5. O critério "Evitar uso de áudios em atendimentos de texto" pode ser
+   avaliado normalmente como NÃO (é uma penalidade válida no critério correto),
+   MAS não deve impedir os outros 18 critérios de serem avaliados.
+
+======================================================================
+PROBLEMA 2 — Atendimentos só-URA (0 mensagens humanas) dão "Erro"
+======================================================================
+
+CASO IDENTIFICADO:
+- BT202693010 (áudio: Não, 0 msg humano) → Status: Erro
+  Erro: "Ocorreu uma falha temporária no processamento. Tente novamente."
+
+CAUSA: O atendimento passou apenas pela URA sem atendente humano.
+A edge function não consegue analisar conteúdo vazio e lança erro.
+
+CORRECAO:
+Na edge function "analyze-attendance", antes de processar:
+
+1. Verificar se há mensagens do atendimento humano (não apenas URA/Marte)
+2. Se totalMessages === 0 ou attendantMessages === 0:
+   - NÃO lançar erro
+   - Retornar resposta válida com:
+     {
+       nonEvaluable: true,
+       motivoNaoAvaliavel: "Atendimento encerrado na URA sem atendente humano",
+       notaFinal: null,
+       criterios: []
+     }
+3. O sistema já tem tratamento para nonEvaluable — basta retornar esse campo
+
+======================================================================
+PROBLEMA 3 — "Não identificado" quando nome do atendente não está no cabeçalho
+======================================================================
+
+CASOS IDENTIFICADOS:
+- BT202687787 → Atendente "—" (nome real: TIAGO, aparece no chat)
+- BT202693010 → Atendente "—"
+
+CAUSA: O parser busca o nome do atendente apenas no cabeçalho do PDF
+("Atendente: [nome]"). Quando o campo não existe no cabeçalho, retorna "—".
+
+CORRECAO no parser do PDF (pdfExtractor ou conversationParser):
+
+Após tentar extrair do cabeçalho, se o resultado for vazio/"—":
+Tentar extrair do corpo do atendimento usando estas heurísticas:
+
+1. Buscar primeira mensagem que contém padrão de apresentação:
+   - "Sou [Nome], especialista Bandaturbo"
+   - "Olá, Sou [Nome],"
+   - "Aqui é [Nome]"
+   Extrair o [Nome] como nome do atendente.
+
+2. Se não encontrar apresentação, buscar o participante mais frequente
+   que NÃO seja "Marte" e NÃO seja o cliente (extraído do campo "Cliente:")
+   e que aparece como remetente de múltiplas mensagens.
+
+3. Usar esse nome como atendente no LabFile.
+
+======================================================================
+FIM DA SOLICITACAO
+======================================================================

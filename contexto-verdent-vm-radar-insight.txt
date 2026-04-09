@@ -1,0 +1,69 @@
+Contexto consolidado do projeto Radar Insight
+
+Projeto:
+- Sistema: Radar Insight
+- Ambiente oficial de operação a partir de agora: esta VM
+- Ferramentas de trabalho: Verdent + Lovable + Radar Insight, todos usados dentro da VM
+
+Histórico resumido:
+- O fluxo de mentoria/auditoria estava quebrado em vários pontos.
+- Já corrigimos os principais bloqueios:
+  1. Atendente “Não identificado” foi tratado
+  2. Erro que travava arquivo em “Em análise” foi corrigido com rollback
+  3. Sanitização de pontos_melhoria foi ajustada para evitar erro 400
+- O fluxo principal já conseguiu completar pelo menos uma avaliação até o fim.
+
+Estado atual:
+- O problema principal agora não é mais o fluxo base da análise.
+- O foco atual é a inconsistência dos botões e status na tela de Mentoria/Pipeline.
+- Há desacordo entre o status exibido e as ações disponíveis.
+- Exemplo: aparecem botões que não combinam com o estado atual do atendimento.
+
+Forma de operação desejada:
+- Trabalhar sempre nesta VM.
+- Se começou na VM, termina na VM.
+- Usar o Verdent para orientar.
+- Usar o Lovable para localizar/aplicar correções quando necessário.
+- Usar o Radar Insight para validar o comportamento real.
+- Evitar depender de prints desnecessários e evitar pedir caminhos alternativos sem necessidade.
+
+O que já foi validado:
+- A identificação de atendente melhorou após ajuste da estratégia de prefixo.
+- O fluxo de análise deixou de travar permanentemente em “Em análise”.
+- O sistema já conseguiu concluir uma avaliação.
+
+Problema atual detalhado:
+- Na tela de Mentoria/Pipeline, os botões exibidos não estão coerentes com o estado do item.
+- Existem indícios de conflito entre:
+  - status do arquivo
+  - workflowStatus
+  - existência de result
+  - estado de aprovação/oficialização
+- O comportamento esperado é que as ações reflitam exatamente a etapa atual do atendimento.
+
+Referência funcional esperada:
+- Se já existe resultado, não deve aparecer ação de “Análise IA” como se ainda estivesse pendente.
+- Se o item está em etapa de auditoria/confirmação, os botões devem refletir auditoria/revisão/finalização.
+- As ações visíveis devem estar alinhadas ao status real do item.
+
+Tarefa imediata:
+1. Após login manual no Radar Insight, continuar da tela atual.
+2. Ir até a Mentoria/Pipeline.
+3. Identificar quais botões aparecem em cada status.
+4. Mapear a incoerência entre status, workflowStatus, resultado e ações disponíveis.
+5. Localizar no frontend a regra que renderiza esses botões.
+6. Se necessário, usar o Lovable para localizar os arquivos correspondentes.
+7. Conduzir até uma correção objetiva e validável.
+
+Regras de execução:
+- Não parar por falta de repositório local.
+- Se o repo local não existir na VM, usar o Lovable e a interface publicada para investigar.
+- Não devolver perguntas amplas sem antes avançar na investigação.
+- Priorizar ação prática e correção objetiva do problema atual.
+
+Mensagem curta de operação:
+- Este é o ambiente oficial de trabalho.
+- Vamos operar sempre pela VM.
+- Fluxo padrão: Verdent → Lovable → Radar Insight → validação.
+- Se começou na VM, termina na VM.
+- Objetivo atual: ajustar mentoria/auditoria e corrigir inconsistências de botões/status.

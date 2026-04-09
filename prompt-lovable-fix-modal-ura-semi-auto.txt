@@ -1,0 +1,127 @@
+SOLICITACAO — RADAR INSIGHT
+Tres correcoes: Pre-Analise, Semi-Automatico e Contexto URA
+=============================================================
+REGRA GERAL: Nao remover nenhuma logica existente. Corrigir apenas os pontos indicados.
+
+======================================================================
+CORRECAO 1 — Ocultar aba Pre-Analise ao abrir via botao "Auditar"
+======================================================================
+
+Quando o modal MentoriaDetailDialog e aberto via botao "Auditar" da lista
+(onAuditFile), ele deve abrir DIRETAMENTE na aba "Semi-Automatico".
+
+A aba "Pre-Analise" deve ficar OCULTA no stepper quando initialStep = "semi-auto".
+O stepper deve mostrar apenas: [Semi-Automatico] → [Relatorio]
+
+Quando aberto via botao "Ver" (onOpenMentoria), comportamento normal:
+mostrar todas as abas normalmente.
+
+======================================================================
+CORRECAO 2 — Semi-Automatico usar resultado do analyze-attendance
+======================================================================
+
+PROBLEMA:
+O Semi-Automatico esta rodando sua propria pre-analise separada,
+gerando resultados diferentes do analyze-attendance (9/100 vs 9,1).
+
+CORRECAO:
+Quando o arquivo ja tem resultado do analyze-attendance (f.result existe),
+o Semi-Automatico deve usar esse resultado como ponto de partida para
+os 19 criterios — nao rodar uma nova analise do zero.
+
+Mapeamento dos campos do resultado para o Semi-Automatico:
+- f.result.criterios[] → pre-preencher cada criterio com resultado e explicacao da IA
+- f.result.notaFinal → mostrar como "Previsao da nota" inicial
+- f.result.pontosObtidos / f.result.pontosPossiveis → mostrar nos contadores
+
+O auditor entao revisa/ajusta criterio por criterio sobre esse resultado pre-carregado.
+Ao confirmar → salva os valores ajustados como nota oficial.
+
+======================================================================
+CORRECAO 3 — Contexto URA: 4 ajustes completos
+======================================================================
+
+----------------------------------------------------------------------
+3a — Corrigir parsing de timestamp do inicio do atendimento humano
+----------------------------------------------------------------------
+
+PROBLEMA: O sistema esta usando "Fim do atendimento" (11:27) como marco
+do inicio humano em vez de "Inicio do atendimento" (10:42).
+
+CORRECAO: O campo a usar para inicio do atendimento humano e:
+  "Inicio do atendimento: DD de [mes] de YYYY HH:MM"
+
+O campo "Fim do atendimento" deve ser usado APENAS para calcular
+o tempo total e o tempo de atendimento humano.
+
+Logica correta:
+  Tempo na URA/fila = "Inicio do atendimento" - "Horario de abertura"
+  Tempo de atendimento = "Fim do atendimento" - "Inicio do atendimento"
+  Tempo total = "Fim do atendimento" - "Horario de abertura"
+
+Exemplo correto para BT202695118:
+  Abertura: 10:39
+  Inicio atendimento humano: 10:42
+  Fim: 11:27
+  → Tempo na URA: 3 min ✅
+  → Tempo de atendimento: 45 min ✅
+  → Tempo total: 48 min ✅
+
+----------------------------------------------------------------------
+3b — Renomear botao "Ver texto completo do atendimento"
+----------------------------------------------------------------------
+
+LOCALIZAR no modal Contexto URA o botao/link:
+  "Ver texto completo do atendimento"
+
+SUBSTITUIR por:
+  "Acesso ao texto original do chat"
+
+----------------------------------------------------------------------
+3c — Cores por participante no texto original do chat
+----------------------------------------------------------------------
+
+Quando o texto original do atendimento e exibido na secao colapsavel,
+aplicar cores diferentes por participante para facilitar leitura:
+
+  CLIENTE (nome do cliente) → texto em azul (text-blue-600)
+    Estilo: nome em negrito azul + mensagem em texto normal
+
+  MARTE (sistema/URA) → texto em cinza (text-gray-400)
+    Estilo: nome em negrito cinza + mensagem em italico cinza claro
+    Label adicional: badge pequeno "[URA]" ao lado do nome
+
+  ATENDENTE HUMANO (nome do atendente) → texto em verde (text-emerald-600)
+    Estilo: nome em negrito verde + mensagem em texto normal
+
+Regra de identificacao:
+  - "Marte" ou "MARTE" no inicio do bloco → cinza [URA]
+  - Nome do cliente (extraido do cabecalho "Cliente:") → azul
+  - Qualquer outro nome proprio → verde (atendente humano)
+
+Formato de cada bloco no texto:
+  [NOME em cor] [timestamp]
+  [mensagem]
+  ---
+
+----------------------------------------------------------------------
+3d — Ultimas mensagens automaticas nao contam como atendente
+----------------------------------------------------------------------
+
+As ultimas mensagens apos o atendente encerrar o atendimento sao
+automaticas do sistema (pesquisa de satisfacao e follow-up do MARTE).
+
+Exemplos:
+  "Queremos saber como foi sua experiencia... Excelente / Bom / Regular..."
+  "Notamos que voce nao finalizou nossa pesquisa recente..."
+  "Pesquisa de satisfacao encerrada..."
+
+Essas mensagens devem:
+  - Aparecer no texto com a cor cinza [URA] (MARTE)
+  - NAO ser contadas como mensagens do atendente
+  - NAO afetar o calculo do tempo de atendimento humano
+  - O tempo de atendimento humano termina na ultima mensagem REAL do atendente
+
+======================================================================
+FIM DA SOLICITACAO
+======================================================================

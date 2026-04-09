@@ -1,0 +1,158 @@
+﻿SOLICITACAO — RADAR INSIGHT
+Pagina: Mentoria Lab — Correcao Contexto URA + Metricas de Tempo de Espera
+===========================================================================
+REGRA GERAL: Nao remover nenhuma logica, hook, integracao ou funcionalidade existente.
+
+======================================================================
+PROBLEMA
+======================================================================
+
+O botao "Contexto URA" no modal de detalhes exibe:
+  "Texto do atendimento indisponivel"
+  "O conteudo bruto do PDF nao foi encontrado."
+
+Causa: o campo text (rawText) do LabFile nao esta sendo salvo na coluna
+raw_text da tabela mentoria_batch_files. Ao recarregar o lote do banco,
+o campo fica undefined e o modal nao consegue exibir nada.
+
+======================================================================
+PASSO 1 — Migration no Supabase
+======================================================================
+
+Adicionar coluna para armazenar o texto bruto do PDF:
+
+  ALTER TABLE mentoria_batch_files
+    ADD COLUMN IF NOT EXISTS raw_text text;
+
+======================================================================
+PASSO 2 — Salvar raw_text ao criar o batch file
+======================================================================
+
+Em MentoriaLab.tsx (ou onde ocorre o INSERT em mentoria_batch_files),
+localizar o objeto de insercao e adicionar o campo:
+
+  raw_text: labFile.text || null,
+
+Isso garante que o texto bruto extraido do PDF seja persistido no banco.
+
+======================================================================
+PASSO 3 — Restaurar text ao carregar o lote do banco
+======================================================================
+
+No hook ou funcao que faz SELECT em mentoria_batch_files e mapeia as
+linhas para LabFile, adicionar no mapeamento:
+
+  text: row.raw_text || undefined,
+
+Assim o modal do Contexto URA encontra o texto bruto apos reload.
+
+======================================================================
+PASSO 4 — Enriquecer o modal "Contexto URA" com metricas de tempo
+======================================================================
+
+OBJETIVO DO CONTEXTO URA:
+Nao e parte da avaliacao do atendente.
+Serve para medir o TEMPO DE ESPERA DO CLIENTE:
+  - Quanto tempo o cliente ficou na URA/fila digital (MARTE)
+  - Quando o atendente humano resgatou o atendimento
+  - Tempo total do protocolo
+
+----------------------------------------------------------------------
+4a — DADOS A EXTRAIR DO TEXTO BRUTO DO PDF
+----------------------------------------------------------------------
+
+O PDF contem cabecalho com as seguintes linhas:
+  "Horario de abertura: 30 de marco de 2026 16:03"
+  "Inicio do atendimento: 30 de marco de 2026 16:10"
+  "Fim do atendimento: 30 de marco de 2026 16:22"
+
+Extrair esses 3 timestamps com regex que suporte o formato:
+  "DD de [mes por extenso] de YYYY HH:MM"
+
+Meses em portugues: janeiro, fevereiro, marco, abril, maio, junho,
+julho, agosto, setembro, outubro, novembro, dezembro
+
+----------------------------------------------------------------------
+4b — CALCULAR E EXIBIR AS 3 METRICAS
+----------------------------------------------------------------------
+
+  Tempo na URA/fila = "Inicio do atendimento" - "Horario de abertura"
+     Exemplo: 16:10 - 16:03 = 7 min
+
+  Tempo de atendimento humano = "Fim do atendimento" - "Inicio do atendimento"
+     Exemplo: 16:22 - 16:10 = 12 min
+
+  Tempo total do protocolo = "Fim do atendimento" - "Horario de abertura"
+     Exemplo: 16:22 - 16:03 = 19 min
+
+Formato de exibicao: "X min" se < 60 min, "Xh Ymin" se >= 60 min.
+
+----------------------------------------------------------------------
+4c — IDENTIFICACAO DO MARTE (URA/sistema digital)
+----------------------------------------------------------------------
+
+Mensagens enviadas por "Marte" = sistema automatizado (URA).
+Incluem: menus de opcoes, autenticacao CPF/CNPJ, transferencias,
+pesquisas de satisfacao e mensagens automaticas do sistema.
+
+Exemplos de mensagens MARTE:
+  "Em que posso lhe auxiliar hoje? Vendas / Auto Desbloqueio / Boleto..."
+  "Ola, esta e uma acao automatica do sistema. Voce possui 3 tentativas..."
+  "Um momento estou transferindo seu atendimento..."
+  "Queremos saber como foi sua experiencia... Excelente / Bom / Regular..."
+  "Pesquisa de satisfacao encerrada, muito obrigado."
+  "[NOME], Notamos que voce nao finalizou nossa pesquisa recente."
+
+----------------------------------------------------------------------
+4d — MARCO DE INICIO DO ATENDIMENTO HUMANO
+----------------------------------------------------------------------
+
+O atendimento humano inicia quando aparece a mensagem automatica de
+apresentacao do atendente:
+  "Ola, Sou [nome], especialista Bandaturbo. No que eu posso ajudar?"
+
+Tudo antes dessa mensagem = fase URA = ignorar na avaliacao de qualidade.
+
+----------------------------------------------------------------------
+4e — CENARIOS E LABELS
+----------------------------------------------------------------------
+
+  SEM URA:
+    - "Horario de abertura" e "Inicio do atendimento" sao iguais ou < 1 min de diferenca
+    - Label: "SEM URA — Atendimento iniciado diretamente com atendente"
+    - Exibir: 0 min na fila | Tempo de atendimento | Tempo total
+
+  COM URA:
+    - Ha diferenca entre abertura e inicio do atendimento humano
+    - Label: "COM URA — Atendimento digital precedeu o atendente"
+    - Exibir as 3 metricas calculadas
+
+  SOMENTE URA (sem humano):
+    - Nenhuma mensagem de apresentacao de atendente encontrada no texto
+    - Label: "SOMENTE URA — Atendimento realizado integralmente pela digital"
+    - Marcar como nao avaliavel com motivo "Atendimento realizado pela URA sem resgate humano"
+
+----------------------------------------------------------------------
+4f — LAYOUT DO MODAL ATUALIZADO
+----------------------------------------------------------------------
+
+Modal "Contexto URA" deve exibir:
+
+  [indicador: SEM URA / COM URA / SOMENTE URA]
+  [descricao curta do cenario]
+
+  Card com 3 metricas:
+    - Tempo na URA/fila:          X min
+    - Tempo de atendimento:       X min
+    - Tempo total do protocolo:   X min
+
+  Secao colapsavel (collapsed por padrao):
+    "Ver texto completo do atendimento"
+    [texto bruto do PDF]
+
+- Cards de metricas com icones, fundo sutil, valores em destaque
+- O gestor pode expandir o texto para ler o atendimento completo se necessario
+
+======================================================================
+FIM DA SOLICITACAO
+======================================================================

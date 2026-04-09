@@ -1,0 +1,70 @@
+SOLICITAÇÃO — RADAR INSIGHT
+Página: Mentoria Lab (MentoriaUnifiedTable + Index)
+====================================================
+REGRA GERAL: Não remover nenhuma lógica, hook, integração ou funcionalidade existente.
+
+======================================================================
+AJUSTE 1 — Cabeçalho da tabela: "Selecionar todos / Desmarcar todos"
+======================================================================
+- Substituir o checkbox do cabeçalho da tabela pelo comportamento:
+  • Se nenhum ou alguns estão selecionados → clicar seleciona TODOS os visíveis
+  • Se todos estão selecionados → clicar desmarca TODOS
+- Adicionar texto ao lado: "Selecionar todos" ou "Desmarcar todos" conforme estado
+
+======================================================================
+AJUSTE 2 — Rodapé de seleção: 3 botões distintos
+======================================================================
+Quando 1 ou mais itens estiverem selecionados, o rodapé exibe:
+
+BOTÃO 1: ⚡ Analisar com IA (X)
+- Cor: azul/roxo (bg-blue-600 ou similar)
+- Tooltip: "Análise automática via IA — mais rápida, sem intervenção manual"
+- Comportamento: igual ao atual "Analisar selecionados" (análise automática)
+- Após análise: salvar campo "tipo_analise = 'ia'" no registro
+
+BOTÃO 2: 🔍 Analisar manualmente (X)
+- Cor: verde (bg-emerald-600)
+- Tooltip: "Análise manual — você revisa cada critério individualmente"
+- Comportamento: igual ao fluxo manual existente
+- Após análise: salvar campo "tipo_analise = 'manual'" no registro
+
+BOTÃO 3: 🗑 Excluir (X)
+- Cor: vermelho translúcido (bg-red-100 text-red-700 border border-red-300)
+- Tooltip: "Excluir os atendimentos selecionados permanentemente"
+- Ao clicar: abrir diálogo de confirmação:
+  Título: "Excluir atendimentos"
+  Mensagem: "Tem certeza que deseja excluir X atendimento(s)? Esta ação não pode ser desfeita."
+  Botões: "Cancelar" | "Sim, excluir"
+- Após confirmar: remover os registros selecionados do banco (Supabase) e da lista local
+
+BOTÃO CANCELAR (já existente):
+- Manter com tooltip: "Cancela a seleção atual de atendimentos"
+- Manter o diálogo de confirmação já implementado
+
+======================================================================
+AJUSTE 3 — Badge de tipo de análise na tabela e no modal
+======================================================================
+
+BANCO DE DADOS:
+- Adicionar coluna "tipo_analise" (text, valores: 'ia' | 'manual' | null) na tabela de atendimentos
+
+NA TABELA (coluna Status ou nova coluna):
+- Se tipo_analise = 'ia' → badge roxo/azul: "⚡ IA"
+- Se tipo_analise = 'manual' → badge verde: "🔍 Manual"
+- Se null → sem badge (atendimentos antigos)
+
+NO MODAL "Ver" (detalhes do atendimento):
+- Exibir o badge no cabeçalho do modal ao lado do protocolo:
+  "⚡ Analisado por IA" ou "🔍 Analisado manualmente"
+
+======================================================================
+AJUSTE 4 — Botões Operação/Performance: cor ativa persistente
+======================================================================
+- Quando "Operação" está ativo: fundo verde escuro (bg-emerald-600 text-white)
+- Quando "Performance" está ativo: fundo verde escuro (bg-emerald-600 text-white)
+- A cor deve persistir enquanto a aba estiver selecionada (não apenas no hover)
+- Usar classe condicional baseada no estado da aba ativa (ex: activeTab === 'operacao')
+
+======================================================================
+FIM DA SOLICITAÇÃO
+======================================================================

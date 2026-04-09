@@ -1,0 +1,51 @@
+No arquivo `src/pages/MentoriaLab.tsx`, dentro da função `analyzeFiles`, localize o bloco `catch` que trata erro de análise individual de arquivo. Ele está logo após o bloco de sucesso que chama `openMentoria` e incrementa `success++`. O bloco atual tem este conteúdo EXATO:
+
+```
+        } catch {
+          setFiles((prev) =>
+            prev.map((f) =>
+              f.id === labFile.id
+                ? { ...f, status: "erro", error: "Ocorreu uma falha temporária no processamento. Tente novamente." }
+                : f,
+            ),
+          );
+          if (labFile.batchFileId) {
+            await supabase
+              .from("mentoria_batch_files")
+              .update({ status: "error", error_message: "Falha temporária" } as any)
+              .eq("id", labFile.batchFileId);
+          }
+          errors++;
+        }
+```
+
+Substitua APENAS esse bloco por:
+
+```
+        } catch (err: any) {
+          const errorMsg = err?.message || "Erro inesperado na análise";
+          errors++;
+          // Rollback: nunca deixa arquivo travado em "em_analise"
+          setFiles((prev) =>
+            prev.map((f) =>
+              f.id === labFile.id
+                ? { ...f, status: "lido", error: "Falha na análise. Clique em Analisar para tentar novamente." }
+                : f,
+            ),
+          );
+          setWorkflowStatuses((prev) => ({ ...prev, [labFile.id]: "nao_iniciado" }));
+          if (labFile.batchFileId) {
+            await supabase
+              .from("mentoria_batch_files")
+              .update({ status: "read", error_message: errorMsg } as any)
+              .eq("id", labFile.batchFileId);
+          }
+        }
+```
+
+Mudanças:
+1. status volta para `"lido"` (não "erro") — permite retry imediato
+2. `setWorkflowStatuses` reverte o card de "Em análise" para "Não iniciados"
+3. `error_message` usa a mensagem real do erro em vez de texto fixo
+
+Não altere nenhuma outra parte do arquivo.

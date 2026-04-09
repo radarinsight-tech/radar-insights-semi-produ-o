@@ -1,0 +1,1831 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Guia UX/UI — Radar Insight</title>
+<style>
+  html { overflow-x: hidden; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f4f5f7; color: #1a1a2e; font-size: 13px; line-height: 1.6; }
+
+  /* TOPNAV */
+  .topnav { position:fixed; top:0; left:0; right:0; z-index:8000; background:#0f172a; display:flex; align-items:center; gap:4px; padding:0 16px; height:42px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .topnav-logo { color:#fff; font-size:12px; font-weight:800; text-decoration:none; padding:5px 12px; border-radius:6px; background:rgba(255,255,255,.12); margin-right:6px; }
+  .topnav-link { color:#94a3b8; font-size:12px; font-weight:500; text-decoration:none; padding:5px 12px; border-radius:6px; transition:all .15s; white-space:nowrap; }
+  .topnav-link:hover, .topnav-link.active { color:#fff; background:rgba(255,255,255,.1); }
+  .topnav-action-btn { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2); color:#e2e8f0; border-radius:6px; padding:4px 12px; font-size:11px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px; transition:background .15s; white-space:nowrap; }
+  .topnav-action-btn:hover { background:rgba(255,255,255,.22); color:#fff; }
+
+  /* FLOATING PROMPT BUTTON */
+  .fab-prompt { position:fixed; bottom:80px; right:24px; background:linear-gradient(135deg,#7c3aed,#3b82f6); color:#fff; border:none; border-radius:50px; padding:10px 18px; font-size:12px; font-weight:700; cursor:pointer; box-shadow:0 4px 16px rgba(124,58,237,.4); z-index:7000; display:flex; align-items:center; gap:6px; transition:opacity .15s; }
+  .fab-prompt:hover { opacity:.9; }
+
+  /* FLOATING PROMPT PANEL */
+  .prompt-panel { position:fixed; top:42px; right:0; bottom:0; width:520px; max-width:97vw; background:#fff; box-shadow:-4px 0 24px rgba(0,0,0,.12); z-index:7500; display:none; flex-direction:column; overflow:hidden; }
+  .prompt-panel.open { display:flex; }
+  .prompt-panel-header { background:#1a1a2e; color:#fff; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+  .prompt-panel-title { font-size:13px; font-weight:800; }
+  .prompt-panel-close { background:rgba(255,255,255,.15); border:none; color:#fff; border-radius:6px; padding:4px 10px; cursor:pointer; font-size:13px; }
+  .prompt-panel-body { flex:1; overflow-y:auto; padding:20px; }
+
+  .header { background: linear-gradient(135deg, #1a1a2e, #3b82f6); color: #fff; padding: 32px 40px 32px 40px; padding-right: 220px; position: relative; }
+  .header h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+  .header p { font-size: 13px; opacity: .75; }
+  .header-api-btn { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); color: #fff; border-radius: 8px; padding: 6px 12px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background .15s; }
+  .header-api-btn:hover { background: rgba(255,255,255,.25); }
+  .header-btns { position: absolute; top: 62px; right: 24px; display: flex; gap: 8px; align-items: center; }
+  .api-status-dot { width: 8px; height: 8px; border-radius: 50%; background: #9ca3af; display: inline-block; }
+  .api-status-dot.ok { background: #34d399; }
+
+  /* MODAL API KEY */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 9999; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal-box { background: #fff; border-radius: 14px; padding: 28px; width: 440px; max-width: 95vw; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+  .modal-title { font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+  .modal-sub { font-size: 11px; color: #6b7280; margin-bottom: 18px; }
+  .modal-box input { width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 10px 12px; font-size: 12px; font-family: monospace; margin-bottom: 12px; outline: none; }
+  .modal-box input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .modal-btn { padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; }
+  .modal-btn.primary { background: #3b82f6; color: #fff; }
+  .modal-btn.primary:hover { background: #2563eb; }
+  .modal-btn.secondary { background: #f3f4f6; color: #374151; }
+  .modal-btn.danger { background: #fee2e2; color: #dc2626; }
+
+  /* AI RESPONSE */
+  .ai-response-box { background: linear-gradient(135deg, #eff6ff, #f0fdf4); border: 1px solid #bfdbfe; border-radius: 10px; padding: 18px; margin-top: 14px; display: none; }
+  .ai-response-header { font-size: 11px; font-weight: 700; color: #3b82f6; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .ai-response-content { font-size: 12px; color: #1e293b; line-height: 1.7; white-space: pre-wrap; }
+  .ai-loading { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6b7280; padding: 8px 0; }
+  .ai-loading-spinner { width: 16px; height: 16px; border: 2px solid #e5e7eb; border-top-color: #3b82f6; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .btn-ai { background: linear-gradient(135deg, #7c3aed, #3b82f6); color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 10px; display: none; transition: opacity .15s; }
+  .btn-ai:hover { opacity: .9; }
+  .container { padding-top: 42px; }
+
+  /* TOGGLE MODO GERADOR */
+  .mode-toggle { display: flex; gap: 6px; margin-bottom: 18px; }
+  .mode-btn { padding: 7px 16px; border-radius: 8px; border: 1px solid #e5e7eb; font-size: 12px; font-weight: 600; cursor: pointer; background: #f9fafb; color: #6b7280; transition: all .15s; }
+  .mode-btn.active.problema { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+  .mode-btn.active.sugestao { background: linear-gradient(135deg, #059669, #10b981); color: #fff; border-color: #059669; }
+
+  /* HISTÓRICO */
+  .history-section { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+  .history-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+  .history-title { font-size: 14px; font-weight: 800; color: #1a1a2e; display: flex; align-items: center; gap: 8px; }
+  .history-toggle-icon { font-size: 12px; color: #6b7280; transition: transform .2s; }
+  .history-toggle-icon.open { transform: rotate(180deg); }
+  .history-body { margin-top: 14px; display: none; }
+  .history-body.open { display: block; }
+  .history-empty { font-size: 12px; color: #9ca3af; padding: 8px 0; }
+  .history-item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+  .history-item-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .history-item-date { font-size: 10px; color: #9ca3af; }
+  .history-item-type { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+  .history-item-type.problema { background: #fee2e2; color: #dc2626; }
+  .history-item-type.sugestao { background: #d1fae5; color: #059669; }
+  .history-item-title { font-size: 12px; font-weight: 600; color: #1a1a2e; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .history-item-actions { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
+  .history-item-btn { padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid #e5e7eb; background: #f9fafb; color: #374151; transition: background .15s; }
+  .history-item-btn:hover { background: #f3f4f6; }
+  .history-item-btn.reusar { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+  .history-item-btn.remove { background: #fff; color: #dc2626; border-color: #fecaca; }
+  .history-item-content { font-size: 11px; color: #374151; background: #f9fafb; border-radius: 6px; padding: 10px; margin-top: 8px; white-space: pre-wrap; display: none; max-height: 200px; overflow-y: auto; line-height: 1.6; }
+  .history-clear { margin-top: 10px; font-size: 11px; color: #dc2626; background: none; border: none; cursor: pointer; padding: 4px 0; }
+  .history-clear:hover { text-decoration: underline; }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px; overflow-x: hidden; }
+
+  .section { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  .section-title { font-size: 15px; font-weight: 800; color: #1a1a2e; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .section-sub { font-size: 11px; color: #9ca3af; margin-bottom: 18px; }
+
+  /* GLOSSÁRIO */
+  .gloss-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .gloss-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; position: relative; cursor: default; transition: box-shadow .15s, border-color .15s; }
+  .gloss-card:hover { border-color: #93c5fd; box-shadow: 0 4px 12px rgba(59,130,246,.10); }
+  .gloss-term { font-size: 12px; font-weight: 800; color: #3b82f6; margin-bottom: 4px; }
+  .gloss-def { font-size: 11px; color: #6b7280; line-height: 1.5; }
+  .gloss-example { font-size: 10px; color: #9ca3af; margin-top: 4px; font-style: italic; }
+
+  /* NOTAS FLUTUANTE */
+  .fab { position:fixed; bottom:28px; right:16px; z-index:99999; width:52px; height:52px; border-radius:50%; background:#3b82f6; color:#fff; border:none; font-size:22px; cursor:pointer; box-shadow:0 4px 16px rgba(59,130,246,.45); display:flex; align-items:center; justify-content:center; transition:transform .15s, background .15s; }
+  .fab:hover { background:#2563eb; transform:scale(1.08); }
+  .fab .notif { position:absolute; top:4px; right:4px; width:10px; height:10px; background:#f59e0b; border-radius:50%; border:2px solid #fff; display:none; }
+
+  .notes-panel { position:fixed; top:0; right:-380px; width:360px; height:100vh; background:#fff; border-left:1px solid #e5e7eb; box-shadow:-8px 0 32px rgba(0,0,0,.12); z-index:99998; display:flex; flex-direction:column; transition:right .25s cubic-bezier(.4,0,.2,1); }
+  .notes-panel.open { right:0; }
+  .notes-header { padding:16px 18px; border-bottom:1px solid #e5e7eb; display:flex; align-items:center; justify-content:space-between; background:#f9fafb; }
+  .notes-header-title { font-size:14px; font-weight:800; color:#1a1a2e; display:flex; align-items:center; gap:8px; }
+  .notes-close { background:none; border:none; font-size:18px; color:#9ca3af; cursor:pointer; line-height:1; padding:2px 6px; border-radius:4px; }
+  .notes-close:hover { background:#f3f4f6; color:#374151; }
+
+  .notes-input-area { padding:14px 16px; border-bottom:1px solid #f3f4f6; }
+  .notes-input-area textarea { width:100%; border:1px solid #d1d5db; border-radius:8px; padding:10px 12px; font-size:12px; font-family:'Segoe UI',sans-serif; color:#374151; resize:none; height:90px; line-height:1.6; }
+  .notes-input-area textarea:focus { outline:none; border-color:#93c5fd; box-shadow:0 0 0 3px rgba(59,130,246,.10); }
+  .notes-actions { display:flex; gap:8px; margin-top:8px; }
+  .btn-note-add { flex:1; background:#3b82f6; color:#fff; border:none; border-radius:6px; padding:7px 0; font-size:12px; font-weight:700; cursor:pointer; }
+  .btn-note-add:hover { background:#2563eb; }
+  .btn-note-clear { background:#fee2e2; color:#dc2626; border:none; border-radius:6px; padding:7px 12px; font-size:12px; font-weight:600; cursor:pointer; }
+  .btn-note-clear:hover { background:#fecaca; }
+  .btn-note-copy { background:#f3f4f6; color:#374151; border:none; border-radius:6px; padding:7px 12px; font-size:12px; font-weight:600; cursor:pointer; }
+  .btn-note-copy:hover { background:#e5e7eb; }
+
+  .notes-list { flex:1; overflow-y:auto; padding:12px 16px; scrollbar-width:thin; scrollbar-color:#d1d5db #f9fafb; }
+  .notes-list::-webkit-scrollbar { width:5px; }
+  .notes-list::-webkit-scrollbar-thumb { background:#d1d5db; border-radius:99px; }
+  .note-item { background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:10px 12px; margin-bottom:10px; position:relative; }
+  .note-item:hover { border-color:#bfdbfe; }
+  .note-time { font-size:10px; color:#9ca3af; margin-bottom:5px; }
+  .note-text { font-size:12px; color:#374151; line-height:1.6; white-space:pre-wrap; word-break:break-word; }
+  .note-del { position:absolute; top:8px; right:8px; background:none; border:none; font-size:13px; color:#d1d5db; cursor:pointer; line-height:1; }
+  .note-del:hover { color:#ef4444; }
+  .notes-empty { text-align:center; color:#9ca3af; font-size:12px; padding:32px 0; }
+  [data-tip] { position: relative; }
+  [data-tip]::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    transform: none;
+    background: #1a1a2e;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.5;
+    padding: 7px 11px;
+    border-radius: 7px;
+    white-space: pre-wrap;
+    max-width: 220px;
+    min-width: 120px;
+    text-align: left;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .18s;
+    z-index: 9999;
+    box-shadow: 0 4px 16px rgba(0,0,0,.18);
+  }
+  [data-tip]::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 2px);
+    left: 12px;
+    transform: none;
+    border: 6px solid transparent;
+    border-top-color: #1a1a2e;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .18s;
+    z-index: 9999;
+  }
+  [data-tip]:hover::after, [data-tip]:hover::before { opacity: 1; }
+  .fab[data-tip]::after, .fab[data-tip]::before { display: none; }
+
+  /* TEMPLATE */
+  .template-box { background: #f0f7ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px 18px; position: relative; }
+  .template-box pre { font-family: 'Segoe UI', sans-serif; font-size: 12px; color: #374151; white-space: pre-wrap; word-break: break-word; line-height: 1.7; }
+  .highlight { background: #fef3c7; border-radius: 3px; padding: 0 3px; color: #92400e; font-weight: 600; }
+  .copy-btn { display:inline-block; margin-bottom:8px; background: #3b82f6; color: #fff; border: none; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; }
+  .copy-btn:hover { background: #2563eb; }
+
+  /* CHECKLIST */
+  .check-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .check-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; color: #374151; }
+  .check-list li::before { content: '☐'; font-size: 14px; color: #3b82f6; flex-shrink: 0; margin-top: 1px; }
+
+  /* PROBLEMAS COMUNS */
+  .prob-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .prob-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; cursor: default; transition: box-shadow .15s, border-color .15s; }
+  .prob-card:hover { border-color: #fca5a5; box-shadow: 0 4px 12px rgba(239,68,68,.08); }
+  .prob-title { font-size: 11px; font-weight: 700; color: #dc2626; margin-bottom: 6px; }
+  .prob-fix { font-size: 11px; color: #374151; }
+  .prob-term { display: inline-block; background: #dbeafe; color: #1d4ed8; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; margin-top: 4px; }
+
+  /* BUILDER */
+  .builder { display: flex; flex-direction: column; gap: 12px; }
+  /* MULTI-SELECT COMPONENTES */
+  .comp-list { border:1px solid #d1d5db; border-radius:6px; background:#fff; max-height:180px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#d1d5db #f9fafb; }
+  .comp-list::-webkit-scrollbar { width:5px; }
+  .comp-list::-webkit-scrollbar-thumb { background:#d1d5db; border-radius:99px; }
+  .comp-item { display:flex; align-items:center; gap:8px; padding:6px 10px; font-size:12px; color:#374151; cursor:pointer; transition:background .1s; }
+  .comp-item:hover { background:#f0f7ff; }
+  .comp-item input[type=checkbox] { cursor:pointer; accent-color:#3b82f6; width:13px; height:13px; flex-shrink:0; }
+  .comp-placeholder { padding:8px 10px; font-size:12px; color:#9ca3af; }
+  .builder select, .builder input, .builder textarea {
+    width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 10px;
+    font-size: 12px; color: #374151; font-family: 'Segoe UI', sans-serif; background: #fff;
+  }
+  .builder textarea { resize: vertical; min-height: 70px; }
+  .builder-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .btn-generate { background: #3b82f6; color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 13px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 4px; }
+  .btn-generate:hover { background: #2563eb; }
+  #output-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; font-size: 12px; color: #374151; white-space: pre-wrap; display: none; margin-top: 12px; line-height: 1.7; }
+  .btn-copy-output { background: #10b981; color: #fff; border: none; border-radius: 6px; padding: 6px 14px; font-size: 11px; font-weight: 700; cursor: pointer; margin-top: 8px; display: none; }
+
+  .tag { display: inline-block; background: #e0e7ff; color: #4338ca; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; margin-left: 6px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="index.html" class="topnav-logo">📡 Hub</a>
+  <a href="guia-ux-radar-insight.html" class="topnav-link active">📘 Guia UX/UI</a>
+  <a href="mockup-mentoria-lab.html" class="topnav-link">🧪 Mockup Mentoria Lab</a>
+  <div style="flex:1"></div>
+  <button class="topnav-action-btn" onclick="location.reload(true)" title="Recarregar página">🔄 Atualizar</button>
+  <button class="topnav-action-btn" onclick="toggleNotes()" id="header-notes-btn">
+    📝 Anotações
+    <span class="notif" id="notif-dot" style="width:7px;height:7px;background:#f59e0b;border-radius:50%;display:none;margin-left:2px;"></span>
+  </button>
+  <button class="topnav-action-btn" onclick="openApiModal()">
+    <span class="api-status-dot" id="api-status-dot"></span>
+    <span id="api-status-label">Configurar IA</span>
+  </button>
+</nav>
+
+<!-- MODAL API KEY -->
+<div class="modal-overlay" id="modal-api" onclick="if(event.target===this)closeApiModal()">
+  <div class="modal-box">
+    <div class="modal-title">🔑 Chave de API — Claude</div>
+    <div class="modal-sub">Sua chave fica salva apenas no seu navegador (localStorage). Nunca é enviada para outro servidor.</div>
+    <input type="password" id="modal-key-input" placeholder="sk-ant-api03-..." autocomplete="off" />
+    <div class="modal-actions">
+      <button class="modal-btn danger" onclick="removeApiKey()">Remover chave</button>
+      <button class="modal-btn secondary" onclick="closeApiModal()">Cancelar</button>
+      <button class="modal-btn primary" onclick="saveApiKey()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ═══ GLOSSÁRIO ═══ -->
+  <div class="section">
+    <div class="section-title">📖 Glossário Técnico Front-end</div>
+    <div class="section-sub">Termos que você vai usar ao reportar problemas de layout</div>
+    <div class="gloss-grid">
+
+      <div class="gloss-card" data-tip="Use quando quiser definir o tamanho de um card, coluna ou botão.">
+        <div class="gloss-term">Width / Max-width</div>
+        <div class="gloss-def">Largura de um elemento. Max-width limita o tamanho máximo.</div>
+        <div class="gloss-example">Ex: "a coluna Ação está muito estreita"</div>
+      </div>
+
+      <div class="gloss-card" data-tip="Use quando o texto ou ícone estiver 'colado' na borda do elemento.">
+        <div class="gloss-term">Padding</div>
+        <div class="gloss-def">Espaço interno entre o conteúdo e a borda do elemento.</div>
+        <div class="gloss-example">Ex: "o texto está colado na borda do card"</div>
+      </div>
+
+      <div class="gloss-card" data-tip="Use quando dois elementos estiverem muito próximos ou muito afastados entre si.">
+        <div class="gloss-term">Margin</div>
+        <div class="gloss-def">Espaço externo entre elementos.</div>
+        <div class="gloss-example">Ex: "os cards estão muito juntos"</div>
+      </div>
+
+      <div class="gloss-card" data-tip="Use quando um texto longo estiver quebrando o layout. O texto fica cortado com '...' no final.">
+        <div class="gloss-term">Truncate / Overflow</div>
+        <div class="gloss-def">Texto longo que é cortado com "..." para não quebrar o layout.</div>
+        <div class="gloss-example">Ex: "o nome do protocolo está quebrando a linha"</div>
+      </div>
+
+      <div class="gloss-card" data-tip="Flex organiza elementos em linha. Grid organiza em colunas e linhas ao mesmo tempo. Use para descrever disposição de cards.">
+        <div class="gloss-term">Flex / Grid</div>
+        <div class="gloss-def">Sistemas de layout para organizar elementos em linha ou grade.</div>
+        <div class="gloss-example">Ex: "quero dois cards lado a lado"</div>
+      </div>
+
+      <div class="gloss-card" data-tip="Use quando o layout funciona no desktop mas quebra no celular ou tablet.">
+        <div class="gloss-term">Responsive / Breakpoint</div>
+        <div class="gloss-def">Adaptação do layout para diferentes tamanhos de tela.</div>
+        <div class="gloss-example">Ex: "no celular os botões ficam sobrepostos"</div>
+      </div>
+
+      <div class="gloss-card" data-tip="Use quando um popup, menu ou card está aparecendo atrás de outro elemento.">
+        <div class="gloss-term">Z-index</div>
+        <div class="gloss-def">Ordem de sobreposição de elementos (qual fica na frente).</div>
+        <div class="gloss-example">Ex: "o popup fica atrás da tabela"</div>
+      </div>
+
+      <div class="gloss-card" data-tip="Use quando quiser que a página não role toda — apenas um painel interno (ex: a tabela de atendimentos).">
+        <div class="gloss-term">Overflow scroll</div>
+        <div class="gloss-def">Barra de rolagem quando o conteúdo ultrapassa o tamanho do container.</div>
+        <div class="gloss-example">Ex: "quero scroll só na tabela, não na página"</div>
+      </div>
+
+      <div class="gloss-card" data-tip="Fixed: fica fixo na tela mesmo rolando. Sticky: fica fixo só até chegar num ponto da página.">
+        <div class="gloss-term">Fixed / Sticky</div>
+        <div class="gloss-def">Elemento que fica fixo na tela mesmo ao rolar a página.</div>
+        <div class="gloss-example">Ex: "o header deve acompanhar o scroll"</div>
+      </div>
+
+      <div class="gloss-card" data-tip="Use para descrever os indicadores coloridos de status, como 'Concluído', 'Pendente', 'Aptos IA'.">
+        <div class="gloss-term">Badge / Chip / Tag</div>
+        <div class="gloss-def">Pequeno rótulo colorido para indicar status ou categoria.</div>
+        <div class="gloss-example">Ex: "o status 'Concluído' em verde"</div>
+      </div>
+
+      <div class="gloss-card" data-tip="Use para pedir um texto explicativo que aparece ao passar o mouse — como um mini manual embutido.">
+        <div class="gloss-term">Tooltip</div>
+        <div class="gloss-def">Texto explicativo que aparece ao passar o mouse sobre um elemento.</div>
+        <div class="gloss-example">Ex: "ao passar no ícone, mostrar o significado"</div>
+      </div>
+
+      <div class="gloss-card" data-tip="Modal bloqueia tudo atrás. Popover é menor e abre ao lado sem bloquear a tela — como o histórico de lotes.">
+        <div class="gloss-term">Modal / Popover</div>
+        <div class="gloss-def">Modal bloqueia a tela. Popover abre ao lado do elemento sem bloquear.</div>
+        <div class="gloss-example">Ex: "o histórico abre num popup pequeno"</div>
+      </div>
+
+      <div class="gloss-card" data-tip="Use para pedir um efeito de 'carregando' enquanto os dados do banco ainda não chegaram.">
+        <div class="gloss-term">Skeleton / Loading state</div>
+        <div class="gloss-def">Animação de carregamento enquanto os dados não chegaram.</div>
+        <div class="gloss-example">Ex: "mostrar um placeholder enquanto carrega"</div>
+      </div>
+
+      <div class="gloss-card" data-tip="Use para descrever o que deve aparecer quando não há dados — ex: 'Nenhum atendimento importado ainda'.">
+        <div class="gloss-term">Empty state</div>
+        <div class="gloss-def">Tela/mensagem quando não há dados para exibir.</div>
+        <div class="gloss-example">Ex: "quando não há atendimentos, mostrar mensagem"</div>
+      </div>
+
+      <div class="gloss-card" data-tip="Use para descrever seções recolhíveis — clica no título e o conteúdo expande ou some.">
+        <div class="gloss-term">Accordion</div>
+        <div class="gloss-def">Seção que expande/recolhe ao clicar no título.</div>
+        <div class="gloss-example">Ex: "o histórico de lotes recolhível"</div>
+      </div>
+
+      <div class="gloss-card" data-tip="Use para descrever o menu lateral de navegação — como o da aba Performance com as 7 seções.">
+        <div class="gloss-term">Sidebar</div>
+        <div class="gloss-def">Painel lateral de navegação.</div>
+        <div class="gloss-example">Ex: "menu lateral da aba Performance"</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ PROBLEMAS COMUNS ═══ -->
+  <div class="section">
+    <div class="section-title">⚠️ Problemas Comuns e Como Descrever</div>
+    <div class="section-sub">Reconheça o problema e use o termo certo ao reportar</div>
+    <div class="prob-grid">
+
+      <div class="prob-card" data-tip="Diga: 'a coluna Ação não tem min-width, os botões estão sendo cortados quando há dois lado a lado'">
+        <div class="prob-title">Coluna apertada / botão cortado</div>
+        <div class="prob-fix">A coluna não tem largura mínima definida. O conteúdo está sendo cortado.</div>
+        <span class="prob-term">min-width</span> <span class="prob-term">white-space: nowrap</span>
+      </div>
+
+      <div class="prob-card" data-tip="Diga: 'o nome do atendente está quebrando para a linha de baixo — precisa de truncate com reticências'">
+        <div class="prob-title">Texto quebrando linha indesejada</div>
+        <div class="prob-fix">O texto não tem instrução para truncar ou ficar em uma linha.</div>
+        <span class="prob-term">truncate</span> <span class="prob-term">overflow: hidden</span>
+      </div>
+
+      <div class="prob-card" data-tip="Diga: 'o gap entre os cards está grande demais' ou 'o padding interno está deixando o card muito pequeno'">
+        <div class="prob-title">Cards muito espaçados / muito juntos</div>
+        <div class="prob-fix">O espaçamento entre elementos precisa de ajuste.</div>
+        <span class="prob-term">gap</span> <span class="prob-term">margin</span> <span class="prob-term">padding</span>
+      </div>
+
+      <div class="prob-card" data-tip="Diga: 'a tabela precisa de max-height 380px com overflow-y scroll — a página não deve rolar, só a tabela'">
+        <div class="prob-title">Página inteira rola, mas queria só a tabela</div>
+        <div class="prob-fix">A tabela precisa de altura fixa com scroll interno.</div>
+        <span class="prob-term">max-height</span> <span class="prob-term">overflow-y: scroll</span>
+      </div>
+
+      <div class="prob-card" data-tip="Diga: 'o popup do histórico está aparecendo atrás da tabela — precisa de z-index maior e position fixed'">
+        <div class="prob-title">Popup aparece atrás de outros elementos</div>
+        <div class="prob-fix">O popup precisa de z-index maior para ficar na frente.</div>
+        <span class="prob-term">z-index</span> <span class="prob-term">position: fixed</span>
+      </div>
+
+      <div class="prob-card" data-tip="Diga: 'em telas menores que 768px os cards ficam sobrepostos — precisa de flex-wrap ou grid de 1 coluna no breakpoint mobile'">
+        <div class="prob-title">Layout quebra no celular</div>
+        <div class="prob-fix">Os elementos precisam de regras para telas menores.</div>
+        <span class="prob-term">responsive</span> <span class="prob-term">breakpoint</span> <span class="prob-term">flex-wrap</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ CHECKLIST ═══ -->
+  <div class="section">
+    <div class="section-title">✅ Checklist — Antes de Reportar um Problema</div>
+    <div class="section-sub">Use essa lista para garantir que sua solicitação é clara e completa</div>
+    <ul class="check-list">
+      <li data-tip="Ex: 'aba Operação → tabela de atendimentos → coluna Ação'">Identifiquei <strong>qual tela / aba / componente</strong> tem o problema (ex: aba Operação, tabela de atendimentos)</li>
+      <li data-tip="Ex: 'o botão Analisar está sendo cortado quando o nome é longo'">Descrevi <strong>o que está errado</strong> visualmente (ex: coluna Ação muito estreita)</li>
+      <li data-tip="Ex: 'o botão deve ter largura mínima e o nome truncado com reticências'">Descrevi <strong>como deveria ficar</strong> (ex: botões lado a lado sem quebrar linha)</li>
+      <li data-tip="Ex: 'só acontece quando o nome do atendente tem mais de 20 caracteres'">Mencionei se o problema ocorre <strong>sempre ou só em alguns casos</strong> (ex: só quando o nome é longo)</li>
+      <li data-tip="Problemas de mobile e desktop têm soluções diferentes — especifique sempre">Indiquei se é <strong>desktop, mobile ou ambos</strong></li>
+      <li data-tip="Ex: ao invés de 'está feio', diga 'o padding está grande demais' ou 'falta truncate no nome'">Usei pelo menos <strong>um termo técnico</strong> do glossário para ser mais preciso</li>
+    </ul>
+  </div>
+
+  <!-- ═══ HISTÓRICO DE PROMPTS ═══ -->
+  <div class="history-section">
+    <div class="history-header" onclick="toggleHistory()">
+      <div class="history-title">🕓 Histórico de Prompts <span id="history-count" style="font-size:11px;color:#9ca3af;font-weight:400;"></span></div>
+      <span class="history-toggle-icon" id="history-icon">▼</span>
+    </div>
+    <div class="history-body" id="history-body">
+      <div class="history-empty" id="history-empty">Nenhum prompt gerado ainda. Use o gerador acima para começar.</div>
+      <div id="history-list"></div>
+      <button class="history-clear" onclick="clearHistory()">🗑 Limpar todo o histórico</button>
+    </div>
+  </div>
+
+  <!-- ═══ CURSO: FLUXO DE PUBLICAÇÃO ═══ -->
+  <div class="section">
+    <div class="section-title">🚀 Curso: Fluxo de Publicação</div>
+    <div class="section-sub">Passo a passo para aplicar melhorias com segurança — siga sempre esta ordem</div>
+
+    <style>
+      /* AVISO */
+      .fp-alert { background:#fee2e2; border:2px solid #ef4444; border-radius:10px; padding:14px 18px; margin-bottom:20px; display:flex; align-items:center; gap:12px; }
+      .fp-alert-icon { font-size:22px; }
+      .fp-alert-text { font-size:12px; color:#7f1d1d; line-height:1.5; }
+      .fp-alert-text strong { font-size:13px; color:#dc2626; }
+
+      /* DIAGRAMA DE FLUXO */
+      .fp-flow { display:flex; align-items:center; gap:0; margin-bottom:24px; flex-wrap:wrap; }
+      .fp-flow-step { display:flex; flex-direction:column; align-items:center; gap:4px; }
+      .fp-flow-badge { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:#fff; }
+      .fp-flow-label { font-size:9px; font-weight:700; color:#374151; text-align:center; max-width:60px; line-height:1.2; }
+      .fp-flow-arrow { font-size:18px; color:#9ca3af; padding:0 4px; margin-bottom:18px; }
+      .fp-flow-emergency { display:flex; flex-direction:column; align-items:center; margin-top:4px; }
+      .fp-flow-down { font-size:14px; color:#ef4444; }
+
+      /* CARDS */
+      .fp-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; margin-top:8px; }
+      .fp-card { border-radius:12px; padding:16px; position:relative; border:1px solid transparent; }
+      .fp-card-num { width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:#fff; margin-bottom:10px; }
+      .fp-card-logo { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:5px; margin-left:6px; vertical-align:middle; }
+      .fp-card-title { font-size:13px; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+      .fp-card-desc { font-size:11px; color:#6b7280; margin-bottom:10px; }
+      .fp-card-steps { list-style:none; padding:0; margin:0; }
+      .fp-card-steps li { font-size:11px; color:#374151; padding:4px 0; border-bottom:1px solid rgba(0,0,0,.05); display:flex; align-items:flex-start; gap:6px; }
+      .fp-card-steps li:last-child { border-bottom:none; }
+      .fp-card-steps li::before { content:'→'; font-weight:700; min-width:12px; margin-top:1px; }
+      .fp-card-warn { background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3); border-radius:6px; padding:6px 10px; margin-top:10px; font-size:10px; color:#dc2626; font-weight:600; }
+
+      /* CORES POR CARD */
+      .fp-blue   { background:#eff6ff; border-color:#bfdbfe; }
+      .fp-blue   .fp-card-num { background:#3b82f6; }
+      .fp-blue   .fp-card-title { color:#1e40af; }
+      .fp-blue   .fp-card-steps li::before { color:#3b82f6; }
+
+      .fp-purple { background:#f5f3ff; border-color:#ddd6fe; }
+      .fp-purple .fp-card-num { background:#7c3aed; }
+      .fp-purple .fp-card-title { color:#5b21b6; }
+      .fp-purple .fp-card-steps li::before { color:#7c3aed; }
+
+      .fp-yellow { background:#fffbeb; border-color:#fde68a; }
+      .fp-yellow .fp-card-num { background:#f59e0b; }
+      .fp-yellow .fp-card-title { color:#92400e; }
+      .fp-yellow .fp-card-steps li::before { color:#f59e0b; }
+
+      .fp-orange { background:#fff7ed; border-color:#fed7aa; }
+      .fp-orange .fp-card-num { background:#f97316; }
+      .fp-orange .fp-card-title { color:#9a3412; }
+      .fp-orange .fp-card-steps li::before { color:#f97316; }
+
+      .fp-green  { background:#f0fdf4; border-color:#bbf7d0; }
+      .fp-green  .fp-card-num { background:#16a34a; }
+      .fp-green  .fp-card-title { color:#14532d; }
+      .fp-green  .fp-card-steps li::before { color:#16a34a; }
+
+      .fp-red    { background:#fff1f2; border-color:#fecdd3; }
+      .fp-red    .fp-card-num { background:#dc2626; }
+      .fp-red    .fp-card-title { color:#991b1b; }
+      .fp-red    .fp-card-steps li::before { color:#dc2626; }
+
+      /* LOGO SVG */
+      .logo-lovable { background:#ff6b35; border-radius:4px; padding:2px 4px; font-size:9px; font-weight:900; color:#fff; letter-spacing:-.5px; }
+      .logo-github svg { fill:#1f2937; }
+    </style>
+
+    <!-- AVISO CRÍTICO -->
+    <div class="fp-alert">
+      <span class="fp-alert-icon">🚨</span>
+      <div class="fp-alert-text">
+        <strong>NUNCA clique em "Remix this project" no Lovable</strong><br>
+        Isso cria um banco de dados completamente separado e você perde todos os dados cadastrados (usuários, atendentes, histórico). Sem recuperação possível.
+      </div>
+    </div>
+
+    <!-- DIAGRAMA DE FLUXO -->
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;margin-bottom:20px;">
+      <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em;">Visão geral do fluxo</div>
+      <div class="fp-flow">
+        <div class="fp-flow-step"><div class="fp-flow-badge" style="background:#3b82f6;">1</div><div class="fp-flow-label">DEV no Lovable</div></div>
+        <span class="fp-flow-arrow">→</span>
+        <div class="fp-flow-step"><div class="fp-flow-badge" style="background:#7c3aed;">2</div><div class="fp-flow-label">Preview + Teste</div></div>
+        <span class="fp-flow-arrow">→</span>
+        <div class="fp-flow-step"><div class="fp-flow-badge" style="background:#f59e0b;">3</div><div class="fp-flow-label">Protocolo</div></div>
+        <span class="fp-flow-arrow">→</span>
+        <div class="fp-flow-step"><div class="fp-flow-badge" style="background:#f97316;">4</div><div class="fp-flow-label">Merge GitHub</div></div>
+        <span class="fp-flow-arrow">→</span>
+        <div class="fp-flow-step"><div class="fp-flow-badge" style="background:#16a34a;">5</div><div class="fp-flow-label">Publicar Lovable</div></div>
+        <span class="fp-flow-arrow">→</span>
+        <div class="fp-flow-step"><div class="fp-flow-badge" style="background:#0ea5e9;">✅</div><div class="fp-flow-label">Usuários recebem</div></div>
+      </div>
+      <div style="font-size:10px;color:#ef4444;margin-top:6px;">🆘 Se algo errar após publicar → Passo 6: Reverter pelo histórico do Lovable</div>
+    </div>
+
+    <!-- 6 CARDS -->
+    <div class="fp-cards">
+
+      <!-- CARD 1 -->
+      <div class="fp-card fp-blue" title="Sempre trabalhe na branch dev — nunca na principal diretamente">
+        <div class="fp-card-num">1</div>
+        <div class="fp-card-title">
+          Melhoria na branch dev
+          <span class="logo-lovable">Lovable</span>
+        </div>
+        <div class="fp-card-desc">Todas as melhorias começam aqui — na branch de desenvolvimento, segura e isolada.</div>
+        <ul class="fp-card-steps">
+          <li>Abrir Lovable → projeto <strong>RADAR INSIGHT.TECH</strong></li>
+          <li>Settings → GitHub → Filial → selecionar <strong>desenvolvedor</strong></li>
+          <li>Colar o prompt no chat do Lovable</li>
+          <li>Aguardar a IA implementar</li>
+        </ul>
+      </div>
+
+      <!-- CARD 2 -->
+      <div class="fp-card fp-purple" title="Teste real — não rápido. Verifique tudo antes de avançar">
+        <div class="fp-card-num">2</div>
+        <div class="fp-card-title">👁 Testar na Pré-visualização</div>
+        <div class="fp-card-desc">Teste completo antes de qualquer publicação — usuários não veem nada ainda.</div>
+        <ul class="fp-card-steps">
+          <li>Clicar no botão <strong>Preview</strong> no topo do Lovable</li>
+          <li>Navegar por todas as telas impactadas</li>
+          <li>Testar os fluxos principais com calma</li>
+          <li>Se houver erro → corrigir antes de avançar</li>
+        </ul>
+      </div>
+
+      <!-- CARD 3 -->
+      <div class="fp-card fp-yellow" title="Documente o que foi feito antes de publicar — boa prática profissional">
+        <div class="fp-card-num">3</div>
+        <div class="fp-card-title">📋 Aprovar e gerar protocolo</div>
+        <div class="fp-card-desc">Documente o que foi alterado e defina o horário estratégico de publicação.</div>
+        <ul class="fp-card-steps">
+          <li>Preencher o modelo de protocolo (arquivo FLUXO-PUBLICACAO.md)</li>
+          <li>Definir horário fora do pico de uso</li>
+          <li>Confirmar módulos impactados</li>
+          <li>Anotar como reverter se errar</li>
+        </ul>
+      </div>
+
+      <!-- CARD 4 -->
+      <div class="fp-card fp-orange" title="O merge une o código aprovado da branch dev na branch principal">
+        <div class="fp-card-num">4</div>
+        <div class="fp-card-title">
+          Merge dev → principal
+          <span class="logo-github" title="GitHub">
+            <svg width="18" height="18" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          </span>
+        </div>
+        <div class="fp-card-desc">Une o código testado da branch dev na branch principal do repositório.</div>
+        <ul class="fp-card-steps">
+          <li>Acessar <strong>github.com/radarinsight-tech/radar-insights-semi-produ-o</strong></li>
+          <li>Clicar em <strong>2 Branches → dev → ... → New pull request</strong></li>
+          <li>Título: descrever o que foi feito</li>
+          <li>Clicar <strong>Merge pull request</strong> → confirmar</li>
+        </ul>
+      </div>
+
+      <!-- CARD 5 -->
+      <div class="fp-card fp-green" title="Só publique após o merge no GitHub estar concluído">
+        <div class="fp-card-num">5</div>
+        <div class="fp-card-title">
+          Publicar no Lovable
+          <span class="logo-lovable">Lovable</span>
+          ✅
+        </div>
+        <div class="fp-card-desc">Troca para a branch principal e publica — os usuários recebem a atualização.</div>
+        <ul class="fp-card-steps">
+          <li>Lovable → Settings → GitHub → Filial → <strong>principal</strong></li>
+          <li>Clicar no botão azul <strong>Publicar</strong></li>
+          <li>Aguardar "Atualizado" aparecer</li>
+          <li>Acessar <strong>radarinsight.tech</strong> e confirmar</li>
+        </ul>
+      </div>
+
+      <!-- CARD 6 -->
+      <div class="fp-card fp-red" title="Use apenas se algo quebrar após a publicação">
+        <div class="fp-card-num">6</div>
+        <div class="fp-card-title">🆘 Emergência — Reverter</div>
+        <div class="fp-card-desc">Se algo quebrar após publicar — volte para a versão anterior em segundos.</div>
+        <ul class="fp-card-steps">
+          <li>No Lovable, clicar no ícone <strong>🕐 Histórico</strong> no topo</li>
+          <li>Localizar a versão anterior que funcionava</li>
+          <li>Clicar em <strong>"Restaurar esta versão"</strong></li>
+          <li>Clicar <strong>Publicar</strong> novamente</li>
+        </ul>
+        <div class="fp-card-warn">⚠️ Use este passo apenas em emergência real</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ MENTORIA PREVENTIVA — MODO ATENDENTE ═══ -->
+  <div class="section">
+    <div class="section-title">🧑‍💼 Mentoria Preventiva — Modo Atendente</div>
+    <div class="section-sub">Funcionalidade implementada via Lovable • Prompt de referência disponível abaixo</div>
+
+    <style>
+      .mp-card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px 18px; margin-bottom:14px; }
+      .mp-card-title { font-size:13px; font-weight:700; color:#1a1a2e; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+      .mp-rule { display:flex; align-items:flex-start; gap:8px; font-size:12px; color:#374151; padding:5px 0; border-bottom:1px solid #f1f5f9; }
+      .mp-rule:last-child { border-bottom:none; }
+      .mp-rule-icon { font-size:14px; min-width:18px; }
+      .mp-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700; }
+      .mp-badge-green { background:#d1fae5; color:#065f46; }
+      .mp-badge-yellow { background:#fef3c7; color:#92400e; }
+      .mp-badge-red { background:#fee2e2; color:#991b1b; }
+      .mp-badge-blue { background:#dbeafe; color:#1e40af; }
+      .mp-prompt-box { background:#1a1a2e; border-radius:8px; padding:14px 16px; margin-top:12px; }
+      .mp-prompt-box pre { color:#e2e8f0; font-size:11px; line-height:1.6; white-space:pre-wrap; word-break:break-word; margin:0; }
+      .mp-copy-btn { background:#3b82f6; color:#fff; border:none; border-radius:6px; padding:6px 14px; font-size:11px; font-weight:600; cursor:pointer; margin-top:8px; }
+      .mp-copy-btn:hover { background:#2563eb; }
+      .mp-section-label { font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:.06em; margin:14px 0 6px; }
+    </style>
+
+    <!-- VISÃO GERAL -->
+    <div class="mp-card">
+      <div class="mp-card-title">📋 Visão Geral da Funcionalidade</div>
+      <div class="mp-rule"><span class="mp-rule-icon">🎯</span><span>O atendente realiza sua própria mentoria preventiva — analisa seus atendimentos, vê pontos fortes e áreas de melhoria, sem impacto na avaliação oficial</span></div>
+      <div class="mp-rule"><span class="mp-rule-icon">🔐</span><span>Acesso isolado — o atendente só enxerga seus próprios dados. Outros módulos ficam bloqueados</span></div>
+      <div class="mp-rule"><span class="mp-rule-icon">📊</span><span>Nota exibida com aviso de "não oficial" — sem campo de bônus ou régua progressiva</span></div>
+      <div class="mp-rule"><span class="mp-rule-icon">📁</span><span>Histórico pessoal filtrável por mês — até 10 mentorias por mês</span></div>
+    </div>
+
+    <!-- PERMISSÕES -->
+    <div class="mp-card">
+      <div class="mp-card-title">🔑 Permissões e Cadastro</div>
+      <div class="mp-section-label">Novo role no sistema</div>
+      <div class="mp-rule"><span class="mp-rule-icon">🆕</span><span><strong>ID:</strong> <code>mentoria_atendente</code> — adicionado ao Select de roles em Usuários e Permissões</span></div>
+      <div class="mp-rule"><span class="mp-rule-icon">👤</span><span>Ao cadastrar usuário com este role, selecionar o <strong>Atendente vinculado</strong> (lista dos atendentes da tabela)</span></div>
+      <div class="mp-rule"><span class="mp-rule-icon">🚫</span><span>Usuário com este role é redirecionado para <code>/mentoria-preventiva</code> em qualquer tentativa de acessar outra rota</span></div>
+    </div>
+
+    <!-- VALIDAÇÕES -->
+    <div class="mp-card">
+      <div class="mp-card-title">🛡️ Regras de Validação</div>
+      <div class="mp-section-label">Validação de PDF</div>
+      <div class="mp-rule"><span class="mp-rule-icon">📄</span><span>Ao importar PDF, o sistema extrai o nome do atendente e compara com o vínculo do usuário logado (case-insensitive)</span></div>
+      <div class="mp-rule"><span class="mp-rule-icon">⚠️</span><span>Se o nome não corresponder → bloquear arquivo + exibir alerta: "Este atendimento pertence a outro colaborador"</span></div>
+      <div class="mp-section-label">Limite mensal</div>
+      <div class="mp-rule">
+        <span class="mp-rule-icon">🔢</span>
+        <span>Máximo de <strong>10 mentorias por mês</strong> — contador sempre visível no header:
+          <span class="mp-badge mp-badge-green">0–7 Verde</span>
+          <span class="mp-badge mp-badge-yellow">8–9 Amarelo</span>
+          <span class="mp-badge mp-badge-red">10 Bloqueado</span>
+        </span>
+      </div>
+      <div class="mp-rule"><span class="mp-rule-icon">🔒</span><span>Ao atingir 10: upload desabilitado + banner "Limite mensal atingido — renova em 1º do próximo mês"</span></div>
+      <div class="mp-section-label">Segurança (backend)</div>
+      <div class="mp-rule"><span class="mp-rule-icon">🔧</span><span>Edge Function valida <code>attendant_id</code> e limite antes de processar — nunca confia só no front-end</span></div>
+    </div>
+
+    <!-- NOTA E HISTÓRICO -->
+    <div class="mp-card">
+      <div class="mp-card-title">📈 Nota e Histórico</div>
+      <div class="mp-rule"><span class="mp-rule-icon">🏷️</span><span>Nota exibida normalmente por faixas de cor — mas sempre com aviso amarelo: <em>"Esta nota é para sua mentoria pessoal e não tem caráter oficial. Não afeta seu bônus nem avaliação formal."</em></span></div>
+      <div class="mp-rule"><span class="mp-rule-icon">🚫</span><span>Campo de bônus (R$, faixa, régua progressiva) <strong>não é exibido</strong> para este role</span></div>
+      <div class="mp-rule"><span class="mp-rule-icon">📅</span><span>Seção "Meu Histórico" com tabela: Protocolo · Data · Nota · Pontos Fortes · Oportunidades · Ver detalhes</span></div>
+      <div class="mp-rule"><span class="mp-rule-icon">🔍</span><span>Filtros do histórico: seletor de mês/ano + busca por protocolo</span></div>
+    </div>
+
+    <!-- PROMPT LOVABLE -->
+    <div class="mp-section-label" style="margin-top:18px;">📄 Prompt para implementação no Lovable</div>
+    <div class="mp-prompt-box">
+      <pre id="mp-prompt-text">Arquivo salvo em: prompt-lovable-mentoria-preventiva-atendente.txt
+
+Conteúdo resumido:
+• Novo role mentoria_atendente no sistema de permissões
+• Vínculo usuário ↔ atendente (campo "Atendente vinculado")
+• Validação: PDF só aceito se nome = atendente vinculado ao login
+• Limite de 10 mentorias/mês com contador visual e bloqueio
+• Histórico pessoal filtrável por mês/protocolo
+• Nota exibida com aviso "não oficial" — sem campo de bônus
+• Validação de segurança na Edge Function (não só no front-end)
+• Todos os módulos bloqueados para este role — só /mentoria-preventiva
+
+Para usar: abra o arquivo .txt e cole o conteúdo no Lovable.</pre>
+    </div>
+    <button class="mp-copy-btn" onclick="
+      const txt = `NOVA FUNCIONALIDADE — MENTORIA PREVENTIVA: MODO ATENDENTE\n============================================================\n\nImplemente o acesso de Mentoria Preventiva para o próprio atendente, com as regras abaixo.\nNÃO remova nenhuma lógica, hook, integração ou funcionalidade existente.\n\n---\n\n## 1. NOVO MÓDULO DE PERMISSÃO\n\nNo sistema de Usuários e Permissões, adicione o role mentoria_atendente.\nLabel: Mentoria Preventiva (Atendente)\nAo cadastrar, selecionar o Atendente vinculado.\nAcesso restrito apenas a /mentoria-preventiva.\n\n## 2. VALIDAÇÃO DE PDF\n\nAo importar PDF, comparar nome do atendente extraído com o vínculo do usuário logado.\nSe diferente → bloquear + alerta de erro.\n\n## 3. LIMITE MENSAL: 10 MENTORIAS\n\nContador visível: verde 0-7, amarelo 8-9, vermelho=bloqueado.\nAo atingir 10: desabilitar upload + banner de aviso.\n\n## 4. HISTÓRICO PESSOAL\n\nTabela: Protocolo · Data · Nota · Pontos Fortes · Oportunidades · Ver detalhes\nFiltros: mês/ano + busca por protocolo\n\n## 5. NOTA SEM CARÁTER OFICIAL\n\nExibir nota + aviso amarelo: não oficial, não afeta bônus.\nNÃO exibir campo de bônus para este role.\n\n## 6. SEGURANÇA BACKEND\n\nEdge Function valida attendant_id e limite — não confiar só no front-end.\n\nREGRA: Não remover nenhuma lógica existente. Alterações são ADICIONAIS.`;
+      navigator.clipboard.writeText(txt).then(()=>{this.textContent='✅ Copiado!';setTimeout(()=>{this.textContent='📋 Copiar prompt resumido'},2000)});
+    ">📋 Copiar prompt resumido</button>
+  </div>
+
+  <!-- ═══ ESTRUTURA DE NAVEGAÇÃO ═══ -->
+  <div class="section">
+    <div class="section-title">🗺️ Estrutura de Navegação do Sistema</div>
+    <div class="section-sub">Mapeamento completo de cada módulo — abas, componentes e ações disponíveis</div>
+
+    <style>
+      .nav-module { border:1px solid #e5e7eb; border-radius:10px; margin-bottom:10px; overflow:hidden; }
+      .nav-module-header { display:flex; align-items:center; gap:10px; padding:12px 16px; cursor:pointer; user-select:none; background:#fafafa; transition:background .15s; }
+      .nav-module-header:hover { background:#f3f4f6; }
+      .nav-module-icon { font-size:18px; }
+      .nav-module-title { font-size:13px; font-weight:700; color:#1a1a2e; flex:1; }
+      .nav-module-badge { font-size:10px; font-weight:700; padding:2px 8px; border-radius:99px; }
+      .badge-oficial { background:#dbeafe; color:#1d4ed8; }
+      .badge-beta { background:#ede9fe; color:#7c3aed; }
+      .badge-novo { background:#d1fae5; color:#059669; }
+      .badge-hibrido { background:#fef3c7; color:#d97706; }
+      .badge-admin { background:#fee2e2; color:#dc2626; }
+      .badge-legado { background:#f3f4f6; color:#6b7280; }
+      .nav-chevron { font-size:11px; color:#9ca3af; transition:transform .2s; }
+      .nav-chevron.open { transform:rotate(180deg); }
+      .nav-module-body { display:none; padding:16px; border-top:1px solid #e5e7eb; background:#fff; }
+      .nav-module-body.open { display:block; }
+      .nav-section-label { font-size:10px; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:.06em; margin:12px 0 6px; }
+      .nav-section-label:first-child { margin-top:0; }
+      .nav-tabs-row { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:4px; }
+      .nav-tab-chip { background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; border-radius:6px; padding:3px 10px; font-size:11px; font-weight:600; }
+      .nav-comp-chip { background:#f3f4f6; color:#374151; border:1px solid #e5e7eb; border-radius:6px; padding:3px 9px; font-size:10px; font-family:monospace; }
+      .nav-actions-list { list-style:none; display:flex; flex-direction:column; gap:4px; }
+      .nav-actions-list li { font-size:12px; color:#374151; padding-left:14px; position:relative; }
+      .nav-actions-list li::before { content:'→'; position:absolute; left:0; color:#9ca3af; }
+      .nav-filters-list { display:flex; flex-wrap:wrap; gap:5px; }
+      .nav-filter-tag { background:#fefce8; color:#854d0e; border:1px solid #fef08a; border-radius:6px; padding:2px 8px; font-size:10px; }
+    </style>
+
+    <script>
+      function toggleNavModule(id) {
+        const body = document.getElementById('nav-body-' + id);
+        const chevron = document.getElementById('nav-chev-' + id);
+        body.classList.toggle('open');
+        chevron.classList.toggle('open');
+      }
+    </script>
+
+    <!-- 1. Avaliação Oficial -->
+    <div class="nav-module">
+      <div class="nav-module-header" onclick="toggleNavModule('aval')">
+        <span class="nav-module-icon">🎧</span>
+        <span class="nav-module-title">Avaliação Oficial</span>
+        <span class="nav-module-badge badge-oficial">Oficial</span>
+        <span class="nav-chevron" id="nav-chev-aval">▼</span>
+      </div>
+      <div class="nav-module-body" id="nav-body-aval">
+        <div class="nav-section-label">Estrutura</div>
+        <div class="nav-tabs-row"><span class="nav-tab-chip">Página única</span></div>
+        <div class="nav-section-label">Seções principais</div>
+        <div class="nav-tabs-row">
+          <span class="nav-tab-chip">Banner informativo</span>
+          <span class="nav-tab-chip">Gráficos de Evolução (colapsável)</span>
+          <span class="nav-tab-chip">Filtros + Tabela</span>
+          <span class="nav-tab-chip">Cards de Status (lateral)</span>
+        </div>
+        <div class="nav-section-label">Componentes</div>
+        <div class="nav-tabs-row">
+          <span class="nav-comp-chip">Filters</span>
+          <span class="nav-comp-chip">HistoryTable</span>
+          <span class="nav-comp-chip">StatsWidgets</span>
+          <span class="nav-comp-chip">ScoreEvolutionChart</span>
+          <span class="nav-comp-chip">ErrorBoundary</span>
+        </div>
+        <div class="nav-section-label">Filtros</div>
+        <div class="nav-filters-list">
+          <span class="nav-filter-tag">Busca por protocolo</span>
+          <span class="nav-filter-tag">Atendente</span>
+          <span class="nav-filter-tag">Tipo</span>
+          <span class="nav-filter-tag">Período (date range)</span>
+          <span class="nav-filter-tag">Status via cards laterais</span>
+        </div>
+        <div class="nav-section-label">Ações disponíveis</div>
+        <ul class="nav-actions-list">
+          <li>Limpar Filtros (reseta tudo e recolhe tabela)</li>
+          <li>Recolher lista / Mostrar todos os registros</li>
+          <li>Toggle Ver Gráficos / Fechar</li>
+          <li>Filtrar por status clicando nos cards (Auditado / Erro / Não Auditável)</li>
+          <li>Indicador de sincronização (Sincronizado / Desatualizado)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 2. Mentoria Lab -->
+    <div class="nav-module">
+      <div class="nav-module-header" onclick="toggleNavModule('mentor')">
+        <span class="nav-module-icon">🧪</span>
+        <span class="nav-module-title">Mentoria Lab</span>
+        <span class="nav-module-badge badge-beta">Beta</span>
+        <span class="nav-chevron" id="nav-chev-mentor">▼</span>
+      </div>
+      <div class="nav-module-body" id="nav-body-mentor">
+        <div class="nav-section-label">Abas internas</div>
+        <div class="nav-tabs-row">
+          <span class="nav-tab-chip">Operação</span>
+          <span class="nav-tab-chip">Pipeline</span>
+          <span class="nav-tab-chip">Performance</span>
+        </div>
+        <div class="nav-section-label">Aba Operação — seções</div>
+        <div class="nav-tabs-row">
+          <span class="nav-tab-chip">Upload zone (drag & drop)</span>
+          <span class="nav-tab-chip">Batch info header</span>
+          <span class="nav-tab-chip">Barra de filtros</span>
+          <span class="nav-tab-chip">Pipeline 3 colunas</span>
+          <span class="nav-tab-chip">Análise Automática IA</span>
+          <span class="nav-tab-chip">Side Sheet</span>
+        </div>
+        <div class="nav-section-label">Componentes</div>
+        <div class="nav-tabs-row">
+          <span class="nav-comp-chip">MentoriaPipeline</span>
+          <span class="nav-comp-chip">MentoriaCharts</span>
+          <span class="nav-comp-chip">MentoriaBonusPanel</span>
+          <span class="nav-comp-chip">MentoriaReportExport</span>
+          <span class="nav-comp-chip">MentoriaInsights</span>
+          <span class="nav-comp-chip">MentoriaDetailDialog</span>
+          <span class="nav-comp-chip">MentoriaBatchHistory</span>
+          <span class="nav-comp-chip">ConversationView</span>
+          <span class="nav-comp-chip">ParserDiagnosticDialog</span>
+        </div>
+        <div class="nav-section-label">Filtros</div>
+        <div class="nav-filters-list">
+          <span class="nav-filter-tag">Atendente</span>
+          <span class="nav-filter-tag">Canal</span>
+          <span class="nav-filter-tag">Período atendimento</span>
+          <span class="nav-filter-tag">Período auditoria</span>
+          <span class="nav-filter-tag">Áudio</span>
+          <span class="nav-filter-tag">Competência/mês</span>
+        </div>
+        <div class="nav-section-label">Ações disponíveis</div>
+        <ul class="nav-actions-list">
+          <li>Importar PDFs/ZIPs (botão + drag & drop)</li>
+          <li>Leitura automática de PDFs</li>
+          <li>Análise por IA — individual e em lote (concorrência 5)</li>
+          <li>Aprovar como avaliação oficial (manual e automático)</li>
+          <li>Abrir mentoria (modal com etapas: Voltar, Avançar, Finalizar, Próximo)</li>
+          <li>Exportar relatório</li>
+          <li>Diagnóstico do parser</li>
+          <li>Limpar esteira (com confirmação)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 3. Atendentes -->
+    <div class="nav-module">
+      <div class="nav-module-header" onclick="toggleNavModule('atend')">
+        <span class="nav-module-icon">👥</span>
+        <span class="nav-module-title">Atendentes</span>
+        <span class="nav-chevron" id="nav-chev-atend">▼</span>
+      </div>
+      <div class="nav-module-body" id="nav-body-atend">
+        <div class="nav-section-label">Estrutura</div>
+        <div class="nav-tabs-row"><span class="nav-tab-chip">Página única</span></div>
+        <div class="nav-section-label">Seções</div>
+        <div class="nav-tabs-row">
+          <span class="nav-tab-chip">Cards de estatísticas (Total / Ativos / Inativos)</span>
+          <span class="nav-tab-chip">Gerenciamento de Setores</span>
+          <span class="nav-tab-chip">Barra de filtros</span>
+          <span class="nav-tab-chip">Tabela de atendentes</span>
+        </div>
+        <div class="nav-section-label">Componentes</div>
+        <div class="nav-tabs-row">
+          <span class="nav-comp-chip">SectorManager</span>
+          <span class="nav-comp-chip">AttendantsTable</span>
+        </div>
+        <div class="nav-section-label">Filtros</div>
+        <div class="nav-filters-list">
+          <span class="nav-filter-tag">Busca por texto</span>
+          <span class="nav-filter-tag">Status (Ativos/Inativos)</span>
+          <span class="nav-filter-tag">Tipo de Atuação</span>
+          <span class="nav-filter-tag">Base</span>
+          <span class="nav-filter-tag">Participa de Avaliação</span>
+        </div>
+        <div class="nav-section-label">Ações disponíveis</div>
+        <ul class="nav-actions-list">
+          <li>Novo atendente (Nome, Apelido, Setor, Tipo, Empresa, Base, Ativo)</li>
+          <li>Editar atendente</li>
+          <li>Excluir atendente (com confirmação)</li>
+          <li>CRUD de setores via SectorManager</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 4. Ranking & Bônus -->
+    <div class="nav-module">
+      <div class="nav-module-header" onclick="toggleNavModule('rank')">
+        <span class="nav-module-icon">🏆</span>
+        <span class="nav-module-title">Ranking & Bônus</span>
+        <span class="nav-chevron" id="nav-chev-rank">▼</span>
+      </div>
+      <div class="nav-module-body" id="nav-body-rank">
+        <div class="nav-section-label">Estrutura</div>
+        <div class="nav-tabs-row"><span class="nav-tab-chip">Página única com seções expansíveis</span></div>
+        <div class="nav-section-label">Seções</div>
+        <div class="nav-tabs-row">
+          <span class="nav-tab-chip">Navegação mensal (← →)</span>
+          <span class="nav-tab-chip">Banner de fechamento</span>
+          <span class="nav-tab-chip">Cards KPI (6)</span>
+          <span class="nav-tab-chip">Tabela de ranking (expansível)</span>
+          <span class="nav-tab-chip">Histórico de fechamentos</span>
+        </div>
+        <div class="nav-section-label">Cards KPI</div>
+        <div class="nav-tabs-row">
+          <span class="nav-comp-chip">Atendentes</span>
+          <span class="nav-comp-chip">Elegíveis</span>
+          <span class="nav-comp-chip">Mentorias</span>
+          <span class="nav-comp-chip">Nota Média</span>
+          <span class="nav-comp-chip">Total Bônus</span>
+          <span class="nav-comp-chip">Excluídas</span>
+        </div>
+        <div class="nav-section-label">Ações disponíveis</div>
+        <ul class="nav-actions-list">
+          <li>Navegar entre meses (anterior / próximo)</li>
+          <li>Expandir atendente para ver mentorias individuais</li>
+          <li>Excluir mentoria da apuração (motivo: Áudio, Duplicidade, Amostra inválida...)</li>
+          <li>Restaurar mentoria excluída</li>
+          <li>Fechar mês (gera snapshot, bloqueia edições)</li>
+          <li>Reabrir mês (somente admin)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 5. Performance & Insights -->
+    <div class="nav-module">
+      <div class="nav-module-header" onclick="toggleNavModule('perf')">
+        <span class="nav-module-icon">📊</span>
+        <span class="nav-module-title">Performance & Insights</span>
+        <span class="nav-module-badge badge-novo">Novo</span>
+        <span class="nav-chevron" id="nav-chev-perf">▼</span>
+      </div>
+      <div class="nav-module-body" id="nav-body-perf">
+        <div class="nav-section-label">Abas internas</div>
+        <div class="nav-tabs-row">
+          <span class="nav-tab-chip">Ranking</span>
+          <span class="nav-tab-chip">Insights</span>
+          <span class="nav-tab-chip">Evolução</span>
+        </div>
+        <div class="nav-section-label">Seções globais (acima das abas)</div>
+        <div class="nav-tabs-row">
+          <span class="nav-tab-chip">Cards KPI (5)</span>
+          <span class="nav-tab-chip">Distribuição por Faixa de Desempenho (5 faixas)</span>
+        </div>
+        <div class="nav-section-label">Componentes</div>
+        <div class="nav-tabs-row">
+          <span class="nav-comp-chip">BarChart</span>
+          <span class="nav-comp-chip">PieChart</span>
+          <span class="nav-comp-chip">LineChart</span>
+          <span class="nav-comp-chip">RankingTable</span>
+        </div>
+        <div class="nav-section-label">Filtros</div>
+        <div class="nav-filters-list">
+          <span class="nav-filter-tag">Período (30/90 dias, todo)</span>
+          <span class="nav-filter-tag">Busca por atendente</span>
+        </div>
+        <div class="nav-section-label">Ações disponíveis</div>
+        <ul class="nav-actions-list">
+          <li>Filtrar por período</li>
+          <li>Buscar atendente</li>
+          <li>Expandir detalhes de cada atendente (notas individuais + progresso)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 6. Mentoria Preventiva -->
+    <div class="nav-module">
+      <div class="nav-module-header" onclick="toggleNavModule('prev')">
+        <span class="nav-module-icon">🛡️</span>
+        <span class="nav-module-title">Mentoria Preventiva</span>
+        <span class="nav-module-badge badge-novo">Novo</span>
+        <span class="nav-chevron" id="nav-chev-prev">▼</span>
+      </div>
+      <div class="nav-module-body" id="nav-body-prev">
+        <div class="nav-section-label">Estrutura</div>
+        <div class="nav-tabs-row"><span class="nav-tab-chip">Página única com seções dinâmicas</span></div>
+        <div class="nav-section-label">Seções</div>
+        <div class="nav-tabs-row">
+          <span class="nav-tab-chip">Banner informativo</span>
+          <span class="nav-tab-chip">Upload zone</span>
+          <span class="nav-tab-chip">Barra de ações</span>
+          <span class="nav-tab-chip">Cards de estatísticas (4)</span>
+          <span class="nav-tab-chip">Resumo por atendente</span>
+          <span class="nav-tab-chip">Lista de arquivos</span>
+          <span class="nav-tab-chip">Painel de resultado</span>
+          <span class="nav-tab-chip">Insights consolidados (toggle)</span>
+        </div>
+        <div class="nav-section-label">Componentes</div>
+        <div class="nav-tabs-row">
+          <span class="nav-comp-chip">PreventiveInsights</span>
+        </div>
+        <div class="nav-section-label">Ações disponíveis</div>
+        <ul class="nav-actions-list">
+          <li>Importar PDFs/ZIPs</li>
+          <li>Amostragem automática (2 por atendente, exclui áudio)</li>
+          <li>Seleção manual via checkbox</li>
+          <li>Analisar selecionados (batch)</li>
+          <li>Ver resultado individual e insights consolidados</li>
+          <li>Limpar tudo</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 7. Análise de Crédito -->
+    <div class="nav-module">
+      <div class="nav-module-header" onclick="toggleNavModule('cred')">
+        <span class="nav-module-icon">💳</span>
+        <span class="nav-module-title">Análise de Crédito</span>
+        <span class="nav-module-badge badge-hibrido">Híbrido</span>
+        <span class="nav-chevron" id="nav-chev-cred">▼</span>
+      </div>
+      <div class="nav-module-body" id="nav-body-cred">
+        <div class="nav-section-label">Estrutura</div>
+        <div class="nav-tabs-row"><span class="nav-tab-chip">Página única — layout 2 colunas</span></div>
+        <div class="nav-section-label">Páginas relacionadas</div>
+        <div class="nav-tabs-row">
+          <span class="nav-tab-chip">/credit — Análise principal</span>
+          <span class="nav-tab-chip">/credit-dashboard</span>
+          <span class="nav-tab-chip">/credit-docs</span>
+          <span class="nav-tab-chip">/credit-spc</span>
+          <span class="nav-tab-chip">/credit-legado (read-only)</span>
+        </div>
+        <div class="nav-section-label">Componentes</div>
+        <div class="nav-tabs-row">
+          <span class="nav-comp-chip">CreditDailySummary</span>
+          <span class="nav-comp-chip">CreditQuerySection</span>
+          <span class="nav-comp-chip">CreditUploadSection</span>
+          <span class="nav-comp-chip">CreditAnalysisResult</span>
+          <span class="nav-comp-chip">CreditQueryResult</span>
+          <span class="nav-comp-chip">CreditHistoryTable</span>
+        </div>
+        <div class="nav-section-label">Ações disponíveis</div>
+        <ul class="nav-actions-list">
+          <li>Upload de documento PDF para análise IA</li>
+          <li>Consulta manual por CPF/CNPJ (desabilitado atualmente)</li>
+          <li>Detecção de duplicidade (dialog de confirmação)</li>
+          <li>Nova análise (reset)</li>
+          <li>Navegar para Dashboard / Documentos</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 8. Usuários e Permissões -->
+    <div class="nav-module">
+      <div class="nav-module-header" onclick="toggleNavModule('users')">
+        <span class="nav-module-icon">⚙️</span>
+        <span class="nav-module-title">Usuários e Permissões</span>
+        <span class="nav-module-badge badge-admin">Admin</span>
+        <span class="nav-chevron" id="nav-chev-users">▼</span>
+      </div>
+      <div class="nav-module-body" id="nav-body-users">
+        <div class="nav-section-label">Estrutura</div>
+        <div class="nav-tabs-row"><span class="nav-tab-chip">Página única — protegida por AdminGuard</span></div>
+        <div class="nav-section-label">Seções</div>
+        <div class="nav-tabs-row">
+          <span class="nav-tab-chip">Header + botão Adicionar usuário</span>
+          <span class="nav-tab-chip">Tabela de usuários</span>
+        </div>
+        <div class="nav-section-label">Roles disponíveis</div>
+        <div class="nav-tabs-row">
+          <span class="nav-comp-chip">admin</span>
+          <span class="nav-comp-chip">auditoria</span>
+          <span class="nav-comp-chip">credito</span>
+          <span class="nav-comp-chip">credit_manual</span>
+          <span class="nav-comp-chip">credit_upload</span>
+        </div>
+        <div class="nav-section-label">Ações disponíveis</div>
+        <ul class="nav-actions-list">
+          <li>Criar novo usuário (senha provisória + force_password_change)</li>
+          <li>Editar permissões (role + sub-roles + setores)</li>
+          <li>Resetar senha</li>
+          <li>Ativar / Desativar usuário</li>
+          <li>Excluir usuário (soft delete via edge function)</li>
+          <li>Proteção: não permite editar/excluir a si mesmo</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ TEMPLATES PRONTOS ═══ -->
+  <div class="section">
+    <div class="section-title">📝 Templates Prontos para Situações Comuns</div>
+    <div class="section-sub">Copie e adapte conforme necessário</div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Coluna estreita na tabela</div>
+      <div class="template-box">
+        <button class="copy-btn" data-tip="Copia este template — substitua os campos em amarelo pelo seu caso" onclick="copyTemplate(this)">Copiar</button>
+        <pre>Na <span class="highlight">tabela de atendimentos (aba Operação)</span>, a coluna <span class="highlight">AÇÃO</span> está muito estreita quando há dois botões lado a lado. O layout quebra e os botões ficam sobrepostos.
+
+Esperado: a coluna deve ter min-width suficiente para acomodar os botões sem quebrar. Os botões devem ficar sempre em linha (flex, nowrap).
+
+Prioridade: Média.</pre>
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Scroll interno na tabela</div>
+      <div class="template-box">
+        <button class="copy-btn" onclick="copyTemplate(this)">Copiar</button>
+        <pre>A <span class="highlight">tabela de atendimentos</span> precisa de scroll interno (overflow-y: scroll) com altura máxima de <span class="highlight">400px</span>. A página principal não deve rolar — apenas a tabela internamente.
+
+A scrollbar deve ser fina e sempre visível na lateral direita da tabela.</pre>
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Card compacto lado a lado</div>
+      <div class="template-box">
+        <button class="copy-btn" onclick="copyTemplate(this)">Copiar</button>
+        <pre>Os cards <span class="highlight">[Upload]</span> e <span class="highlight">[Último Lote]</span> devem ficar lado a lado em grid de 2 colunas (proporção 1fr / 1.5fr). Altura máxima de 130px para ambos. Em mobile (< 768px) empilhar verticalmente.</pre>
+      </div>
+    </div>
+
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Texto truncado com tooltip</div>
+      <div class="template-box">
+        <button class="copy-btn" onclick="copyTemplate(this)">Copiar</button>
+        <pre>O campo <span class="highlight">[nome do atendente]</span> deve ser truncado com reticências (truncate / text-overflow: ellipsis) quando ultrapassar a largura da coluna. Ao passar o mouse, exibir o nome completo em tooltip.</pre>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function copyTemplate(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ Copiado!';
+      setTimeout(() => btn.textContent = 'Copiar', 2000);
+    });
+  }
+
+  function generatePrompt() {
+    const abaEl = document.getElementById('b-aba');
+    const aba = abaEl.options[abaEl.selectedIndex]?.text || '';
+    const checked = [...document.querySelectorAll('#b-tela-list input[type=checkbox]:checked')].map(c => c.value);
+    const comp = checked.length > 0 ? checked.join(', ') : '[Componente não selecionado]';
+    const local = aba ? `${aba} → ${comp}` : comp;
+    const prio = document.getElementById('b-prio').value;
+    const problema = document.getElementById('b-problema').value.trim();
+    const esperado = document.getElementById('b-esperado').value.trim();
+
+    let prompt = '';
+
+    if (currentMode === 'problema') {
+      const tipo = document.getElementById('b-tipo').value || '[Tipo não informado]';
+      const quando = document.getElementById('b-quando').value;
+      prompt = `SOLICITAÇÃO DE AJUSTE — RADAR INSIGHT
+Página: Guia UX/UI
+======================================
+Local: ${local}
+Tipo de problema: ${tipo}
+Ocorre quando: ${quando}
+Prioridade: ${prio}
+${problema ? `\nPROBLEMA DETALHADO:\n${problema}\n` : ''}
+COMPORTAMENTO ESPERADO:
+${esperado || '[Não informado]'}
+
+⚠️ ANTES DE IMPLEMENTAR:
+Analise os prós e contras desta mudança considerando:
+- Impacto no layout geral
+- Possíveis efeitos colaterais em outros componentes
+- Alternativas mais simples se houver
+
+REGRA IMPORTANTE:
+Não remover nenhuma lógica, hook, integração ou funcionalidade existente. Apenas ajuste visual/layout conforme descrito acima.`;
+    } else {
+      const tipo = document.getElementById('b-tipo-sugestao').value || '[Tipo não informado]';
+      prompt = `SUGESTÃO DE MELHORIA — RADAR INSIGHT
+Página: Guia UX/UI
+======================================
+Local: ${local}
+Tipo de melhoria: ${tipo}
+Prioridade: ${prio}
+${problema ? `\n💡 IDEIA PROPOSTA:\n${problema}\n` : ''}
+RESULTADO ESPERADO:
+${esperado || '[Não informado]'}
+
+REGRA IMPORTANTE:
+Não remover nenhuma lógica, hook, integração ou funcionalidade existente. Implemente a melhoria de forma aditiva, preservando tudo que já existe.`;
+    }
+
+    const box = document.getElementById('output-box');
+    const btn = document.getElementById('btn-copy-output');
+    box.textContent = prompt;
+    box.style.display = 'block';
+    btn.style.display = 'inline-block';
+    document.getElementById('copy-instructions').style.display = 'block';
+    const btnAi = document.getElementById('btn-ai');
+    if (getApiKey()) btnAi.style.display = 'inline-block';
+    document.getElementById('ai-response-box').style.display = 'none';
+
+    // Salva no histórico
+    saveToHistory({ mode: currentMode, local, prompt });
+  }
+
+  function copyOutput() {
+    const text = document.getElementById('output-box').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('btn-copy-output');
+      btn.textContent = '✓ Copiado!';
+      setTimeout(() => btn.textContent = '📋 Copiar Prompt', 2000);
+    });
+  }
+
+  // ── API KEY (localStorage) ────────────────────────────
+  const API_KEY_STORAGE = 'radar_insight_claude_key';
+
+  function getApiKey() {
+    return localStorage.getItem(API_KEY_STORAGE) || '';
+  }
+
+  function openApiModal() {
+    const modal = document.getElementById('modal-api');
+    document.getElementById('modal-key-input').value = getApiKey() ? '••••••••••••••••••••••••' : '';
+    modal.classList.add('open');
+  }
+
+  function closeApiModal() {
+    document.getElementById('modal-api').classList.remove('open');
+  }
+
+  function saveApiKey() {
+    const val = document.getElementById('modal-key-input').value.trim();
+    if (!val || val.startsWith('••')) { closeApiModal(); return; }
+    if (!val.startsWith('sk-ant-')) {
+      alert('Chave inválida — deve começar com sk-ant-');
+      return;
+    }
+    localStorage.setItem(API_KEY_STORAGE, val);
+    updateApiStatus();
+    closeApiModal();
+    alert('✅ Chave salva com sucesso!');
+  }
+
+  function removeApiKey() {
+    if (!confirm('Remover a chave de API salva?')) return;
+    localStorage.removeItem(API_KEY_STORAGE);
+    updateApiStatus();
+    closeApiModal();
+  }
+
+  function updateApiStatus() {
+    const dot = document.getElementById('api-status-dot');
+    const label = document.getElementById('api-status-label');
+    if (getApiKey()) {
+      dot.className = 'api-status-dot ok';
+      label.textContent = 'IA conectada';
+    } else {
+      dot.className = 'api-status-dot';
+      label.textContent = 'Configurar IA';
+    }
+  }
+
+  // ── ANALYZE WITH AI ──────────────────────────────────
+  async function analyzeWithAI() {
+    const key = getApiKey();
+    if (!key) { openApiModal(); return; }
+    const prompt = document.getElementById('output-box').textContent;
+    if (!prompt) return;
+
+    const btn = document.getElementById('btn-ai');
+    const box = document.getElementById('ai-response-box');
+    const content = document.getElementById('ai-response-content');
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Analisando...';
+    box.style.display = 'block';
+    content.innerHTML = '<div class="ai-loading"><div class="ai-loading-spinner"></div>Consultando Claude...</div>';
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 1024,
+          messages: [{
+            role: 'user',
+            content: `Você é um especialista em UX/UI e Front-end React/Tailwind. Analise a solicitação abaixo e responda em português com:\n1. ✅ Prós da mudança\n2. ⚠️ Possíveis riscos ou efeitos colaterais\n3. 💡 Sugestão de abordagem técnica (em 2-3 linhas)\n\n${prompt}`
+          }]
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        let errMsg = `HTTP ${res.status}`;
+        try {
+          const errJson = JSON.parse(errText);
+          errMsg = errJson?.error?.message || errJson?.message || JSON.stringify(errJson);
+        } catch { errMsg = errText || errMsg; }
+        throw new Error(errMsg);
+      }
+
+      const data = await res.json();
+      const text = data.content?.[0]?.text || 'Sem resposta.';
+      content.textContent = text;
+    } catch (e) {
+      content.innerHTML = `<span style="color:#dc2626">❌ Erro: ${e.message}</span>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🤖 Analisar com IA novamente';
+    }
+  }
+
+  // ── CHAT RÁPIDO COM IA ───────────────────────────────
+  let guiaChatHistory = [];
+  function guiaToggleChat() {
+    const box = document.getElementById('guia-chat-box');
+    const btn = document.getElementById('mode-btn-chat');
+    const open = box.style.display === 'none';
+    box.style.display = open ? '' : 'none';
+    btn.style.background = open ? '#4338ca' : '#f0f4ff';
+    btn.style.color = open ? '#fff' : '#4338ca';
+    if (open) document.getElementById('guia-chat-input').focus();
+  }
+  async function guiaChatSend() {
+    const input = document.getElementById('guia-chat-input');
+    const msg = input.value.trim();
+    if (!msg) return;
+    const apiKey = localStorage.getItem('radar_insight_claude_key');
+    if (!apiKey) { alert('Configure a API Key primeiro (botão "Configurar IA" no topo).'); return; }
+    input.value = '';
+    const msgs = document.getElementById('guia-chat-messages');
+    msgs.innerHTML += `<div style="background:#4338ca;color:#fff;border-radius:10px 10px 2px 10px;padding:8px 12px;font-size:12px;align-self:flex-end;max-width:85%;">${msg}</div>`;
+    msgs.innerHTML += `<div id="guia-chat-typing" style="background:#e0e7ff;color:#4338ca;border-radius:10px 10px 10px 2px;padding:8px 12px;font-size:12px;align-self:flex-start;max-width:85%;">⏳ Pensando...</div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+    guiaChatHistory.push({ role: 'user', content: msg });
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 800,
+          system: 'Você é um assistente especialista em UX/UI e front-end para o sistema Radar Insight. Seja direto, use bullet points quando útil. Responda em português.',
+          messages: guiaChatHistory
+        })
+      });
+      const data = await res.json();
+      const reply = data.content?.[0]?.text || 'Erro: ' + JSON.stringify(data.error);
+      guiaChatHistory.push({ role: 'assistant', content: reply });
+      const typing = document.getElementById('guia-chat-typing');
+      if (typing) typing.outerHTML = `<div style="background:#e0e7ff;color:#1e1b4b;border-radius:10px 10px 10px 2px;padding:8px 12px;font-size:12px;align-self:flex-start;max-width:85%;line-height:1.6;">${reply.replace(/\n/g,'<br>')}</div>`;
+    } catch(e) {
+      const typing = document.getElementById('guia-chat-typing');
+      if (typing) typing.textContent = 'Erro: ' + e.message;
+    }
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  // ── MODO GERADOR ─────────────────────────────────────
+  let currentMode = 'problema';
+
+  function setMode(mode) {
+    currentMode = mode;
+    document.getElementById('mode-btn-problema').classList.toggle('active', mode === 'problema');
+    document.getElementById('mode-btn-sugestao').classList.toggle('active', mode === 'sugestao');
+    // Resetar estilo do botão chat ao trocar modo
+    const chatBtn = document.getElementById('mode-btn-chat');
+    if (chatBtn) { chatBtn.style.background='#f0f4ff'; chatBtn.style.color='#4338ca'; }
+    document.getElementById('b-tipo').style.display = mode === 'problema' ? '' : 'none';
+    document.getElementById('b-tipo-sugestao').style.display = mode === 'sugestao' ? '' : 'none';
+    document.getElementById('label-tipo').textContent = mode === 'problema' ? 'Tipo de problema' : 'Tipo de melhoria';
+    // Troca labels
+    document.getElementById('label-problema').innerHTML = mode === 'problema'
+      ? 'Descreva o problema <span style="color:#9ca3af;font-weight:400;text-transform:none;">(opcional)</span>'
+      : 'Descreva a ideia <span style="color:#9ca3af;font-weight:400;text-transform:none;">(opcional)</span>';
+    document.getElementById('label-esperado').innerHTML = mode === 'problema'
+      ? 'Como deveria ficar <span style="color:#9ca3af;font-weight:400;text-transform:none;">(comportamento esperado)</span>'
+      : 'Qual o objetivo / resultado esperado';
+    document.getElementById('b-problema').placeholder = mode === 'problema'
+      ? 'Ex: o botão Analisar desaparece quando o nome do atendente tem mais de 25 caracteres...'
+      : 'Ex: quero um painel lateral que mostre o histórico de cada atendente ao clicar...';
+    document.getElementById('b-esperado').placeholder = mode === 'problema'
+      ? 'Ex: o botão deve ter largura mínima fixa e o nome truncado com reticências...'
+      : 'Ex: ao clicar no nome do atendente, abre um painel com suas últimas avaliações...';
+    // Oculta "Ocorre quando?" no modo sugestão
+    document.getElementById('row-quando').style.display = mode === 'problema' ? '' : 'none';
+    // Reset output
+    document.getElementById('output-box').style.display = 'none';
+    document.getElementById('btn-copy-output').style.display = 'none';
+    document.getElementById('btn-ai').style.display = 'none';
+    document.getElementById('ai-response-box').style.display = 'none';
+    document.getElementById('copy-instructions').style.display = 'none';
+  }
+
+  // ── HISTÓRICO DE PROMPTS ──────────────────────────────
+  const HISTORY_KEY = 'radar_prompt_history';
+
+  function getHistory() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
+  }
+
+  function saveToHistory({ mode, local, prompt }) {
+    const history = getHistory();
+    history.unshift({ id: Date.now(), mode, local, prompt, date: new Date().toLocaleString('pt-BR') });
+    if (history.length > 50) history.pop();
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const history = getHistory();
+    const list = document.getElementById('history-list');
+    const empty = document.getElementById('history-empty');
+    const count = document.getElementById('history-count');
+    count.textContent = history.length > 0 ? `(${history.length})` : '';
+    if (history.length === 0) { empty.style.display = ''; list.innerHTML = ''; return; }
+    empty.style.display = 'none';
+    list.innerHTML = history.map(item => `
+      <div class="history-item" id="hitem-${item.id}">
+        <div class="history-item-header">
+          <span class="history-item-date">${item.date}</span>
+          <span class="history-item-type ${item.mode}">${item.mode === 'problema' ? '🔧 Problema' : '💡 Sugestão'}</span>
+          <span class="history-item-title">${item.local}</span>
+          <div class="history-item-actions">
+            <button class="history-item-btn" onclick="toggleHistoryItem(${item.id})">Ver</button>
+            <button class="history-item-btn reusar" onclick="reusePrompt(${item.id})">Reusar</button>
+            <button class="history-item-btn remove" onclick="removeHistoryItem(${item.id})">✕</button>
+          </div>
+        </div>
+        <div class="history-item-content" id="hcontent-${item.id}">${item.prompt}</div>
+      </div>`).join('');
+  }
+
+  function toggleHistoryItem(id) {
+    const el = document.getElementById(`hcontent-${id}`);
+    el.style.display = el.style.display === 'block' ? 'none' : 'block';
+  }
+
+  function removeHistoryItem(id) {
+    const history = getHistory().filter(i => i.id !== id);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    renderHistory();
+  }
+
+  function clearHistory() {
+    if (!confirm('Limpar todo o histórico de prompts?')) return;
+    localStorage.removeItem(HISTORY_KEY);
+    renderHistory();
+  }
+
+  function reusePrompt(id) {
+    const item = getHistory().find(i => i.id === id);
+    if (!item) return;
+    setMode(item.mode);
+    document.getElementById('output-box').textContent = item.prompt;
+    document.getElementById('output-box').style.display = 'block';
+    document.getElementById('btn-copy-output').style.display = 'inline-block';
+    document.getElementById('copy-instructions').style.display = 'block';
+    if (getApiKey()) document.getElementById('btn-ai').style.display = 'inline-block';
+    document.getElementById('ai-response-box').style.display = 'none';
+    document.getElementById('output-box').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function toggleHistory() {
+    const body = document.getElementById('history-body');
+    const icon = document.getElementById('history-icon');
+    body.classList.toggle('open');
+    icon.classList.toggle('open');
+  }
+
+  renderHistory();
+</script>
+
+<!-- PAINEL DE NOTAS -->
+<div class="notes-panel" id="notes-panel">
+  <div class="notes-header">
+    <div class="notes-header-title">📝 Minhas Anotações</div>
+    <button class="notes-close" onclick="toggleNotes()">×</button>
+  </div>
+  <div class="notes-input-area">
+    <textarea id="note-input" placeholder="Digite sua dúvida ou anotação aqui...&#10;&#10;Ex: Qual termo usar quando o botão some ao rolar?"></textarea>
+    <div class="notes-actions">
+      <button class="btn-note-add" onclick="addNote()">+ Salvar nota</button>
+      <button class="btn-note-copy" data-tip="Copia todas as notas salvas" onclick="copyNotes()">📋 Copiar</button>
+      <button class="btn-note-clear" data-tip="Remove todas as notas permanentemente" onclick="clearNotes()">🗑 Limpar</button>
+    </div>
+  </div>
+  <div class="notes-list" id="notes-list">
+    <div class="notes-empty" id="notes-empty">Nenhuma anotação ainda.<br/>Digite acima e clique em Salvar.</div>
+  </div>
+</div>
+
+<script>
+  // ── COMPONENTES POR SEÇÃO (Guia UX/UI) ──────────────────────
+  const COMPONENTES = {
+    glossario: [
+      'Card de termo (Width / Max-width)',
+      'Card de termo (Padding)',
+      'Card de termo (Margin)',
+      'Card de termo (Truncate / Overflow)',
+      'Card de termo (Flex / Grid)',
+      'Card de termo (Responsive / Breakpoint)',
+      'Card de termo (Z-index)',
+      'Card de termo (Overflow scroll)',
+      'Card de termo (Fixed / Sticky)',
+      'Card de termo (Badge / Chip / Tag)',
+      'Card de termo (Tooltip)',
+      'Card de termo (Modal / Popover)',
+      'Card de termo (Skeleton / Loading state)',
+      'Card de termo (Empty state)',
+      'Card de termo (Accordion)',
+      'Card de termo (Sidebar)',
+    ],
+    problemas: [
+      'Card de problema (Coluna apertada)',
+      'Card de problema (Texto quebrado)',
+      'Card de problema (Scroll sumiu)',
+      'Card de problema (Botão fora do lugar)',
+      'Card de problema (Popup sobreposto)',
+      'Card de problema (Cores erradas)',
+      'Card de problema (Dado não aparece)',
+    ],
+    checklist: [
+      'Lista de verificação (itens com tooltip)',
+      'Item: Identifiquei a localização exata',
+      'Item: Descrevi com termos técnicos',
+      'Item: Informei quando ocorre',
+      'Item: Usei ao menos um termo do glossário',
+    ],
+    templates: [
+      'Template: Coluna muito estreita',
+      'Template: Scroll não funciona',
+      'Template: Botão desaparece',
+      'Template: Popup sobreposto',
+      'Template: Dado não exibido',
+    ],
+    gerador: [
+      'Botão FAB ⚡ Gerador de Prompt',
+      'Painel flutuante do Gerador',
+      'Toggle Corrigir Problema / Sugerir Melhoria',
+      'Campo Aba',
+      'Campo Componente(s)',
+      'Campo Tipo de problema',
+      'Campo Descreva o problema',
+      'Campo Como deveria ficar',
+      'Campo Ocorre quando',
+      'Campo Prioridade',
+      'Botão Gerar Prompt Técnico',
+      'Botão Copiar e colar no Verdent',
+      'Botão Analisar com IA',
+      'Caixa de resposta da IA',
+    ],
+    historico: [
+      'Seção Histórico de Prompts',
+      'Lista de prompts salvos',
+      'Botão Copiar prompt do histórico',
+      'Botão Limpar histórico',
+    ],
+    navegacao: [
+      'Card: Avaliação Oficial',
+      'Card: Mentoria Lab',
+      'Card: Atendentes',
+      'Card: Ranking & Bônus',
+      'Card: Performance & Insights',
+      'Card: Mentoria Preventiva',
+      'Card: Análise de Crédito',
+      'Card: Usuários e Permissões',
+      'Header / Barra de navegação do guia',
+      'Botão Configurar IA (API Key)',
+      'Botão Anotações',
+    ],
+  };
+
+  function updateComponentes() {
+    const aba = document.getElementById('b-aba').value;
+    const list = document.getElementById('b-tela-list');
+    list.innerHTML = '';
+    if (!aba) {
+      list.innerHTML = '<div class="comp-placeholder">Selecione a aba primeiro...</div>';
+      return;
+    }
+    const itens = COMPONENTES[aba] || [];
+    if (itens.length === 0) {
+      list.innerHTML = '<div class="comp-placeholder">Nenhum componente disponível.</div>';
+      return;
+    }
+    itens.forEach((c, i) => {
+      const id = 'comp-' + i;
+      const div = document.createElement('div');
+      div.className = 'comp-item';
+      div.innerHTML = `<input type="checkbox" id="${id}" value="${c}"/><label for="${id}" style="cursor:pointer;flex:1;">${c}</label>`;
+      list.appendChild(div);
+    });
+  }
+
+  // ── GERAR PROMPT ──────────────────────────────────────
+  const STORAGE_KEY = 'radar_guia_notas';
+  let notes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+  function toggleNotes() {
+    const panel = document.getElementById('notes-panel');
+    panel.classList.toggle('open');
+    if (panel.classList.contains('open')) renderNotes();
+  }
+
+  function addNote() {
+    const input = document.getElementById('note-input');
+    const text = input.value.trim();
+    if (!text) return;
+    const now = new Date();
+    const time = now.toLocaleDateString('pt-BR') + ' ' + now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+    notes.unshift({ id: Date.now(), text, time });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+    input.value = '';
+    renderNotes();
+    updateDot();
+  }
+
+  function deleteNote(id) {
+    notes = notes.filter(n => n.id !== id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+    renderNotes();
+    updateDot();
+  }
+
+  function renderNotes() {
+    const list = document.getElementById('notes-list');
+    const empty = document.getElementById('notes-empty');
+    if (notes.length === 0) {
+      empty.style.display = 'block';
+      list.querySelectorAll('.note-item').forEach(el => el.remove());
+      return;
+    }
+    empty.style.display = 'none';
+    list.querySelectorAll('.note-item').forEach(el => el.remove());
+    notes.forEach(n => {
+      const div = document.createElement('div');
+      div.className = 'note-item';
+      div.id = 'note-' + n.id;
+      div.innerHTML = `<div class="note-time">${n.time}</div><div class="note-text">${n.text.replace(/</g,'&lt;')}</div><button class="note-del" onclick="deleteNote(${n.id})" title="Remover">×</button>`;
+      list.appendChild(div);
+    });
+  }
+
+  function copyNotes() {
+    if (!notes.length) { alert('Nenhuma anotação para copiar.'); return; }
+    const text = notes.map(n => `[${n.time}]\n${n.text}`).join('\n\n---\n\n');
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.querySelector('.btn-note-copy');
+      btn.textContent = '✓ Copiado!';
+      setTimeout(() => btn.textContent = '📋 Copiar', 2000);
+    });
+  }
+
+  function clearNotes() {
+    if (!notes.length) return;
+    if (!confirm('Remover todas as anotações? Esta ação não pode ser desfeita.')) return;
+    notes = [];
+    localStorage.removeItem(STORAGE_KEY);
+    renderNotes();
+    updateDot();
+  }
+
+  function updateDot() {
+    document.getElementById('notif-dot').style.display = notes.length > 0 ? 'inline-block' : 'none';
+  }
+
+  // Inicializa dot ao carregar
+  updateDot();
+
+  // Atalho: Ctrl+Enter para salvar
+  document.getElementById('note-input').addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'Enter') addNote();
+  });
+</script>
+
+<button class="fab-prompt" onclick="document.getElementById('prompt-panel').classList.toggle('open')">⚡ Gerador de Prompt</button>
+
+<!-- PAINEL FLUTUANTE GERADOR DE PROMPT -->
+<div class="prompt-panel" id="prompt-panel">
+  <div class="prompt-panel-header">
+    <span class="prompt-panel-title">⚡ Gerador de Prompt Técnico</span>
+    <button class="prompt-panel-close" onclick="document.getElementById('prompt-panel').classList.remove('open')">✕ Fechar</button>
+  </div>
+  <div class="prompt-panel-body">
+    <!-- Toggle modo -->
+    <div class="mode-toggle" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <button class="mode-btn active problema" id="mode-btn-problema" onclick="setMode('problema')">🔧 Corrigir Problema</button>
+      <button class="mode-btn sugestao" id="mode-btn-sugestao" onclick="setMode('sugestao')">💡 Sugerir Melhoria</button>
+      <button class="mode-btn" id="mode-btn-chat" onclick="guiaToggleChat()" style="background:#f0f4ff;border:1px solid #c7d2fe;color:#4338ca;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">💬 Perguntar IA</button>
+    </div>
+
+    <!-- Mini chat rápido -->
+    <div id="guia-chat-box" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:700;color:#4338ca;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em;">💬 Chat Rápido — IA</div>
+      <div id="guia-chat-messages" style="max-height:220px;overflow-y:auto;scrollbar-width:thin;margin-bottom:10px;display:flex;flex-direction:column;gap:8px;"></div>
+      <div style="display:flex;gap:6px;">
+        <input id="guia-chat-input" type="text" placeholder="Pergunte algo sobre UX/UI, Radar Insight..." style="flex:1;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;font-size:12px;font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter')guiaChatSend()"/>
+        <button onclick="guiaChatSend()" style="background:#4338ca;color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;white-space:nowrap;">Enviar</button>
+      </div>
+    </div>
+
+    <div class="builder">
+      <div class="builder-row">
+        <div>
+          <label data-tip="Selecione a seção do Guia UX/UI — depois escolha o componente específico.">Seção do Guia</label>
+          <select id="b-aba" onchange="updateComponentes()">
+            <option value="">Selecione a seção...</option>
+            <option value="glossario">📖 Glossário Técnico</option>
+            <option value="problemas">⚠️ Problemas Comuns</option>
+            <option value="checklist">✅ Checklist</option>
+            <option value="templates">📝 Templates Prontos</option>
+            <option value="gerador">⚡ Gerador de Prompt</option>
+            <option value="historico">🕓 Histórico de Prompts</option>
+            <option value="navegacao">🗺️ Estrutura de Navegação</option>
+          </select>
+        </div>
+        <div>
+          <label data-tip="Selecione um ou mais componentes da aba escolhida. Pode marcar vários ao mesmo tempo.">Componente(s)</label>
+          <div class="comp-list" id="b-tela-list">
+            <div class="comp-placeholder">Selecione a aba primeiro...</div>
+          </div>
+        </div>
+      </div>
+      <div class="builder-row">
+        <div>
+          <label id="label-tipo" data-tip="Classifique o tipo de problema visual. Isso ajuda a usar o termo técnico certo no prompt.">Tipo de problema</label>
+          <select id="b-tipo">
+            <option value="">Selecione...</option>
+            <option>Elemento com largura errada (muito estreito/largo)</option>
+            <option>Texto quebrando linha indesejada</option>
+            <option>Espaçamento incorreto (muito junto/afastado)</option>
+            <option>Scroll não funciona como esperado</option>
+            <option>Elemento sobreposto / z-index errado</option>
+            <option>Layout quebrado no celular</option>
+            <option>Botão/ícone mal posicionado</option>
+            <option>Cor ou estilo visual incorreto</option>
+            <option>Dado não aparece / aparece errado</option>
+            <option>Outro</option>
+          </select>
+          <select id="b-tipo-sugestao" style="display:none;">
+            <option value="">Selecione...</option>
+            <option>Nova funcionalidade</option>
+            <option>Reorganizar layout</option>
+            <option>Melhorar UX (usabilidade)</option>
+            <option>Adicionar feedback visual</option>
+            <option>Simplificar interface</option>
+            <option>Outro</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label id="label-problema" data-tip="Opcional — adicione detalhes específicos do seu caso. Quanto mais detalhe, melhor o resultado.">Descreva o problema <span style="color:#9ca3af;font-weight:400;text-transform:none;">(opcional)</span></label>
+        <textarea id="b-problema" placeholder="Ex: o botão Analisar desaparece quando o nome do atendente tem mais de 25 caracteres..."></textarea>
+      </div>
+
+      <div>
+        <label id="label-esperado" data-tip="Descreva o resultado ideal. Será incluído automaticamente um pedido de análise de prós e contras.">Como deveria ficar <span style="color:#9ca3af;font-weight:400;text-transform:none;">(comportamento esperado)</span></label>
+        <textarea id="b-esperado" placeholder="Ex: o botão deve ter largura mínima fixa e o nome truncado com reticências..."></textarea>
+      </div>
+
+      <div class="builder-row">
+        <div id="row-quando">
+          <label data-tip="Informe quando o problema aparece. Isso ajuda o desenvolvedor a reproduzir e corrigir com precisão.">Ocorre quando?</label>
+          <select id="b-quando">
+            <option>Sempre</option>
+            <option>Quando o texto é longo</option>
+            <option>Quando há muitos itens</option>
+            <option>Somente no celular</option>
+            <option>Somente no desktop</option>
+            <option>Após importar arquivos</option>
+            <option>Após clicar em algum botão</option>
+          </select>
+        </div>
+        <div>
+          <label data-tip="Alta: impede o uso. Média: atrapalha mas dá pra usar. Baixa: é estética, não urgente.">Prioridade</label>
+          <select id="b-prio">
+            <option>Alta — impede o uso</option>
+            <option>Média — atrapalha a leitura</option>
+            <option>Baixa — ajuste estético</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-generate" onclick="generatePrompt()">⚡ Gerar Prompt Técnico</button>
+      <div id="output-box"></div>
+      <div id="copy-instructions" style="display:none;font-size:11px;color:#6b7280;margin-top:6px;">👆 Copie o prompt acima e cole diretamente no chat do Verdent com <strong>Ctrl+V</strong></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn-copy-output" data-tip="Copia o prompt gerado — depois cole no chat do Verdent com Ctrl+V" id="btn-copy-output" onclick="copyOutput()">📋 Copiar e colar no Verdent</button>
+        <button class="btn-ai" id="btn-ai" onclick="analyzeWithAI()">🤖 Analisar com IA agora</button>
+      </div>
+      <div class="ai-response-box" id="ai-response-box">
+        <div class="ai-response-header">🤖 Análise da IA — Claude</div>
+        <div class="ai-response-content" id="ai-response-content"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

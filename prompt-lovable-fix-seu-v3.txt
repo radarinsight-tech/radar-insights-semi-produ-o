@@ -1,0 +1,47 @@
+CORRECAO CIRÚRGICA — src/lib/mentoriaMetadata.ts
+=====================================================
+CONTEXTO: O campo "Atendente" está sendo salvo como "Seu" porque o PDF
+tem "Seu atendente\nBruna Bartozek" no cabeçalho. O nome correto JÁ ESTÁ
+nas mensagens parseadas (parsedMessages), mas não está sendo usado como fallback.
+
+INSTRUÇÃO: No arquivo src/lib/mentoriaMetadata.ts, localize a função que
+extrai e retorna o nome do atendente (provavelmente extractAtendente ou similar).
+
+Adicione a seguinte lógica de fallback NO FINAL dessa função, ANTES do return final:
+
+```typescript
+// Fallback: se o nome extraído for inválido, buscar nas mensagens parseadas
+const INVALID_NAMES = ["seu", "sua", "seu atendente", "sua atendente", "atendente", "marte", ""];
+
+function cleanAttendantName(name: string | null | undefined): string | null {
+  if (!name) return null;
+  const cleaned = name.trim();
+  if (INVALID_NAMES.includes(cleaned.toLowerCase())) return null;
+  if (cleaned.length < 2 || cleaned.length > 60) return null;
+  return cleaned;
+}
+```
+
+E na função principal de extração, após tentar extrair do cabeçalho do PDF:
+
+```typescript
+// Se nome inválido, buscar no corpo do atendimento
+if (!cleanAttendantName(attendantName)) {
+  // Estratégia 1: padrão "Sou [Nome]," no texto
+  const souMatch = text.match(/Sou\s+([A-ZÀ-Ü][a-zà-ü]+(?:\s+[A-ZÀ-Ü][a-zà-ü]+)*)[,\.!]/);
+  if (souMatch) attendantName = souMatch[1];
+}
+
+if (!cleanAttendantName(attendantName)) {
+  // Estratégia 2: linha após "Seu atendente" ou "Atendente:"
+  const afterLabel = text.match(/(?:Seu\s+atendente|Atendente)\s*[:\n]\s*([A-ZÀ-Ü][a-zà-ü]+(?:\s+[A-ZÀ-Ü][a-zà-ü]+)+)/i);
+  if (afterLabel) attendantName = afterLabel[1].trim();
+}
+
+// Retornar null em vez de "Seu" se ainda inválido
+return cleanAttendantName(attendantName);
+```
+
+IMPORTANTE: O objetivo é que quando o PDF retornar "Seu" como atendente,
+o sistema retorne null (que aparece como "—" na tela) em vez de "Seu".
+Não mude nada mais no arquivo além disso.

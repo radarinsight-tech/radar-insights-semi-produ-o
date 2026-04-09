@@ -1,0 +1,63 @@
+SOLICITACAO — RADAR INSIGHT
+Mentoria Preventiva — Unificar Pré-Análise + Semi-Automático em "Revisão"
+=========================================================================
+REGRA GERAL: Mesma unificação aplicada no Mentoria Lab. Não remover lógica existente.
+
+======================================================================
+OBJETIVO
+======================================================================
+
+Na Mentoria Preventiva, aplicar a mesma simplificação de fluxo:
+Eliminar a etapa/aba "Pré-Análise" e criar uma única etapa "Revisão"
+que combina o melhor das duas telas.
+
+Se o resultado da análise é exibido em modal, painel lateral ou página dedicada,
+o fluxo de visualização passa a ter:
+  [Revisão] → [Relatório]
+
+Ao abrir o resultado de qualquer atendimento analisado, ir diretamente para "Revisão".
+
+======================================================================
+LAYOUT DA ETAPA "REVISÃO" (igual ao Mentoria Lab)
+======================================================================
+
+BLOCO 1 — Linha de contexto do atendimento (compacta, topo)
+  💬 Mensagens: N   👤 Atendente: N   🙋 Cliente: N   ⏱ Tempo médio: N min
+  Fonte pequena (text-sm muted), sem card separado.
+
+BLOCO 2 — Nota e contadores
+  PREVISÃO DA NOTA: XX /100 com badge de faixa
+  Barra de progresso de pontos
+  Contadores: TOTAL | ACEITAS | AJUSTADAS | REJEITADAS | PENDENTES | CONFIANÇA
+
+BLOCO 3 — Ações em massa
+  [✓ Aceitar confiança alta]  [✓ Aceitar todas]  [↺ Limpar decisões]
+  Filtro: [Todas ▼]
+
+BLOCO 4 — Lista dos critérios
+  Agrupados por categoria, com resultado (SIM/NÃO/PARCIAL), confiança, peso
+  Botões por linha: [✓ Aceitar] [✏ Ajustar ▼] [✗ Rejeitar]
+
+RODAPÉ
+  [< Voltar]   [Confirmar Revisão →]
+
+======================================================================
+BADGE "NÃO OFICIAL" (manter — específico da Preventiva)
+======================================================================
+
+Após confirmar, no Relatório, manter o badge existente:
+  "📌 Esta nota é para sua mentoria pessoal e não tem caráter oficial."
+
+Não remover esse aviso — é regra de negócio da Mentoria Preventiva.
+
+======================================================================
+REMOVER
+======================================================================
+
+- Aba/etapa "Pré-Análise" do fluxo da Mentoria Preventiva
+- Qualquer referência a "Semi-Automático" visível ao usuário
+- Botão "Avançar para Semi-Automático" → substituir por "Confirmar Revisão"
+
+======================================================================
+FIM DA SOLICITACAO
+======================================================================

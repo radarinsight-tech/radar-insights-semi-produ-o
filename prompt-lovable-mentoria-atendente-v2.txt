@@ -1,0 +1,136 @@
+SOLICITAÇÃO — RADAR INSIGHT
+Página: Mentoria Preventiva (modo Atendente + Admin)
+====================================================
+REGRA GERAL: Não remover nenhuma lógica, hook, integração ou funcionalidade existente.
+
+======================================================================
+AJUSTE 1 — Meta semanal: alterar de 3 para 4 mentorias por semana
+======================================================================
+- Atualizar todos os lugares onde aparece "3 mentorias" para "4 mentorias" (painel de progresso, modal "Como usar", regras, alertas)
+- Atualizar a lógica de cores do contador semanal:
+  • 0 ou 1 → vermelho
+  • 2 ou 3 → amarelo ("Quase lá!")
+  • 4 → verde ("Meta atingida ✓")
+- Atualizar o alerta de domingo: "⚠️ Você não atingiu as 4 mentorias desta semana..."
+
+======================================================================
+AJUSTE 2 — Nota bloqueada por mentoria (liberação individual pelo admin)
+======================================================================
+
+BANCO DE DADOS:
+- Adicionar coluna booleana "nota_liberada" (default: false) na tabela "preventive_mentorings"
+
+TELA DO ATENDENTE (modo mentoria_atendente):
+- Na coluna "Nota" do histórico: se nota_liberada = false → exibir ícone de cadeado 🔒 com tooltip "Nota em análise pelo gestor"
+- Se nota_liberada = true → exibir o valor numérico normalmente (ex: 2.6)
+- O atendente nunca vê a nota até o admin liberar
+
+TELA DO ADMIN (visão geral das mentorias preventivas dos atendentes):
+- Para cada mentoria na tabela, adicionar um toggle/switch na coluna "Nota" ou "Ação"
+- Toggle desligado (padrão): nota oculta para o atendente
+- Toggle ligado: nota visível para o atendente
+- Ao alternar, atualizar o campo "nota_liberada" no banco via Supabase
+- Tooltip no toggle: "Liberar nota para o atendente" / "Ocultar nota"
+
+======================================================================
+AJUSTE 3 — Coluna Ação: separar em dois botões distintos
+======================================================================
+
+Atualmente existe um botão "Ver" que mostra tudo. Separar em:
+
+BOTÃO 👁 (ícone olho — sem texto):
+- Abre um POPOVER ou card flutuante rápido (não modal completo)
+- Conteúdo do preview rápido:
+  • Protocolo
+  • Data do atendimento
+  • Atendente
+  • Status (Analisado / Inviável)
+  • Nota (se liberada, senão 🔒)
+  • Lista resumida de Pontos Fortes (primeiros 2)
+  • Lista resumida de Oportunidades de Melhoria (primeiras 2)
+  • Botão "Ver análise completa →" que abre o modal completo
+
+BOTÃO 📋 Ver (texto "Ver"):
+- Abre o MODAL COMPLETO com todas as 19 perguntas avaliadas (comportamento atual)
+- Acrescentar o GUIA DE AVALIAÇÃO conforme descrito no Ajuste 4 abaixo
+
+======================================================================
+AJUSTE 4 — Guia de Avaliação nos 19 critérios (dentro do modal "Ver")
+======================================================================
+
+Dentro do modal completo que exibe as 19 perguntas avaliadas, para cada critério:
+- Exibir a nota/resultado da IA normalmente (como já está)
+- Abaixo de cada critério, adicionar um bloco de dica orientativa com ícone 💡 e fundo azul claro:
+
+Texto padrão da dica (adaptar ao nome do critério):
+"Como atendente, você deve [ação esperada]. Para melhorar neste critério, tente [sugestão prática]."
+
+Use os textos abaixo para cada critério (adapte ao nome exato que já existe no sistema):
+
+1. Saudação inicial
+💡 "Como atendente, você deve cumprimentar o cliente pelo nome e se identificar claramente. Tente sempre iniciar com 'Olá [nome], aqui é [seu nome] da [empresa]. Como posso ajudá-lo?'"
+
+2. Identificação do problema
+💡 "Como atendente, você deve ouvir ativamente e confirmar o que o cliente precisa antes de oferecer solução. Tente reformular: 'Entendi, você está com dificuldade em X, correto?'"
+
+3. Clareza na comunicação
+💡 "Como atendente, você deve usar linguagem simples e direta. Evite termos técnicos sem explicação. Tente sempre confirmar se o cliente entendeu."
+
+4. Tempo de resposta
+💡 "Como atendente, você deve responder em no máximo 2 minutos por mensagem. Se precisar de tempo, avise: 'Vou verificar e já retorno!'"
+
+5. Solução oferecida
+💡 "Como atendente, você deve apresentar a solução de forma clara e confirmar se resolve o problema do cliente antes de encerrar."
+
+6. Empatia
+💡 "Como atendente, você deve demonstrar que entende o sentimento do cliente. Use frases como 'Entendo sua situação' ou 'Vou fazer o possível para resolver.'"
+
+7. Condução do atendimento
+💡 "Como atendente, você deve guiar a conversa com direção clara, sem deixar o cliente sem resposta ou em silêncio prolongado."
+
+8. Uso do nome do cliente
+💡 "Como atendente, você deve usar o nome do cliente ao menos 2 vezes durante o atendimento para personalizar a experiência."
+
+9. Encerramento
+💡 "Como atendente, você deve encerrar confirmando a resolução e agradecendo: 'Fico feliz em ter ajudado! Qualquer dúvida, pode chamar.'"
+
+10. Ortografia e gramática
+💡 "Como atendente, você deve revisar as mensagens antes de enviar. Erros de escrita passam imagem de descuido. Use o corretor do celular como apoio."
+
+11. Oferta de solução alternativa
+💡 "Como atendente, se a solução principal não estiver disponível, sempre ofereça uma alternativa viável ao cliente."
+
+12. Registro no sistema
+💡 "Como atendente, você deve registrar o atendimento corretamente no sistema durante ou logo após a conversa."
+
+13. Follow-up
+💡 "Como atendente, você deve verificar se o problema foi resolvido após a solução ser aplicada, seja com uma mensagem de confirmação."
+
+14. Tom de voz / linguagem
+💡 "Como atendente, você deve manter tom cordial e profissional. Evite gírias em excesso ou linguagem muito informal com clientes que não deram esse tom."
+
+15. Escuta ativa
+💡 "Como atendente, você deve deixar o cliente terminar de falar antes de responder. Nunca interrompa ou suponha a necessidade antes de ouvir."
+
+16. Proatividade
+💡 "Como atendente, você deve antecipar necessidades. Se perceber que o cliente pode ter outra dúvida relacionada, ofereça a informação antes de ele perguntar."
+
+17. Resolução no primeiro contato
+💡 "Como atendente, o objetivo é resolver na primeira interação. Evite transferências desnecessárias e tente solucionar você mesmo sempre que possível."
+
+18. Postura diante de reclamações
+💡 "Como atendente, diante de reclamações mantenha a calma, peça desculpas pelo inconveniente e foque na solução, não na justificativa."
+
+19. Resultado geral
+💡 "Como atendente, a nota final reflete sua evolução contínua. Foque nos critérios com pontuação mais baixa — são suas maiores oportunidades de crescimento."
+
+DESIGN DO BLOCO DE DICA:
+- Fundo: azul muito claro (ex: bg-blue-50)
+- Borda esquerda azul (border-l-4 border-blue-400)
+- Ícone 💡 antes do texto
+- Texto em cinza escuro, tamanho pequeno (text-sm)
+- Colapsável (toggle "ver dica" / "ocultar dica") para não poluir a tela
+
+======================================================================
+FIM DA SOLICITAÇÃO
+======================================================================

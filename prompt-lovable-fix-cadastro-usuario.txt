@@ -1,0 +1,33 @@
+CORRECAO — Lista de usuários não atualiza após cadastro de novo usuário
+========================================================================
+
+PROBLEMA:
+Após cadastrar um novo usuário na página de administração/gerenciamento de usuários,
+a lista não é recarregada automaticamente. O usuário novo só aparece após recarregar
+a página manualmente (F5).
+
+CORRECAO:
+Localizar o componente/página de gerenciamento de usuários
+(provavelmente UserManagement.tsx, UsersPage.tsx ou similar em src/pages/ ou src/components/).
+
+1. Identificar a função que realiza o cadastro do novo usuário (ex: handleCreateUser, onSubmit, createUser).
+
+2. Após o cadastro bem-sucedido (dentro do bloco de sucesso, após o toast), garantir que
+   a lista de usuários seja recarregada. Isso pode ser feito de duas formas:
+
+   OPÇÃO A — Se a lista vem de um estado local (array de usuários em useState):
+   Adicionar o novo usuário diretamente ao estado:
+     setUsers(prev => [...prev, novoUsuario]);
+   
+   OPÇÃO B — Se a lista vem de uma query/fetch (useEffect com fetch do Supabase):
+   Chamar a função de recarga da lista após o cadastro:
+     await loadUsers(); // ou fetchUsers(), refetch(), etc.
+
+3. Se houver um modal/drawer de cadastro, fechá-lo DEPOIS de atualizar a lista
+   (não antes), para garantir que a UI reflita o novo usuário imediatamente.
+
+IMPORTANTE:
+- NÃO alterar a lógica de autenticação ou permissões.
+- NÃO alterar outros fluxos além do cadastro de usuário.
+- NÃO criar novas funções — apenas chamar as existentes na ordem correta.
+- Manter o toast de sucesso existente.

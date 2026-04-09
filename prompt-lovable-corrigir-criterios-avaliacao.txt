@@ -1,0 +1,99 @@
+SOLICITAÇÃO — RADAR INSIGHT
+Página: Mentoria Preventiva — Corrigir critérios de avaliação
+=============================================================
+REGRA GERAL: Não remover nenhuma lógica existente. Apenas atualizar os textos dos critérios e dicas.
+
+======================================================================
+CONTEXTO
+======================================================================
+O modal "Detalhes da Mentoria" (botão "Ver") exibe os 19 critérios de avaliação
+com dicas colapsáveis (💡 Ver dica). Os nomes e dicas precisam ser corrigidos
+para refletir a matriz oficial do Radar Insight.
+
+======================================================================
+ATUALIZAR — Constante EVALUATION_TIPS em MentoriaAttendenteHistory.tsx
+======================================================================
+
+Substituir o objeto EVALUATION_TIPS atual pelo seguinte (chaves = número do critério):
+
+const EVALUATION_TIPS: Record<number, string> = {
+  1: "Como atendente, você deve se apresentar pelo nome ao iniciar o atendimento. A mensagem automática do sistema conta como apresentação válida. Certifique-se de que seu nome está correto no sistema.",
+  2: "Como atendente, você deve ser cordial e simpático durante todo o atendimento. Use cumprimentos, demonstre boa vontade e mantenha um tom agradável mesmo em situações difíceis.",
+  3: "Como atendente, você deve chamar o cliente pelo nome ao menos uma vez durante o atendimento. Isso cria proximidade e mostra atenção individualizada.",
+  4: "Como atendente, você deve responder em até 1 minuto após o cliente enviar cada mensagem. Entre 1 e 2 minutos é aceitável com contexto. Acima de 2 minutos sem aviso é considerado NÃO. Sempre avise o cliente se precisar de mais tempo: 'Vou verificar e já retorno!'",
+  5: "Como atendente, você deve usar linguagem formal e profissional. Evite gírias, abreviações excessivas e informalidades. Escreva corretamente e com clareza.",
+  6: "Como atendente, você deve fazer perguntas para entender bem o problema antes de oferecer solução. Não assuma — confirme. Exemplo: 'Pode me dizer quando começou o problema?' ou 'Qual serviço está com dificuldade?'",
+  7: "Como atendente, você deve identificar corretamente o que o cliente precisa. Reformule o pedido para confirmar: 'Então você precisa de X, correto?' Isso evita retrabalho e mostra atenção.",
+  8: "Como atendente, você deve demonstrar que está ouvindo o cliente. Não interrompa, não suponha a resposta antes de ouvir. Confirme o que foi dito antes de agir.",
+  9: "Como atendente, você deve agir com agilidade e antecipar as necessidades do cliente. Ofereça informações relevantes antes de ele perguntar e resolva sem deixar o cliente esperando sem retorno.",
+  10: "Como atendente, se o cliente manifestar intenção de cancelamento, você deve buscar a retenção. Entenda o motivo, ofereça alternativas, benefícios ou encaminhe para o setor responsável. Não encerre sem tentar reverter.",
+  11: "Como atendente, você deve informar ao cliente que a solução foi registrada no sistema. Exemplo: 'Já registrei o protocolo do seu atendimento. O número é XXXXXX.' Isso passa segurança e comprova o serviço.",
+  12: "Como atendente, você deve confirmar se o cliente ficou satisfeito com a solução antes de encerrar. Exemplo: 'Isso resolveu seu problema?' ou 'Posso ajudar em mais alguma coisa?'",
+  13: "Como atendente, quando a solução principal não estiver disponível, você deve buscar alternativas viáveis. Nunca encerre sem oferecer outra opção ou encaminhamento.",
+  14: "Como atendente, quando aplicável, você deve realizar testes junto ao cliente para confirmar que o problema foi resolvido. Exemplo: 'Pode tentar acessar agora e me dizer se funcionou?'",
+  15: "Como atendente, antes de encerrar, você deve perguntar se o cliente tem mais alguma dúvida. Exemplo: 'Restou alguma dúvida que eu possa esclarecer?' Isso evita reabertura de chamados.",
+  16: "Como atendente, observe sinais de satisfação do cliente. Se ele agradecer, elogiar ou demonstrar alívio, isso é evidência positiva. Se encerrar sem opinião, o critério é marcado como FORA DO ESCOPO — não é penalização.",
+  17: "Como atendente, quando o contexto permitir, informe o cliente sobre serviços, benefícios ou recursos disponíveis que possam ser úteis. Em atendimentos exclusivamente técnicos, este critério é FORA DO ESCOPO.",
+  18: "Como atendente, verifique se o cliente tem interesse em upgrade de plano, serviços adicionais ou melhorias disponíveis. Em atendimentos de suporte técnico puro, este critério pode ser FORA DO ESCOPO.",
+  19: "Como atendente, você deve confirmar e atualizar os dados cadastrais do cliente quando necessário. Verifique nome, endereço, contato ou qualquer dado relevante para o atendimento.",
+};
+
+======================================================================
+ATUALIZAR — Nomes dos critérios no modal "Ver" (MentoriaAttendenteHistory.tsx)
+======================================================================
+
+Atualizar também os nomes dos critérios exibidos no modal para os nomes oficiais:
+
+Critério 1:  "Informou o nome e se apresentou?"
+Critério 2:  "Foi cordial e simpático?"
+Critério 3:  "Chamou o cliente pelo nome?"
+Critério 4:  "Respondeu dentro do tempo adequado?"
+Critério 5:  "Utilizou linguagem profissional?"
+Critério 6:  "Fez perguntas para entender o problema?"
+Critério 7:  "Identificou corretamente a solicitação?"
+Critério 8:  "Demonstrou disposição para ouvir?"
+Critério 9:  "Agiu com agilidade e proatividade?"
+Critério 10: "Buscou retenção em cancelamentos?"
+Critério 11: "Informou registro da solução no sistema?"
+Critério 12: "Confirmou se o cliente ficou confortável com a solução?"
+Critério 13: "Buscou alternativa quando necessário?"
+Critério 14: "Realizou testes com o cliente?"
+Critério 15: "Confirmou se restaram dúvidas?"
+Critério 16: "Cliente demonstrou satisfação?"
+Critério 17: "Informou serviços ou benefícios disponíveis?"
+Critério 18: "Verificou possibilidade de upgrade ou melhoria?"
+Critério 19: "Atualizou dados do cliente no sistema?"
+
+======================================================================
+ATUALIZAR — Exibir blocos/categorias no modal "Ver"
+======================================================================
+
+Os 19 critérios devem ser agrupados em 4 blocos com subtítulos visuais:
+
+BLOCO 1 — "Postura e Comunicação" (critérios 1 a 5) — 25 pontos
+BLOCO 2 — "Entendimento e Condução" (critérios 6 a 10) — 25 pontos
+BLOCO 3 — "Solução e Confirmação" (critérios 11 a 15) — 25 pontos
+BLOCO 4 — "Encerramento e Valor" (critérios 16 a 19) — 25 pontos
+
+Cada bloco deve ter:
+- Subtítulo em destaque (ex: texto cinza escuro, fonte pequena maiúscula)
+- Subtotal do bloco: "X / Y pontos"
+- Separador visual entre os blocos
+
+======================================================================
+ATUALIZAR — Exibir pesos dos critérios
+======================================================================
+
+Ao lado de cada critério, exibir o peso em pontos entre parênteses:
+
+Critério 1: (4 pts)    Critério 2: (6 pts)    Critério 3: (5 pts)
+Critério 4: (5 pts)    Critério 5: (5 pts)    Critério 6: (5 pts)
+Critério 7: (6 pts)    Critério 8: (5 pts)    Critério 9: (4 pts)
+Critério 10: (5 pts)   Critério 11: (4 pts)   Critério 12: (6 pts)
+Critério 13: (5 pts)   Critério 14: (5 pts)   Critério 15: (5 pts)
+Critério 16: (7 pts)   Critério 17: (6 pts)   Critério 18: (6 pts)
+Critério 19: (6 pts)
+
+======================================================================
+FIM DA SOLICITAÇÃO
+======================================================================

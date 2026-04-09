@@ -1,0 +1,97 @@
+SOLICITAÇÃO — RADAR INSIGHT
+Página: Mentoria Lab — Fluxo de Auditoria
+==========================================
+REGRA GERAL: Não remover nenhuma lógica, hook, integração ou funcionalidade existente.
+
+======================================================================
+CONTEXTO — NOVO FLUXO DE TRABALHO
+======================================================================
+
+Antes: PDF importado → Analisado → vai direto para Performance
+Agora: PDF importado → Analisado → AGUARDA REVISÃO → Confirmado → vai para Performance
+
+Todo atendimento analisado (IA ou Manual) precisa passar por uma etapa de revisão
+antes de impactar o Painel de Bônus/Performance. Somente após o gestor clicar
+"Confirmar" o atendimento é oficializado.
+
+======================================================================
+AJUSTE 1 — Novos status no fluxo
+======================================================================
+
+Adicionar ao campo "status" os novos valores:
+- "aguardando_revisao_ia"     → analisado via IA, aguardando confirmação
+- "aguardando_revisao_manual" → analisado manualmente, aguardando confirmação
+- "confirmado"                → aprovado pelo gestor, vai para Performance
+- "reprovado"                 → reprovado pelo gestor, retorna para Pendente
+
+Quando o gestor clicar "⚡ Analisar com IA" → após análise, status = "aguardando_revisao_ia"
+Quando o gestor clicar "🔍 Analisar manualmente" → após análise, status = "aguardando_revisao_manual"
+
+======================================================================
+AJUSTE 2 — Novas abas na tabela
+======================================================================
+
+Substituir/adicionar abas de filtro:
+
+ABAS EXISTENTES (manter):
+- Todos (N)
+- Pendentes (N)
+- ⚡ Aptos IA (N)
+- Em análise (N)
+- Não avaliáveis (N)
+- Áudio (N)
+
+NOVAS ABAS:
+- "⚡ Fila IA (N)"     → exibe atendimentos com status "aguardando_revisao_ia"
+- "🔍 Fila Manual (N)" → exibe atendimentos com status "aguardando_revisao_manual"
+- "✅ Confirmados (N)"  → exibe atendimentos com status "confirmado"
+
+======================================================================
+AJUSTE 3 — Botões de ação nas abas de revisão
+======================================================================
+
+Nas abas "⚡ Fila IA" e "🔍 Fila Manual":
+
+Para cada atendimento na linha (coluna Ação), exibir dois botões:
+- ✅ Confirmar (verde) — tooltip: "Aprovar e enviar para o Painel de Performance"
+- ❌ Reprovar (vermelho) — tooltip: "Reprovar e retornar para Pendente"
+
+Ao clicar "✅ Confirmar":
+- Atualizar status para "confirmado" no banco
+- Atualizar campo "aprovado_oficial" ou similar para true
+- Toast: "Atendimento confirmado e enviado para Performance!"
+
+Ao clicar "❌ Reprovar":
+- Abrir diálogo de confirmação: "Reprovar este atendimento? Ele voltará para a fila de Pendentes."
+- Botões: "Cancelar" | "Sim, reprovar"
+- Ao confirmar: status volta para "pendente", tipo_analise = null
+- Toast: "Atendimento reprovado e retornado para Pendentes."
+
+SELEÇÃO EM MASSA nas abas de revisão:
+- Checkbox para selecionar múltiplos
+- Rodapé com: "✅ Confirmar selecionados (X)" | "❌ Reprovar selecionados (X)"
+
+======================================================================
+AJUSTE 4 — Remover botão "Analisar" individual por linha
+======================================================================
+
+Na coluna "Ação" da tabela principal (abas Todos/Pendentes/Aptos IA):
+- Remover o botão "▶ Analisar" individual de cada linha
+- Manter apenas o menu "..." com as opções existentes (Ver, etc.)
+- A análise agora é feita exclusivamente pelos 3 botões do rodapé de seleção
+
+======================================================================
+AJUSTE 5 — Badge de status visual atualizado
+======================================================================
+
+Atualizar os badges de status para incluir os novos valores:
+- "pendente"                  → ⚪ Pendente (cinza)
+- "aguardando_revisao_ia"     → 🔵 Fila IA (azul)
+- "aguardando_revisao_manual" → 🟢 Fila Manual (verde)
+- "confirmado"                → ✅ Confirmado (verde escuro)
+- "analisado"                 → ✅ Analisado (verde — manter compatibilidade)
+- "reprovado"                 → ❌ Reprovado (vermelho)
+
+======================================================================
+FIM DA SOLICITAÇÃO
+======================================================================

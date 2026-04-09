@@ -1,0 +1,51 @@
+CORRECAO — Restaurar botões "Análise IA" e "Auditar" na coluna AÇÃO da tabela
+================================================================================
+
+ARQUIVO: src/components/MentoriaUnifiedTable.tsx
+
+PROBLEMA:
+A coluna AÇÃO da tabela exibe apenas o menu ⋯ (com Diagnóstico e Remover).
+Os botões diretos "Análise IA" e "Auditar" foram removidos inadvertidamente.
+
+COMPORTAMENTO ESPERADO:
+Cada linha da tabela deve ter botões visíveis diretamente na coluna AÇÃO:
+  1. Botão "Análise IA" — visível quando o arquivo está com status "lido" ou "pendente"
+  2. Botão "Auditar" — visível quando o arquivo está com status "analisado", "aguardando_revisao_ia" ou "aguardando_revisao_manual"
+  3. Menu ⋯ — sempre presente com opções Diagnóstico e Remover
+
+CORRECAO:
+Localizar a célula de ações por linha na tabela (coluna AÇÃO).
+Dentro dela, ANTES do menu ⋯, adicionar os dois botões condicionais:
+
+  {/* Botão Análise IA */}
+  {(file.status === "lido" || file.status === "pendente") && (
+    <Button
+      size="sm"
+      variant="outline"
+      className="h-7 px-2 text-xs gap-1"
+      onClick={() => onStartMentoria?.(file)}
+    >
+      <Play className="h-3 w-3" />
+      Análise IA
+    </Button>
+  )}
+
+  {/* Botão Auditar */}
+  {(file.status === "analisado" || file.status === "aguardando_revisao_ia" || file.status === "aguardando_revisao_manual") && (
+    <Button
+      size="sm"
+      variant="outline"
+      className="h-7 px-2 text-xs gap-1"
+      onClick={() => onAuditFile?.(file)}
+    >
+      <Eye className="h-3 w-3" />
+      Auditar
+    </Button>
+  )}
+
+IMPORTANTE:
+- Verificar que as props onStartMentoria e onAuditFile já existem no componente — se sim, apenas restaurar os botões.
+- Usar os ícones Play e Eye que já estão importados no arquivo.
+- NÃO alterar lógica de scoring, metadata, parsing ou qualquer outra coisa.
+- NÃO remover o menu ⋯ existente.
+- NÃO criar novos handlers — apenas chamar os que já existem.

@@ -1,0 +1,62 @@
+SOLICITACAO CONSOLIDADA — Áudio + Imagem no Mentoria Lab
+=========================================================
+REGRA: Não remover lógica existente. Aplicar apenas os pontos abaixo.
+
+======================================================================
+ITEM 1 — Adicionar tab "Imagem" na barra de filtros (ao lado de "Áudio")
+======================================================================
+
+Na barra de tabs que já tem: Todos | Pendentes | Aptos IA | Em análise |
+Aguardando confirmação | Confirmados | Não avaliáveis | Áudio
+
+Adicionar APÓS "Áudio":
+  📷 Imagem (N)
+
+Onde N = contagem de arquivos com hasImage === true (ou campo equivalente).
+
+Comportamento igual ao tab Áudio:
+- Clicar filtra a lista para mostrar apenas atendimentos com imagem
+- Tooltip: "Atendimentos com imagem anexada"
+
+======================================================================
+ITEM 2 — Corrigir mensagem do tab Áudio
+======================================================================
+
+Texto atual (incorreto):
+  "Atendimentos com áudio — auditoria não realizada por conteúdo de voz"
+
+Novo texto:
+  "Atendimentos com áudio embutido. O áudio é transcrito automaticamente antes da análise."
+
+======================================================================
+ITEM 3 — Verificar detecção de hasAudio e hasImage
+======================================================================
+
+Verificar no código de importação (pdfExtractor ou MentoriaLab) se os campos
+hasAudio e hasImage estão sendo detectados e salvos corretamente:
+
+Para hasAudio:
+- Verificar se o texto do PDF contém qualquer um destes padrões:
+  "gravacao_de_voz" | "audio" | ".mp3" | ".ogg" | ".wav" | "Áudio" | "🎵"
+- Se sim, hasAudio = true
+
+Para hasImage:
+- Verificar se o texto do PDF contém qualquer um destes padrões:
+  "imagem" | "image" | ".jpg" | ".jpeg" | ".png" | ".webp" | "📷" | "Foto"
+  OU se o PDF tem anexo de imagem embutido
+- Se sim, hasImage = true
+
+Se a detecção não estiver cobrindo esses padrões, atualizar a lógica.
+
+Garantir que hasAudio e hasImage sejam salvos no banco em mentoria_batch_files.
+
+======================================================================
+ITEM 4 — Bolinhas de status: aumentar tamanho
+======================================================================
+
+Na lista de atendimentos, as bolinhas de status (verde/vermelho) estão
+muito pequenas. Aumentar de w-2 h-2 para w-3 h-3 (ou equivalente).
+
+======================================================================
+FIM DA SOLICITACAO
+======================================================================

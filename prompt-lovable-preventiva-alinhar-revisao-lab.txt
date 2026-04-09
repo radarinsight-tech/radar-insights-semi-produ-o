@@ -1,0 +1,75 @@
+SOLICITACAO — RADAR INSIGHT
+Mentoria Preventiva — Alinhar aba "Revisão" com o layout do Mentoria Lab
+=========================================================================
+REGRA GERAL: Não remover lógica existente. Apenas ajustar o layout da aba Revisão.
+
+======================================================================
+CONTEXTO
+======================================================================
+
+O Mentoria Lab acaba de receber uma aba "Revisão" unificada com o seguinte layout.
+A Mentoria Preventiva deve ter EXATAMENTE o mesmo layout na sua aba de revisão.
+
+======================================================================
+LAYOUT ESPERADO DA ABA "REVISÃO" (igual ao Mentoria Lab)
+======================================================================
+
+BLOCO 1 — Linha de contexto do atendimento (topo, compacta)
+------------------------------------------------------------
+Linha horizontal com métricas do atendimento, fonte pequena (text-sm muted):
+
+  💬 Mensagens: N   👤 Atendente: N   🙋 Cliente: N   ⏱ Tempo médio: N min
+
+Sem card separado — apenas uma linha de contexto discreta acima do painel principal.
+Dados vêm da pré-análise (analysis.metadata): totalMessages, attendantMessages,
+clientMessages, avgResponseTimeSec.
+
+BLOCO 2 — Painel de nota e contadores
+--------------------------------------
+  PREVISÃO DA NOTA: XX /100  [badge de classificação: Excelente / Bom / etc.]
+  Barra de progresso: XX/100 pontos
+  Contadores em linha: TOTAL 19 | ACEITAS N | AJUSTADAS N | REJEITADAS N | PENDENTES N | CONFIANÇA Alta
+
+BLOCO 3 — Ações em massa
+-------------------------
+  [✓ Aceitar confiança alta]   [✓ Aceitar todas]   [↺ Limpar decisões]
+  Filtro: [Todas ▼]
+
+BLOCO 4 — Lista dos critérios
+------------------------------
+  Agrupados por categoria (Postura e Comunicação / Entendimento e Condução /
+  Solução e Confirmação / Encerramento e Valor)
+  Cada critério:
+    - Número + nome do critério
+    - Badge resultado: SIM / NÃO / PARCIAL
+    - Badge confiança: Alta / Média / Baixa
+    - Peso em pontos (ex: Peso: 5 pts)
+    - Botões: [✓ Aceitar]  [✏ Ajustar ▼]  [✗ Rejeitar]
+    - Justificativa colapsável
+
+RODAPÉ DA ABA
+-------------
+  [< Voltar lista]   [Confirmar Revisão →]
+
+======================================================================
+BADGE "NÃO OFICIAL" — MANTER NO RELATÓRIO
+======================================================================
+
+Na aba Relatório da Mentoria Preventiva, manter o badge:
+  "📌 Esta nota é para sua mentoria pessoal e não tem caráter oficial.
+   Ela não afeta seu bônus nem sua avaliação formal."
+
+NÃO remover este aviso em nenhuma circunstância.
+
+======================================================================
+STEPPER
+======================================================================
+
+O stepper da Mentoria Preventiva deve mostrar apenas:
+  [Revisão] → [Relatório]
+
+Sem aba "Pré-Análise" e sem aba "Semi-Automático" visíveis.
+
+======================================================================
+FIM DA SOLICITACAO
+======================================================================

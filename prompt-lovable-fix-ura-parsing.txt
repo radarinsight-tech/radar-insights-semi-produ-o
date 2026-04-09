@@ -1,0 +1,116 @@
+SOLICITACAO — RADAR INSIGHT
+Contexto URA — Correcao do parsing de timestamps e formatacao do texto original
+================================================================================
+REGRA GERAL: Alterar apenas as funcoes de parsing do Contexto URA. Nao alterar outras funcionalidades.
+
+======================================================================
+PROBLEMA 1 — Linha do tempo mostra "Fim do atendimento" como inicio humano
+======================================================================
+
+A linha do tempo esta mostrando:
+  "Atendimento humano iniciado por Fim do atendimento — 11:27"
+
+Deve mostrar:
+  "Atendimento humano — 10:42"
+
+CAUSA: O codigo esta usando o campo errado para o marco de inicio humano.
+
+CORRECAO: Na funcao que extrai os timestamps do texto bruto do PDF,
+usar EXCLUSIVAMENTE o campo "Inicio do atendimento" para o marco do
+inicio do atendimento humano.
+
+Regex para extrair "Inicio do atendimento":
+  /Início do atendimento[:\s]+(\d{1,2}) de (\w+) de (\d{4}) (\d{2}:\d{2})/i
+  ou
+  /Inicio do atendimento[:\s]+(\d{1,2}) de (\w+) de (\d{4}) (\d{2}:\d{2})/i
+
+O campo "Fim do atendimento" deve ser usado APENAS para:
+  - calcular tempo de atendimento humano
+  - calcular tempo total
+
+Exemplo correto para BT202695118:
+  Horario de abertura:      10:39  → inicio da jornada
+  Inicio do atendimento:    10:42  → inicio do atendimento humano ✅
+  Fim do atendimento:       11:27  → fim (usado so para calculos)
+
+  Tempo na URA/fila:        3 min  (10:42 - 10:39)
+  Tempo de atendimento:     45 min (11:27 - 10:42)
+  Tempo total:              48 min (11:27 - 10:39)
+
+======================================================================
+PROBLEMA 2 — Texto original sem formatacao (tudo numa linha)
+======================================================================
+
+O PDF da BandaTurbo tem o texto extraido em formato continuo.
+O parser atual nao consegue separar os blocos por participante.
+
+FORMATO REAL DO PDF BANDATURBO (ordem das linhas):
+
+  [Nome do participante]
+  [Mensagem do participante]
+  [DD de mes de YYYY HH:MM]
+
+Exemplos reais:
+  Rosandra Domingues
+  Bom dia
+  28 de março de 2026 10:39
+
+  Marte
+  Olá, ROSANDRA DOMINGUES GOMES, Tudo bem? Sou seu Especialista virtual...
+  Lida - 28 de março de 2026 10:39
+
+  Daniele Mendes
+  Olá, Sou o Daniele Mendes, especialista Bandaturbo. No que eu posso ajudar?
+  Lida - 28 de março de 2026 10:42
+
+CORRECAO: Atualizar a funcao parseRawTextBlocks para reconhecer este formato:
+
+Algoritmo de parsing:
+1. Dividir o texto por quebras de linha reais (\n)
+2. Identificar linhas que sao NOMES DE PARTICIPANTES:
+   - Linha curta (menos de 60 chars)
+   - Seguida por mensagem e depois por linha com data no formato
+     "DD de mes de YYYY HH:MM" ou "Lida - DD de mes de YYYY HH:MM"
+3. Agrupar: nome + mensagem(ns) + timestamp como um bloco
+4. Determinar o papel (role) do participante:
+   - "Marte" ou "MARTE" → role = "marte"
+   - Nome do cliente (extraido do cabecalho "Cliente: [nome]") → role = "cliente"
+   - Qualquer outro nome → role = "atendente"
+
+FALLBACK: Se o texto nao tiver quebras de linha (\n), tentar split por
+padroes de data brasileira:
+  /(\d{1,2} de \w+ de \d{4} \d{2}:\d{2})/g
+  ou
+  /(Lida - \d{1,2} de \w+ de \d{4} \d{2}:\d{2})/g
+
+Usar esses padroes como separadores de blocos quando nao ha \n.
+
+======================================================================
+RESULTADO ESPERADO NO MODAL
+======================================================================
+
+O texto original do chat deve aparecer assim:
+
+  [ROSANDRA DOMINGUES] 10:39          ← azul (cliente)
+  Bom dia
+  ──────────────────────────────────
+
+  [MARTE] [URA] 10:39                 ← cinza italico
+  Olá, ROSANDRA DOMINGUES GOMES...
+  ──────────────────────────────────
+
+  [DANIELE MENDES] 10:42              ← verde (atendente)
+  Olá, Sou o Daniele Mendes...
+  ──────────────────────────────────
+
+  [ROSANDRA DOMINGUES] 10:43          ← azul (cliente)
+  Gostaria de outro boleto
+  ──────────────────────────────────
+
+Cada bloco separado por uma linha divisoria fina.
+Nome em negrito com a cor do papel.
+Timestamp em cinza pequeno na mesma linha do nome.
+
+======================================================================
+FIM DA SOLICITACAO
+======================================================================

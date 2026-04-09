@@ -1,0 +1,30 @@
+CORRECAO — "Acesso ao texto original do chat" não expande no Contexto URA
+=========================================================================
+PROBLEMA: O botão "Acesso ao texto original do chat" aparece no modal
+Contexto URA mas não abre/expande quando clicado. O campo rawText está
+chegando vazio ou undefined para o componente.
+
+INVESTIGAR E CORRIGIR:
+
+1. No componente UraContextDialog (ou onde o modal Contexto URA é renderizado),
+   verificar se o prop rawText está sendo passado corretamente.
+
+2. No FormattedChatText (ou RawTextSection), verificar se o Collapsible
+   está condicionado a rawText existir — se rawText for undefined/null/vazio,
+   o botão não deve aparecer OU deve mostrar mensagem "Texto não disponível".
+
+3. O rawText vem de labFile.text → passado como prop rawText para MentoriaDetailDialog
+   → passado para UraContextDialog → passado para FormattedChatText.
+
+   Verificar cada ponto dessa cadeia e garantir que o valor está sendo propagado.
+
+4. Se o problema for que após reload da página o labFile.text fica undefined
+   (porque o texto não foi salvo no banco), então ao abrir o modal Contexto URA,
+   fazer um SELECT em mentoria_batch_files para buscar o raw_text do arquivo:
+
+   SELECT raw_text FROM mentoria_batch_files WHERE id = labFile.batchFileId
+
+   E usar esse valor como fallback para rawText.
+
+IMPORTANTE: Não alterar a lógica de análise. Apenas garantir que o texto
+original seja exibido no modal quando disponível.

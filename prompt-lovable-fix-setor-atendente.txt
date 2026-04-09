@@ -1,0 +1,52 @@
+CORRECAO — "Setor" e outras labels sendo capturadas como nome de atendente
+==========================================================================
+
+ARQUIVO: src/utils/mentoriaMetadata.ts  (ou onde estiver extractAtendente)
+
+PROBLEMA:
+A constante INSTITUTIONAL_TERMS não inclui "setor", então quando o Strategy 1
+captura "atendido por: Setor X" ou o Strategy 4 vê "Setor" como palavra
+frequente, ele retorna "Setor" como nome do atendente.
+
+CORRECAO 1 — Adicionar "setor" ao Set INSTITUTIONAL_TERMS:
+
+Localizar:
+const INSTITUTIONAL_TERMS = new Set([
+  "protocolo", "cliente", "sistema", "atendente", "agente", "operador",
+  "informação", "informacao", "aviso", "nota", "observação", "observacao",
+]);
+
+Substituir por:
+const INSTITUTIONAL_TERMS = new Set([
+  "protocolo", "cliente", "sistema", "atendente", "agente", "operador",
+  "informação", "informacao", "aviso", "nota", "observação", "observacao",
+  "setor", "departamento", "equipe", "time", "fila", "canal", "status",
+  "tipo", "data", "horário", "horario", "inicio", "início", "fim",
+]);
+
+---
+
+CORRECAO 2 — Strategy 4: ampliar filtro de labels de cabeçalho:
+
+Localizar a linha em Strategy 4 que contém:
+if (/^(protocolo|cliente|atendente|canal|data|tipo|status|setor|horário|início|fim)/i.test(name)) continue;
+
+Substituir por:
+if (/^(protocolo|cliente|atendente|canal|data|tipo|status|setor|departamento|equipe|fila|horário|horario|início|inicio|fim|aviso|nota|sistema|agente|operador)/i.test(name)) continue;
+
+---
+
+CORRECAO 3 — Garantir que Strategy 1 (label patterns) também filtra com isInstitutional:
+
+No loop de labelPatterns, após `const namePart = ...`, verificar se há chamada a
+isInstitutional(namePart). Se não houver, adicionar:
+
+if (namePart && !isBot(namePart) && !isInvalidAttendantName(namePart) && !isInstitutional(namePart) && isLikelyPersonName(namePart)) {
+  return namePart;
+}
+
+(Substituindo a condição sem isInstitutional, caso esteja faltando.)
+
+---
+
+NAO alterar nenhuma outra lógica. Apenas os 3 pontos acima.

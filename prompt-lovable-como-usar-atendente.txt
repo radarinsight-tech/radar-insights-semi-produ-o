@@ -1,0 +1,89 @@
+SOLICITAÇÃO — RADAR INSIGHT
+Página: Mentoria Preventiva (modo Atendente)
+==========================================
+
+PARTE 1 — PAINEL DE PROGRESSO SEMANAL/MENSAL (novo componente na tela)
+----------------------------------------------------------------------
+
+Adicionar um painel fixo no topo da tela (abaixo do cabeçalho) visível apenas para role "mentoria_atendente".
+
+PAINEL DE PROGRESSO — dois contadores visuais lado a lado:
+
+[ CONTADOR SEMANAL ]
+- Título: "Esta semana"
+- Ícone tipo relógio/círculo progressivo (progress ring SVG)
+- Exibe: X / 3 mentorias (onde X = quantidade realizada na semana atual)
+- Cores:
+  • 0 ou 1 → vermelho (abaixo do esperado)
+  • 2 → amarelo (quase lá)
+  • 3 → verde (meta atingida)
+- Se a semana terminar (domingo) com X < 3 → mostrar alerta na tela:
+  "⚠️ Você não atingiu as 3 mentorias desta semana. Tente manter o ritmo na próxima!"
+  (alerta banner amarelo/laranja no topo, fechável com X)
+
+[ CONTADOR MENSAL ]
+- Título: "Este mês"
+- Ícone tipo barra de progresso ou círculo
+- Exibe: X / 12 mentorias
+- Cores:
+  • 0-4 → cinza
+  • 5-8 → azul
+  • 9-11 → verde claro
+  • 12 → verde escuro + badge "Meta atingida! 🏆"
+- Ao atingir 12: bloquear novas importações + mensagem "Você atingiu o limite mensal de 12 mentorias. Ótimo trabalho!"
+
+LÓGICA DOS CONTADORES:
+- Semanal: conta mentorias com status "analisado" criadas entre segunda-feira e domingo da semana atual
+- Mensal: conta mentorias com status "analisado" criadas no mês corrente (já existente no estado monthlyCount)
+- Ambos devem ser calculados com base nos dados de "preventive_mentorings" do usuário logado
+
+----------------------------------------------------------------------
+PARTE 2 — BOTÃO "❓ Como usar" COM MODAL
+----------------------------------------------------------------------
+
+Adicionar botão "❓ Como usar" no cabeçalho da página (lado direito), visível apenas para "mentoria_atendente".
+
+MODAL — ESTRUTURA:
+Título: "📘 Como usar a Mentoria Preventiva"
+Subtítulo: "Siga os passos abaixo para analisar seus atendimentos"
+
+4 PASSOS (cards numerados com ícone, título e descrição):
+
+Passo 1 — 📥 Baixar seu atendimento
+Título: "Exporte o PDF do atendimento"
+Descrição: "Acesse o sistema onde seus atendimentos ficam registrados. Localize o atendimento que deseja avaliar e exporte/baixe como PDF."
+Dica: "Certifique-se de que o arquivo PDF contém seu nome como atendente responsável."
+
+Passo 2 — 📂 Importar o PDF
+Título: "Selecione o arquivo aqui"
+Descrição: "Clique em 'Selecionar Arquivos', escolha o PDF. O sistema lê automaticamente o conteúdo."
+Dica: "Você pode importar mais de um PDF por vez."
+
+Passo 3 — 🤖 Analisar com IA
+Título: "Clique em Analisar"
+Descrição: "Clique em 'Analisar Selecionados'. A IA processa o atendimento em 30 a 60 segundos."
+Dica: "Se aparecer 'Erro', o atendimento pode pertencer a outro colaborador — você só pode analisar os seus próprios."
+
+Passo 4 — 📊 Ver seu resultado
+Título: "Acesse o resultado"
+Descrição: "Clique em 'Ver' para visualizar sua nota, pontos fortes e oportunidades de melhoria."
+
+REGRAS (seção destacada no rodapé do modal — fundo amarelo claro):
+⚠️ Regras importantes:
+• Somente seus próprios atendimentos podem ser analisados
+• Meta: 3 mentorias por semana — acompanhe pelo painel acima
+• Limite de 12 mentorias por mês — ao atingir, novas importações são bloqueadas
+• A nota exibida é orientativa para seu desenvolvimento pessoal — não é a nota oficial de avaliação e não impacta seu bônus
+• As mentorias serão acompanhadas pelo seu gestor
+• Não é possível excluir uma mentoria após analisada
+
+BOTÃO FECHAR: "✅ Entendido, vamos começar!"
+
+DESIGN GERAL:
+- Modal centralizado com overlay escuro, animação suave (fade + slide)
+- Cards dos passos: numeração circular colorida (1=azul, 2=roxo, 3=laranja, 4=verde)
+- Contadores: progress ring SVG responsivo, cores dinâmicas conforme progresso
+- Responsivo (mobile-friendly)
+
+REGRA IMPORTANTE:
+Não remover nenhuma lógica, hook, integração ou funcionalidade existente. Apenas adicionar os novos componentes conforme descrito acima.

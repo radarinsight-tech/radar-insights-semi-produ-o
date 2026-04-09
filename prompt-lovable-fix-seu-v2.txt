@@ -1,0 +1,63 @@
+SOLICITACAO — RADAR INSIGHT
+Correção URGENTE: nome do atendente extraído como "Seu" ou "Não identificado"
+=====================================================================
+REGRA: Não remover lógica existente. Apenas corrigir a extração do nome do atendente.
+
+======================================================================
+PROBLEMA — "Seu" sendo salvo como nome do atendente
+======================================================================
+
+O PDF da BandaTurbo tem o cabeçalho neste formato:
+  Seu atendente
+  Bruna Bartozek
+
+O parser está extraindo "Seu" ou "Seu atendente" como nome em vez de "Bruna Bartozek".
+
+======================================================================
+CORRECAO OBRIGATÓRIA no arquivo que faz extração do atendente do PDF
+(provavelmente mentoriaMetadata.ts ou pdfExtractor.ts ou similar)
+======================================================================
+
+PASSO 1 — Após extrair qualquer candidato a nome de atendente, aplicar este filtro:
+
+  const INVALID_ATTENDANT_NAMES = [
+    "seu", "sua", "seu atendente", "sua atendente",
+    "atendente", "agente", "operador", "analista",
+    "consultor", "responsável", "nome"
+  ];
+
+  function isInvalidName(name: string): boolean {
+    return INVALID_ATTENDANT_NAMES.includes(name.toLowerCase().trim());
+  }
+
+Se o nome extraído for inválido → continuar para a próxima estratégia.
+
+PASSO 2 — Adicionar estratégia ANTES de todas as outras:
+
+  Buscar no texto do PDF o padrão:
+    "Seu atendente\n[Nome]"
+  ou
+    "Seu atendente: [Nome]"
+  ou
+    "Atendente\n[Nome]"
+
+  Regex sugerida:
+    /(?:Seu\s+atendente|Atendente)\s*[:\n]\s*([A-ZÀ-Ü][a-zà-ü]+(?:\s+[A-ZÀ-Ü][a-zà-ü]+)+)/i
+
+  Se match → usar o grupo 1 como nome do atendente.
+
+PASSO 3 — Se ainda "Não identificado", buscar no corpo do atendimento a frase de apresentação:
+  "Sou [Nome]," ou "Sou [Nome]." ou "Aqui é [Nome]" ou "Aqui é a [Nome]"
+  
+  Regex:
+    /Sou\s+([A-ZÀ-Ü][a-zà-ü]+(?:\s+[A-ZÀ-Ü][a-zà-ü]+)*)[,\.!]/
+
+  Se match → usar o grupo 1 como nome do atendente.
+
+PASSO 4 — Aplicar sanitização em TODOS os pontos onde o atendente é salvo:
+  Antes de salvar no banco, se o nome for inválido (ver lista acima), salvar null.
+  Isso faz o campo ficar vazio em vez de salvar "Seu".
+
+======================================================================
+FIM DA SOLICITACAO
+======================================================================

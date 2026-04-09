@@ -1,0 +1,75 @@
+SOLICITACAO — RADAR INSIGHT
+Correção urgente: "Seu" como nome do atendente + erro 400 na análise
+=====================================================================
+REGRA GERAL: Não remover lógica existente. Corrigir apenas os pontos abaixo.
+
+======================================================================
+PROBLEMA 1 — Nome do atendente extraído como "Seu" (URGENTE)
+======================================================================
+
+CAUSA:
+O PDF da BandaTurbo tem o campo no formato:
+  "Seu atendente: Bruna Bartozek"
+ou
+  "Seu\nBruna Bartozek"
+
+O parser está pegando "Seu" como nome do atendente em vez do nome real.
+
+CORRECAO no parser do PDF (pdfExtractor ou onde o campo "atendente" é extraído):
+
+1. Ao extrair o campo atendente, IGNORAR as seguintes palavras/prefixos:
+   - "Seu"
+   - "Sua"
+   - "Seu atendente"
+   - "Sua atendente"
+   - "Atendente"
+   - Qualquer string com 1-3 palavras que seja um artigo/pronome sem nome próprio
+
+2. Se o valor extraído for apenas "Seu" ou "Sua", continuar buscando o nome real:
+   a. Verificar a linha seguinte no cabeçalho do PDF
+   b. Buscar no corpo do atendimento pela primeira mensagem com apresentação:
+      - "Sou [Nome], especialista"
+      - "Olá, Sou [Nome]"
+      - "Aqui é [Nome]"
+   c. Ou usar o participante mais frequente que não seja "Marte" nem o cliente
+
+3. Exemplo correto:
+   - Input:  "Seu" → Output: buscar nome real → "Bruna Bartozek"
+   - Input:  "Seu atendente: Bruna Bartozek" → Output: "Bruna Bartozek"
+
+======================================================================
+PROBLEMA 2 — Edge function analyze-attendance retornando erro 400
+======================================================================
+
+SINTOMA:
+Console mostra múltiplos erros:
+  "Failed to load resource: the server responded with a status of 400"
+  [MentoriaLab][Importação][erro_tecnico]
+
+CAUSA PROVÁVEL:
+As alterações recentes na detecção de áudio/imagem podem ter introduzido
+um campo inválido no payload enviado para a edge function, ou a edge function
+está rejeitando o request por formato incorreto.
+
+CORRECAO:
+
+1. Verificar o payload enviado para analyze-attendance — garantir que todos
+   os campos são válidos (sem undefined, sem Blob objects, sem URLs de objeto)
+
+2. Se audioBlobs ou imageBlobs estão sendo incluídos no payload da edge function,
+   REMOVER esses campos — a edge function não precisa deles, apenas do texto
+
+3. O payload para analyze-attendance deve conter apenas:
+   - conversationText: string (texto do atendimento)
+   - atendente: string (nome do atendente)
+   - protocolo: string
+   - tipo: string
+   - data: string (opcional)
+
+4. Adicionar tratamento de erro mais específico:
+   - Se a edge function retornar 400, logar o body completo do erro no console
+   - Exibir a mensagem de erro real para facilitar diagnóstico
+
+======================================================================
+FIM DA SOLICITACAO
+======================================================================

@@ -1,0 +1,108 @@
+SOLICITACAO — RADAR INSIGHT
+Edge Function: analyze-attendance — Correcao de 4 problemas identificados em teste
+====================================================================================
+REGRA GERAL: Alterar APENAS o SYSTEM_PROMPT nos trechos indicados. Nao alterar logica de validacao, schema ou autenticacao.
+
+======================================================================
+PROBLEMA IDENTIFICADO EM TESTE (BT202695118)
+======================================================================
+
+Apos teste com atendimento real, a IA do Semi-Automatico marcou
+17 criterios como NAO sendo que a maioria deveria ser SIM ou FORA DO ESCOPO.
+
+4 problemas especificos identificados:
+
+======================================================================
+CORRECAO 1 — Criterios 11 e 14: FORA DO ESCOPO para atendimentos financeiros
+======================================================================
+
+LOCALIZAR no SYSTEM_PROMPT o criterio 11:
+
+  11. Informou registro da solução no sistema? (4 pontos)
+
+SUBSTITUIR por:
+
+  11. Informou registro da solução no sistema? (4 pontos)
+      FORA DO ESCOPO para atendimentos financeiros (boleto, 2a via, fatura,
+      pagamento, negociacao de divida) — nao ha solucao tecnica a registrar.
+      Avaliar apenas em atendimentos de suporte tecnico, instalacao ou
+      alteracoes cadastrais complexas.
+
+LOCALIZAR o criterio 14:
+
+  14. Realizou testes com o cliente? (5 pontos)
+
+SUBSTITUIR por:
+
+  14. Realizou testes com o cliente? (5 pontos)
+      FORA DO ESCOPO para atendimentos financeiros (boleto, fatura, pagamento)
+      — nao ha servico tecnico a testar.
+      Avaliar apenas em atendimentos de suporte tecnico onde houve
+      configuracao, reinicializacao de equipamento ou ajuste de sinal.
+
+======================================================================
+CORRECAO 2 — Criterio 16: reconhecer expressoes simples de satisfacao
+======================================================================
+
+LOCALIZAR no SYSTEM_PROMPT o criterio 16:
+
+  16. Cliente demonstrou satisfação? (7 pontos) — Sem opinião clara ou encerrou sem resposta → FORA DO ESCOPO.
+
+SUBSTITUIR por:
+
+  16. Cliente demonstrou satisfação? (7 pontos)
+      Considerar SIM quando o cliente expressar:
+      - agradecimento explicito: "obrigado", "obrigada", "ta obrigada", "valeu"
+      - confirmacao positiva acompanhada de encerramento: "era isso, obrigada"
+      - satisfacao direta: "otimo", "perfeito", "que bom", "resolvido"
+      FORA DO ESCOPO apenas se o cliente nao enviar nenhuma mensagem apos
+      a solucao ou encerrar sem qualquer retorno.
+      Evidencia parcial (agradecimento simples) → SIM.
+
+======================================================================
+CORRECAO 3 — Criterio 19: imagem no chat como evidencia de dados cadastrais
+======================================================================
+
+LOCALIZAR no SYSTEM_PROMPT o criterio 19:
+
+  19. Atualizou dados do cliente no sistema? (6 pontos)
+
+SUBSTITUIR por:
+
+  19. Atualizou dados do cliente no sistema? (6 pontos)
+      Considerar SIM quando houver evidencia de:
+      - atendente mencionar que acessou ou atualizou o cadastro
+      - cliente confirmar dados ("confirmei", "esta correto", "sim")
+      - atendente enviar imagem durante o atendimento (indicada como
+        "image.png - Download" ou similar) — imagem no chat de atendimento
+        frequentemente representa tela do sistema com dados cadastrais
+      Evidencia parcial (imagem enviada + cliente confirmou) → SIM.
+      NAO apenas se nao houver nenhum indicativo de acesso ao cadastro.
+
+======================================================================
+CORRECAO 4 — Regra geral: leitura do contexto do dialogo
+======================================================================
+
+LOCALIZAR no SYSTEM_PROMPT a secao "REGRA DE DECISAO":
+
+  Evidência clara → SIM
+  Evidência parcial → SIM (registrar melhoria)
+  Ausência de evidência → NÃO
+  Critério não aplicável → FORA DO ESCOPO
+
+ADICIONAR apos essa secao:
+
+  REGRA DE CONTEXTO DO DIALOGO:
+  Antes de avaliar cada criterio, ler TODO o historico do atendimento
+  prestando atencao em:
+  - Tom geral da conversa (cordial, profissional, agil)
+  - Mensagens de saudacao e despedida do atendente
+  - Confirmacoes do cliente durante o atendimento
+  - Arquivos enviados (imagem, PDF) como evidencia de acoes realizadas
+
+  NAO avaliar criterios de forma isolada sem considerar o contexto completo.
+  Um atendimento curto e direto pode ser excelente — brevidade nao e penalizacao.
+
+======================================================================
+FIM DA SOLICITACAO
+======================================================================

@@ -1,0 +1,61 @@
+CORRECAO — Status travado em "Em análise" após falha na Edge Function
+======================================================================
+
+ARQUIVO: src/pages/MentoriaLab.tsx
+
+PROBLEMA:
+Quando a função analyze-attendance falha, o arquivo fica com status "Em análise"
+travado na tabela. O usuário não consegue tentar novamente sem recarregar a página.
+
+CORRECAO 1 — Reverter status para "lido" quando análise falha:
+
+Na função analyzeFiles, localizar o bloco de tratamento de erro final
+(catch ou bloco onde errors++ é incrementado).
+
+Após incrementar errors, adicionar:
+
+  setFiles(prev => prev.map(f =>
+    f.id === labFile.id
+      ? { ...f, status: "lido", error: "Falha na análise. Clique em Analisar para tentar novamente." }
+      : f
+  ));
+
+  if (labFile.batchFileId) {
+    await supabase
+      .from("mentoria_batch_files")
+      .update({ status: "read", error_message: "Falha temporária na análise" } as any)
+      .eq("id", labFile.batchFileId);
+  }
+
+---
+
+CORRECAO 2 — Garantir que status "Em análise" seja revertido ao sair do processamento:
+
+Localizar onde setProcessing(false) é chamado ao final de analyzeFiles.
+Antes de setProcessing(false), adicionar:
+
+  // Reverter arquivos que ficaram travados em "aguardando_revisao_ia" sem resultado
+  setFiles(prev => prev.map(f => {
+    if (
+      (f.status === "aguardando_revisao_ia" || (f.status as string) === "em_analise") &&
+      !f.result
+    ) {
+      return { ...f, status: "lido", error: "Análise não concluída. Tente novamente." };
+    }
+    return f;
+  }));
+
+---
+
+CORRECAO 3 — Botão "Analisar" visível também para arquivos com status "lido" E com error:
+
+Na coluna AÇÃO da tabela (MentoriaUnifiedTable.tsx), o botão Analisar já aparece
+para status "lido" e "pendente". Verificar se arquivos com status "lido" + error
+também mostram o botão — se não mostrar, adicionar a condição:
+
+  {(f.status === "lido" || f.status === "pendente" || (f.status === "lido" && f.error)) && ...}
+
+---
+
+NÃO alterar lógica de scoring, parsing, metadata ou critérios.
+NÃO remover o fallback existente — apenas garantir que o status volte para "lido" em caso de erro.

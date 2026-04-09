@@ -35,9 +35,8 @@ const Index = () => {
   const { excludedSet, refreshExcludedAttendants } = useExcludedAttendants();
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [filters, setFilters] = useState<FilterValues>({
-    atendente: "todos",
+    atendentes: [],
     periodo: "",
-    tipo: "todos",
   });
   const [protocolSearch, setProtocolSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(null);
@@ -148,13 +147,11 @@ const Index = () => {
   };
 
   const atendentes = useMemo(() => [...new Set(history.map((e) => e.atendente))].sort(), [history]);
-  const tipos = useMemo(() => [...new Set(history.map((e) => e.tipo))].sort(), [history]);
 
   const baseFiltered = useMemo(() => {
     return history.filter((e) => {
       if (protocolSearch && !e.protocolo.toLowerCase().includes(protocolSearch.toLowerCase())) return false;
-      if (filters.atendente !== "todos" && e.atendente !== filters.atendente) return false;
-      if (filters.tipo !== "todos" && e.tipo !== filters.tipo) return false;
+      if (filters.atendentes.length > 0 && !filters.atendentes.includes(e.atendente)) return false;
 
       if (filters.periodoInicio && filters.periodoFim) {
         const entryDate = parseDateBR(e.data);
@@ -292,7 +289,14 @@ const Index = () => {
           <div className="space-y-4">
             <div className="flex flex-wrap gap-3 items-end">
               <ErrorBoundary fallbackTitle="Erro nos filtros">
-                <Filters atendentes={atendentes} tipos={tipos} filters={filters} onChange={(f) => { setFilters(f); if (f.atendente !== "todos" || f.tipo !== "todos" || f.periodo) setTableVisible(true); }} />
+                <Filters
+                  atendentes={atendentes}
+                  filters={filters}
+                  onChange={(f) => {
+                    setFilters(f);
+                    if (f.atendentes.length > 0 || f.periodo || f.periodoInicio) setTableVisible(true);
+                  }}
+                />
               </ErrorBoundary>
               <div className="relative w-[220px]">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -307,13 +311,13 @@ const Index = () => {
                 />
               </div>
               {/* Limpar Filtros button */}
-              {(filters.atendente !== "todos" || filters.tipo !== "todos" || filters.periodo || filters.periodoInicio || protocolSearch || statusFilter) && (
+              {(filters.atendentes.length > 0 || filters.periodo || filters.periodoInicio || protocolSearch || statusFilter) && (
                 <Button
                   variant="outline"
                   size="sm"
                   className="h-9 gap-1.5 text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
                   onClick={() => {
-                    setFilters({ atendente: "todos", periodo: "", tipo: "todos" });
+                    setFilters({ atendentes: [], periodo: "" });
                     setProtocolSearch("");
                     setStatusFilter(null);
                     setTableVisible(false);
@@ -323,7 +327,7 @@ const Index = () => {
                 </Button>
               )}
               {/* Esconder/Mostrar lista */}
-              {tableVisible && !statusFilter && filters.atendente === "todos" && !protocolSearch && (
+              {tableVisible && !statusFilter && filters.atendentes.length === 0 && !protocolSearch && (
                 <Button
                   variant="ghost"
                   size="sm"

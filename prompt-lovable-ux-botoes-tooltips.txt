@@ -1,0 +1,65 @@
+SOLICITACAO CONSOLIDADA — UX/Botões Mentoria Lab + Mentoria Preventiva
+========================================================================
+REGRA: Não remover lógica existente. Aplicar apenas os pontos abaixo.
+Aplicar as mudanças em AMBOS: Mentoria Lab e Mentoria Preventiva.
+
+======================================================================
+ITEM 1 — Botão "Rejeitar" → renomear para "Fora de escopo"
+======================================================================
+
+Em todos os lugares onde aparece o botão "Rejeitar" nos critérios de avaliação:
+- Renomear o texto de "Rejeitar" para "Fora de escopo"
+- Manter o comportamento idêntico (exclui o critério do cálculo da nota)
+- Adicionar tooltip: "Exclui este critério do cálculo — use quando o critério não se aplica ao contexto deste atendimento. Mesmo efeito que 'Fora do escopo' automático da IA."
+
+======================================================================
+ITEM 2 — Botão "Ajustar" → remover opção PARCIAL
+======================================================================
+
+No dropdown do botão "Ajustar", remover a opção "PARCIAL".
+Manter apenas: SIM e NÃO.
+Adicionar tooltip no botão "Ajustar": "Substitui o resultado da IA pela sua decisão manual."
+
+======================================================================
+ITEM 3 — Botão "Aceitar" → adicionar tooltip
+======================================================================
+
+Tooltip: "Confirma o resultado sugerido pela IA para este critério."
+
+======================================================================
+ITEM 4 — Botão "Confirmar avaliação" → cor verde + tooltip
+======================================================================
+
+- Mudar a cor do botão para verde (variante success/accent)
+- Tooltip: "Consolida todas as decisões e calcula a nota final do atendimento."
+
+======================================================================
+ITEM 5 — Botão "Confirmar Revisão" → renomear + tooltip
+======================================================================
+
+- Renomear de "Confirmar Revisão" para "Etapa final →"
+- Tooltip: "Avança para o Relatório de Mentoria com a nota consolidada."
+
+======================================================================
+ITEM 6 — Botão "Contexto URA" no Relatório → tooltip
+======================================================================
+
+Tooltip: "Exibe a jornada do cliente antes do atendimento humano: tempo na URA, fila e início do atendimento."
+
+======================================================================
+ITEM 7 — Título "Relatório de Mentoria" → subtítulo explicativo
+======================================================================
+
+Abaixo do título "Relatório de Mentoria" (ou como tooltip no ícone de info),
+adicionar: "Resultado consolidado da auditoria deste atendimento com nota, critérios e orientações de melhoria."
+
+======================================================================
+ITEM 8 — Bolinhas de status na lista → aumentar tamanho
+======================================================================
+
+Na lista de atendimentos, as bolinhas de status (verde/vermelho) estão pequenas.
+Aumentar de w-2 h-2 para w-3 h-3 (ou tamanho equivalente mais visível).
+
+======================================================================
+FIM DA SOLICITACAO
+======================================================================

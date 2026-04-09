@@ -1,0 +1,36 @@
+CORRECAO — "Setor" ainda capturado como atendente após fix anterior
+===================================================================
+
+ARQUIVO: src/utils/mentoriaMetadata.ts
+
+PROBLEMA:
+isInstitutional("Setor Financeiro") retorna false porque o Set INSTITUTIONAL_TERMS
+compara o nome inteiro, não palavra a palavra. "Setor" como palavra isolada está no
+Set, mas "Setor Financeiro" não está.
+
+CORRECAO — Atualizar a função isInstitutional para checar também a primeira palavra:
+
+Localizar:
+function isInstitutional(name: string): boolean {
+  const lower = name.toLowerCase().trim();
+  // Single-word institutional terms
+  if (INSTITUTIONAL_TERMS.has(lower)) return true;
+  // Company-like names
+  if (COMPANY_PATTERN.test(lower)) return true;
+  return false;
+}
+
+Substituir por:
+function isInstitutional(name: string): boolean {
+  const lower = name.toLowerCase().trim();
+  // Full name match
+  if (INSTITUTIONAL_TERMS.has(lower)) return true;
+  // First word match (e.g. "Setor Financeiro" → "setor")
+  const firstWord = lower.split(/\s+/)[0];
+  if (INSTITUTIONAL_TERMS.has(firstWord)) return true;
+  // Company-like names
+  if (COMPANY_PATTERN.test(lower)) return true;
+  return false;
+}
+
+NAO alterar mais nada.

@@ -1,0 +1,154 @@
+NOVA FUNCIONALIDADE — MENTORIA PREVENTIVA: MODO ATENDENTE
+============================================================
+
+Implemente o acesso de Mentoria Preventiva para o próprio atendente, com as regras abaixo.
+NÃO remova nenhuma lógica, hook, integração ou funcionalidade existente.
+
+---
+
+## 1. NOVO MÓDULO DE PERMISSÃO
+
+No sistema de Usuários e Permissões (`/users` → `Users.tsx`), adicione um novo role:
+
+- **ID do role:** `mentoria_atendente`
+- **Label na UI:** "Mentoria Preventiva (Atendente)"
+- **Descrição:** "Acesso restrito: o atendente realiza sua própria mentoria preventiva"
+
+Na tela de edição de permissões (Dialog "Editar permissões"), adicione esta opção ao Select de role junto com os existentes (admin / auditoria / credito).
+
+Quando o role for `mentoria_atendente`:
+- O atendente acessa APENAS a rota `/mentoria-preventiva`
+- Todos os outros menus e rotas ficam bloqueados (redirecionar para `/mentoria-preventiva` se tentar acessar outra rota)
+- O header não exibe links de navegação para outros módulos
+
+---
+
+## 2. VÍNCULO USUÁRIO ↔ ATENDENTE
+
+Na tabela de atendentes (`Atendentes.tsx`), existe o campo `nome` como identificador principal.
+
+Ao cadastrar um usuário com role `mentoria_atendente`, adicione um campo obrigatório:
+- **Campo:** "Atendente vinculado" — Select com a lista de atendentes cadastrados (query na tabela de atendentes)
+- **Salvar:** persiste o ID do atendente no perfil do usuário (campo `attendant_id` em `user_metadata` ou coluna separada na tabela de perfis)
+
+---
+
+## 3. VALIDAÇÃO DE PROPRIEDADE DO PDF
+
+Na rota `/mentoria-preventiva`, quando o usuário tiver role `mentoria_atendente`:
+
+Ao importar um PDF (upload), antes de processar, verificar se o nome do atendente presente no PDF corresponde ao atendente vinculado ao usuário logado.
+
+**Como validar:**
+1. Após leitura/parse do PDF, extrair o campo nome do atendente (já existente no parser)
+2. Comparar (case-insensitive, ignorando acentos) com o nome do atendente vinculado ao usuário
+3. Se não corresponder → exibir alerta:
+
+```
+⚠️ Atenção
+Este atendimento pertence a outro colaborador e não pode ser importado aqui.
+Você só pode analisar seus próprios atendimentos.
+[OK]
+```
+
+4. Bloquear o arquivo — não adicionar à lista nem processar
+
+---
+
+## 4. LIMITE MENSAL DE 10 MENTORIAS
+
+Para usuários com role `mentoria_atendente`:
+
+- Contar quantas mentorias o atendente já analisou no mês atual (baseado na data de análise)
+- Query: `mentoria_preventiva_analyses` WHERE `attendant_id = X` AND `created_at >= início do mês atual`
+- Se o contador atingir **10**:
+  - Desabilitar o botão de upload e análise
+  - Exibir banner no topo da página:
+
+```
+🔒 Limite mensal atingido
+Você já realizou 10 mentorias preventivas este mês.
+Seu limite será renovado em [1º do próximo mês].
+```
+
+- Exibir contador sempre visível no header da página:
+  - Verde: 0–7 mentorias
+  - Amarelo: 8–9 mentorias
+  - Vermelho: 10 mentorias (bloqueado)
+  - Formato: `Mentorias este mês: 7 / 10`
+
+---
+
+## 5. HISTÓRICO PESSOAL DO ATENDENTE
+
+Adicionar seção "Meu Histórico" na página `/mentoria-preventiva` para usuários com role `mentoria_atendente`:
+
+**Tabela com colunas:**
+- Protocolo
+- Data da análise
+- Nota (colorida por faixa: verde ≥ 9, azul ≥ 7, amarelo ≥ 5, vermelho < 5)
+- Pontos Fortes (resumo curto — primeiros 60 caracteres)
+- Oportunidades (resumo curto — primeiros 60 caracteres)
+- Ações: botão "👁 Ver detalhes" → abre modal com resultado completo
+
+**Filtros:**
+- Seletor de mês/ano (Select com os meses que têm registros)
+- Busca por protocolo (input texto)
+
+**Persistência:** dados salvos na tabela `mentoria_preventiva_analyses` com coluna `attendant_id` vinculando ao atendente
+
+---
+
+## 6. EXIBIÇÃO DA NOTA — SEM CARÁTER OFICIAL
+
+Em todos os resultados de análise para o role `mentoria_atendente`:
+
+- Exibir a nota normalmente (ex: 7,4)
+- Logo abaixo da nota, exibir badge/aviso em amarelo:
+
+```
+📌 Esta nota é para sua mentoria pessoal e não tem caráter oficial.
+Ela não afeta seu bônus nem sua avaliação formal.
+```
+
+- **NÃO exibir** nenhum campo de bônus (valor em R$, faixa de bônus, régua progressiva)
+- **NÃO exibir** coluna "Valor Bônus" na tabela de histórico
+
+---
+
+## 7. LAYOUT DA PÁGINA PARA O ATENDENTE
+
+Quando o usuário logado tiver role `mentoria_atendente`, a página `/mentoria-preventiva` exibe:
+
+**Header simplificado:**
+- Nome do atendente vinculado
+- Contador "Mentorias este mês: X / 10"
+- Botão "Sair"
+- SEM links para outros módulos
+
+**Seções na ordem:**
+1. Banner informativo (se existente — manter)
+2. Contador mensal com barra de progresso visual
+3. Área de upload (bloqueada se atingiu limite)
+4. Lista de atendimentos importados (filtrados — só os seus)
+5. Resultado da análise (sem campo bônus)
+6. Seção "Meu Histórico" (tabela com filtro por mês)
+
+---
+
+## 8. REGRAS DE SEGURANÇA (BACKEND / EDGE FUNCTION)
+
+Na Edge Function que processa a análise preventiva (`analyze-preventive`):
+
+- Verificar que o `attendant_id` do payload corresponde ao usuário autenticado
+- Verificar que o atendente não ultrapassou 10 análises no mês
+- Se qualquer validação falhar → retornar erro 403 com mensagem clara
+- Nunca confiar apenas no front-end para essas validações
+
+---
+
+## REGRA GERAL IMPORTANTE
+
+NÃO remover nenhuma lógica, hook, integração ou funcionalidade existente.
+Todas as alterações acima são ADICIONAIS ao fluxo atual do sistema.
+O módulo de Mentoria Preventiva para gestores (role `auditoria` / `admin`) continua funcionando exatamente como está.

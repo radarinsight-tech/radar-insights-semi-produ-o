@@ -1,0 +1,8 @@
+Leia o contexto consolidado que eu trouxe e continue a partir dele.
+
+Direção:
+- use esta VM como ambiente oficial
+- avance sem pedir caminhos alternativos
+- foque na inconsistência dos botões/status da Mentoria/Pipeline
+- se faltar repo local, use Lovable + interface publicada
+- me conduza até a correção objetiva e validação final

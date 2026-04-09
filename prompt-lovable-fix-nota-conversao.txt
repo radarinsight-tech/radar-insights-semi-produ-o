@@ -1,0 +1,28 @@
+CORRECAO — Nota exibida na lista diverge da previsão na Revisão
+================================================================
+PROBLEMA: 
+Na tela de Revisão mostra "Previsão da nota: 50/100" mas na lista
+de atendimentos aparece "7,0". A conversão está incorreta.
+
+REGRA CORRETA de conversão de pontos para nota na escala 0-10:
+  nota = (pontosObtidos / pontosPossiveis) * 10
+
+Exemplo: 50/100 → 50/100 * 10 = 5,0  (NÃO 7,0)
+
+VERIFICAR E CORRIGIR:
+
+1. Localizar a função que converte pontos para nota (provavelmente
+   notaToScale10 ou similar).
+
+2. Verificar se está usando a fórmula correta:
+   (pontosObtidos / pontosPossiveis) * 10
+
+3. Se estiver usando outra fórmula (ex: dividindo por 72 em vez do
+   total real de pontos possíveis), corrigir para usar sempre o
+   total dinâmico de pontosPossiveis do resultado.
+
+4. Garantir que a nota exibida na lista, no card de prévia e no
+   Relatório sejam todas calculadas com a mesma fórmula.
+
+IMPORTANTE: Não alterar a lógica dos critérios. Apenas corrigir
+o cálculo de conversão da nota.

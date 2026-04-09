@@ -1,0 +1,95 @@
+CORRECAO — POST evaluations retorna 400 após análise IA bem-sucedida
+=====================================================================
+
+ARQUIVO: src/pages/MentoriaLab.tsx
+
+PROBLEMA IDENTIFICADO:
+A Edge Function analyze-attendance retorna OK e a análise é concluída.
+Mas o INSERT/UPDATE na tabela "evaluations" retorna 400 (Bad Request).
+Isso faz o arquivo voltar para "lido" em vez de avançar para "analisado".
+
+CAUSA PROVÁVEL: o payload enviado ao Supabase contém campos inválidos
+(colunas inexistentes, tipos errados ou dados com caracteres especiais).
+
+CORRECAO 1 — Capturar o erro detalhado do Supabase em persistEvaluationRecord:
+
+Localizar a função persistEvaluationRecord.
+Dentro dela, na chamada de INSERT (.insert(payload...)), capturar o erro completo.
+Onde houver:
+  if (error || !data) throw error ?? new Error("Falha ao salvar avaliação.");
+
+Substituir por:
+  if (error || !data) {
+    console.error("[persistEvaluationRecord][erro_insert]", {
+      message: error?.message,
+      code: error?.code,
+      details: error?.details,
+      hint: error?.hint,
+    });
+    throw error ?? new Error("Falha ao salvar avaliação.");
+  }
+
+Fazer o mesmo para o UPDATE (.update(payload...)):
+  if (error || !data) {
+    console.error("[persistEvaluationRecord][erro_update]", {
+      message: error?.message,
+      code: error?.code,
+      details: error?.details,
+      hint: error?.hint,
+    });
+    throw error ?? new Error("Falha ao atualizar avaliação existente.");
+  }
+
+---
+
+CORRECAO 2 — Sanitizar o payload antes de inserir na tabela evaluations:
+
+Localizar onde o payload é montado antes de ser passado para persistEvaluationRecord.
+Deve ter algo como:
+  const payload = {
+    user_id: user.id,
+    protocolo: ...,
+    atendente: ...,
+    full_report: data,
+    ...
+  };
+
+ANTES de passar o payload, adicionar sanitização:
+  const sanitizeForDb = (obj: unknown): unknown => {
+    const str = JSON.stringify(obj);
+    return JSON.parse(str.replace(/\u0000/g, "").replace(/\\u0000/g, ""));
+  };
+  const safePayload = sanitizeForDb(payload) as typeof payload;
+
+E usar safePayload ao chamar persistEvaluationRecord:
+  await persistEvaluationRecord({ ..., payload: safePayload });
+
+---
+
+CORRECAO 3 — Se persistEvaluationRecord falhar, salvar resultado localmente mesmo assim:
+
+Na função analyzeFiles, localizar onde persistEvaluationRecord é chamada.
+Envolver em try/catch separado para não bloquear o avanço do status:
+
+  let evalRecord: { id: string; approvedAsOfficial: boolean; approvalOrigin?: any } | null = null;
+  try {
+    evalRecord = await persistEvaluationRecord({ userId: user.id, currentEvaluationId: labFile.evaluationId, protocolo: finalResult.protocolo, payload: safePayload });
+  } catch (evalErr: any) {
+    console.warn("[MentoriaLab][Análise][eval_persist_falhou]", {
+      id: labFile.batchFileId || labFile.id,
+      erro: evalErr?.message,
+    });
+    // Continue without blocking — result still saved to batch file
+  }
+
+Depois usar evalRecord?.id e evalRecord?.approvedAsOfficial com fallback:
+  evaluationId: evalRecord?.id,
+  approvedAsOfficial: evalRecord?.approvedAsOfficial ?? false,
+  approvalOrigin: evalRecord?.approvalOrigin,
+
+---
+
+IMPORTANTE:
+- NÃO alterar scoring, critérios, metadata ou qualquer outro fluxo.
+- NÃO remover o fallback da Edge Function.
+- A análise deve avançar para "analisado" mesmo se a tabela evaluations falhar.

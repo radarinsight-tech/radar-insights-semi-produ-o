@@ -1,0 +1,30 @@
+CORRECAO — Texto original do chat não carrega no "Acesso ao texto original do chat"
+=====================================================================
+
+PROBLEMA: O botão "Acesso ao texto original do chat" no modal Contexto URA existe
+mas não expande / mostra conteúdo. Isso ocorre porque o campo raw_text não está
+sendo salvo no banco ao importar o PDF.
+
+SOLUCAO EM 2 PARTES:
+
+--- PARTE 1: Migration no Supabase ---
+Executar este SQL no Supabase (SQL Editor):
+
+  ALTER TABLE mentoria_batch_files
+    ADD COLUMN IF NOT EXISTS raw_text text;
+
+--- PARTE 2: Salvar o texto ao importar ---
+No arquivo onde ocorre o INSERT em mentoria_batch_files (provavelmente MentoriaLab.tsx
+ou useMentoriaLab.ts), adicionar o campo raw_text no objeto de inserção:
+
+  raw_text: labFile.text || null
+
+--- PARTE 3: Carregar o texto ao buscar do banco ---
+No hook/função que faz SELECT de mentoria_batch_files e mapeia para LabFile,
+adicionar no mapeamento:
+
+  text: row.raw_text || undefined,
+
+Isso garante que ao recarregar a página o texto bruto continua disponível.
+
+IMPORTANTE: Não alterar nenhuma outra lógica. Apenas persistir e recuperar o raw_text.

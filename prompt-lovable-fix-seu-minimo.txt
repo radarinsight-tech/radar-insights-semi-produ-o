@@ -1,0 +1,9 @@
+Em src/lib/mentoriaMetadata.ts, encontre onde o nome do atendente é retornado pela função de extração.
+
+Adicione este guard de 3 linhas logo antes do return:
+
+  const BLOCKED = ["seu", "sua", "seu atendente", "sua atendente"];
+  if (attendantName && BLOCKED.includes(attendantName.toLowerCase().trim()))
+    attendantName = null;
+
+Só isso. Não altere mais nada.

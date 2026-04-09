@@ -1,0 +1,71 @@
+SOLICITACAO — RADAR INSIGHT
+Pagina: Mentoria Lab — Badge de Lote + Indicador de Leitura por linha
+======================================================================
+REGRA GERAL: Nao remover nenhuma logica, hook, integracao ou funcionalidade existente.
+
+======================================================================
+CONTEXTO
+======================================================================
+
+Cada PDF importado pertence a um lote (ex: lote-2026-03-053).
+Na aba "Todos", o gestor nao consegue identificar de qual lote cada
+atendimento veio nem se ja visualizou aquele PDF.
+
+Queremos adicionar em cada linha da tabela:
+1. Badge com o numero resumido do lote
+2. Bolinha colorida indicando se o PDF foi visualizado ou nao
+
+======================================================================
+AJUSTE 1 — Badge de lote na coluna Atendente
+======================================================================
+
+Abaixo do nome do atendente e protocolo, adicionar um badge pequeno
+com o identificador do lote ao qual o PDF pertence.
+
+Formato do badge:
+- Texto: numero resumido do lote (ex: "lote-053" a partir de "lote-2026-03-053")
+  Regra de exibicao: mostrar apenas os ultimos digitos apos o ultimo "-"
+  Exemplo: "lote-2026-03-053" → exibir "lote-053"
+- Estilo: badge cinza claro (bg-muted text-muted-foreground), texto xs, arredondado
+
+Layout da celula Atendente apos o ajuste:
+  [Nome do Atendente]
+  [protocolo]
+  [lote-053]  ← novo badge pequeno
+
+======================================================================
+AJUSTE 2 — Bolinha de leitura na linha
+======================================================================
+
+Adicionar uma bolinha colorida no inicio de cada linha (antes do checkbox
+ou na coluna de status) indicando se o PDF foi visualizado:
+
+  🔴 Vermelho (bg-red-500)  → PDF ainda nao foi aberto (status = "pendente" ou "lido" sem ter clicado em "Ver" ou "Preview")
+  🟢 Verde (bg-emerald-500) → PDF ja foi visualizado ao menos uma vez
+
+REGRA DE QUANDO MARCAR COMO VISTO:
+- Marcar como visto quando o usuario clicar em "Ver" (onOpenMentoria) ou "Preview" (onOpenFile)
+- Persistir esse estado na coluna "visualizado" (boolean, default false) da tabela mentoria_batch_files
+- Se a analise ja foi feita (status analisado/confirmado/fila_ia/fila_manual), considerar como visto automaticamente
+
+BANCO DE DADOS:
+Adicionar coluna se nao existir:
+  ALTER TABLE mentoria_batch_files ADD COLUMN IF NOT EXISTS visualizado boolean DEFAULT false;
+
+Ao clicar em "Ver" ou "Preview":
+  UPDATE mentoria_batch_files SET visualizado = true WHERE id = [batchFileId]
+
+Ao carregar o lote, mapear:
+  visualizado: row.visualizado || false,
+
+======================================================================
+AJUSTE 3 — Tooltip nas bolinhas
+======================================================================
+
+Ao passar o mouse na bolinha:
+  🔴 Tooltip: "Nao visualizado — PDF ainda nao foi aberto"
+  🟢 Tooltip: "Visualizado — PDF ja foi revisado"
+
+======================================================================
+FIM DA SOLICITACAO
+======================================================================

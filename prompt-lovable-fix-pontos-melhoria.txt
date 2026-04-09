@@ -1,0 +1,21 @@
+CORRECAO CIRURGICA — POST evaluations 400 Bad Request
+======================================================
+
+ARQUIVO: src/pages/MentoriaLab.tsx
+
+CAUSA RAIZ IDENTIFICADA:
+A coluna "pontos_melhoria" na tabela "evaluations" é TEXT[] no PostgreSQL.
+O payload envia data.mentoria diretamente, que pode conter itens null,
+undefined, numbers ou objetos vindos da IA — causando 400 Bad Request.
+
+LOCALIZAR exatamente esta linha:
+
+  pontos_melhoria: Array.isArray(data.mentoria) ? data.mentoria : [],
+
+SUBSTITUIR por:
+
+  pontos_melhoria: Array.isArray(data.mentoria)
+    ? data.mentoria.map((item: unknown) => (typeof item === "string" ? item : String(item ?? "")))
+    : [],
+
+NÃO alterar mais nada. Esta é a única mudança necessária.
