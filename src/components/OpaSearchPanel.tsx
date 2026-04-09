@@ -72,20 +72,30 @@ const OpaSearchPanel = ({
         offset,
       };
 
-      // Add atendente filter if selected
+      // Add atendente filter if selected (and list is not empty)
       if (filters.atendentes.length > 0) {
         requestBody.filters = {
           atendente: filters.atendentes,
         };
       }
 
-      // Add periodo filters if selected
+      // Add periodo filters if selected - supports both formats
       if (filters.periodoInicio && filters.periodoFim) {
+        // Range format: dd/MM/yyyy to dd/MM/yyyy
         requestBody.periodoInicio = filters.periodoInicio;
         requestBody.periodoFim = filters.periodoFim;
       } else if (filters.periodo) {
+        // Month format: YYYY-MM
         requestBody.periodo = filters.periodo;
       }
+
+      console.log("OpaSearchPanel: Sending request to fetch-opa-attendance", {
+        hasAtendentes: filters.atendentes.length > 0,
+        atendentes: filters.atendentes,
+        periodo: filters.periodo,
+        periodoInicio: filters.periodoInicio,
+        periodoFim: filters.periodoFim,
+      });
 
       const response = await fetch(`${supabaseUrl}/functions/v1/fetch-opa-attendance`, {
         method: "POST",
@@ -119,9 +129,22 @@ const OpaSearchPanel = ({
       setTotal(data.total || 0);
       setDebugInfo(data.debug_info);
 
-      // Extract unique atendentes from results
-      const uniqueAtendentes = [...new Set(data.data?.map((r: AttendanceRecord) => r.atendente).filter(Boolean) || [])];
-      setAtendentes(uniqueAtendentes.sort());
+      // Extract unique atendentes from results and from database
+      if (data.data && data.data.length > 0) {
+        const uniqueAtendentes = [...new Set(data.data?.map((r: AttendanceRecord) => r.atendente).filter(Boolean) || [])];
+        setAtendentes(uniqueAtendentes.sort());
+      } else {
+        // If no records found, still try to fetch attendants list from database
+        const { data: attendantsData } = await supabase
+          .from("attendants")
+          .select("name")
+          .eq("active", true)
+          .eq("participates_evaluation", true);
+        if (attendantsData) {
+          const names = attendantsData.map((a: any) => a.name).sort();
+          setAtendentes(names);
+        }
+      }
 
       console.log("OpaSearchPanel: Response received", {
         records_received: data.data?.length || 0,
@@ -144,6 +167,30 @@ const OpaSearchPanel = ({
     setOffset(0);
     fetchAttendances();
   }, [filters]);
+
+  // Load attendants from database on mount as fallback
+  useEffect(() => {
+    const loadFallbackAttendants = async () => {
+      try {
+        const { data } = await supabase
+          .from("attendants")
+          .select("name")
+          .eq("active", true)
+          .eq("participates_evaluation", true)
+          .order("name");
+        
+        if (data && data.length > 0 && atendentes.length === 0) {
+          const names = data.map((a: any) => a.name);
+          setAtendentes(names);
+          console.log("OpaSearchPanel: Loaded attendants from database:", names.length);
+        }
+      } catch (err) {
+        console.error("OpaSearchPanel: Failed to load fallback attendants:", err);
+      }
+    };
+
+    loadFallbackAttendants();
+  }, []);
 
   const handleRecordSelect = (record: AttendanceRecord) => {
     if (onSelectAttendance) {
@@ -198,9 +245,18 @@ const OpaSearchPanel = ({
           Buscar Atendimentos
         </h3>
 
+        {atendentes.length === 0 && (
+          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-yellow-700 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-yellow-800">
+              <span className="font-semibold">Carregando atendentes...</span> A lista de atendentes está sendo carregada do banco de dados.
+            </p>
+          </div>
+        )}
+
         <Filters
           filters={filters}
-          onFiltersChange={setFilters}
+          onChange={setFilters}
           atendentes={atendentes}
         />
 
