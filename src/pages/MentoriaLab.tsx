@@ -571,7 +571,10 @@ const MentoriaLab = () => {
   const [importingCount, setImportingCount] = useState(0);
   const [readingIds, setReadingIds] = useState<Set<string>>(new Set());
   const _savedSession = useRef(loadMentoriaSession());
-  const [activeTab, setActiveTab] = useState(_savedSession.current?.activeTab || "operacao");
+  const [activeTab, setActiveTab] = useState(() => {
+    const saved = _savedSession.current?.activeTab;
+    return saved && saved !== "operacao" ? saved : "performance";
+  });
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
   const [batchInfo, setBatchInfo] = useState<BatchInfo | null>(null);
   const [sideFile, setSideFile] = useState<LabFile | null>(null);
