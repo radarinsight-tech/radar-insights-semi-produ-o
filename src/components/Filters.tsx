@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -9,31 +8,53 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export interface FilterValues {
-  atendente: string;
+  atendentes: string[];
   periodo: string;
-  tipo: string;
   periodoInicio?: string;
   periodoFim?: string;
 }
 
 interface FiltersProps {
   atendentes: string[];
-  tipos: string[];
   filters: FilterValues;
   onChange: (filters: FilterValues) => void;
 }
 
-const Filters = ({ atendentes, tipos, filters, onChange }: FiltersProps) => {
+const Filters = ({ atendentes, filters, onChange }: FiltersProps) => {
   const [dateMode, setDateMode] = useState<"month" | "range">("month");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [atendentesOpen, setAtendentesOpen] = useState(false);
+
+  const selectedAttendants = useMemo(
+    () => (filters.atendentes.length > 0 ? filters.atendentes : atendentes),
+    [filters.atendentes, atendentes]
+  );
+  const allSelected = selectedAttendants.length === atendentes.length && atendentes.length > 0;
+
+  const handleToggleAttendant = (name: string) => {
+    const next = filters.atendentes.includes(name)
+      ? filters.atendentes.filter((item) => item !== name)
+      : [...filters.atendentes, name];
+    onChange({ ...filters, atendentes: next });
+  };
+
+  const handleSelectAll = () => {
+    onChange({ ...filters, atendentes: atendentes.slice() });
+  };
+
+  const handleSelectNone = () => {
+    onChange({ ...filters, atendentes: [] });
+  };
 
   const handleMonthSelect = (date: Date | undefined) => {
     if (!date) return;
     setSelectedDate(date);
+    setDateRange(undefined);
     const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     onChange({ ...filters, periodo: yearMonth, periodoInicio: undefined, periodoFim: undefined });
     setCalendarOpen(false);
@@ -41,6 +62,7 @@ const Filters = ({ atendentes, tipos, filters, onChange }: FiltersProps) => {
 
   const handleRangeSelect = (range: DateRange | undefined) => {
     setDateRange(range);
+    setSelectedDate(undefined);
     if (range?.from && range?.to) {
       onChange({
         ...filters,
@@ -50,7 +72,6 @@ const Filters = ({ atendentes, tipos, filters, onChange }: FiltersProps) => {
       });
       setCalendarOpen(false);
     } else if (range?.from) {
-      // Only start selected, keep popover open
       onChange({
         ...filters,
         periodo: "",
@@ -79,49 +100,52 @@ const Filters = ({ atendentes, tipos, filters, onChange }: FiltersProps) => {
     return "Selecione uma data";
   };
 
-  const hasDateFilter = selectedDate || dateRange?.from;
+  const hasDateFilter = !!selectedDate || !!dateRange?.from;
 
   return (
     <div className="flex flex-wrap gap-4">
       <div className="space-y-1.5">
         <Label className="text-xs font-semibold text-primary/80">Atendentes</Label>
-        <Select value={filters.atendente} onValueChange={(v) => onChange({ ...filters, atendente: v })}>
-          <SelectTrigger className="w-[200px] bg-card">
-            <SelectValue placeholder="Todos" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos</SelectItem>
-            {atendentes.map((a) => (
-              <SelectItem key={a} value={a}>{a}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover open={atendentesOpen} onOpenChange={setAtendentesOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="w-[260px] justify-between bg-card">
+              <span>{allSelected ? "Todos atendentes" : `${selectedAttendants.length} selecionado${selectedAttendants.length !== 1 ? "s" : ""}`}</span>
+              <span className="text-xs text-muted-foreground">Abrir</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[260px] p-3">
+            <div className="flex items-center justify-between mb-3 gap-2">
+              <Button variant="outline" size="sm" className="flex-1" onClick={handleSelectAll}>
+                Marcar todos
+              </Button>
+              <Button variant="outline" size="sm" className="flex-1" onClick={handleSelectNone}>
+                Desmarcar
+              </Button>
+            </div>
+            <div className="max-h-64 overflow-y-auto space-y-2">
+              {atendentes.map((name) => {
+                const checked = selectedAttendants.includes(name);
+                return (
+                  <label key={name} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 hover:bg-muted">
+                    <Checkbox checked={checked} onCheckedChange={() => handleToggleAttendant(name)} />
+                    <span className="text-sm">{name}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs font-semibold text-primary/80">Tipos de atendimento</Label>
-        <Select value={filters.tipo} onValueChange={(v) => onChange({ ...filters, tipo: v })}>
-          <SelectTrigger className="w-[200px] bg-card">
-            <SelectValue placeholder="Todos" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos</SelectItem>
-            {tipos.map((t) => (
-              <SelectItem key={t} value={t}>{t}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold text-primary/80">Data do atendimento</Label>
+        <Label className="text-xs font-semibold text-primary/80">Período</Label>
         <div className="flex items-center gap-1">
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 className={cn(
-                  "w-[220px] justify-start text-left font-normal bg-card",
+                  "w-[260px] justify-start text-left font-normal bg-card",
                   !hasDateFilter && "text-muted-foreground"
                 )}
               >

@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateBR, classificarNota, classColorFromClassificacao } from "@/lib/utils";
+import Filters, { type FilterValues } from "@/components/Filters";
 
 interface AttendanceRecord {
   id: string;
@@ -21,17 +21,9 @@ interface AttendanceRecord {
   updated_at: string;
 }
 
-interface SearchFilters {
-  protocolo?: string;
-  cliente?: string;
-  atendente?: string;
-  status_atendimento?: string;
-  status_auditoria?: string;
-}
-
 interface OpaSearchPanelProps {
   onSelectAttendance?: (record: AttendanceRecord) => void;
-  initialFilters?: SearchFilters;
+  initialFilters?: Partial<FilterValues>;
 }
 
 const OpaSearchPanel = ({ 
@@ -42,8 +34,13 @@ const OpaSearchPanel = ({
   const [error, setError] = useState<string | null>(null);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [total, setTotal] = useState(0);
+  const [atendentes, setAtendentes] = useState<string[]>([]);
 
-  const [filters, setFilters] = useState<SearchFilters>(initialFilters);
+  const [filters, setFilters] = useState<FilterValues>({
+    atendentes: [],
+    periodo: "",
+    ...initialFilters,
+  });
   const [limit, setLimit] = useState(1000); // Aumentado de 50 para 1000
   const [offset, setOffset] = useState(0);
   const [debugInfo, setDebugInfo] = useState<any>(null);
@@ -70,19 +67,33 @@ const OpaSearchPanel = ({
         throw new Error("Supabase URL not configured");
       }
       
+      const requestBody: any = {
+        limit,
+        offset,
+      };
+
+      // Add atendente filter if selected
+      if (filters.atendentes.length > 0) {
+        requestBody.filters = {
+          atendente: filters.atendentes,
+        };
+      }
+
+      // Add periodo filters if selected
+      if (filters.periodoInicio && filters.periodoFim) {
+        requestBody.periodoInicio = filters.periodoInicio;
+        requestBody.periodoFim = filters.periodoFim;
+      } else if (filters.periodo) {
+        requestBody.periodo = filters.periodo;
+      }
+
       const response = await fetch(`${supabaseUrl}/functions/v1/fetch-opa-attendance`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({
-          filters: Object.fromEntries(
-            Object.entries(filters).filter(([, v]) => v !== undefined && v !== "")
-          ),
-          limit,
-          offset,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -108,6 +119,10 @@ const OpaSearchPanel = ({
       setTotal(data.total || 0);
       setDebugInfo(data.debug_info);
 
+      // Extract unique atendentes from results
+      const uniqueAtendentes = [...new Set(data.data?.map((r: AttendanceRecord) => r.atendente).filter(Boolean) || [])];
+      setAtendentes(uniqueAtendentes.sort());
+
       console.log("OpaSearchPanel: Response received", {
         records_received: data.data?.length || 0,
         total_after_filters: data.total,
@@ -129,23 +144,6 @@ const OpaSearchPanel = ({
     setOffset(0);
     fetchAttendances();
   }, [filters]);
-
-  const handleProtocoloChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFilters(prev => ({ ...prev, protocolo: e.target.value }));
-  };
-
-  const handleClienteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFilters(prev => ({ ...prev, cliente: e.target.value }));
-  };
-
-  const handleAttendenteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFilters(prev => ({ ...prev, atendente: e.target.value }));
-  };
-
-  const handleClearFilters = () => {
-    setFilters({});
-    setOffset(0);
-  };
 
   const handleRecordSelect = (record: AttendanceRecord) => {
     if (onSelectAttendance) {
@@ -200,51 +198,13 @@ const OpaSearchPanel = ({
           Buscar Atendimentos
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Protocolo
-            </label>
-            <Input
-              placeholder="ex: PT001"
-              value={filters.protocolo || ""}
-              onChange={handleProtocoloChange}
-              disabled={loading}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Cliente
-            </label>
-            <Input
-              placeholder="Nome do cliente"
-              value={filters.cliente || ""}
-              onChange={handleClienteChange}
-              disabled={loading}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Atendente
-            </label>
-            <Input
-              placeholder="Nome do atendente"
-              value={filters.atendente || ""}
-              onChange={handleAttendenteChange}
-              disabled={loading}
-            />
-          </div>
-        </div>
+        <Filters
+          filters={filters}
+          onFiltersChange={setFilters}
+          atendentes={atendentes}
+        />
 
         <div className="flex gap-2">
-          <Button
-            onClick={handleClearFilters}
-            variant="outline"
-            disabled={loading}
-            className="flex-1"
-          >
-            Limpar Filtros
-          </Button>
           <Button
             onClick={fetchAttendances}
             disabled={loading}
