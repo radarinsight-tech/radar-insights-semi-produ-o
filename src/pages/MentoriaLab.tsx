@@ -3867,21 +3867,8 @@ const MentoriaLab = () => {
 
         {/* Tabs navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 max-w-md border border-border bg-muted/60 p-1 rounded-lg">
+          <TabsList className="grid w-full grid-cols-2 max-w-md border border-border bg-muted/60 p-1 rounded-lg">
             <TooltipProvider delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger
-                    value="operacao"
-                    className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground hover:bg-accent/60 transition-colors rounded-md font-medium"
-                  >
-                    Operação
-                  </TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-[300px] text-center">
-                  <p>Esteira de trabalho: importe, analise e gerencie os atendimentos do lote atual</p>
-                </TooltipContent>
-              </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <TabsTrigger
