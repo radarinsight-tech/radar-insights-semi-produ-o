@@ -1,10 +1,11 @@
-import { useState, useRef } from "react";
-import { Upload, X, Loader2, FileUp, AlertCircle } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Upload, X, Loader2, FileUp, AlertCircle, CheckCircle, Shield } from "lucide-react";
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MKRow {
   'Protocolo': string;
@@ -13,6 +14,13 @@ interface MKRow {
   'Cidade': string;
   'Processo': string;
   [key: string]: string;
+}
+
+interface Attendant {
+  id: string;
+  name: string;
+  nickname: string | null;
+  participates_evaluation: boolean;
 }
 
 interface MKSolutionsModuleProps {
@@ -24,14 +32,91 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState("");
   const [totalRows, setTotalRows] = useState(0);
+  const [importedRows, setImportedRows] = useState(0);
   const [displayRows, setDisplayRows] = useState(10);
+  const [attendants, setAttendants] = useState<Attendant[]>([]);
+  const [loadingAttendants, setLoadingAttendants] = useState(true);
+  const [discardedRecords, setDiscardedRecords] = useState<Array<{ line: number; operator: string; reason: string }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragRef = useRef<HTMLDivElement>(null);
 
   const requiredColumns = ['Protocolo', 'Abertura', 'Op. Abertura', 'Cidade', 'Processo'];
 
+  // Load attendants on component mount
+  useEffect(() => {
+    const fetchAttendants = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("attendants")
+          .select("id, name, nickname, participates_evaluation")
+          .eq("participates_evaluation", true)
+          .eq("active", true);
+
+        if (error) {
+          console.error("Erro ao carregar atendentes:", error);
+          setLoadingAttendants(false);
+          return;
+        }
+
+        setAttendants(data || []);
+      } catch (error) {
+        console.error("Erro na requisição de atendentes:", error);
+      } finally {
+        setLoadingAttendants(false);
+      }
+    };
+
+    fetchAttendants();
+  }, []);
+
+  // Validate if operator is in the attendants list
+  const isOperatorValid = (operatorName: string): boolean => {
+    if (!operatorName || operatorName.trim() === "") return false;
+    
+    const normalizedInput = operatorName.toLowerCase().trim();
+    
+    return attendants.some(att => 
+      att.name.toLowerCase().trim() === normalizedInput ||
+      (att.nickname && att.nickname.toLowerCase().trim() === normalizedInput)
+    );
+  };
+
+  // Process and filter imported data
+  const filterAndValidateData = (importedData: MKRow[]): { filtered: MKRow[]; discarded: Array<{ line: number; operator: string; reason: string }> } => {
+    const filtered: MKRow[] = [];
+    const discarded: Array<{ line: number; operator: string; reason: string }> = [];
+
+    importedData.forEach((row, index) => {
+      const operator = row['Op. Abertura']?.trim() || "";
+      
+      if (!isOperatorValid(operator)) {
+        discarded.push({
+          line: index + 2, // +2 because index starts at 0 and headers are line 1
+          operator: operator || "(vazio)",
+          reason: "Operador não encontrado na lista de avaliáveis"
+        });
+        return;
+      }
+
+      filtered.push(row);
+    });
+
+    return { filtered, discarded };
+  };
+
   const handleFileSelect = async (file: File) => {
     if (!file) return;
+
+    // Check if attendants are loaded
+    if (loadingAttendants) {
+      toast.error("Aguarde o carregamento da lista de atendentes...");
+      return;
+    }
+
+    if (attendants.length === 0) {
+      toast.error("Nenhum atendente com status 'Avaliação: SIM' encontrado");
+      return;
+    }
 
     // Validate file type
     const isCSV = file.name.toLowerCase().endsWith('.csv');
@@ -86,17 +171,29 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
         }
       }
 
+      // Apply security filter: validate Op. Abertura against attendants list
+      const { filtered, discarded } = filterAndValidateData(jsonData);
+
       // Support large files: only keep first 4792 rows in memory for display
       const maxDisplayRows = 4792;
-      const trimmedData = jsonData.slice(0, maxDisplayRows);
+      const trimmedData = filtered.slice(0, maxDisplayRows);
       
       setData(trimmedData);
       setTotalRows(jsonData.length);
+      setImportedRows(filtered.length);
+      setDiscardedRecords(discarded);
       setDisplayRows(Math.min(10, trimmedData.length));
 
-      toast.success(
-        `✅ ${jsonData.length.toLocaleString()} linhas carregadas com sucesso! ${jsonData.length > maxDisplayRows ? `(Exibindo primeiras ${maxDisplayRows} linhas)` : ''}`
-      );
+      // Show summary
+      const summary = `✅ Total lido: ${jsonData.length.toLocaleString()} | Importado (CS): ${filtered.length.toLocaleString()}`;
+      if (discarded.length > 0) {
+        toast.success(
+          summary + ` | Descartado: ${discarded.length.toLocaleString()}`,
+          { duration: 5000 }
+        );
+      } else {
+        toast.success(summary);
+      }
 
       if (onDataLoaded) {
         onDataLoaded(trimmedData);
@@ -106,6 +203,8 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
       toast.error(`Erro ao processar arquivo: ${error?.message || 'Desconhecido'}`);
       setData([]);
       setTotalRows(0);
+      setImportedRows(0);
+      setDiscardedRecords([]);
     } finally {
       setLoading(false);
     }
@@ -144,7 +243,9 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
     setData([]);
     setFileName("");
     setTotalRows(0);
+    setImportedRows(0);
     setDisplayRows(10);
+    setDiscardedRecords([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -155,6 +256,27 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
 
   return (
     <div className="space-y-4">
+      {/* Loading Attendants Status */}
+      {loadingAttendants && (
+        <Card className="p-4 bg-blue-50/50 border border-blue-200">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+            <p className="text-sm text-blue-900">Carregando lista de atendentes com "Avaliação: SIM"...</p>
+          </div>
+        </Card>
+      )}
+
+      {/* Attendants Status Summary */}
+      {!loadingAttendants && attendants.length > 0 && (
+        <Card className="p-3 bg-green-50/50 border border-green-200">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <p className="text-xs text-green-900">
+              <span className="font-semibold">{attendants.length}</span> atendentes com status "Avaliação: SIM" prontos para validação
+            </p>
+          </div>
+        </Card>
+      )}
       {/* Upload Section */}
       <Card
         ref={dragRef}
@@ -162,9 +284,9 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`border-2 border-dashed border-muted-foreground/30 rounded-lg p-8 text-center cursor-pointer transition-all ${
-          loading ? 'opacity-50' : 'hover:border-primary/50 hover:bg-primary/2'
+          loading || loadingAttendants ? 'opacity-50' : 'hover:border-primary/50 hover:bg-primary/2'
         }`}
-        onClick={() => !loading && fileInputRef.current?.click()}
+        onClick={() => !loading && !loadingAttendants && fileInputRef.current?.click()}
       >
         <input
           ref={fileInputRef}
@@ -172,13 +294,28 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
           accept=".csv,.xlsx"
           onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])}
           className="hidden"
-          disabled={loading}
+          disabled={loading || loadingAttendants}
         />
 
         {loading ? (
           <div className="flex flex-col items-center gap-2">
             <Loader2 className="h-12 w-12 text-primary animate-spin" />
             <p className="font-medium">Processando arquivo...</p>
+          </div>
+        ) : loadingAttendants ? (
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="h-12 w-12 text-primary animate-spin" />
+            <p className="font-medium">Carregando atendentes...</p>
+          </div>
+        ) : attendants.length === 0 ? (
+          <div className="flex flex-col items-center gap-2">
+            <AlertCircle className="h-12 w-12 text-destructive/60" />
+            <p className="font-semibold text-foreground mb-1">
+              Nenhum atendente disponível
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Não foram encontrados atendentes com status "Avaliação: SIM"
+            </p>
           </div>
         ) : (
           <>
@@ -200,26 +337,62 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
         )}
       </Card>
 
-      {/* File Info */}
+      {/* File Info & Summary */}
       {fileName && (
-        <div className="flex items-center justify-between p-4 bg-accent/10 rounded-lg border border-accent/30">
-          <div className="flex items-center gap-3">
-            <FileUp className="h-5 w-5 text-accent" />
-            <div>
-              <p className="font-medium text-sm">{fileName}</p>
-              <p className="text-xs text-muted-foreground">
-                {totalRows.toLocaleString()} linhas carregadas
-              </p>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between p-4 bg-accent/10 rounded-lg border border-accent/30">
+            <div className="flex items-center gap-3">
+              <FileUp className="h-5 w-5 text-accent" />
+              <div>
+                <p className="font-medium text-sm">{fileName}</p>
+                <p className="text-xs text-muted-foreground">
+                  Total de linhas lidas: {totalRows.toLocaleString()} | Linhas importadas (CS): {importedRows.toLocaleString()}
+                </p>
+              </div>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClear}
+              className="text-destructive hover:bg-destructive/10"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleClear}
-            className="text-destructive hover:bg-destructive/10"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+
+          {/* Security Filter Summary */}
+          {discardedRecords.length > 0 && (
+            <div className="p-4 bg-yellow-50/50 border border-yellow-200 rounded-lg space-y-2">
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-yellow-600" />
+                <p className="font-medium text-sm text-yellow-900">
+                  Trava de Segurança: {discardedRecords.length.toLocaleString()} registros descartados
+                </p>
+              </div>
+              <p className="text-xs text-yellow-800">
+                Operadores não encontrados na lista de atendentes com "Avaliação: SIM"
+              </p>
+              
+              {/* Collapsible Discarded Records */}
+              <details className="pt-2">
+                <summary className="cursor-pointer text-xs text-yellow-700 font-medium hover:text-yellow-800">
+                  Mostrar {Math.min(5, discardedRecords.length)} primeiros descartados...
+                </summary>
+                <div className="mt-3 space-y-1 max-h-40 overflow-y-auto">
+                  {discardedRecords.slice(0, 5).map((record, idx) => (
+                    <div key={idx} className="text-xs text-yellow-800 p-2 bg-yellow-100/30 rounded">
+                      <span className="font-medium">Linha {record.line}:</span> "{record.operator}" — {record.reason}
+                    </div>
+                  ))}
+                  {discardedRecords.length > 5 && (
+                    <p className="text-xs text-yellow-700 italic pt-1">
+                      ... e mais {discardedRecords.length - 5} registros
+                    </p>
+                  )}
+                </div>
+              </details>
+            </div>
+          )}
         </div>
       )}
 
@@ -228,20 +401,17 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
         <>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm">
-                📊 Visualização Temporária ({displayedData.length} de {totalRows.toLocaleString()} linhas)
-              </h3>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <h3 className="font-semibold text-sm">
+                  📊 Dados Filtrados: {data.length.toLocaleString()} linhas importadas
+                </h3>
+              </div>
               <div className="text-xs text-muted-foreground">
                 {data.length > 0 && (
                   <>
                     {displayRows < data.length && (
                       <span>Exibindo {displayRows} de {data.length}...</span>
-                    )}
-                    {totalRows > data.length && (
-                      <span className="ml-2 inline-flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        Arquivo tem {totalRows.toLocaleString()} linhas (mostrando {data.length})
-                      </span>
                     )}
                   </>
                 )}
@@ -312,7 +482,7 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
                 disabled={data.length === 0}
                 onClick={() => {
                   toast.info("Função de salvar em desenvolvimento");
-                  // TODO: Implement save to database
+                  // TODO: Implement save to database with imported data
                 }}
               >
                 Salvar no banco de dados
