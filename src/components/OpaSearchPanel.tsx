@@ -45,8 +45,29 @@ const OpaSearchPanel = ({
   const [offset, setOffset] = useState(0);
   const [debugInfo, setDebugInfo] = useState<any>(null);
 
+  // Check if filters are valid for fetching
+  const hasValidFilters = (): boolean => {
+    // Need at least a valid period
+    const hasPeriod = filters.periodo || (filters.periodoInicio && filters.periodoFim);
+    return hasPeriod;
+  };
+
   // Fetch attendance records via edge function
   const fetchAttendances = async () => {
+    // Validate filters before attempting fetch
+    if (!hasValidFilters()) {
+      console.warn("OpaSearchPanel: Attempting fetch without valid filters", {
+        periodo: filters.periodo,
+        periodoInicio: filters.periodoInicio,
+        periodoFim: filters.periodoFim,
+        atendentes: filters.atendentes.length,
+      });
+      setRecords([]);
+      setTotal(0);
+      setError(null);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -153,20 +174,40 @@ const OpaSearchPanel = ({
         debug_info: data.debug_info
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error occurred";
-      setError(message);
-      toast.error(message);
+      let errorMessage = "Unknown error occurred";
+      
+      if (err instanceof TypeError && err.message === "Failed to fetch") {
+        errorMessage = "Erro de conexão. Verifique se o servidor está disponível e se sua sessão é válida.";
+        console.warn("OpaSearchPanel: Network/CORS error - Failed to fetch", {
+          filters,
+          timestamp: new Date().toISOString(),
+        });
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
       console.error("OpaSearchPanel fetch error:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Auto-fetch when component mounts or filters change
+  // Auto-fetch only when period is valid
   useEffect(() => {
     setOffset(0);
-    fetchAttendances();
-  }, [filters]);
+    // Only fetch if there's a valid period
+    if (hasValidFilters()) {
+      fetchAttendances();
+    } else {
+      // Clear results if no valid period
+      console.log("OpaSearchPanel: No valid period filters - clearing results");
+      setRecords([]);
+      setTotal(0);
+      setError(null);
+    }
+  }, [filters.periodo, filters.periodoInicio, filters.periodoFim]); // Only depend on period changes, not atendentes
 
   // Load attendants from database on mount as fallback
   useEffect(() => {
@@ -260,15 +301,20 @@ const OpaSearchPanel = ({
           atendentes={atendentes}
         />
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <Button
             onClick={fetchAttendances}
-            disabled={loading}
+            disabled={loading || !hasValidFilters()}
             className="flex-1"
           >
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Buscar
+            {!hasValidFilters() ? "Selecione um período" : "Buscar"}
           </Button>
+          {!hasValidFilters() && (
+            <p className="text-xs text-muted-foreground italic">
+              Selecione um período para buscar
+            </p>
+          )}
         </div>
       </div>
 
