@@ -79,6 +79,12 @@ const regraLabels: Record<string, { label: string; color: string; bg: string; bo
     bg: "bg-destructive/10",
     border: "border-destructive",
   },
+  regra_00_isento: {
+    label: "REGRA 00 — Isento",
+    color: "text-green-600",
+    bg: "bg-green-100",
+    border: "border-green-600",
+  },
   regra_01_isencao: {
     label: "REGRA 01 — Isenção",
     color: "text-accent",

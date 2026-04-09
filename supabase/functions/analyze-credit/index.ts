@@ -31,7 +31,18 @@ CATEGORIAS DE CREDOR (classificar cada credor):
 
 ORDEM OBRIGATÓRIA DE APLICAÇÃO DAS REGRAS (escada de faixas):
 
-A análise SEMPRE começa pela Regra 01 (isenção) e sobe progressivamente. A Regra Especial é verificada em paralelo e, se aplicável, SOBREPÕE qualquer outra regra.
+A análise SEMPRE começa pela Regra 00 (aprovação automática sem restrições) e sobe progressivamente. A Regra Especial é verificada em paralelo e, se aplicável, SOBREPÕE qualquer outra regra.
+
+0. REGRA 00 — ISENTO (zero registros negativos)
+   - Aplicar quando houver quantidade_registros_negativos = 0 E valor_total_negativado = R$ 0,00.
+   - NENHUMA restrição financeira identificada no documento.
+   - Cliente isento de taxa por ausência total de negativações.
+   - Se elegível:
+     - taxa_instalacao = 0, taxa_analise_credito = 0, taxa_total = 0
+   - regra_aplicada = "regra_00_isento"
+   - classificacao_final = "isento"
+   - motivo_decisao = "Cliente sem restrições financeiras identificadas no documento. Isento de taxa por ausência de negativações."
+   - resultado_rapido = "Isento — Sem registros negativos"
 
 1. REGRA 01 — ISENÇÃO (somente 1 registro negativo)
    - Aplicar quando houver EXATAMENTE 1 registro negativo.
@@ -111,8 +122,9 @@ VALIDAÇÃO DOCUMENTAL:
 
 REGRAS IMPORTANTES:
 - NUNCA usar "REPROVAR" ou "REPROVADO" como resultado. Toda análise resulta em uma faixa de taxa.
+- REGRA 00 é OBRIGATÓRIA: Se quantidade_registros_negativos = 0 E valor_total_negativado = R$ 0,00, IR DIRETO para Regra 00 (ISENTO). NÃO aplicar nenhuma outra regra.
 - NÃO misturar regra de provedor com credor comum
-- Respeitar EXATAMENTE a ordem progressiva: isenção → R$100 → R$200 → R$300 → R$1.000
+- Respeitar EXATAMENTE a ordem progressiva: Regra 00 (0 registros) → Regra 01/02 (1 registro) → Regra 03 (2-3 registros) → Regra 04 (4+ registros) → Especial (provedor)
 - Separar SEMPRE taxa de instalação e taxa de análise de crédito
 - Considerar documento válido SOMENTE se em nome do contratante
 - Protesto SEMPRE enquadra na Regra 04 (R$300), nunca como reprovação
@@ -227,7 +239,7 @@ serve(async (req) => {
                   motivo_decisao: { type: "string", description: "Justificativa objetiva e padronizada da decisão" },
                   regra_aplicada: {
                     type: "string",
-                    enum: ["regra_especial_debito_provedor", "regra_01_isencao", "regra_02_taxa_100", "regra_03_taxa_200", "regra_04_taxa_300"],
+                    enum: ["regra_especial_debito_provedor", "regra_00_isento", "regra_01_isencao", "regra_02_taxa_100", "regra_03_taxa_200", "regra_04_taxa_300"],
                     description: "Regra que foi aplicada"
                   },
                   observacoes: { type: "string", description: "Observações adicionais relevantes" },
