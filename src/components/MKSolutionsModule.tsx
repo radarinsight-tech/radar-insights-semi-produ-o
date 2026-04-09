@@ -46,6 +46,7 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
   useEffect(() => {
     const fetchAttendants = async () => {
       try {
+        console.log("MKSolutionsModule: Starting attendants fetch...");
         const { data, error } = await supabase
           .from("attendants")
           .select("id, name, nickname, participates_evaluation")
@@ -53,14 +54,20 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
           .eq("active", true);
 
         if (error) {
-          console.error("Erro ao carregar atendentes:", error);
+          console.error("MKSolutionsModule: Database error loading attendants:", error);
+          toast.error(`Erro ao carregar atendentes: ${error.message}`);
           setLoadingAttendants(false);
           return;
         }
 
+        console.log("MKSolutionsModule: Attendants loaded successfully", {
+          count: data?.length || 0,
+          names: data?.slice(0, 5).map(a => ({ name: a.name, nickname: a.nickname })),
+        });
         setAttendants(data || []);
       } catch (error) {
-        console.error("Erro na requisição de atendentes:", error);
+        console.error("MKSolutionsModule: Error fetching attendants:", error);
+        toast.error("Erro na requisição de atendentes");
       } finally {
         setLoadingAttendants(false);
       }
@@ -71,14 +78,70 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
 
   // Validate if operator is in the attendants list
   const isOperatorValid = (operatorName: string): boolean => {
-    if (!operatorName || operatorName.trim() === "") return false;
+    if (!operatorName || operatorName.trim() === "") {
+      console.warn("MKSolutionsModule: Empty operator name");
+      return false;
+    }
     
-    const normalizedInput = operatorName.toLowerCase().trim();
+    // Normalize: lowercase, trim, collapse multiple spaces
+    const normalizedInput = operatorName
+      .toLowerCase()
+      .trim()
+      .split(/\s+/)
+      .join(' ');
     
-    return attendants.some(att => 
-      att.name.toLowerCase().trim() === normalizedInput ||
-      (att.nickname && att.nickname.toLowerCase().trim() === normalizedInput)
-    );
+    if (attendants.length === 0) {
+      console.warn("MKSolutionsModule: Attendants list is empty!", {
+        loadingAttendants,
+        operatorName,
+        normalizedInput,
+      });
+      return false;
+    }
+    
+    const isValid = attendants.some(att => {
+      // Normalize attendant name
+      const normalizedName = att.name
+        .toLowerCase()
+        .trim()
+        .split(/\s+/)
+        .join(' ');
+      
+      // Normalize nickname if present
+      const normalizedNickname = att.nickname
+        ? att.nickname
+            .toLowerCase()
+            .trim()
+            .split(/\s+/)
+            .join(' ')
+        : null;
+      
+      const matchByName = normalizedName === normalizedInput;
+      const matchByNickname = normalizedNickname === normalizedInput;
+      
+      if (matchByName || matchByNickname) {
+        console.log("MKSolutionsModule: Match found", {
+          input: operatorName,
+          normalized: normalizedInput,
+          matchedName: att.name,
+          matchedNickname: att.nickname,
+          matchType: matchByName ? "name" : "nickname",
+        });
+      }
+      
+      return matchByName || matchByNickname;
+    });
+    
+    if (!isValid) {
+      console.warn("MKSolutionsModule: Operator not found", {
+        input: operatorName,
+        normalized: normalizedInput,
+        attendantsCount: attendants.length,
+        attendantNames: attendants.slice(0, 3).map(a => a.name),
+      });
+    }
+    
+    return isValid;
   };
 
   // Process and filter imported data
@@ -114,9 +177,18 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
     }
 
     if (attendants.length === 0) {
-      toast.error("Nenhum atendente com status 'Avaliação: SIM' encontrado");
+      console.warn("MKSolutionsModule: No attendants with participates_evaluation=true", {
+        loadingAttendants,
+        attendantsLength: attendants.length,
+      });
+      toast.error("Nenhum atendente com status 'Avaliação: SIM' encontrado. Verifique a configuração no banco de dados.");
       return;
     }
+
+    console.log("MKSolutionsModule: Starting file upload with attendants list", {
+      attendantsCount: attendants.length,
+      attendantNames: attendants.slice(0, 5).map(a => a.name),
+    });
 
     // Validate file type
     const isCSV = file.name.toLowerCase().endsWith('.csv');
@@ -172,6 +244,12 @@ export default function MKSolutionsModule({ onDataLoaded }: MKSolutionsModulePro
       }
 
       // Apply security filter: validate Op. Abertura against attendants list
+      console.log("MKSolutionsModule: Applying security filter", {
+        attendantsCount: attendants.length,
+        rowsToProcess: jsonData.length,
+        firstAtendentes: attendants.slice(0, 3).map(a => ({ name: a.name, nickname: a.nickname })),
+        sampleOps: jsonData.slice(0, 3).map(r => r['Op. Abertura']),
+      });
       const { filtered, discarded } = filterAndValidateData(jsonData);
 
       // Support large files: only keep first 4792 rows in memory for display
