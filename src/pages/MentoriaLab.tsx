@@ -3898,7 +3898,7 @@ const MentoriaLab = () => {
                     value="opa"
                     className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground hover:bg-accent/60 transition-colors rounded-md font-medium"
                   >
-                    Opa Suite
+                    Opa Suite — Banda Turbo
                   </TabsTrigger>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-[300px] text-center">
