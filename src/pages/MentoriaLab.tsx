@@ -2419,13 +2419,7 @@ const MentoriaLab = () => {
 
   const formatSize = (b: number) => (b < 1024 ? `${b} B` : `${(b / 1024).toFixed(1)} KB`);
 
-  const getWorkflowStatus = useCallback((fileId: string): WorkflowStatus => {
-    if (workflowStatuses[fileId]) return workflowStatuses[fileId];
-    const file = files.find((f) => f.id === fileId);
-    if (!file) return "nao_iniciado";
-    if (file.status === "analisado" && file.result) return "finalizado";
-    return "nao_iniciado";
-  }, [workflowStatuses, files]);
+  const getWorkflowStatus = useCallback((fileId: string): WorkflowStatus => {\n    if (workflowStatuses[fileId]) return workflowStatuses[fileId];\n    const file = files.find((f) => f.id === fileId);\n    if (!file) return "nao_iniciado";\n    if (file.status === "analisado" && file.result) return "finalizado";\n    return "nao_iniciado";\n  }, [workflowStatuses, files]);
 
   const handleMarkFinished = useCallback(() => {
     if (!mentoriaFile) return;
