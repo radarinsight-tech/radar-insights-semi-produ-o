@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
 import { useExcludedAttendants } from "@/hooks/useExcludedAttendants";
-import OpaSearchPanel from "@/components/OpaSearchPanel";
+
 import MKSolutionsModule from "@/components/MKSolutionsModule";
 import {
   AlertDialog,
@@ -2782,29 +2782,7 @@ const MentoriaLab = () => {
           </TabsList>
 
           <TabsContent value="opa-suite" className="space-y-4 mt-4">
-            {/* Sub-tabs for Opa Suite */}
-            <Tabs defaultValue="busca" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-muted p-1 rounded-md">
-                <TabsTrigger value="busca" className="text-xs">🔍 Busca OPA</TabsTrigger>
-                <TabsTrigger value="mk-solutions" className="text-xs">📊 MK Solutions</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="busca" className="space-y-4 mt-4">
-                <OpaSearchPanel />
-              </TabsContent>
-
-              <TabsContent value="mk-solutions" className="space-y-4 mt-4">
-                <Card className="border-l-4 border-l-primary p-4">
-                  <div className="mb-4">
-                    <h3 className="font-semibold text-lg">📊 MK Solutions — Carregamento de Dados</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Importe dados de processos (CSV ou XLSX) para visualização e processamento
-                    </p>
-                  </div>
-                </Card>
-                <MKSolutionsModule />
-              </TabsContent>
-            </Tabs>
+            <MKSolutionsModule />
           </TabsContent>
 
           <TabsContent value="performance" className="space-y-4 mt-4">
