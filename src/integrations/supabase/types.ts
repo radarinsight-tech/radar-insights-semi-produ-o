@@ -512,16 +512,12 @@ export type Database = {
           file_path: string | null
           file_size: number | null
           has_audio: boolean | null
-          has_image: boolean | null
           id: string
           nota: number | null
           parsed_messages: Json | null
           protocolo: string | null
-          raw_text: string | null
           result: Json | null
           status: string
-          tipo_analise: string | null
-          visualizado: boolean | null
         }
         Insert: {
           atendente?: string | null
@@ -537,16 +533,12 @@ export type Database = {
           file_path?: string | null
           file_size?: number | null
           has_audio?: boolean | null
-          has_image?: boolean | null
           id?: string
           nota?: number | null
           parsed_messages?: Json | null
           protocolo?: string | null
-          raw_text?: string | null
           result?: Json | null
           status?: string
-          tipo_analise?: string | null
-          visualizado?: boolean | null
         }
         Update: {
           atendente?: string | null
@@ -562,16 +554,12 @@ export type Database = {
           file_path?: string | null
           file_size?: number | null
           has_audio?: boolean | null
-          has_image?: boolean | null
           id?: string
           nota?: number | null
           parsed_messages?: Json | null
           protocolo?: string | null
-          raw_text?: string | null
           result?: Json | null
           status?: string
-          tipo_analise?: string | null
-          visualizado?: boolean | null
         }
         Relationships: [
           {
@@ -706,7 +694,6 @@ export type Database = {
           error_message: string | null
           id: string
           nota_interna: number | null
-          nota_liberada: boolean
           pdf_url: string | null
           pontos_melhoria: string[] | null
           pontos_obtidos: number | null
@@ -726,7 +713,6 @@ export type Database = {
           error_message?: string | null
           id?: string
           nota_interna?: number | null
-          nota_liberada?: boolean
           pdf_url?: string | null
           pontos_melhoria?: string[] | null
           pontos_obtidos?: number | null
@@ -746,7 +732,6 @@ export type Database = {
           error_message?: string | null
           id?: string
           nota_interna?: number | null
-          nota_liberada?: boolean
           pdf_url?: string | null
           pontos_melhoria?: string[] | null
           pontos_obtidos?: number | null
@@ -762,7 +747,6 @@ export type Database = {
       profiles: {
         Row: {
           active: boolean
-          attendant_id: string | null
           company_id: string | null
           created_at: string
           deleted_at: string | null
@@ -772,7 +756,6 @@ export type Database = {
         }
         Insert: {
           active?: boolean
-          attendant_id?: string | null
           company_id?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -782,7 +765,6 @@ export type Database = {
         }
         Update: {
           active?: boolean
-          attendant_id?: string | null
           company_id?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -791,13 +773,6 @@ export type Database = {
           id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "profiles_attendant_id_fkey"
-            columns: ["attendant_id"]
-            isOneToOne: false
-            referencedRelation: "attendants"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "profiles_company_id_fkey"
             columns: ["company_id"]
@@ -906,7 +881,6 @@ export type Database = {
         | "credito"
         | "credit_manual"
         | "credit_upload"
-        | "mentoria_atendente"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1041,7 +1015,6 @@ export const Constants = {
         "credito",
         "credit_manual",
         "credit_upload",
-        "mentoria_atendente",
       ],
     },
   },
